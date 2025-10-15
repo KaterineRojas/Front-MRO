@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
-import { InventoryManager } from './components/InventoryManager';
+import { InventoryManager } from './components/features/inventory/InventoryManager';
 import { RequestOrders } from './components/RequestOrders';
 import { PurchaseOrders } from './components/PurchaseOrders';
 import { RequestManagement } from './components/RequestManagement';
