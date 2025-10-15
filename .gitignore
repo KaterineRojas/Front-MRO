@@ -1,0 +1,47 @@
+# Dependencias de Node
+/node_modules
+/package-lock.json
+/yarn.lock
+/npm-debug.log*
+
+# Compilación y Artefactos de Producción
+/build
+/dist
+/out
+
+# Archivos de Entorno y Variables Secretas
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# Carpeta de Cache de Webpack
+.cache
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDEs y Herramientas (VS Code, JetBrains)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+
+# Herramientas de PostCSS (Para Tailwind)
+/postcss.config.js
+/tailwind.config.js
+
+# Archivos de Test (Opcional, si usas Jest/Cypress)
+/coverage
+
+# Archivos de Sistema Operativo
+.DS_Store
+Thumbs.db
