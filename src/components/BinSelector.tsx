@@ -14,6 +14,7 @@ interface BinSelectorProps {
   placeholder?: string;
   currentBin?: string;
   required?: boolean;
+  disabled?: boolean;
 }
 
 const mockBins: Bin[] = [
