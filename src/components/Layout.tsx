@@ -132,15 +132,15 @@ export function Layout() {
   };
 
   const navigation = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { id: 'articles', label: 'Inventory Management', icon: Package, path: '/inventory' },
-    { id: 'loans', label: 'Request Orders', icon: UserCheck, path: '/loans' },
-    { id: 'orders', label: 'Purchase Request', icon: ShoppingCart, path: '/orders' },
-    { id: 'cyclecount', label: 'Cycle Count', icon: Calculator, path: '/cycle-count' },
-    { id: 'quickfind', label: 'Quick Find', icon: Search, path: '/quick-find' },
-    ...(['administrator', 'manager'].includes(currentUser.role) ? [{ id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests' }] : []),
-    { id: 'reports', label: 'Reports', icon: FileText, path: '/reports' },
-    ...(currentUser.role === 'administrator' ? [{ id: 'users', label: 'User Management', icon: Users, path: '/users' }] : []),
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/', disabled: false },
+    { id: 'articles', label: 'Inventory Management', icon: Package, path: '/inventory', disabled: false },
+    { id: 'loans', label: 'Request Orders', icon: UserCheck, path: '/loans', disabled: true },
+    { id: 'orders', label: 'Purchase Request', icon: ShoppingCart, path: '/orders', disabled: true },
+    { id: 'cyclecount', label: 'Cycle Count', icon: Calculator, path: '/cycle-count', disabled: true },
+    { id: 'quickfind', label: 'Quick Find', icon: Search, path: '/quick-find', disabled: true },
+    ...(['administrator', 'manager'].includes(currentUser.role) ? [{ id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests', disabled: true }] : []),
+    { id: 'reports', label: 'Reports', icon: FileText, path: '/reports', disabled: true },
+    ...(currentUser.role === 'administrator' ? [{ id: 'users', label: 'User Management', icon: Users, path: '/users', disabled: true }] : []),
   ] as const;
 
   const isActivePath = (path: string) => {
@@ -185,9 +185,12 @@ export function Layout() {
                 key={item.id}
                 variant={isActivePath(item.path) ? 'secondary' : 'ghost'}
                 className="w-full justify-start"
+                disabled={item.disabled}
                 onClick={() => {
-                  navigate(item.path);
-                  setSidebarOpen(false);
+                  if (!item.disabled) {
+                    navigate(item.path);
+                    setSidebarOpen(false);
+                  }
                 }}
               >
                 <Icon className="mr-2 h-4 w-4" />

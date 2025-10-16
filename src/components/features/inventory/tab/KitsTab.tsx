@@ -7,6 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../../../ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../ui/alert-dialog';
 import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, Package } from 'lucide-react';
+import { useAppDispatch } from '@/store/hooks';
+import { deleteKit } from '@/store/inventorySlice';
 
 interface KitItem {
   articleId: number;
@@ -52,9 +54,18 @@ export function KitsTab({
   onEditKit,
   onDeleteKit
 }: KitsTabProps) {
+  // Redux
+  const dispatch = useAppDispatch();
+
+  // Local state
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [expandedKits, setExpandedKits] = useState<Set<number>>(new Set());
+
+  const handleDeleteKit = (id: number) => {
+    dispatch(deleteKit(id));
+    onDeleteKit(id);
+  };
 
   const filteredKits = kits.filter(kit => {
     const matchesSearch = kit.binCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -196,7 +207,7 @@ export function KitsTab({
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onDeleteKit(kit.id)}>
+                                <AlertDialogAction onClick={() => handleDeleteKit(kit.id)}>
                                   Delete
                                 </AlertDialogAction>
                               </AlertDialogFooter>

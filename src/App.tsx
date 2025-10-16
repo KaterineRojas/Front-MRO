@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { store } from './store';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { InventoryManager } from './components/features/inventory/InventoryManager';
@@ -185,8 +187,10 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
+    <Provider store={store}>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </Provider>
   );
 }

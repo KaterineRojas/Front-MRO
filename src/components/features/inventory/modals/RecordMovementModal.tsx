@@ -68,10 +68,12 @@ export function RecordMovementModal({
     articleBinCode: '',
     kitBinCode: '',
     quantity: '',
+    unitPrice: '',
     status: 'good-condition' as Article['status'],
     newLocation: '',
     notes: ''
   });
+  const [priceOption, setPriceOption] = useState('');
   const [articleSearchTerm, setArticleSearchTerm] = useState('');
   const [kitSearchTermMovement, setKitSearchTermMovement] = useState('');
 
@@ -83,10 +85,12 @@ export function RecordMovementModal({
       articleBinCode: '',
       kitBinCode: '',
       quantity: '',
+      unitPrice: '',
       status: 'good-condition',
       newLocation: '',
       notes: ''
     });
+    setPriceOption('');
     setArticleSearchTerm('');
     setKitSearchTermMovement('');
   };
@@ -483,6 +487,62 @@ export function RecordMovementModal({
               {selectedArticle && (movementData.movementType === 'exit' || movementData.movementType === 'relocation') && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Available: {selectedArticle.currentStock} {selectedArticle.unit}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Unit Price - Only for Stock Entry */}
+          {movementData.itemType === 'item' && movementData.movementType === 'entry' && selectedArticle && (
+            <div>
+              <Label>Unit Price *</Label>
+              <Select
+                value={priceOption}
+                onValueChange={(value) => {
+                  setPriceOption(value);
+                  if (value === 'custom') {
+                    setMovementData({...movementData, unitPrice: ''});
+                  } else {
+                    const price = value.split('-')[2];
+                    setMovementData({...movementData, unitPrice: price});
+                  }
+                }}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select or enter unit price" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={`price-current-${selectedArticle.cost}`}>
+                    ${selectedArticle.cost.toFixed(2)} (Current Price)
+                  </SelectItem>
+                  <SelectItem value={`price-discount10-${(selectedArticle.cost * 0.9).toFixed(4)}`}>
+                    ${(selectedArticle.cost * 0.9).toFixed(2)} (10% Discount)
+                  </SelectItem>
+                  <SelectItem value={`price-discount15-${(selectedArticle.cost * 0.85).toFixed(4)}`}>
+                    ${(selectedArticle.cost * 0.85).toFixed(2)} (15% Discount)
+                  </SelectItem>
+                  <SelectItem value={`price-increase10-${(selectedArticle.cost * 1.1).toFixed(4)}`}>
+                    ${(selectedArticle.cost * 1.1).toFixed(2)} (10% Increase)
+                  </SelectItem>
+                  <SelectItem value="custom">Custom Price</SelectItem>
+                </SelectContent>
+              </Select>
+              {priceOption === 'custom' && (
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={movementData.unitPrice}
+                  onChange={(e) => setMovementData({...movementData, unitPrice: e.target.value})}
+                  placeholder="Enter custom unit price"
+                  className="mt-2"
+                  required
+                />
+              )}
+              {movementData.unitPrice && movementData.quantity && !isNaN(parseFloat(movementData.unitPrice)) && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total: ${(parseFloat(movementData.unitPrice) * parseInt(movementData.quantity)).toFixed(2)}
                 </p>
               )}
             </div>

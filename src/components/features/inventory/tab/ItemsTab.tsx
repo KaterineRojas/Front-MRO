@@ -9,6 +9,8 @@ import { Badge } from '../../../ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../ui/alert-dialog';
 import { Plus, Search, Edit, Trash2, Package, ChevronDown, ChevronRight } from 'lucide-react';
 import { AddItemModal } from '../modals/AddItemModal';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { addArticle, updateArticle, deleteArticle } from '@/store/inventorySlice';
 
 interface Article {
   id: number;
@@ -48,6 +50,10 @@ export function ItemsTab({
   getStatusBadge,
   getTypeIcon
 }: ItemsTabProps) {
+  // Redux
+  const dispatch = useAppDispatch();
+
+  // Local state
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -70,13 +76,20 @@ export function ItemsTab({
 
   const handleArticleSubmit = (article: Article) => {
     if (editingArticle) {
-      onArticleUpdate(articles.map(a => 
+      dispatch(updateArticle(article));
+      onArticleUpdate(articles.map(a =>
         a.id === editingArticle.id ? article : a
       ));
     } else {
+      dispatch(addArticle(article));
       onArticleUpdate([...articles, article]);
     }
     setEditingArticle(null);
+  };
+
+  const handleDeleteArticle = (id: number) => {
+    dispatch(deleteArticle(id));
+    onArticleDelete(id);
   };
 
   const handleToggleExpandItem = (itemId: number) => {
@@ -233,7 +246,7 @@ export function ItemsTab({
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onArticleDelete(article.id)}>
+                                <AlertDialogAction onClick={() => handleDeleteArticle(article.id)}>
                                   Delete
                                 </AlertDialogAction>
                               </AlertDialogFooter>

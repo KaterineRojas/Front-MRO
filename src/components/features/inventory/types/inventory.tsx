@@ -34,6 +34,7 @@ export interface Kit {
   category: string;
   items: KitItem[];
   imageUrl?: string;
+  status: 'good-condition' | 'on-revision' | 'scrap' | 'repaired';
   createdAt: string;
 }
 
@@ -45,3 +46,5 @@ export interface Template {
   items: KitItem[];
   createdAt: string;
 }
+
+export type ViewMode = 'items' | 'kits' | 'create-kit' | 'templates' | 'edit-template' | 'bins' | 'transactions';
