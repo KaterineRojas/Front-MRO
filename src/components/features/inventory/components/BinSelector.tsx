@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from './ui/select';
-import { Input } from './ui/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Input } from '../../../ui/input';
 
 interface Bin {
   binCode: string;

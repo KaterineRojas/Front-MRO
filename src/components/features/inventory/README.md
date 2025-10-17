@@ -1,179 +1,95 @@
-# Inventory Management - Refactored & Modular Structure
+# Inventory Management Feature Module
 
-## Overview
-The Inventory Management feature has been **completely refactored** from a 1,175-line monolithic component into a clean, modular architecture with professional separation of concerns.
+This directory contains the complete Inventory Management feature, organized following a feature-based architecture pattern.
 
-## Architecture
+## Structure
+
+```
+inventory/
+├── README.md                    # This file
+├── index.ts                     # Main exports
+├── types.ts                     # TypeScript interfaces and types
+├── constants.ts                 # Constants, categories, and mock data
+├── InventoryManager.tsx         # Main component (630 lines, reduced from 4,700)
+├── components/                  # Reusable components
+│   └── BinSelector.tsx          # Bin selection component
+├── modals/                      # Modal dialogs
+│   ├── CreateItemModal.tsx      # Create/Edit item modal
+│   └── RecordMovementModal.tsx  # Record movement modal
+└── tabs/                        # Tab content components
+    ├── ItemsTab.tsx             # Items inventory tab
+    ├── KitsTab.tsx              # Kits inventory tab
+    ├── TemplatesTab.tsx         # Templates tab
+    ├── BinsTab.tsx              # Bins management tab
+    └── TransactionsTab.tsx      # Transactions tab
+```
+
+## Components
 
 ### Main Component
-- **InventoryManagerModular.tsx**: Main container component that manages global state and orchestrates all tabs
+- **InventoryManager**: Orchestrates all inventory management functionality with Redux and React Router integration
 
-### Tabs (Modular Components)
-Located in `/components/features/inventory/tabs/`:
+### Tabs
+- **ItemsTab**: Displays and manages inventory items
+- **KitsTab**: Manages equipment kits
+- **TemplatesTab**: Wrapper for TemplateManager component
+- **BinsTab**: Wrapper for BinManager component
+- **TransactionsTab**: Wrapper for InventoryMovements component
 
-1. **ItemsTab.tsx** - Individual item management
-   - Create, edit, delete items
-   - Search and filter by category
-   - Main table: Item, Description, Category, Type, Stock, Min Stock
-   - Expandable rows with Storage Locations table (BIN Code, Quantity, Type)
-   - Supports up to 3 bins per item with different types
-   - Auto-generated SKU on creation
-   - Image upload support
+### Modals
+- **CreateItemModal**: Create and edit inventory items
+- **RecordMovementModal**: Record stock movements (entry/exit/relocation)
 
-2. **KitsTab.tsx** - Kit management
-   - Create kits from scratch or templates
-   - Edit and delete kits
-   - Expandable rows showing kit items in table format (Image, BIN Code, Name, Quantity)
-   - Category filtering
-   - Visual item display matching template format
+### Components
+- **BinSelector**: Searchable bin selection dropdown
 
-3. **TemplatesTab.tsx** - Template management
-   - Wrapper for TemplateManager component
-   - Create and edit templates
-   - Use templates to create kits
+## Usage
 
-4. **BinsTab.tsx** - Bin management
-   - Create, edit and delete bins
-   - Article count per bin
-   - Delete protection (disabled when bin has items)
-   - Type badges (Good Condition, On Revision, Scrap)
+```tsx
+import { InventoryManager } from './components/features/inventory';
 
-5. **TransactionsTab.tsx** - Movement history
-   - Wrapper for InventoryMovements component
-   - View transaction history
-   - Record new movements
+function App() {
+  return <InventoryManager />;
+}
+```
 
 ## State Management
-- Global state is centralized in `InventoryManagerModular`
-- Each tab receives state and callbacks through props
-- Clean separation of concerns
 
-## Data Flow
-```
-InventoryManagerModular
-├── State Management (articles, kits, activeTab)
-├── Handler Functions (CRUD operations)
-└── Props Distribution to Tabs
-    ├── ItemsTab (articles, handlers)
-    ├── KitsTab (kits, handlers)
-    ├── TemplatesTab (callbacks)
-    ├── BinsTab (standalone)
-    └── TransactionsTab (standalone)
-```
+This module uses local React state for inventory management. Future enhancements could include:
+- Redux integration for global inventory state
+- API integration for persistent storage
+- Real-time inventory updates
 
 ## Features
 
-### Items Management
-- **Auto SKU Generation**: SKUs are automatically generated (SKU-001, SKU-002, etc.)
-- **Simplified Form**: Removed SKU, Unit Cost, and Supplier from creation form
-- **BIN Code Selector**: Integrated dropdown with search
-- **Stock Status**: Visual indicators for stock levels
-- **Min Stock Display**: Shown in main table and detail view
-- **Description Column**: Added to main table for quick reference
-- **Multi-Bin Support**: Up to 3 bins per item, each with different type (no duplicate types)
-- **Type Icons**: Visual differentiation between consumable/non-consumable items
+- **Item Management**: Create, edit, and delete inventory items
+- **Kit Management**: Manage equipment kits with multiple items
+- **Template System**: Create kits from predefined templates
+- **Bin Management**: Organize items by storage location
+- **Movement Tracking**: Record stock entries, exits, and relocations
+- **Multi-bin Support**: Track same SKU across multiple bins
+- **Stock Alerts**: Low stock and out-of-stock notifications
 
-### Kits Management
-- **Template Integration**: Create kits from predefined templates
-- **Item Contents**: View all items included in each kit
-- **Category Organization**: Filter by category
+## Dependencies
 
-### Navigation
-- **Tab-based UI**: Easy switching between different views
-- **Record Movement Button**: Opens modal for recording inventory transactions
-- **Special Views**: Dedicated pages for kit creation and template editing
+- React
+- shadcn/ui components (Button, Dialog, Table, etc.)
+- Lucide React icons
+- TypeScript
 
-### Modals
-Three modals are available in `/components/features/inventory/modals/`:
+## Related Components
 
-#### AddItemModal
-- **Add/Edit Items**: Create new items or edit existing ones
-- **Auto SKU Generation**: Automatically generates sequential SKU codes
-- **Image Upload**: Support for article images with preview
-- **Validation**: Prevents duplicate SKUs
+External components used by this module (located in `/components/`):
+- `BinManager.tsx` - Bin management component
+- `TemplateManager.tsx` - Template management component  
+- `InventoryMovements.tsx` - Transaction history component
+- `CreateKitPage.tsx` - Full-page kit creation view
+- `EditTemplatePage.tsx` - Full-page template editing view
 
-#### CreateBinModal  
-- **Add/Edit Bins**: Create new bins or edit existing ones
-- **Type Selection**: Good Condition, On Revision, or Scrap
-- **Validation**: Prevents duplicate BIN codes
+## Code Reduction
 
-#### RecordMovementModal
-- **Comprehensive Form**: Record entries, exits, and relocations
-- **Item Type Selection**: Support for both items and kits
-- **Smart Article Selection**: Search by SKU or name
-- **BIN Code Selection**: Choose specific bins for exit/relocation
-- **Stock Validation**: Prevents over-withdrawal from inventory
-- **Location Management**: Set new locations for entries and relocations
-
-## Integration
-
-### Usage in App.tsx
-```typescript
-import { InventoryManagerModular } from './components/features/inventory/InventoryManagerModular';
-
-// In render:
-case 'articles':
-  return <InventoryManagerModular />;
-```
-
-## File Structure (Refactored)
-```
-/components/features/inventory/
-├── InventoryManager.tsx         # Main container (360 lines - REFACTORED!)
-├── constants/
-│   └── categories.ts            # Category definitions (CATEGORIES)
-├── types/
-│   └── inventory.tsx            # TypeScript interfaces (Article, Kit, Template, ViewMode)
-├── utils/
-│   └── badges.tsx               # Utility functions (getStockStatus, getStatusBadge, getTypeIcon)
-├── tab/
-│   ├── ItemsTab.tsx            # Items management tab
-│   ├── KitsTab.tsx             # Kits management tab
-│   ├── TemplateManager.tsx     # Template management tab
-│   ├── BinManager.tsx          # Bin management tab
-│   └── InventoryMovements.tsx  # Transaction history tab
-├── modals/
-│   ├── AddItemModal.tsx        # Add/Edit item modal
-│   ├── CreateBinModal.tsx      # Create/Edit bin modal
-│   └── RecordMovementModal.tsx # Record Movement modal (REFACTORED with price selector)
-└── README.md                    # This file
-```
-
-## Benefits of Modularization
-
-1. **Maintainability**: Each tab is self-contained and easier to maintain
-2. **Scalability**: Easy to add new features or tabs
-3. **Reusability**: Tabs can be reused in different contexts
-4. **Testing**: Individual components can be tested in isolation
-5. **Performance**: Reduced bundle size per component
-6. **Developer Experience**: Easier to navigate and understand the codebase
-
-## Refactoring Summary
-
-### What Changed:
-- **Before**: Single 1,175-line monolithic component
-- **After**: 360-line main component + modular utilities and types
-
-### Key Improvements:
-1. ✅ **Extracted RecordMovementModal** to separate component with full functionality (price selector, BIN selection)
-2. ✅ **Centralized Types** in `types/inventory.tsx` (Article, Kit, Template, ViewMode)
-3. ✅ **Created Utils** for badges, icons, and status helpers
-4. ✅ **Separated Constants** (CATEGORIES) into dedicated file
-5. ✅ **Clean Code Organization** with comments and clear sections
-6. ✅ **Maintained Backward Compatibility** with CreateKitPage and EditTemplatePage
-7. ✅ **Build Verified** - No compilation errors
-
-### Code Metrics:
-- **Lines Reduced**: 1,175 → 360 (69% reduction in main component)
-- **Readability**: Improved with clear sections and comments
-- **Maintainability**: Each concern is isolated and testable
-- **Type Safety**: Full TypeScript coverage with centralized types
-
-## Future Enhancements
-
-Potential improvements for future versions:
-- Context API or Redux for state management
-- TypeScript interfaces in separate files
-- Custom hooks for common operations
-- More granular component splitting
-- Unit tests for each module
+This modular restructure reduced the main InventoryManager from **4,700 lines to 630 lines** (86.6% reduction) through:
+- Separation of concerns
+- Component extraction
+- Modal extraction
+- Tab componentization

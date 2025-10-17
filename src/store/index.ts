@@ -1,11 +1,46 @@
-import { configureStore } from '@reduxjs/toolkit';
-import inventoryReducer from './inventorySlice';
+// Main store exports
+export { store } from './store';
+export type { RootState, AppDispatch } from './store';
 
-export const store = configureStore({
-  reducer: {
-    inventory: inventoryReducer,
-  },
-});
+// Hooks
+export { useAppDispatch, useAppSelector } from './hooks';
 
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
+// Selectors
+export * from './selectors';
+
+// Auth slice
+export { setUser, logout, updateUserRole } from './slices/authSlice';
+export type { UserRole } from './slices/authSlice';
+
+// UI slice
+export {
+  toggleSidebar,
+  setSidebarOpen,
+  toggleDarkMode,
+  setDarkMode,
+  toggleNotifications,
+  setNotificationsOpen,
+} from './slices/uiSlice';
+
+// Notifications slice
+export {
+  addNotification,
+  markAsRead,
+  markAllAsRead,
+  removeNotification,
+  clearAllNotifications,
+} from './slices/notificationsSlice';
+export type { Notification } from './slices/notificationsSlice';
+
+// Inventory slice
+export {
+  fetchArticles,
+  fetchKits,
+  createArticle,
+  updateArticle,
+  deleteArticle,
+  createKit,
+  updateKit,
+  deleteKit,
+  recordMovement,
+} from './slices/inventorySlice';

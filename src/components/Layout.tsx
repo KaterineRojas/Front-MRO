@@ -1,5 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { 
+  useAppDispatch, 
+  useAppSelector, 
+  logout, 
+  setSidebarOpen, 
+  toggleDarkMode, 
+  setNotificationsOpen,
+  markAllAsRead 
+} from '../store';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
@@ -24,73 +33,17 @@ import {
   LogOut
 } from 'lucide-react';
 
-interface Notification {
-  id: number;
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-  type: 'info' | 'warning' | 'success' | 'error';
-}
-
-const mockUser = {
-  id: 1,
-  name: 'John Smith',
-  role: 'administrator' as 'administrator' | 'user' | 'purchasing' | 'auditor' | 'manager',
-  email: 'john@company.com'
-};
-
-const mockNotifications: Notification[] = [
-  {
-    id: 1,
-    title: 'New Request Pending',
-    message: 'Mike Chen submitted a loan request (REQ-2025-001)',
-    timestamp: '5 minutes ago',
-    read: false,
-    type: 'warning'
-  },
-  {
-    id: 2,
-    title: 'Low Stock Alert',
-    message: 'USB Cable Type-C 2m stock is below minimum threshold',
-    timestamp: '1 hour ago',
-    read: false,
-    type: 'error'
-  },
-  {
-    id: 3,
-    title: 'Request Approved',
-    message: 'Your purchase request REQ-2025-005 has been approved',
-    timestamp: '2 hours ago',
-    read: false,
-    type: 'success'
-  },
-  {
-    id: 4,
-    title: 'Return Reminder',
-    message: 'Equipment borrowed by Linda Martinez is due tomorrow',
-    timestamp: '3 hours ago',
-    read: true,
-    type: 'info'
-  },
-  {
-    id: 5,
-    title: 'Cycle Count Scheduled',
-    message: 'Monthly cycle count scheduled for next Monday',
-    timestamp: '1 day ago',
-    read: true,
-    type: 'info'
-  }
-];
-
 export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentUser] = useState(mockUser);
-  const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const dispatch = useAppDispatch();
+  
+  // Get state from Redux
+  const currentUser = useAppSelector((state) => state.auth.user);
+  const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
+  const darkMode = useAppSelector((state) => state.ui.darkMode);
+  const notificationsOpen = useAppSelector((state) => state.ui.notificationsOpen);
+  const notifications = useAppSelector((state) => state.notifications.items);
 
   // Apply dark mode to document root
   useEffect(() => {
@@ -104,21 +57,20 @@ export function Layout() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleNotificationsOpen = (open: boolean) => {
-    setNotificationsOpen(open);
+    dispatch(setNotificationsOpen(open));
     if (open) {
       // Mark all notifications as read when opening
-      setNotifications(prevNotifications => 
-        prevNotifications.map(n => ({ ...n, read: true }))
-      );
+      dispatch(markAllAsRead());
     }
   };
 
   const handleLogout = () => {
+    dispatch(logout());
     alert('Logging out...');
-    // In a real app, this would clear authentication and redirect to login
+    navigate('/');
   };
 
-  const getNotificationIcon = (type: Notification['type']) => {
+  const getNotificationIcon = (type: 'info' | 'warning' | 'success' | 'error') => {
     switch (type) {
       case 'warning':
         return '⚠️';
@@ -156,7 +108,7 @@ export function Layout() {
       {sidebarOpen && (
         <div 
           className="fixed inset-0 z-40 lg:hidden bg-black/50" 
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => dispatch(setSidebarOpen(false))}
         />
       )}
       
@@ -171,7 +123,7 @@ export function Layout() {
             variant="ghost"
             size="sm"
             className="lg:hidden"
-            onClick={() => setSidebarOpen(false)}
+            onClick={() => dispatch(setSidebarOpen(false))}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -185,12 +137,10 @@ export function Layout() {
                 key={item.id}
                 variant={isActivePath(item.path) ? 'secondary' : 'ghost'}
                 className="w-full justify-start"
-                disabled={item.disabled}
+                 disabled={item.disabled} 
                 onClick={() => {
-                  if (!item.disabled) {
-                    navigate(item.path);
-                    setSidebarOpen(false);
-                  }
+                  navigate(item.path);
+                  dispatch(setSidebarOpen(false));
                 }}
               >
                 <Icon className="mr-2 h-4 w-4" />
@@ -200,29 +150,31 @@ export function Layout() {
           })}
         </nav>
 
-        <div className="p-4 border-t">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start p-0 h-auto hover:bg-muted/50">
-                <div className="flex items-center space-x-2 w-full p-2 rounded">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm">
-                    {currentUser.name.charAt(0)}
+        {currentUser && (
+          <div className="p-4 border-t">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start p-0 h-auto hover:bg-muted/50">
+                  <div className="flex items-center space-x-2 w-full p-2 rounded">
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm">
+                      {currentUser.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-sm truncate">{currentUser.name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{currentUser.role}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <p className="text-sm truncate">{currentUser.name}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{currentUser.role}</p>
-                  </div>
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log Out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
 
       {/* Main content */}
@@ -233,7 +185,7 @@ export function Layout() {
               variant="ghost"
               size="sm"
               className="lg:hidden"
-              onClick={() => setSidebarOpen(true)}
+              onClick={() => dispatch(setSidebarOpen(true))}
             >
               <Menu className="h-4 w-4" />
             </Button>
@@ -292,7 +244,7 @@ export function Layout() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setDarkMode(!darkMode)}
+              onClick={() => dispatch(toggleDarkMode())}
             >
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>

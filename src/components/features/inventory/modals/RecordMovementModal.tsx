@@ -1,57 +1,20 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../ui/dialog';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Label } from '../../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { Textarea } from '../../../ui/textarea';
 import { Badge } from '../../../ui/badge';
-import { BinSelector } from '../../../BinSelector';
-
-interface Article {
-  id: number;
-  imageUrl?: string;
-  sku: string;
-  name: string;
-  description: string;
-  category: string;
-  type: 'consumable' | 'non-consumable' | 'pending-purchase';
-  currentStock: number;
-  cost: number;
-  binCode: string;
-  unit: string;
-  supplier: string;
-  minStock: number;
-  location: string;
-  status: string;
-  createdAt: string;
-}
-
-interface KitItem {
-  articleId: number;
-  articleBinCode: string;
-  articleName: string;
-  quantity: number;
-}
-
-interface Kit {
-  id: number;
-  binCode: string;
-  name: string;
-  description: string;
-  category: string;
-  items: KitItem[];
-  imageUrl?: string;
-  status: string;
-  createdAt: string;
-}
+import { BinSelector } from '../components/BinSelector';
+import type { Article, Kit, MovementData } from '../types';
 
 interface RecordMovementModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   articles: Article[];
   kits: Kit[];
-  onMovementRecorded: (movementData: any) => void;
+  onRecordMovement: (movementData: MovementData) => void;
 }
 
 export function RecordMovementModal({
@@ -59,17 +22,17 @@ export function RecordMovementModal({
   onOpenChange,
   articles,
   kits,
-  onMovementRecorded
+  onRecordMovement
 }: RecordMovementModalProps) {
-  const [movementData, setMovementData] = useState({
-    itemType: 'item' as 'item' | 'kit',
-    movementType: 'entry' as 'entry' | 'exit' | 'relocation',
+  const [movementData, setMovementData] = useState<MovementData>({
+    itemType: 'item',
+    movementType: 'entry',
     articleSKU: '',
     articleBinCode: '',
     kitBinCode: '',
     quantity: '',
     unitPrice: '',
-    status: 'good-condition' as Article['status'],
+    status: 'good-condition',
     newLocation: '',
     notes: ''
   });
@@ -97,12 +60,11 @@ export function RecordMovementModal({
 
   const handleRecordMovement = (e: React.FormEvent) => {
     e.preventDefault();
-    onMovementRecorded(movementData);
-    onOpenChange(false);
+    onRecordMovement(movementData);
     resetMovementForm();
+    onOpenChange(false);
   };
 
-  // For entry mode, find article by SKU, for exit/relocation find by bin code
   const selectedArticle = movementData.movementType === 'entry' 
     ? articles.find(article => article.sku === movementData.articleSKU)
     : articles.find(article => article.binCode === movementData.articleBinCode);
@@ -448,7 +410,6 @@ export function RecordMovementModal({
                   <Label className="text-sm mb-2 block">Items in this Kit ({selectedKitForMovement.items.length})</Label>
                   <div className="space-y-2 max-h-[200px] overflow-y-auto">
                     {selectedKitForMovement.items.map((item, index) => {
-                      // Find the article to get the image
                       const article = articles.find(a => a.binCode === item.articleBinCode);
                       return (
                         <div key={index} className="flex items-center space-x-3 p-2 bg-card rounded border">
@@ -496,8 +457,8 @@ export function RecordMovementModal({
           {movementData.itemType === 'item' && movementData.movementType === 'entry' && selectedArticle && (
             <div>
               <Label>Unit Price *</Label>
-              <Select
-                value={priceOption}
+              <Select 
+                value={priceOption} 
                 onValueChange={(value) => {
                   setPriceOption(value);
                   if (value === 'custom') {

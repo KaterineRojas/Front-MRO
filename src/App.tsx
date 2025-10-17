@@ -1,7 +1,7 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import { store } from './store';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { store, useAppSelector } from './store';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { InventoryManager } from './components/features/inventory/InventoryManager';
@@ -137,15 +137,10 @@ function CycleCountActiveWrapper() {
   );
 }
 
-// Mock user for role-based routing
-const mockUser = {
-  id: 1,
-  name: 'John Smith',
-  role: 'administrator' as 'administrator' | 'user' | 'purchasing' | 'auditor' | 'manager',
-  email: 'john@company.com'
-};
-
 function AppRoutes() {
+  // Get user from Redux store
+  const user = useAppSelector((state) => state.auth.user);
+  
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
@@ -169,12 +164,12 @@ function AppRoutes() {
         <Route path="orders/detail" element={<OrderDetailWrapper />} />
         
         {/* Request Management (Admin/Manager only) */}
-        {['administrator', 'manager'].includes(mockUser.role) && (
+        {user && ['administrator', 'manager'].includes(user.role) && (
           <Route path="requests" element={<RequestManagement />} />
         )}
         
         {/* User Management (Admin only) */}
-        {mockUser.role === 'administrator' && (
+        {user && user.role === 'administrator' && (
           <Route path="users" element={<UserManagement />} />
         )}
         
