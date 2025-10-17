@@ -22,7 +22,7 @@ import {
 // Components
 import { ItemsTab } from './tab/ItemsTab';
 import { KitsTab } from './tab/KitsTab';
-import { TemplateManager } from './tab/TemplateManager';
+import { TemplateManager } from './tab/templates/TemplateManager';
 import { BinManager } from './tab/BinManager';
 import { InventoryMovements } from './tab/InventoryMovements';
 import { CreateKitPage } from '../../CreateKitPage';
