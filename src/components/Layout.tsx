@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { ScrollArea } from './ui/scroll-area';
+import { Button } from './features/ui/button';
+import { Badge } from './features/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from './features/ui/popover';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './features/ui/dropdown-menu';
+import { ScrollArea } from './features/ui/scroll-area';
 import { 
   LayoutDashboard, 
   Package, 

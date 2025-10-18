@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from './features/ui/card';
+import { Button } from './features/ui/button';
+import { Badge } from './features/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './features/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './features/ui/table';
 import { 
   Calculator, 
   PlayCircle, 

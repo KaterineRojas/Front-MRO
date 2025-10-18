@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Badge } from './ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { Textarea } from './ui/textarea';
-import { Label } from './ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from './features/ui/card';
+import { Button } from './features/ui/button';
+import { Input } from './features/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './features/ui/table';
+import { Badge } from './features/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './features/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './features/ui/dialog';
+import { Textarea } from './features/ui/textarea';
+import { Label } from './features/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './features/ui/tabs';
 import { ClipboardCheck, Check, X, Clock, Package, AlertTriangle, ChevronDown, ChevronRight, FileText, CheckCircle, XCircle } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 

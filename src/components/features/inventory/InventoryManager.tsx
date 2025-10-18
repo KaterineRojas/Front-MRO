@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '../../ui/button';
-import { Dialog, DialogTrigger } from '../../ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
+import { Button } from '../ui/button';
+import { Dialog, DialogTrigger } from '../ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { ArrowUpDown } from 'lucide-react';
 
 // Redux
@@ -26,7 +26,6 @@ import { TemplateManager } from './tab/templates/TemplateManager';
 import { BinManager } from './tab/BinManager';
 import { InventoryMovements } from './tab/InventoryMovements';
 import { CreateKitPage } from '../../CreateKitPage';
-import { EditTemplatePage } from '../../EditTemplatePage';
 import { RecordMovementModal } from './modals/RecordMovementModal';
 
 // Types
@@ -274,16 +273,16 @@ export function InventoryManager() {
     );
   }
 
-  if (viewMode === 'edit-template') {
-    return (
-      <EditTemplatePage
-        articles={articles}
-        editingTemplate={editingTemplate}
-        onBack={handleBackToTemplates}
-        onSave={handleTemplateSave}
-      />
-    );
-  }
+  // if (viewMode === 'edit-template') {
+  //   return (
+  //     <EditTemplatePage
+  //       articles={articles}
+  //       editingTemplate={editingTemplate}
+  //       onBack={handleBackToTemplates}
+  //       onSave={handleTemplateSave}
+  //     />
+  //   );
+  // }
 
   // Main View
   return (

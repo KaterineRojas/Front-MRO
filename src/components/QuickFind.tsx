@@ -1,11 +1,11 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Badge } from './ui/badge';
-import { Alert, AlertDescription } from './ui/alert';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle } from './features/ui/card';
+import { Button } from './features/ui/button';
+import { Input } from './features/ui/input';
+import { Label } from './features/ui/label';
+import { Badge } from './features/ui/badge';
+import { Alert, AlertDescription } from './features/ui/alert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './features/ui/dialog';
 import { 
   Camera, 
   Search, 

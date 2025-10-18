@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Badge } from './ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from './ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle } from './features/ui/card';
+import { Button } from './features/ui/button';
+import { Input } from './features/ui/input';
+import { Label } from './features/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './features/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './features/ui/table';
+import { Badge } from './features/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from './features/ui/dialog';
 import { Plus, Users, Edit, Trash2, Search, UserCheck, Shield, ShoppingCart, Eye } from 'lucide-react';
 
 interface User {
@@ -284,7 +284,7 @@ export function UserManagement() {
                 </div>
                 <div>
                   <Label htmlFor="department">Department</Label>
-                  <Select value={formData.department} onValueChange={(value) => setFormData({...formData, department: value})}>
+                  <Select value={formData.department} onValueChange={(value: any) => setFormData({...formData, department: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>

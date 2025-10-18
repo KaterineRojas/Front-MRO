@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Badge } from './ui/badge';
-import { Textarea } from './ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from './features/ui/card';
+import { Button } from './features/ui/button';
+import { Input } from './features/ui/input';
+import { Label } from './features/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './features/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './features/ui/table';
+import { Badge } from './features/ui/badge';
+import { Textarea } from './features/ui/textarea';
 import { ArrowLeft, Package, Download, AlertTriangle, CheckCircle, Minus, Plus, Printer, Save } from 'lucide-react';
 
 interface Article {

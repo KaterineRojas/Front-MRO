@@ -1,11 +1,11 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Button } from '@/components/features/ui/button'
+import { Card } from '@/components/features/ui/card';
 import { ArrowLeft } from 'lucide-react';
 import { TemplateForm } from './TemplateForm';
 import { ArticlesList } from './ArticlesList';
 import { SelectedItemsList } from './SelectedItemsList';
-import { useTemplateForm } from './useTemplateForm';
+import { UseTemplateForm } from './UseTemplateForm';
 import type { EditTemplatePageProps } from './types';
 
 export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: EditTemplatePageProps) {
@@ -21,7 +21,7 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
     setSearchTerm,
     categoryFilter,
     setCategoryFilter,
-  } = useTemplateForm(articles, editingTemplate, onSave);
+  } = UseTemplateForm(articles, editingTemplate, onSave);
 
   const pageTitle = editingTemplate ? 'Edit Template' : 'Create New Template';
 

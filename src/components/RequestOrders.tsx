@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Badge } from './ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from './features/ui/card';
+import { Button } from './features/ui/button';
+import { Input } from './features/ui/input';
+import { Label } from './features/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './features/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './features/ui/table';
+import { Badge } from './features/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './features/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './features/ui/tabs';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Plus, UserCheck, CheckCircle, AlertCircle, XCircle, FileText, Clock, Eye, Package, Undo, ClipboardCheck, Truck, Archive, Printer, ChevronDown, ChevronRight, Filter, History } from 'lucide-react';
 
@@ -1905,7 +1905,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
                       <div className="space-y-2">
                         <Select
                           value={overviewSecondaryFilter || 'all-statuses'}
-                          onValueChange={(value) => {
+                          onValueChange={(value: React.SetStateAction<string>) => {
                             setOverviewSecondaryFilter(value === 'all-statuses' ? '' : value);
                             setOverviewDisplayCount(15);
                           }}
@@ -1928,7 +1928,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
                       <div className="space-y-2">
                         <Select
                           value={overviewSecondaryFilter || 'all-departments'}
-                          onValueChange={(value) => {
+                          onValueChange={(value: React.SetStateAction<string>) => {
                             setOverviewSecondaryFilter(value === 'all-departments' ? '' : value);
                             setOverviewDisplayCount(15);
                           }}
@@ -2840,7 +2840,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
               </Label>
               <Select
                 value={kitOrderForm.kitId}
-                onValueChange={(value) => {
+                onValueChange={(value: any) => {
                   setKitOrderForm({ ...kitOrderForm, kitId: value });
                   setKitSearchTerm('');
                 }}
@@ -2915,7 +2915,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
               <Label htmlFor="department-select">Department *</Label>
               <Select
                 value={kitOrderForm.department}
-                onValueChange={(value) => {
+                onValueChange={(value: any) => {
                   setKitOrderForm({ ...kitOrderForm, department: value });
                   setDepartmentSearchTerm('');
                 }}
@@ -2981,7 +2981,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
               <Label htmlFor="engineer-select">Engineer / Requester *</Label>
               <Select
                 value={kitOrderForm.engineer}
-                onValueChange={(value) => {
+                onValueChange={(value: any) => {
                   setKitOrderForm({ ...kitOrderForm, engineer: value });
                   setEngineerSearchTerm('');
                 }}

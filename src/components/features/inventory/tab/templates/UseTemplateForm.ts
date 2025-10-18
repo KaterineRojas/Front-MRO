@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import type { Article, Template, TemplateFormData } from './types';
 
-export function useTemplateForm(
+export function UseTemplateForm(
   articles: Article[],
-  editingTemplate: Template | null,
+  editingTemplate: Template | null | undefined,
   onSave: (data: TemplateFormData) => void
 ) {
   const [formData, setFormData] = useState<TemplateFormData>(
