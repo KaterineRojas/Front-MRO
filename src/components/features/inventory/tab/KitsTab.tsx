@@ -9,31 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, Package } from 'lucide-react';
 import { useAppDispatch } from '@/store/hooks';
 import { deleteKit } from '@/store/inventorySlice';
-
-interface KitItem {
-  articleId: number;
-  articleBinCode: string;
-  articleName: string;
-  quantity: number;
-}
-
-interface Kit {
-  id: number;
-  binCode: string;
-  name: string;
-  description: string;
-  category: string;
-  items: KitItem[];
-  imageUrl?: string;
-  status: string;
-  createdAt: string;
-}
-
-interface Article {
-  id: number;
-  binCode: string;
-  imageUrl?: string;
-}
+import type { Kit, KitItem, Article } from '../types/inventory';
 
 interface KitsTabProps {
   kits: Kit[];

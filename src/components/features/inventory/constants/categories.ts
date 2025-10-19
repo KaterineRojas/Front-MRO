@@ -1,7 +1,7 @@
 /**
  * Category options for inventory items and kits
  */
-export const CATEGORIES = [
+export const CATEGORIES: { value: string; label: string; }[] = [
   { value: 'office-supplies', label: 'Office Supplies' },
   { value: 'technology', label: 'Technology' },
   { value: 'tools', label: 'Tools' },
@@ -14,4 +14,4 @@ export const CATEGORIES = [
   { value: 'cleaning-supplies', label: 'Cleaning Supplies' },
   { value: 'construction-materials', label: 'Construction Materials' },
   { value: 'laboratory-equipment', label: 'Laboratory Equipment' }
-] as const;
+];

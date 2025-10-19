@@ -1,5 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { Article, Kit, Template } from '@/components/features/inventory/types/inventory';
+import { getTemplatesWithItems } from '@/services/templateService';
 
 export interface InventoryState {
   articles: Article[];
@@ -20,6 +21,19 @@ const initialState: InventoryState = {
   loading: false,
   error: null,
 };
+
+// Async thunks
+export const fetchTemplates = createAsyncThunk(
+  'inventory/fetchTemplates',
+  async (_, { rejectWithValue }) => {
+    try {
+      const templates = await getTemplatesWithItems();
+      return templates;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch templates');
+    }
+  }
+);
 
 const inventorySlice = createSlice({
   name: 'inventory',
@@ -107,6 +121,23 @@ const inventorySlice = createSlice({
         }
       });
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      // Fetch templates
+      .addCase(fetchTemplates.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTemplates.fulfilled, (state, action) => {
+        state.loading = false;
+        state.templates = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchTemplates.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
   },
 });
 

@@ -1,7 +1,7 @@
 import React from 'react';
-import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { CardHeader, CardTitle, CardContent } from '@/components/features/ui/card';
+import { Button } from '@/components/features/ui/button';
+import { Input } from '@/components/features/ui/input';
 import { Trash2, Package } from 'lucide-react';
 import type { SelectedItemsListProps } from './types';
 

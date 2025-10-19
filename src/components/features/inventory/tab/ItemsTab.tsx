@@ -11,25 +11,7 @@ import { Plus, Search, Edit, Trash2, Package, ChevronDown, ChevronRight } from '
 import { AddItemModal } from '../modals/AddItemModal';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addArticle, updateArticle, deleteArticle } from '@/store/inventorySlice';
-
-interface Article {
-  id: number;
-  imageUrl?: string;
-  sku: string;
-  name: string;
-  description: string;
-  category: string;
-  type: 'consumable' | 'non-consumable' | 'pending-purchase';
-  currentStock: number;
-  cost: number;
-  binCode: string;
-  unit: string;
-  supplier: string;
-  minStock: number;
-  location: string;
-  status: string;
-  createdAt: string;
-}
+import type { Article } from '../types/inventory';
 
 interface ItemsTabProps {
   articles: Article[];

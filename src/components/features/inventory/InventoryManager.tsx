@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Dialog, DialogTrigger } from '../ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -16,7 +16,6 @@ import {
   deleteKit,
   setSelectedView,
   setSelectedTemplate,
-  updateArticleStock,
 } from '@/store/inventorySlice';
 
 // Components
@@ -34,6 +33,7 @@ import type { Article, Kit, Template, ViewMode } from './types/inventory';
 // Utils & Constants
 import { getStockStatus, getStatusBadge, getTypeIcon } from './utils/badges';
 import { CATEGORIES } from './constants/categories';
+import { EditTemplatePage } from './tab/templates/EditTemplatePage';
 
 // Mock Data - TODO: Replace with API calls
 const mockArticles: Article[] = [
@@ -205,9 +205,17 @@ export function InventoryManager() {
   };
 
   const handleCreateNewTemplate = () => {
-    setEditingTemplate(null);
+    setEditingTemplate({
+      id: 0,
+      name: '',
+      description: '',
+      category: '',
+      items: [],
+      createdAt: new Date().toISOString(),
+    });
     dispatch(setSelectedView('edit-template'));
   };
+
 
   // Movement Handler
   const handleMovementRecorded = (movementData: any) => {
@@ -273,16 +281,16 @@ export function InventoryManager() {
     );
   }
 
-  // if (viewMode === 'edit-template') {
-  //   return (
-  //     <EditTemplatePage
-  //       articles={articles}
-  //       editingTemplate={editingTemplate}
-  //       onBack={handleBackToTemplates}
-  //       onSave={handleTemplateSave}
-  //     />
-  //   );
-  // }
+  if (viewMode === 'edit-template') {
+    return (
+      <EditTemplatePage
+        articles={articles}
+        editingTemplate={editingTemplate}
+        onBack={handleBackToTemplates}
+        onSave={handleTemplateSave}
+      />
+    );
+  }
 
   // Main View
   return (

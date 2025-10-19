@@ -1,10 +1,10 @@
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/features/ui/card';
+import { Input } from '@/components/features/ui/input';
+import { Label } from '@/components/features/ui/label';
+import { Textarea } from '@/components/features/ui/textarea';
+import { Button } from '@/components/features/ui/button';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/features/ui/select';
 import type { TemplateFormProps } from './types';
 
 const categories = [

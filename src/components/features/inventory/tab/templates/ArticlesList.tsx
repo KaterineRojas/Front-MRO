@@ -1,9 +1,9 @@
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/features/ui/card';
+import { Input } from '@/components/features/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/features/ui/select';
+import { Button } from '@/components/features/ui/button';
+import { Badge } from '@/components/features/ui/badge';
 import { Search, Plus, Package } from 'lucide-react';
 import type { ArticlesListProps } from './types';
 

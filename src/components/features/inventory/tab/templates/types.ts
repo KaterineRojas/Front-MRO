@@ -1,15 +1,28 @@
+import type { ItemType, StatusType, CategoryType } from '../../types/inventory';
+
 export interface Article {
-  id: string;
+  id: number;
   sku: string;
   name: string;
   description?: string;
   binCode?: string;
   imageUrl?: string;
-  category?: string;
+  category?: string | CategoryType;
+  type?: ItemType;
+  currentStock?: number;
+  cost?: number;
+  unit?: string;
+  supplier?: string;
+  minStock?: number;
+  location?: string;
+  status?: string | StatusType;
+  createdAt?: string;
 }
 
 export interface TemplateItem {
-  articleId: string;
+  articleId: number;
+  articleBinCode: string;
+  articleName: string;
   quantity: number;
 }
 
@@ -21,7 +34,8 @@ export interface TemplateFormData {
 }
 
 export interface Template extends TemplateFormData {
-  id: string;
+  id: number;
+  createdAt: string;
 }
 
 export interface EditTemplatePageProps {

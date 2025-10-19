@@ -7,52 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from './features/ui/textarea';
 import { Badge } from './features/ui/badge';
 import { ArrowLeft, Search, Plus, X, Package } from 'lucide-react';
-
-interface Article {
-  id: number;
-  binCode: string;
-  name: string;
-  description: string;
-  category: 'office-supplies' | 'technology' | 'tools' | 'clothing' | 'electronics' | 'furniture' | 'vehicles' | 'safety-equipment' | 'medical-supplies' | 'cleaning-supplies' | 'construction-materials' | 'laboratory-equipment';
-  type: 'consumable' | 'non-consumable' | 'pending-purchase';
-  unit: string;
-  cost: number;
-  supplier: string;
-  currentStock: number;
-  minStock: number;
-  location: string;
-  imageUrl?: string;
-  status: 'good-condition' | 'on-revision' | 'scrap' | 'repaired';
-  createdAt: string;
-}
-
-interface KitItem {
-  articleId: number;
-  articleBinCode: string;
-  articleName: string;
-  quantity: number;
-}
-
-interface Kit {
-  id: number;
-  binCode: string;
-  name: string;
-  description: string;
-  category: 'office-supplies' | 'technology' | 'tools' | 'clothing' | 'electronics' | 'furniture' | 'vehicles' | 'safety-equipment' | 'medical-supplies' | 'cleaning-supplies' | 'construction-materials' | 'laboratory-equipment';
-  items: KitItem[];
-  imageUrl?: string;
-  status: 'good-condition' | 'on-revision' | 'scrap' | 'repaired';
-  createdAt: string;
-}
-
-interface Template {
-  id: number;
-  name: string;
-  description: string;
-  category: string;
-  items: KitItem[];
-  createdAt: string;
-}
+import type { Article, Kit, KitItem, Template } from './features/inventory/types/inventory';
 
 interface CreateKitPageProps {
   articles: Article[];
