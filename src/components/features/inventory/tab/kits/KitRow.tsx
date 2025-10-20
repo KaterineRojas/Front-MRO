@@ -40,18 +40,16 @@ export function KitRow({
             )}
             <div>
               <p className="font-medium">{kit.name}</p>
-              <p className="text-sm text-muted-foreground">{kit.binCode}</p>
+              <p className="text-xs text-muted-foreground">{kit.binCode}</p>
             </div>
           </div>
+        </TableCell>
+        <TableCell className="max-w-xs">
+          <p className="text-sm line-clamp-2">{kit.description || '-'}</p>
         </TableCell>
         <TableCell>{categories.find((c) => c.value === kit.category)?.label}</TableCell>
         <TableCell>
           <Badge variant="outline">{kit.items.length} items</Badge>
-        </TableCell>
-        <TableCell>
-          <Badge className="bg-green-600">
-            {kit.status === 'good-condition' ? 'Good Condition' : kit.status}
-          </Badge>
         </TableCell>
         <TableCell className="text-right">
           <div className="flex justify-end space-x-2">
@@ -84,12 +82,6 @@ export function KitRow({
         <TableRow>
           <TableCell colSpan={6} className="bg-muted/30 p-0">
             <div className="p-4">
-              {kit.description && (
-                <div className="mb-4">
-                  <p className="text-sm text-muted-foreground mb-1">Description</p>
-                  <p>{kit.description}</p>
-                </div>
-              )}
               <h4 className="flex items-center mb-3">
                 <Package className="h-4 w-4 mr-2" />
                 Items in this kit
@@ -99,20 +91,20 @@ export function KitRow({
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-20">Image</TableHead>
-                      <TableHead>BIN Code</TableHead>
-                      <TableHead>Name</TableHead>
+                      <TableHead>Sku</TableHead>
+                      <TableHead>Name & Description</TableHead>
                       <TableHead>Quantity</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {kit.items.map((item, index) => {
-                      const article = articles.find((a) => a.binCode === item.articleBinCode);
+                      const article = articles.find((a) => a.binCode === item.articleSku);
                       return (
                         <TableRow key={index}>
                           <TableCell>
-                            {article?.imageUrl ? (
+                            {article?.imageUrl || item.imageUrl ? (
                               <img
-                                src={article.imageUrl}
+                                src={article?.imageUrl || item.imageUrl}
                                 alt={item.articleName}
                                 className="w-12 h-12 object-cover rounded"
                               />
@@ -122,8 +114,15 @@ export function KitRow({
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="font-mono">{item.articleBinCode}</TableCell>
-                          <TableCell>{item.articleName}</TableCell>
+                          <TableCell className="font-mono">{item.articleSku}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{item.articleName}</p>
+                              {item.articleDescription && (
+                                <p className="text-sm text-muted-foreground">{item.articleDescription}</p>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <Badge variant="outline">x{item.quantity}</Badge>
                           </TableCell>

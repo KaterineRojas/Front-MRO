@@ -1,16 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
-import { Plus, Package } from 'lucide-react';
-import { useAppDispatch } from '@/store/hooks';
-import { deleteKit } from '@/store/inventorySlice';
+import { Plus, Package, Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '../../../ui/alert';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { deleteKit, fetchKits } from '@/store/inventorySlice';
 import { KitFilters } from './KitFilters';
 import { KitTable } from './KitTable';
 import { UseKitFilters } from './UseKitFilters';
 import type { KitsTabProps } from './types';
 
 export function KitsTab({
-  kits,
   articles = [],
   categories,
   onCreateKit,
@@ -20,6 +20,12 @@ export function KitsTab({
 }: KitsTabProps) {
   // Redux
   const dispatch = useAppDispatch();
+  const { kits, loading, error } = useAppSelector((state) => state.inventory);
+
+  // Fetch kits on component mount
+  useEffect(() => {
+    dispatch(fetchKits());
+  }, [dispatch]);
 
   // Custom hook for filters and state
   const {
@@ -63,15 +69,29 @@ export function KitsTab({
           categories={categories}
         />
 
-        <KitTable
-          kits={filteredKits}
-          articles={articles}
-          categories={categories}
-          expandedKits={expandedKits}
-          onToggleExpand={handleToggleExpandKit}
-          onEditKit={onEditKit}
-          onDeleteKit={handleDeleteKit}
-        />
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">Loading kits...</span>
+          </div>
+        ) : (
+          <KitTable
+            kits={filteredKits}
+            articles={articles}
+            categories={categories}
+            expandedKits={expandedKits}
+            onToggleExpand={handleToggleExpandKit}
+            onEditKit={onEditKit}
+            onDeleteKit={handleDeleteKit}
+          />
+        )}
       </CardContent>
     </Card>
   );

@@ -1,7 +1,6 @@
 import type { Kit, Article, KitItem } from '../../types/inventory';
 
 export interface KitsTabProps {
-  kits: Kit[];
   articles?: Article[];
   categories: { value: string; label: string }[];
   onCreateKit: () => void;

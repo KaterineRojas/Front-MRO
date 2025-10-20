@@ -130,9 +130,7 @@ export function InventoryManager() {
     if (articles.length === 0) {
       dispatch(setArticles(mockArticles));
     }
-    if (kits.length === 0) {
-      dispatch(setKits(mockKits));
-    }
+    // Kits are now loaded from API via fetchKits() in KitsTab
   }, [dispatch]);
 
   // Article Handlers
@@ -400,7 +398,6 @@ export function InventoryManager() {
         {/* Kits Tab */}
         <TabsContent value="kits">
           <KitsTab
-            kits={kits}
             articles={articles}
             categories={CATEGORIES}
             onCreateKit={handleKitCreate}

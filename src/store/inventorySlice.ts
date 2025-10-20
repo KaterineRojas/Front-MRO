@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { Article, Kit, Template } from '@/components/features/inventory/types/inventory';
+import type { Article, Template } from '@/components/features/inventory/types/inventory';
+import type { Kit } from '@/services/kitsService';
 import { getTemplatesWithItems, deleteTemplate as deleteTemplateAPI } from '@/services/templateService';
+import { getKitsWithItems } from '@/services/kitsService';
 
 export interface InventoryState {
   articles: Article[];
@@ -43,6 +45,18 @@ export const deleteTemplateAsync = createAsyncThunk(
       return id;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to delete template');
+    }
+  }
+);
+
+export const fetchKits = createAsyncThunk(
+  'inventory/fetchKits',
+  async (_, { rejectWithValue }) => {
+    try {
+      const kits = await getKitsWithItems();
+      return kits;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch kits');
     }
   }
 );
@@ -161,6 +175,20 @@ const inventorySlice = createSlice({
         state.error = null;
       })
       .addCase(deleteTemplateAsync.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Fetch kits
+      .addCase(fetchKits.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchKits.fulfilled, (state, action) => {
+        state.loading = false;
+        state.kits = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchKits.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
