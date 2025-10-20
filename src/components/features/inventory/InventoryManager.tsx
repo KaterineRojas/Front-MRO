@@ -19,11 +19,11 @@ import {
 } from '@/store/inventorySlice';
 
 // Components
-import { ItemsTab } from './tab/ItemsTab';
-import { KitsTab } from './tab/KitsTab';
+import { ItemsTab } from './tab/items/ItemsTab';
+import { KitsTab } from './tab/kits/KitsTab';
 import { TemplateManager } from './tab/templates/TemplateManager';
-import { BinManager } from './tab/BinManager';
-import { InventoryMovements } from './tab/InventoryMovements';
+import { BinManager } from './tab/bins/BinManager';
+import { InventoryMovements } from './tab/transactions/InventoryMovements';
 import { CreateKitPage } from '../../CreateKitPage';
 import { RecordMovementModal } from './modals/RecordMovementModal';
 

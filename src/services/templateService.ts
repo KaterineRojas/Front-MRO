@@ -9,8 +9,9 @@ const API_URL = 'http://localhost:5044/api';
 function transformTemplateItem(apiItem: TemplateItemResponse): KitItem {
   return {
     articleId: apiItem.id,
-    articleBinCode: apiItem.sku,
+    articleSku: apiItem.sku,
     articleName: apiItem.name,
+    articleUrlImage: apiItem.imageUrl,
     quantity: apiItem.quantity,
   };
 }
