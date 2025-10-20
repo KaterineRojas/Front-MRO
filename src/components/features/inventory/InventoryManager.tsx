@@ -29,7 +29,7 @@ import { RecordMovementModal } from './modals/RecordMovementModal';
 
 // Types
 import type { Article, Kit, Template, ViewMode } from './types/inventory';
-import type { TemplateFormData } from './tab/templates/types';
+import type { TemplateFormData, CreateTemplateRequest, UpdateTemplateRequest } from './tab/templates/types';
 
 // Utils & Constants
 import { getStockStatus, getStatusBadge, getTypeIcon } from './utils/badges';
@@ -37,7 +37,7 @@ import { CATEGORIES } from './constants/categories';
 import { EditTemplatePage } from './tab/templates/EditTemplatePage';
 
 // Services
-import { createTemplate, updateTemplate, type CreateTemplateRequest, type UpdateTemplateRequest } from '@/services/templateService';
+import { createTemplate, updateTemplate } from '@/services/templateService';
 import { fetchTemplates } from '@/store/inventorySlice';
 
 // Mock Data - TODO: Replace with API calls

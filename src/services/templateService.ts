@@ -1,5 +1,6 @@
 // src/services/templateService.ts
 import type { TemplateResponse, TemplateItemResponse, Template, KitItem } from '@/components/features/inventory/types/inventory';
+import type { CreateTemplateRequest, UpdateTemplateRequest } from '@/components/features/inventory/tab/templates/types';
 
 const API_URL = 'http://localhost:5044/api';
 
@@ -78,31 +79,6 @@ export async function getTemplateById(id: number): Promise<Template> {
     console.error(`Error fetching template ${id}:`, error);
     throw error;
   }
-}
-
-/**
- * Request body for creating a new template
- */
-export interface CreateTemplateRequest {
-  templateName: string;
-  description: string;
-  items: {
-    itemId: number;
-    quantity: number;
-  }[];
-}
-
-/**
- * Request body for updating an existing template
- */
-export interface UpdateTemplateRequest {
-  templateName: string;
-  description: string;
-  isActive: boolean;
-  items: {
-    id: number;
-    quantity: number;
-  }[];
 }
 
 /**

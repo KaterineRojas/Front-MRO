@@ -64,3 +64,28 @@ export interface SelectedItemsListProps {
   updateItemQuantity: (articleId: number, quantity: number) => void;
   removeItemFromTemplate: (articleId: number) => void;
 }
+
+/**
+ * Request body for creating a new template
+ */
+export interface CreateTemplateRequest {
+  templateName: string;
+  description: string;
+  items: {
+    itemId: number;
+    quantity: number;
+  }[];
+}
+
+/**
+ * Request body for updating an existing template
+ */
+export interface UpdateTemplateRequest {
+  templateName: string;
+  description: string;
+  isActive: boolean;
+  items: {
+    id: number;
+    quantity: number;
+  }[];
+}
