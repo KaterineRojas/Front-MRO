@@ -21,15 +21,12 @@ export interface Article {
 
 export interface TemplateItem {
   articleId: number;
-  articleBinCode: string;
-  articleName: string;
   quantity: number;
 }
 
 export interface TemplateFormData {
   name: string;
   description?: string;
-  category: string;
   items: TemplateItem[];
 }
 
@@ -39,7 +36,6 @@ export interface Template extends TemplateFormData {
 }
 
 export interface EditTemplatePageProps {
-  articles: Article[];
   editingTemplate?: Template | null;
   onBack: () => void;
   onSave: (data: TemplateFormData) => void;
@@ -65,6 +61,6 @@ export interface ArticlesListProps {
 export interface SelectedItemsListProps {
   formData: TemplateFormData;
   articles: Article[];
-  updateItemQuantity: (articleId: string, quantity: number) => void;
-  removeItemFromTemplate: (articleId: string) => void;
+  updateItemQuantity: (articleId: number, quantity: number) => void;
+  removeItemFromTemplate: (articleId: number) => void;
 }

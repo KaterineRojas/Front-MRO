@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { Article, Kit, Template } from '@/components/features/inventory/types/inventory';
-import { getTemplatesWithItems } from '@/services/templateService';
+import { getTemplatesWithItems, deleteTemplate as deleteTemplateAPI } from '@/services/templateService';
 
 export interface InventoryState {
   articles: Article[];
@@ -31,6 +31,18 @@ export const fetchTemplates = createAsyncThunk(
       return templates;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch templates');
+    }
+  }
+);
+
+export const deleteTemplateAsync = createAsyncThunk(
+  'inventory/deleteTemplate',
+  async (id: number, { rejectWithValue }) => {
+    try {
+      await deleteTemplateAPI(id);
+      return id;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to delete template');
     }
   }
 );
@@ -135,6 +147,20 @@ const inventorySlice = createSlice({
         state.error = null;
       })
       .addCase(fetchTemplates.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Delete template
+      .addCase(deleteTemplateAsync.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteTemplateAsync.fulfilled, (state, action) => {
+        state.loading = false;
+        state.templates = state.templates.filter(t => t.id !== action.payload);
+        state.error = null;
+      })
+      .addCase(deleteTemplateAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

@@ -4,7 +4,9 @@
       "Bash(npm run build:*)",
       "Bash(npm install:*)",
       "Bash(mkdir:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(npx tsc:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

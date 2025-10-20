@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Search, Edit, Trash2, Package, Copy, ChevronDown, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
 import type { Article, Template } from '../../types/inventory';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchTemplates, deleteTemplate as deleteTemplateAction } from '@/store/inventorySlice';
+import { fetchTemplates, deleteTemplateAsync } from '@/store/inventorySlice';
 import { Alert, AlertDescription } from '../../../ui/alert';
 
 
@@ -56,8 +56,14 @@ export function TemplateManager({ articles, onCreateKitFromTemplate, onEditTempl
   });
 
 
-  const handleDeleteTemplate = (id: number) => {
-    dispatch(deleteTemplateAction(id));
+  const handleDeleteTemplate = async (id: number) => {
+    try {
+      await dispatch(deleteTemplateAsync(id)).unwrap();
+      // Template deleted successfully, state is already updated by the reducer
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      alert(`Failed to delete template: ${error instanceof Error ? error : 'Unknown error'}`);
+    }
   };
 
   const handleEdit = (template: Template) => {

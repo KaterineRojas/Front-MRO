@@ -1,14 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/features/ui/button'
 import { Card } from '@/components/features/ui/card';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/features/ui/alert';
 import { TemplateForm } from './TemplateForm';
 import { ArticlesList } from './ArticlesList';
 import { SelectedItemsList } from './SelectedItemsList';
 import { UseTemplateForm } from './UseTemplateForm';
 import type { EditTemplatePageProps } from './types';
+import type { Article } from './types';
+import { getItems } from '@/services/inventarioService';
 
-export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: EditTemplatePageProps) {
+export function EditTemplatePage({ editingTemplate, onBack, onSave }: EditTemplatePageProps) {
+  // State for loading items from API
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load items from API on mount
+  useEffect(() => {
+    async function loadItems() {
+      try {
+        setLoading(true);
+        setError(null);
+        const items = await getItems();
+        setArticles(items);
+      } catch (err) {
+        console.error('Error loading items:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load items');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadItems();
+  }, []);
+
   const {
     formData,
     setFormData,
@@ -23,7 +50,9 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
     setCategoryFilter,
   } = UseTemplateForm(articles, editingTemplate, onSave);
 
-  const pageTitle = editingTemplate ? 'Edit Template' : 'Create New Template';
+  // Check if we're editing an existing template (id > 0) or creating a new one (id === 0 or null)
+  const isEditing = editingTemplate && editingTemplate.id > 0;
+  const pageTitle = isEditing ? 'Edit Template' : 'Create New Template';
 
   return (
     <div className="space-y-6">
@@ -37,7 +66,7 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
           <div>
             <h1 className="text-lg font-semibold">{pageTitle}</h1>
             <p className="text-muted-foreground text-sm">
-              {editingTemplate
+              {isEditing
                 ? 'Update the template information and items below.'
                 : 'Create a reusable template for kits.'}
             </p>
@@ -45,13 +74,29 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
         </div>
       </div>
 
-      {/* Form + Articles */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Loading items...</span>
+        </div>
+      ) : (
+        <>
+          {/* Form + Articles */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TemplateForm
           formData={formData}
           setFormData={setFormData}
           handleSubmit={handleSubmit}
-          editing={!!editingTemplate}
+          editing={isEditing}
         />
 
         <ArticlesList
@@ -65,16 +110,18 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
         />
       </div>
 
-      {/* Selected Items */}
-      {formData.items.length > 0 && (
-        <Card>
-          <SelectedItemsList
-            formData={formData}
-            articles={articles}
-            updateItemQuantity={updateItemQuantity}
-            removeItemFromTemplate={removeItemFromTemplate}
-          />
-        </Card>
+          {/* Selected Items */}
+          {formData.items.length > 0 && (
+            <Card>
+              <SelectedItemsList
+                formData={formData}
+                articles={articles}
+                updateItemQuantity={updateItemQuantity}
+                removeItemFromTemplate={removeItemFromTemplate}
+              />
+            </Card>
+          )}
+        </>
       )}
     </div>
   );

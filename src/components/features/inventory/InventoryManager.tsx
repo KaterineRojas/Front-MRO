@@ -29,11 +29,16 @@ import { RecordMovementModal } from './modals/RecordMovementModal';
 
 // Types
 import type { Article, Kit, Template, ViewMode } from './types/inventory';
+import type { TemplateFormData } from './tab/templates/types';
 
 // Utils & Constants
 import { getStockStatus, getStatusBadge, getTypeIcon } from './utils/badges';
 import { CATEGORIES } from './constants/categories';
 import { EditTemplatePage } from './tab/templates/EditTemplatePage';
+
+// Services
+import { createTemplate, updateTemplate, type CreateTemplateRequest, type UpdateTemplateRequest } from '@/services/templateService';
+import { fetchTemplates } from '@/store/inventorySlice';
 
 // Mock Data - TODO: Replace with API calls
 const mockArticles: Article[] = [
@@ -197,11 +202,50 @@ export function InventoryManager() {
     setEditingTemplate(null);
   };
 
-  const handleTemplateSave = (templateData: Omit<Template, 'id' | 'createdAt'>) => {
-    console.log('Saving template:', templateData);
-    dispatch(setSelectedView('templates'));
-    setEditingTemplate(null);
-    alert(editingTemplate ? 'Template updated successfully!' : 'Template created successfully!');
+  const handleTemplateSave = async (templateData: TemplateFormData) => {
+    try {
+      // Check if we're creating or updating
+      const isEditing = editingTemplate && editingTemplate.id > 0;
+
+      if (isEditing) {
+        // Transform TemplateFormData to UpdateTemplateRequest format
+        const updateData: UpdateTemplateRequest = {
+          templateName: templateData.name,
+          description: templateData.description || '',
+          isActive: true,
+          items: templateData.items.map(item => ({
+            id: item.articleId,
+            quantity: item.quantity,
+          })),
+        };
+
+        await updateTemplate(editingTemplate.id, updateData);
+        alert('Template updated successfully!');
+      } else {
+        // Transform TemplateFormData to CreateTemplateRequest format
+        const createData: CreateTemplateRequest = {
+          templateName: templateData.name,
+          description: templateData.description || '',
+          items: templateData.items.map(item => ({
+            itemId: item.articleId,
+            quantity: item.quantity,
+          })),
+        };
+
+        await createTemplate(createData);
+        alert('Template created successfully!');
+      }
+
+      // Reload templates from the server
+      dispatch(fetchTemplates());
+
+      // Return to templates view
+      dispatch(setSelectedView('templates'));
+      setEditingTemplate(null);
+    } catch (error) {
+      console.error('Error saving template:', error);
+      alert(`Failed to save template: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleCreateNewTemplate = () => {
@@ -209,7 +253,6 @@ export function InventoryManager() {
       id: 0,
       name: '',
       description: '',
-      category: '',
       items: [],
       createdAt: new Date().toISOString(),
     });
@@ -284,7 +327,6 @@ export function InventoryManager() {
   if (viewMode === 'edit-template') {
     return (
       <EditTemplatePage
-        articles={articles}
         editingTemplate={editingTemplate}
         onBack={handleBackToTemplates}
         onSave={handleTemplateSave}

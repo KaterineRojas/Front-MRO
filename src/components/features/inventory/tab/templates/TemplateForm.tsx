@@ -4,23 +4,7 @@ import { Input } from '@/components/features/ui/input';
 import { Label } from '@/components/features/ui/label';
 import { Textarea } from '@/components/features/ui/textarea';
 import { Button } from '@/components/features/ui/button';
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/features/ui/select';
 import type { TemplateFormProps } from './types';
-
-const categories = [
-  { value: 'office-supplies', label: 'Office Supplies' },
-  { value: 'technology', label: 'Technology' },
-  { value: 'tools', label: 'Tools' },
-  { value: 'clothing', label: 'Clothing' },
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'furniture', label: 'Furniture' },
-  { value: 'vehicles', label: 'Vehicles' },
-  { value: 'safety-equipment', label: 'Safety Equipment' },
-  { value: 'medical-supplies', label: 'Medical Supplies' },
-  { value: 'cleaning-supplies', label: 'Cleaning Supplies' },
-  { value: 'construction-materials', label: 'Construction Materials' },
-  { value: 'laboratory-equipment', label: 'Laboratory Equipment' },
-];
 
 export function TemplateForm({ formData, setFormData, handleSubmit, editing }: TemplateFormProps) {
   return (
@@ -50,25 +34,6 @@ export function TemplateForm({ formData, setFormData, handleSubmit, editing }: T
               placeholder="Template description..."
               rows={3}
             />
-          </div>
-
-          <div>
-            <Label htmlFor="category">Category *</Label>
-            <Select
-              value={formData.category}
-              onValueChange={(value) => setFormData({ ...formData, category: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="pt-4">

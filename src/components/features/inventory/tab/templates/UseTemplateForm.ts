@@ -10,7 +10,6 @@ export function UseTemplateForm(
     editingTemplate ?? {
       name: '',
       description: '',
-      category: '',
       items: [],
     }
   );
@@ -39,7 +38,7 @@ export function UseTemplateForm(
     }
   };
 
-  const updateItemQuantity = (articleId: string, quantity: number) => {
+  const updateItemQuantity = (articleId: number, quantity: number) => {
     setFormData({
       ...formData,
       items: formData.items.map((item) =>
@@ -48,7 +47,7 @@ export function UseTemplateForm(
     });
   };
 
-  const removeItemFromTemplate = (articleId: string) => {
+  const removeItemFromTemplate = (articleId: number) => {
     setFormData({
       ...formData,
       items: formData.items.filter((item) => item.articleId !== articleId),

@@ -11,7 +11,7 @@ function transformTemplateItem(apiItem: TemplateItemResponse): KitItem {
     articleId: apiItem.id,
     articleSku: apiItem.sku,
     articleName: apiItem.name,
-    articleUrlImage: apiItem.imageUrl,
+    imageUrl: apiItem.imageUrl,
     quantity: apiItem.quantity,
   };
 }
@@ -37,7 +37,7 @@ function transformTemplate(apiTemplate: TemplateResponse): Template {
  */
 export async function getTemplatesWithItems(): Promise<Template[]> {
   try {
-    const response = await fetch(`${API_URL}/KitTemplates/with-items`, {
+    const response = await fetch(`${API_URL}/KitTemplates/with-items?isActive=true`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -76,6 +76,102 @@ export async function getTemplateById(id: number): Promise<Template> {
     return transformTemplate(data);
   } catch (error) {
     console.error(`Error fetching template ${id}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Request body for creating a new template
+ */
+export interface CreateTemplateRequest {
+  templateName: string;
+  description: string;
+  items: {
+    itemId: number;
+    quantity: number;
+  }[];
+}
+
+/**
+ * Request body for updating an existing template
+ */
+export interface UpdateTemplateRequest {
+  templateName: string;
+  description: string;
+  isActive: boolean;
+  items: {
+    id: number;
+    quantity: number;
+  }[];
+}
+
+/**
+ * Creates a new kit template
+ */
+export async function createTemplate(templateData: CreateTemplateRequest): Promise<Template> {
+  try {
+    const response = await fetch(`${API_URL}/KitTemplates`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(templateData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create template: ${response.status} ${response.statusText}`);
+    }
+
+    const data: TemplateResponse = await response.json();
+    return transformTemplate(data);
+  } catch (error) {
+    console.error('Error creating template:', error);
+    throw error;
+  }
+}
+
+/**
+ * Updates an existing kit template
+ */
+export async function updateTemplate(id: number, templateData: UpdateTemplateRequest): Promise<Template> {
+  try {
+    const response = await fetch(`${API_URL}/KitTemplates/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(templateData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update template: ${response.status} ${response.statusText}`);
+    }
+
+    const data: TemplateResponse = await response.json();
+    return transformTemplate(data);
+  } catch (error) {
+    console.error(`Error updating template ${id}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Deletes a kit template by ID
+ */
+export async function deleteTemplate(id: number): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/KitTemplates/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete template: ${response.status} ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error(`Error deleting template ${id}:`, error);
     throw error;
   }
 }
