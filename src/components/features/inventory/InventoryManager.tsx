@@ -20,7 +20,7 @@ import {
   fetchTransactions,
   createArticleAsync,
   updateArticleAsync,
-  deleteArticle,
+  deleteArticleAsync,
   createKitAsync,
   updateKitAsync,
   deleteKit,
@@ -74,7 +74,7 @@ const handleCreateItem = async(articleData: {
   };
 
   const handleDeleteItem = (id: number) => {
-    dispatch(deleteArticle(id));
+    dispatch(deleteArticleAsync(id));
   };
 
   const handleCreateKit = () => {

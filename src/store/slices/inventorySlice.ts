@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { Article, Kit, Template, Bin, Transaction, MovementData } from '../../components/features/inventory/types';
+import { deleteArticleApi } from '../../components/features/inventory/services/inventoryApi';
 import { 
   fetchArticlesFromApi, 
   fetchKitsFromApi, 
@@ -92,6 +93,14 @@ export const updateArticleAsync = createAsyncThunk(
   async ({ id, data }: { id: number; data: Partial<Article> }) => {
     const updatedArticle = await updateArticleApi(id, data);
     return { id, data };
+  }
+);
+
+export const deleteArticleAsync = createAsyncThunk(
+  'inventory/deleteArticle',
+  async (id: number) => {
+    await deleteArticleApi(id);
+    return id;
   }
 );
 
@@ -276,6 +285,21 @@ const inventorySlice = createSlice({
       state.loading = false;
       state.error = action.error.message || 'Failed to fetch articles';
     });
+
+    // Delete article
+builder.addCase(deleteArticleAsync.pending, (state) => {
+  state.loading = true;
+  state.error = null;
+});
+builder.addCase(deleteArticleAsync.fulfilled, (state, action) => {
+  state.loading = false;
+  //  Eliminar el artículo del estado local
+  state.articles = state.articles.filter(article => article.id !== action.payload);
+});
+builder.addCase(deleteArticleAsync.rejected, (state, action) => {
+  state.loading = false;
+  state.error = action.error.message || 'Failed to delete article';
+});
 
     // Fetch kits
     builder.addCase(fetchKits.pending, (state) => {
@@ -521,7 +545,6 @@ const inventorySlice = createSlice({
 export const {
   createArticle,
   updateArticle,
-  deleteArticle,
   createKit,
   updateKit,
   deleteKit,

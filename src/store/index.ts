@@ -38,7 +38,7 @@ export {
   fetchKits,
   createArticle,
   updateArticle,
-  deleteArticle,
+  deleteArticleAsync,
   createKit,
   updateKit,
   deleteKit,

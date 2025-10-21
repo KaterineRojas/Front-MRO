@@ -323,7 +323,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
  */
 export async function fetchArticlesFromApi(): Promise<Article[]> {
   try {
-    const response = await fetch(`${API_URL}/Inventory/items-with-bins`, {
+    const response = await fetch(`${API_URL}/Inventory/items-with-bins?isActive=true`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -498,6 +498,32 @@ export async function updateArticleApi(id: number, data: Partial<Article>): Prom
   // Return the updated article (in reality, the backend would return the full updated object)
   return { id, ...data } as Article;
 }
+
+/**
+ * ***************************************************************************************************
+ * Deletes an article/item from the API
+ */
+export async function deleteArticleApi(id: number): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/Items/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to delete item: ${response.status} - ${errorText}`);
+    }
+
+    console.log('API: Article deleted successfully', { id });
+  } catch (error) {
+    console.error('Error deleting article:', error);
+    throw error;
+  }
+}
+
 
 /**
  * Simulates creating a kit in the API
