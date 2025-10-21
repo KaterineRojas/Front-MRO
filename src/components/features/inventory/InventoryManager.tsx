@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 import { ArrowUpDown } from 'lucide-react';
-import { CreateKitPage } from './tabs/CreateKitPage';
-import { EditTemplatePage } from '../../EditTemplatePage';
+import { CreateKitPage } from './modals/CreateKitPage';
+import { EditTemplatePage } from './components/EditTemplatePage';
 import { RecordMovementModal } from './modals/RecordMovementModal';
 import { ItemsTab } from './tabs/ItemsTab';
 import { KitsTab } from './tabs/KitsTab';
@@ -49,10 +49,26 @@ export function InventoryManager() {
     dispatch(fetchTransactions());
   }, [dispatch]);
 
-  const handleCreateItem = (articleData: Omit<Article, 'id' | 'createdAt' | 'currentStock' | 'location' | 'status'>) => {
-    dispatch(createArticleAsync(articleData));
-  };
 
+const handleCreateItem = async(articleData: {
+  name: string;
+  description: string;
+  category: string;
+  unit: string;
+  minStock: number;
+  consumable: boolean;
+  imageFile?: File | null;
+}) => {
+  try {
+    await dispatch(createArticleAsync(articleData)).unwrap();
+    // ✅ Recargar todos los artículos desde el API después de crear
+    await dispatch(fetchArticles()).unwrap();
+    alert('Item created successfully!');
+  } catch (error) {
+    console.error('Failed to create article:', error);
+    alert('Failed to create item. Please try again.');
+  }
+};
   const handleUpdateItem = (id: number, articleData: Omit<Article, 'id' | 'createdAt' | 'currentStock' | 'location' | 'status'>) => {
     dispatch(updateArticleAsync({ id, data: articleData }));
   };

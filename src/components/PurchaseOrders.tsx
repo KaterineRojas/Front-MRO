@@ -72,7 +72,7 @@ const mockPurchaseOrders: PurchaseOrder[] = [
       {
         id: 1,
         articleCode: 'OFF-001',
-        articleDescription: 'Office Paper A4 - 80gsm',
+        articleDescription: 'Office Paper A411 - 80gsm',
         quantity: 1000,
         unit: 'sheets',
         unitCost: 0.02,

@@ -38,7 +38,7 @@ interface Article {
 const mockArticles: Article[] = [
   {
     code: 'OFF-001',
-    description: 'Office Paper A4 - 80gsm',
+    description: 'Office Paper A4 ..- 80gsm',
     category: 'consumable',
     currentStock: 2500,
     unit: 'sheets',

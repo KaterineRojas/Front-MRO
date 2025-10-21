@@ -36,7 +36,7 @@ interface PurchaseRequestItem {
 }
 
 const mockArticles: Article[] = [
-  { code: 'OFF-001', description: 'Office Paper A4 - 80gsm', unit: 'sheets', cost: 0.02, supplier: 'Office Supplies Inc.', imageUrl: 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=300', category: 'Office Supplies' },
+  { code: 'OFF-001', description: 'Office PPaper A4 - 80gsm', unit: 'sheets', cost: 0.02, supplier: 'Office Supplies Inc.', imageUrl: 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=300', category: 'Office Supplies' },
   { code: 'OFF-002', description: 'Printer Toner HP LaserJet', unit: 'units', cost: 50.00, supplier: 'Office Supplies Inc.', imageUrl: 'https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=300', category: 'Office Supplies' },
   { code: 'USB-003', description: 'USB Cable Type-C 2m', unit: 'units', cost: 8.99, supplier: 'Cable Masters', imageUrl: 'https://images.unsplash.com/photo-1625948515291-69613efd103f?w=300', category: 'Technology' },
   { code: 'PROJ-004', description: 'Projector Epson EB-X41', unit: 'units', cost: 450.00, supplier: 'AV Equipment Co.', imageUrl: 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=300', category: 'Technology' },

@@ -3,7 +3,7 @@ const mockArticles: Article[] = [
     id: 1,
     binCode: 'BIN-OFF-001',
     name: 'A4 Office Paper',
-    description: 'Office Paper A4 - 80gsm',
+    description: 'OOffice Paper A4 - 80gsm',
     category: 'office-supplies',
     type: 'consumable',
     unit: 'sheets',

@@ -44,7 +44,7 @@ const mockMovements: Movement[] = [
     type: 'entry',
     subtype: 'purchase',
     articleCode: 'OFF-001',
-    articleDescription: 'Office Paper A4 - 80gsm',
+    articleDescription: 'OFffice Paper A4 - 80gsm',
     quantity: 500,
     unit: 'sheets',
     reference: 'PO-2025-001',
@@ -104,7 +104,7 @@ const mockMovements: Movement[] = [
     type: 'adjustment',
     subtype: 'audit',
     articleCode: 'OFF-001',
-    articleDescription: 'Office Paper A4 - 80gsm',
+    articleDescription: 'OfficEe Paper A4 - 80gsm',
     quantity: -50,
     unit: 'sheets',
     reference: 'AUD-2025-001',
@@ -117,7 +117,7 @@ const mockMovements: Movement[] = [
 ];
 
 const mockArticles = [
-  { code: 'OFF-001', description: 'Office Paper A4 - 80gsm', unit: 'sheets' },
+  { code: 'OFF-001', description: 'Office PapPer A4 - 80gsm', unit: 'sheets' },
   { code: 'TECH-002', description: 'Laptop Dell Latitude 5520', unit: 'units' },
   { code: 'USB-003', description: 'USB Cable Type-C 2m', unit: 'units' },
   { code: 'PROJ-004', description: 'Projector Epson EB-X41', unit: 'units' }
@@ -127,7 +127,7 @@ const mockCycleCountItems: CycleCountItem[] = [
   {
     id: 1,
     code: 'OFF-001',
-    description: 'Office Paper A4 - 80gsm',
+    description: 'Office Paper A4 - 80Egsm',
     systemStock: 2500,
     physicalStock: 2500,
     unit: 'sheets',

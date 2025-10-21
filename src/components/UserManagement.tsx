@@ -18,7 +18,7 @@ interface User {
   isActive: boolean;
   lastLogin?: string;
   createdAt: string;
-}
+}  
 
 const mockUsers: User[] = [
   {

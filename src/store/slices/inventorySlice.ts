@@ -340,7 +340,7 @@ const inventorySlice = createSlice({
     });
     builder.addCase(createArticleAsync.fulfilled, (state, action) => {
       state.loading = false;
-      state.articles.push(action.payload);
+      //state.articles.push(action.payload);
     });
     builder.addCase(createArticleAsync.rejected, (state, action) => {
       state.loading = false;

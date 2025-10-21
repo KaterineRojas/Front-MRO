@@ -13,8 +13,8 @@ import { CATEGORIES } from '../constants';
 
 interface ItemsTabProps {
   articles: Article[];
-  onCreateItem: (articleData: Omit<Article, 'id' | 'createdAt' | 'currentStock' | 'location' | 'status'>) => void;
-  onUpdateItem: (id: number, articleData: Omit<Article, 'id' | 'createdAt' | 'currentStock' | 'location' | 'status'>) => void;
+  onCreateItem: (articleData: Omit<Article, 'id' | 'createdAt' | 'bins' | 'quantityAvailable' | 'quantityOnLoan' | 'quantityReserved' | 'totalPhysical'>) => void;
+  onUpdateItem: (id: number, articleData: Omit<Article, 'id' | 'createdAt' | 'bins' | 'quantityAvailable' | 'quantityOnLoan' | 'quantityReserved' | 'totalPhysical'>) => void;
   onDeleteItem: (id: number) => void;
 }
 
@@ -29,7 +29,8 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
     const matchesSearch = article.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          article.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.binCode.toLowerCase().includes(searchTerm.toLowerCase());
+                         // ✅ CAMBIO 1: Buscar en todos los bins
+                         article.bins.some(bin => bin.binCode.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = categoryFilter === 'all' || article.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
@@ -40,32 +41,26 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
     return { label: 'In Stock', variant: 'default' as const };
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'good-condition':
+  // ✅ CAMBIO 2: Nueva función para mapear el status del bin
+  const getBinStatusBadge = (binPurpose: string) => {
+    switch (binPurpose) {
+      case 'GoodCondition':
         return <Badge className="bg-green-600">Good Condition</Badge>;
-      case 'on-revision':
+      case 'OnRevision':
         return <Badge className="bg-yellow-600">On Revision</Badge>;
-      case 'scrap':
+      case 'Scrap':
         return <Badge variant="destructive">Scrap</Badge>;
-      case 'repaired':
-        return <Badge className="bg-blue-600">Repaired</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{binPurpose}</Badge>;
     }
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'consumable':
-        return <TrendingDown className="h-4 w-4 text-red-600" />;
-      case 'non-consumable':
-        return <RotateCcw className="h-4 w-4 text-blue-600" />;
-      case 'pending-purchase':
-        return <TrendingUp className="h-4 w-4 text-orange-600" />;
-      default:
-        return <Package className="h-4 w-4" />;
+  const getTypeIcon = (consumable: boolean) => {
+    // ✅ CAMBIO 3: Simplificado para usar boolean consumable
+    if (consumable) {
+      return <TrendingDown className="h-4 w-4 text-red-600" />;
     }
+    return <RotateCcw className="h-4 w-4 text-blue-600" />;
   };
 
   const handleToggleExpandItem = (itemId: number) => {
@@ -85,7 +80,7 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
     setDialogOpen(true);
   };
 
-  const handleSubmit = (articleData: Omit<Article, 'id' | 'createdAt' | 'currentStock' | 'location' | 'status'>) => {
+  const handleSubmit = (articleData: Omit<Article, 'id' | 'createdAt' | 'bins' | 'quantityAvailable' | 'quantityOnLoan' | 'quantityReserved' | 'totalPhysical'>) => {
     if (editingArticle) {
       onUpdateItem(editingArticle.id, articleData);
     } else {
@@ -155,13 +150,14 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                 <TableHead>Category</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Stock</TableHead>
-                <TableHead>Unit Cost</TableHead>
+                <TableHead>Available</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredArticles.map((article) => {
-                const totalStock = article.currentStock + 500 + 250 + 75;
+                // ✅ CAMBIO 4: Usar totalPhysical del API en vez de cálculo hardcoded
+                const totalStock = article.totalPhysical;
                 const stockStatus = getStockStatus(totalStock, article.minStock);
                 return (
                   <React.Fragment key={article.id}>
@@ -203,23 +199,44 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                         </Badge>
                       </TableCell>
                       <TableCell>
+                        {/* ✅ CAMBIO 5: Mostrar tipo basado en consumable */}
                         <div className="flex items-center space-x-2">
-                          {getTypeIcon(article.type)}
-                          <span className="text-sm capitalize">{article.type.replace('-', ' ')}</span>
+                          {getTypeIcon(article.consumable)}
+                          <span className="text-sm capitalize">
+                            {article.consumable ? 'Consumable' : 'Non-Consumable'}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
                           <div className="flex items-center space-x-2">
-                            <span>{article.currentStock + 500 + 250 + 75} {article.unit}</span>
+                            {/* ✅ CAMBIO 6: Mostrar totalPhysical real */}
+                            <span>{totalStock} {article.unit}</span>
                             <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Min: {article.minStock} {article.unit}
                           </div>
+                          {/* ✅ CAMBIO 7: Mostrar info adicional del API */}
+                          {article.quantityOnLoan > 0 && (
+                            <div className="text-xs text-blue-500">
+                              On Loan: {article.quantityOnLoan}
+                            </div>
+                          )}
+                          {article.quantityReserved > 0 && (
+                            <div className="text-xs text-orange-500">
+                              Reserved: {article.quantityReserved}
+                            </div>
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell>${article.cost.toFixed(2)}</TableCell>
+                      <TableCell>
+                        {/* ✅ CAMBIO 11: Mostrar quantityAvailable en vez de cost */}
+                        <div className="flex items-center space-x-2">
+                          <span className="font-semibold">{article.quantityAvailable}</span>
+                          <span className="text-xs text-muted-foreground">{article.unit}</span>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
                           <Button
@@ -229,7 +246,8 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          {article.currentStock === 0 && (
+                          {/* ✅ CAMBIO 8: Permitir borrar solo si totalPhysical es 0 */}
+                          {totalStock === 0 && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
@@ -259,7 +277,7 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                       </TableCell>
                     </TableRow>
 
-                    {/* Expanded Stock in Bins Section */}
+                    {/* ✅ CAMBIO 9: Sección de bins expandida - COMPLETAMENTE REFACTORIZADA */}
                     {expandedItems.has(article.id) && (
                       <TableRow>
                         <TableCell colSpan={10} className="bg-muted/30 p-0">
@@ -278,33 +296,34 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                  <TableRow>
-                                    <TableCell className="font-mono">{article.binCode}</TableCell>
-                                    <TableCell>{article.currentStock} {article.unit}</TableCell>
-                                    <TableCell>{getStatusBadge(article.status)}</TableCell>
-                                  </TableRow>
-                                  {/* Mock additional bin locations */}
-                                  <TableRow>
-                                    <TableCell className="font-mono">BIN-STORAGE-001</TableCell>
-                                    <TableCell>500 {article.unit}</TableCell>
-                                    <TableCell><Badge className="bg-green-600">Good Condition</Badge></TableCell>
-                                  </TableRow>
-                                  <TableRow>
-                                    <TableCell className="font-mono">BIN-BACKUP-002</TableCell>
-                                    <TableCell>250 {article.unit}</TableCell>
-                                    <TableCell><Badge className="bg-green-600">Good Condition</Badge></TableCell>
-                                  </TableRow>
-                                  <TableRow>
-                                    <TableCell className="font-mono">BIN-C-001</TableCell>
-                                    <TableCell>75 {article.unit}</TableCell>
-                                    <TableCell><Badge className="bg-yellow-600">On Revision</Badge></TableCell>
-                                  </TableRow>
+                                  {/* ✅ USAR BINS REALES DEL API - NO MÁS MOCK DATA */}
+                                  {article.bins.length > 0 ? (
+                                    article.bins.map((bin) => (
+                                      <TableRow key={bin.binId}>
+                                        <TableCell className="font-mono">{bin.binCode}</TableCell>
+                                        <TableCell>{bin.quantity} {article.unit}</TableCell>
+                                        <TableCell>{getBinStatusBadge(bin.binPurpose)}</TableCell>
+                                      </TableRow>
+                                    ))
+                                  ) : (
+                                    <TableRow>
+                                      <TableCell colSpan={3} className="text-center text-muted-foreground">
+                                        No bins assigned to this item
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
                                 </TableBody>
                               </Table>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-2">
-                              Total stock for this SKU across all bins: {article.currentStock + 500 + 250 + 75} {article.unit}
-                            </p>
+                            {/* ✅ CAMBIO 10: Info adicional con datos reales */}
+                            <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                              <p>Total stock for this SKU across all bins: {article.totalPhysical} {article.unit}</p>
+                              <div className="flex gap-4 text-xs">
+                                <span>Available: {article.quantityAvailable}</span>
+                                <span>On Loan: {article.quantityOnLoan}</span>
+                                <span>Reserved: {article.quantityReserved}</span>
+                              </div>
+                            </div>
                           </div>
                         </TableCell>
                       </TableRow>

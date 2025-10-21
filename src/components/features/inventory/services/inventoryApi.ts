@@ -1,152 +1,8 @@
-import type { Article, Kit, Template, Bin, Transaction } from '../types';
+import type { Article, InventoryItemResponse, Kit, Template, Bin, BinResponse,  Transaction } from '../types';
+import { CATEGORIES } from '../constants';
+import { strict } from 'assert';
+const API_URL = 'http://localhost:5000/api';
 
-// Mock data that was previously in constants.ts
-const MOCK_ARTICLES_DATA: Article[] = [
-  {
-    id: 1,
-    imageUrl: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=300',
-    sku: 'SKU-001',
-    name: 'A4ga Office Paper',
-    description: 'Office Paper A4 - 80gsm',
-    category: 'office-supplies',
-    type: 'consumable',
-    currentStock: 2500,
-    cost: 0.02,
-    binCode: 'BIN-OFF-001',
-    unit: 'sheets',
-    supplier: 'Office Supplies Inc.',
-    minStock: 500,
-    location: 'Storage Room A',
-    status: 'good-condition',
-    createdAt: '2025-01-15'
-  },
-  {
-    id: 2,
-    imageUrl: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=300',
-    sku: 'SKU-002',
-    name: 'Dell Latitude Laptop',
-    description: 'Laptop Dell Latitude 5520',
-    category: 'technology',
-    type: 'non-consumable',
-    currentStock: 15,
-    cost: 1200,
-    binCode: 'BIN-TECH-002',
-    unit: 'units',
-    supplier: 'Tech Solutions Ltd.',
-    minStock: 5,
-    location: 'IT Storage',
-    status: 'good-condition',
-    createdAt: '2025-01-14'
-  },
-  {
-    id: 3,
-    imageUrl: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=300',
-    sku: 'SKU-003',
-    name: 'USB Type-C Cable',
-    description: 'USB Cable Type-C 2m',
-    category: 'technology',
-    type: 'consumable',
-    currentStock: 50,
-    cost: 15,
-    binCode: 'BIN-USB-003',
-    unit: 'units',
-    supplier: 'Cable Corp.',
-    minStock: 20,
-    location: 'IT Storage',
-    status: 'good-condition',
-    createdAt: '2025-01-13'
-  },
-  {
-    id: 4,
-    imageUrl: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=300',
-    sku: 'SKU-004',
-    name: 'Electric Drill',
-    description: 'Electric Drill with Battery',
-    category: 'tools',
-    type: 'non-consumable',
-    currentStock: 8,
-    cost: 250,
-    binCode: 'BIN-TOOL-004',
-    unit: 'units',
-    supplier: 'Tool Masters',
-    minStock: 3,
-    location: 'Workshop',
-    status: 'good-condition',
-    createdAt: '2025-01-12'
-  },
-  {
-    id: 5,
-    imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300',
-    sku: 'SKU-005',
-    name: 'Safety Helmet',
-    description: 'Safety Helmet with Chin Strap',
-    category: 'safety-equipment',
-    type: 'non-consumable',
-    currentStock: 25,
-    cost: 45,
-    binCode: 'BIN-SAFE-005',
-    unit: 'units',
-    supplier: 'SafetyFirst Co.',
-    minStock: 10,
-    location: 'Safety Storage',
-    status: 'good-condition',
-    createdAt: '2025-01-11'
-  },
-  {
-    id: 6,
-    imageUrl: 'https://images.unsplash.com/photo-1584949091598-c31daaaa4aa9?w=300',
-    sku: 'SKU-006',
-    name: 'Wireless Mouse',
-    description: 'Ergonomic Wireless Mouse',
-    category: 'technology',
-    type: 'consumable',
-    currentStock: 0,
-    cost: 25,
-    binCode: 'BIN-TECH-006',
-    unit: 'units',
-    supplier: 'Tech Accessories Co.',
-    minStock: 10,
-    location: 'IT Storage',
-    status: 'good-condition',
-    createdAt: '2025-01-10'
-  },
-  {
-    id: 7,
-    imageUrl: 'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=300',
-    sku: 'SKU-007',
-    name: 'Office Chair',
-    description: 'Ergonomic Office Chair with Lumbar Support',
-    category: 'furniture',
-    type: 'non-consumable',
-    currentStock: 0,
-    cost: 350,
-    binCode: 'BIN-FURN-001',
-    unit: 'units',
-    supplier: 'Furniture Solutions Ltd.',
-    minStock: 2,
-    location: 'Warehouse',
-    status: 'good-condition',
-    createdAt: '2025-01-09'
-  },
-  {
-    id: 8,
-    imageUrl: 'https://images.unsplash.com/photo-1611532736570-dea5c63f0dfc?w=300',
-    sku: 'SKU-008',
-    name: 'Hand Sanitizer',
-    description: 'Antibacterial Hand Sanitizer 500ml',
-    category: 'cleaning-supplies',
-    type: 'consumable',
-    currentStock: 0,
-    cost: 5.50,
-    binCode: 'BIN-CLEAN-001',
-    unit: 'bottles',
-    supplier: 'Hygiene Supplies Inc.',
-    minStock: 50,
-    location: 'Storage Room B',
-    status: 'good-condition',
-    createdAt: '2025-01-08'
-  }
-];
 
 const MOCK_KITS_DATA: Kit[] = [
   {
@@ -267,56 +123,7 @@ const MOCK_TEMPLATES_DATA: Template[] = [
   }
 ];
 
-const MOCK_BINS_DATA: Bin[] = [
-  {
-    id: 1,
-    binCode: 'BIN-OFF-001',
-    type: 'good-condition',
-    description: 'Storage for office paper and writing supplies'
-  },
-  {
-    id: 2,
-    binCode: 'BIN-TECH-002',
-    type: 'good-condition',
-    description: 'IT equipment and electronics storage'
-  },
-  {
-    id: 3,
-    binCode: 'BIN-USB-003',
-    type: 'good-condition',
-    description: 'Cables and accessories bin'
-  },
-  {
-    id: 4,
-    binCode: 'BIN-TOOL-004',
-    type: 'on-revision',
-    description: 'Power tools and equipment storage'
-  },
-  {
-    id: 5,
-    binCode: 'BIN-SAFE-005',
-    type: 'good-condition',
-    description: 'PPE and safety gear storage'
-  },
-  {
-    id: 6,
-    binCode: 'BIN-STORAGE-001',
-    type: 'good-condition',
-    description: 'Main storage area'
-  },
-  {
-    id: 7,
-    binCode: 'BIN-BACKUP-002',
-    type: 'good-condition',
-    description: 'Backup storage'
-  },
-  {
-    id: 8,
-    binCode: 'BIN-SCRAP-001',
-    type: 'scrap',
-    description: 'Items for disposal'
-  }
-];
+
 
 const MOCK_TRANSACTIONS_DATA: Transaction[] = [
   {
@@ -324,7 +131,7 @@ const MOCK_TRANSACTIONS_DATA: Transaction[] = [
     type: 'entry',
     subtype: 'purchase',
     articleCode: 'OFF-001',
-    articleDescription: 'Office Paper A4 - 80gsm',
+    articleDescription: 'Office Paper A4 - 800gsm',
     quantity: 500,
     unit: 'sheets',
     reference: 'PO-2025-001',
@@ -384,7 +191,7 @@ const MOCK_TRANSACTIONS_DATA: Transaction[] = [
     type: 'adjustment',
     subtype: 'audit',
     articleCode: 'OFF-001',
-    articleDescription: 'Office Paper A4 - 80gsm',
+    articleDescription: 'Office Paper AA4 - 80gsm',
     quantity: -50,
     unit: 'sheets',
     reference: 'AUD-2025-001',
@@ -397,16 +204,149 @@ const MOCK_TRANSACTIONS_DATA: Transaction[] = [
 ];
 
 /**
+ * Devuelve la imagen por defecto (ya que no llega desde el backend)
+ */
+function getDefaultImage(): string {
+  return 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=300';
+}
+
+/**
+ * Mapea el propósito del bin (binPurpose o binPurposeDisplay)
+ */
+function mapStatusType(apiStatus: string): Article['status'] {
+  switch (apiStatus) {
+    case 'GoodCondition':
+      return 'good-condition';
+    case 'OnRevision':
+      return 'on-revision';
+    case 'Scrap':
+      return 'scrap';
+    case 'NotApplicable':
+    default:
+      return 'good-condition';
+  }
+}
+
+
+export function transformInventoryItem(apiItem: InventoryItemResponse): Article {
+  return {
+    id: apiItem.itemId,
+    imageUrl: apiItem.imageUrl || null,
+    sku: apiItem.itemSku,
+    name: apiItem.itemName,
+    description: apiItem.description || '',
+    category: mapCategory(apiItem.category),
+    consumable: apiItem.consumable,
+    minStock: apiItem.minStock || 0,
+    
+    // ✅ NUEVO: Mapear array de bins
+    bins: apiItem.bins?.map(bin => ({
+      binId: bin.binId,
+      binCode: bin.binCode,
+      binPurpose: bin.binPurpose as 'GoodCondition' | 'OnRevision' | 'Scrap',
+      quantity: bin.quantity
+    })) || [],
+    
+    // ✅ NUEVO: Usar datos calculados del API
+    quantityAvailable: apiItem.quantityAvailable ?? 0,
+    quantityOnLoan: apiItem.quantityOnLoan ?? 0,
+    quantityReserved: apiItem.quantityReserved ?? 0,
+    totalPhysical: apiItem.totalPhysical ?? 0,
+    
+    unit: 'units',
+    cost: 0,
+    createdAt: new Date().toISOString().split('T')[0]
+  };
+}
+
+// Función helper para mapear el status del bin
+function getBinPurposeDisplay(purpose: string): string {
+  switch (purpose) {
+    case 'GoodCondition':
+      return 'Good Condition';
+    case 'OnRevision':
+      return 'On Revision';
+    case 'Scrap':
+      return 'Scrap';
+    default:
+      return 'Good Condition';
+  }
+}
+
+function mapBinType(apiType: BinResponse['binPurposeDisplay']): Bin['type'] {
+  switch (apiType) {
+    case 'GoodCondition':
+      return 'good-condition';
+    case 'OnRevision':
+      return 'on-revision';
+    case 'Scrap':
+      return 'scrap';
+    case 'NotApplicable': // Los kits y otros bins especiales se mapean a good-condition por defecto
+    default:
+      return 'good-condition';
+  }
+}
+
+
+function mapCategory(apiCategory?: string): Article['category'] {
+  const validCategories = CATEGORIES.map(c => c.value) as Article['category'][];
+
+  if (apiCategory && validCategories.includes(apiCategory as Article['category'])) {
+    return apiCategory as Article['category'];
+  }
+
+  // Valor por defecto si no coincide o viene vacío
+  return 'tools';
+}
+
+/**
+ * Transforma la respuesta de la API (BinResponse) a nuestro modelo de aplicación (Bin)
+ */
+function transformBin(apiBin: BinResponse): Bin {
+  return {
+    id: apiBin.id,
+    binCode: apiBin.binCode,
+    description: apiBin.description,
+    type: mapBinType(apiBin.binPurposeDisplay),
+  };
+}
+
+/**
  * Simulates an API delay
  */
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-/**
- * Simulates fetching articles from an API
+
+
+/** ALL ITEMS *************************************************************************
+ * ***********************************************************************************
  */
 export async function fetchArticlesFromApi(): Promise<Article[]> {
-  await delay(500); // Simulate network delay
-  return [...MOCK_ARTICLES_DATA];
+  try {
+    const response = await fetch(`${API_URL}/Inventory/items-with-bins`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch items: ${response.status} ${response.statusText}`);
+    }
+
+    const data: InventoryItemResponse[] = await response.json();
+
+    // Validar y transformar
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid response format: expected an array');
+    }
+
+    // Mapear cada elemento al modelo Article
+    return data.map(transformInventoryItem);
+  } catch (error) {
+    console.error('Error fetching all items with bins:', error);
+    throw error;
+  }
 }
 
 /**
@@ -417,6 +357,8 @@ export async function fetchKitsFromApi(): Promise<Kit[]> {
   return [...MOCK_KITS_DATA];
 }
 
+
+
 /**
  * Simulates fetching templates from an API
  */
@@ -425,13 +367,36 @@ export async function fetchTemplatesFromApi(): Promise<Template[]> {
   return [...MOCK_TEMPLATES_DATA];
 }
 
-/**
- * Simulates fetching bins from an API
- */
+
+/*FUNCIONAL.................................................................................
+..........................................................................................*/ 
 export async function fetchBinsFromApi(): Promise<Bin[]> {
-  await delay(500); // Simulate network delay
-  return [...MOCK_BINS_DATA];
+  try {
+    const response = await fetch(`${API_URL}/Bins`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      // Manejo de errores HTTP
+      throw new Error(`Failed to fetch bins: ${response.status} ${response.statusText}`);
+    }
+
+    // Casteamos la respuesta como un array de BinResponse
+    const data: BinResponse[] = await response.json();
+    
+    // Mapeamos y transformamos cada objeto BinResponse a nuestro modelo Bin
+    return data.map(transformBin);
+  } catch (error) {
+    console.error('Error fetching all bins:', error);
+    // Vuelve a lanzar el error para que el componente (o Redux thunk) lo maneje
+    throw error;
+  }
 }
+
+
 
 /**
  * Simulates fetching transactions from an API
@@ -444,7 +409,7 @@ export async function fetchTransactionsFromApi(): Promise<Transaction[]> {
 /**
  * Simulates creating an article in the API
  */
-export async function createArticleApi(articleData: Omit<Article, 'id' | 'createdAt' | 'currentStock' | 'location' | 'status'>): Promise<Article> {
+export async function createArticleApi2(articleData: Omit<Article, 'id' | 'createdAt' | 'currentStock' | 'location' | 'status'>): Promise<Article> {
   await delay(500); // Simulate network delay
   
   // Simulate successful creation
@@ -459,6 +424,66 @@ export async function createArticleApi(articleData: Omit<Article, 'id' | 'create
   
   console.log('API: Article created successfully', newArticle);
   return newArticle;
+}
+
+/**NUEVO **********************************************************************************************************
+ * *****************************************************************************************************************
+ */
+
+
+/**
+ * Creates a new article/item with image support using multipart/form-data
+ */
+export async function createArticleApi(
+  articleData: {
+    name: string;
+    description: string;
+    category: string;
+    unit: string;
+    minStock: number;
+    consumable: boolean;
+    binCode: string;
+    imageFile?: File | null;
+  }
+): Promise<Article> {
+  try {
+    console.log('API_DATA_RECEIVED:', articleData);
+    // ✅ Crear FormData para enviar multipart/form-data
+    const formData = new FormData();
+    
+    formData.append('name', articleData.name);
+    formData.append('description', articleData.description);
+    formData.append('category', articleData.category);
+    formData.append('unit', articleData.unit);
+    formData.append('minStock', articleData.minStock.toString());
+    formData.append('isActive', 'true');
+    formData.append('consumable', articleData.consumable.toString());
+    formData.append('binCode', articleData.binCode);
+    
+    // ✅ Añadir imagen si existe
+    if (articleData.imageFile) {
+      formData.append('file', articleData.imageFile);
+    }
+    console.log('DATOS EN API',formData);
+    const response = await fetch(`${API_URL}/Items/with-image`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to create item: ${response.status} - ${errorText}`);
+    }
+
+    const createdItem = await response.json();
+    
+    // Transformar respuesta a nuestro modelo
+    return transformInventoryItem(createdItem);
+  } catch (error) {
+    console.log('Error creating article:', error);
+    console.error('Error creating article:', error);
+    throw error;
+  }
 }
 
 /**

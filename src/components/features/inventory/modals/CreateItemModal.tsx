@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../ui/dialog';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
@@ -7,17 +7,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../../../ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Badge } from '../../../ui/badge';
-import { BinSelector } from '../components/BinSelector';
 import { Package, ChevronDown, ChevronRight } from 'lucide-react';
 import type { Article } from '../types';
 import { CATEGORIES } from '../constants';
+
+// Tipo de datos que la API realmente espera (sin cambios necesarios aquí)
+interface ApiPayload {
+  name: string;
+  description: string;
+  category: string;
+  unit: string;
+  minStock: number;
+  consumable: boolean;
+  binCode: string; 
+  imageFile?: File | null;
+}
 
 interface CreateItemModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingArticle: Article | null;
-  onSubmit: (articleData: Omit<Article, 'id' | 'createdAt' | 'currentStock' | 'location' | 'status'>) => void;
+  onSubmit: (articleData: ApiPayload) => void;
 }
+
+// ⭐ Definimos un tipo local para la UI (como 'type' ya no existe en Article)
+type ArticleTypeUI = 'consumable' | 'non-consumable' | 'pending-purchase';
 
 export function CreateItemModal({
   open,
@@ -25,51 +39,60 @@ export function CreateItemModal({
   editingArticle,
   onSubmit
 }: CreateItemModalProps) {
+  
+  // Función auxiliar para convertir el booleano 'consumable' a un string para la UI
+  const getUIType = (article: Article | null): ArticleTypeUI => {
+      if (article?.consumable === false) return 'non-consumable';
+      if (article?.consumable === true) return 'consumable';
+      return 'consumable'; // Valor por defecto si no está en edición
+  }
+
+  // ⭐ INICIALIZACIÓN DE ESTADO ACTUALIZADA: 
+  // Ahora usamos una propiedad local 'typeUI' que maneja el string de la selección.
   const [formData, setFormData] = useState({
-    sku: editingArticle?.sku || '',
     name: editingArticle?.name || '',
     description: editingArticle?.description || '',
     category: editingArticle?.category || ('office-supplies' as Article['category']),
-    type: editingArticle?.type || ('consumable' as Article['type']),
-    cost: editingArticle?.cost.toString() || '',
-    binCode: editingArticle?.binCode || '',
+    // Usamos el estado local 'typeUI' para manejar el valor del Select
+    typeUI: getUIType(editingArticle),
+    binCode: '', // El binCode ya no es una propiedad directa en Article, lo inicializamos vacío
     unit: editingArticle?.unit || '',
-    supplier: editingArticle?.supplier || '',
     minStock: editingArticle?.minStock.toString() || '',
-    imageUrl: editingArticle?.imageUrl || ''
+    imageUrl: editingArticle?.imageUrl || '',
   });
+  
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [showBinStock, setShowBinStock] = useState(false);
+  // Asumimos que ArticleBin[] no está tipado, si lo está, por favor proporcione ese tipo.
+  const [articleBins, setArticleBins] = useState<any[]>(editingArticle?.bins || []); 
 
-  React.useEffect(() => {
+
+  useEffect(() => {
     if (editingArticle) {
       setFormData({
-        sku: editingArticle.sku,
         name: editingArticle.name,
         description: editingArticle.description,
         category: editingArticle.category,
-        type: editingArticle.type,
-        cost: editingArticle.cost.toString(),
-        binCode: editingArticle.binCode,
+        typeUI: getUIType(editingArticle),
+        // Asumimos que quieres usar el primer binCode si existe
+        binCode: editingArticle.bins?.[0]?.binCode || '', 
         unit: editingArticle.unit,
-        supplier: editingArticle.supplier,
         minStock: editingArticle.minStock.toString(),
         imageUrl: editingArticle.imageUrl || ''
       });
+      setArticleBins(editingArticle.bins);
     } else {
       setFormData({
-        sku: '',
         name: '',
         description: '',
         category: 'office-supplies',
-        type: 'consumable',
-        cost: '',
+        typeUI: 'consumable',
         binCode: '',
         unit: '',
-        supplier: '',
         minStock: '',
         imageUrl: ''
       });
+      setArticleBins([]);
     }
     setImageFile(null);
     setShowBinStock(false);
@@ -87,23 +110,33 @@ export function CreateItemModal({
     }
   };
 
+  // ⭐ FUNCIÓN DE ENVÍO ACTUALIZADA: Mapea typeUI a 'consumable' (booleano)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     onSubmit({
-      imageUrl: formData.imageUrl,
-      sku: formData.sku,
       name: formData.name,
       description: formData.description,
       category: formData.category,
-      type: formData.type,
-      cost: parseFloat(formData.cost),
-      binCode: formData.binCode,
       unit: formData.unit,
-      supplier: formData.supplier,
-      minStock: parseInt(formData.minStock)
+      // ✅ Usa el estado local 'typeUI' para determinar el booleano 'consumable'
+      consumable: formData.typeUI === 'consumable',
+      minStock: parseInt(formData.minStock, 10),
+      binCode: formData.binCode,
+      imageFile: imageFile,
     });
-
+    const payload = {
+    name: formData.name,
+    description: formData.description,
+    category: formData.category,
+    unit: formData.unit,
+    // ✅ Usa el estado local 'typeUI' para determinar el booleano 'consumable'
+    consumable: formData.typeUI === 'consumable',
+    minStock: parseInt(formData.minStock, 10),
+    binCode: formData.binCode,
+    imageFile: imageFile,
+  };
+    console.log('Final API Payload (desde Modal):', payload);
     onOpenChange(false);
   };
 
@@ -122,6 +155,9 @@ export function CreateItemModal({
     }
   };
 
+  // Se necesitan datos del artículo para mostrar el total en el modo edición.
+  const totalStock = articleBins.reduce((sum, bin) => sum + (bin.currentStock || 0), 0) + (editingArticle?.quantityAvailable || 0);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -132,33 +168,28 @@ export function CreateItemModal({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            
+            {/* Campo BIN Code (Input de texto) */}
             <div>
-              <Label htmlFor="sku">SKU *</Label>
+              <Label htmlFor="binCode">BIN Code *</Label>
               <Input
-                id="sku"
-                value={formData.sku}
-                onChange={(e) => setFormData({...formData, sku: e.target.value})}
-                placeholder="e.g., SKU-001"
-                required
-              />
-            </div>
-            <div>
-              <Label>BIN Code *</Label>
-              <BinSelector
+                id="binCode"
                 value={formData.binCode}
-                onValueChange={(value) => setFormData({...formData, binCode: value})}
-                placeholder="Select bin"
+                onChange={(e) => setFormData({...formData, binCode: e.target.value})}
+                placeholder="e.g., A1-R2-S3 (Primary Bin)"
                 required
               />
             </div>
+            
+            {/* Campo Name */}
             <div>
               <Label htmlFor="name">Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                placeholder="e.g., Aa4 Office Paper"
+                placeholder="e.g., A4 Office Paper"
                 required
               />
             </div>
@@ -176,9 +207,14 @@ export function CreateItemModal({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            {/* Campo Category */}
             <div>
               <Label htmlFor="category">Category *</Label>
-              <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value as any})}>
+              <Select 
+                value={formData.category} 
+                // Corregimos el tipado usando el tipo de Article, que existe
+                onValueChange={(value: Article['category']) => setFormData({...formData, category: value})}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -191,9 +227,14 @@ export function CreateItemModal({
                 </SelectContent>
               </Select>
             </div>
+            {/* Campo Type (ahora usa typeUI) */}
             <div>
-              <Label htmlFor="type">Type *</Label>
-              <Select value={formData.type} onValueChange={(value) => setFormData({...formData, type: value as any})}>
+              <Label htmlFor="typeUI">Type *</Label>
+              <Select 
+                value={formData.typeUI} 
+                // ✅ Usa el tipo local ArticleTypeUI
+                onValueChange={(value: ArticleTypeUI) => setFormData({...formData, typeUI: value})}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -207,6 +248,7 @@ export function CreateItemModal({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            {/* Campo Unit */}
             <div>
               <Label htmlFor="unit">Unit *</Label>
               <Input
@@ -217,21 +259,7 @@ export function CreateItemModal({
                 required
               />
             </div>
-            <div>
-              <Label htmlFor="cost">Unit Cost *</Label>
-              <Input
-                id="cost"
-                type="number"
-                step="0.01"
-                value={formData.cost}
-                onChange={(e) => setFormData({...formData, cost: e.target.value})}
-                placeholder="0.00"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+            {/* Campo Min Stock */}
             <div>
               <Label htmlFor="minStock">Min Stock *</Label>
               <Input
@@ -240,16 +268,6 @@ export function CreateItemModal({
                 value={formData.minStock}
                 onChange={(e) => setFormData({...formData, minStock: e.target.value})}
                 placeholder="0"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="supplier">Supplier *</Label>
-              <Input
-                id="supplier"
-                value={formData.supplier}
-                onChange={(e) => setFormData({...formData, supplier: e.target.value})}
-                placeholder="e.g., Office Supplies Inc."
                 required
               />
             </div>
@@ -264,6 +282,7 @@ export function CreateItemModal({
                 onChange={handleImageFileChange}
               />
 
+              {/* Previsualización de imagen */}
               {formData.imageUrl && (
                 <div className="w-24 h-24 border rounded overflow-hidden">
                   <img
@@ -276,7 +295,7 @@ export function CreateItemModal({
             </div>
           </div>
 
-          {/* Stock in Different Bins - Collapsible Section */}
+          {/* Stock in Different Bins - Solo visible en modo edición (editingArticle) */}
           {editingArticle && (
             <div className="border rounded-lg overflow-hidden">
               <Button
@@ -287,7 +306,7 @@ export function CreateItemModal({
               >
                 <span className="flex items-center">
                   <Package className="h-4 w-4 mr-2" />
-                  Stock in Different Bins
+                  Stock in Different Bins ({articleBins.length} Bins)
                 </span>
                 {showBinStock ? (
                   <ChevronDown className="h-4 w-4" />
@@ -308,30 +327,27 @@ export function CreateItemModal({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {/* Mock data showing the same SKU in different bins */}
-                        <TableRow>
-                          <TableCell className="font-mono">{editingArticle.binCode}</TableCell>
-                          <TableCell>{editingArticle.location}</TableCell>
-                          <TableCell>{editingArticle.currentStock} {editingArticle.unit}</TableCell>
-                          <TableCell>{getStatusBadge(editingArticle.status)}</TableCell>
-                        </TableRow>
+                        {articleBins.map((bin, index) => (
+                           <TableRow key={bin.binCode || index}>
+                             <TableCell className="font-mono">{bin.binCode || 'N/A'}</TableCell>
+                             <TableCell>{bin.location || 'N/A'}</TableCell>
+                             <TableCell>{bin.currentStock || 0} {editingArticle.unit}</TableCell>
+                             <TableCell>{getStatusBadge(bin.status || 'N/A')}</TableCell>
+                           </TableRow>
+                        ))}
+                        
+                        {/* Fila MOCK de ejemplo para bins adicionales */}
                         <TableRow>
                           <TableCell className="font-mono">BIN-STORAGE-001</TableCell>
                           <TableCell>Main Storage</TableCell>
                           <TableCell>500 {editingArticle.unit}</TableCell>
                           <TableCell><Badge className="bg-green-600">Good Condition</Badge></TableCell>
                         </TableRow>
-                        <TableRow>
-                          <TableCell className="font-mono">BIN-BACKUP-002</TableCell>
-                          <TableCell>Backup Storage</TableCell>
-                          <TableCell>250 {editingArticle.unit}</TableCell>
-                          <TableCell><Badge className="bg-green-600">Good Condition</Badge></TableCell>
-                        </TableRow>
                       </TableBody>
                     </Table>
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Total stock for SKU {editingArticle.sku}: {editingArticle.currentStock + 500 + 250} {editingArticle.unit}
+                    Total Physical Stock for SKU {editingArticle.sku}: {totalStock} {editingArticle.unit}
                   </p>
                 </div>
               )}

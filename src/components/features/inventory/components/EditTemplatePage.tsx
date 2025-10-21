@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Textarea } from './ui/textarea';
-import { Badge } from './ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Input } from '../../../ui/input';
+import { Label } from '../../../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Textarea } from '../../../ui/textarea';
+import { Badge } from '../../../ui/badge';
 import { ArrowLeft, Search, Plus, X, Package } from 'lucide-react';
 
 interface Article {
@@ -78,9 +78,9 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.binCode.toLowerCase().includes(searchTerm.toLowerCase());
+                          article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          article.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          article.binCode.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || article.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
@@ -125,7 +125,8 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.items.length === 0) {
-      alert('Please add at least one item to the template');
+      // Note: Use a toast or modal instead of alert() in production apps
+      console.error('Please add at least one item to the template');
       return;
     }
     onSave(formData);
@@ -135,15 +136,15 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
 
   return (
     <div className="space-y-6">
-      <div className="sticky top-0 z-10 bg-background pb-4 flex items-center justify-between">
+      <div className="sticky top-0 z-10 bg-background pb-4 flex items-center justify-between border-b">
         <div className="flex items-center space-x-4">
           <Button variant="outline" onClick={onBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Templates
           </Button>
           <div>
-            <h1>{pageTitle}</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl font-bold">{pageTitle}</h1>
+            <p className="text-sm text-muted-foreground">
               {editingTemplate 
                 ? 'Update the template information and items below'
                 : 'Create a reusable template for kits'
@@ -185,7 +186,11 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
 
               <div>
                 <Label htmlFor="category">Category *</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                {/* CORRECTION: Explicitly type 'value' as string */}
+                <Select 
+                  value={formData.category} 
+                  onValueChange={(value: string) => setFormData({...formData, category: value})}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -200,7 +205,7 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
               </div>
 
               <div className="pt-4">
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">
                   {editingTemplate ? 'Update Template' : 'Create Template'}
                 </Button>
               </div>
@@ -212,7 +217,7 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Package className="h-5 w-5 mr-2" />
+              <Package className="h-5 w-5 mr-2 text-indigo-600" />
               Available Items
             </CardTitle>
           </CardHeader>
@@ -228,6 +233,7 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
                   className="pl-8"
                 />
               </div>
+              {/* This Select is fine because setCategoryFilter is typed via useState<string> */}
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by category" />
@@ -244,47 +250,52 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
             </div>
 
             {/* Items List */}
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {filteredArticles.map((article) => {
-                const isInTemplate = formData.items.some(item => item.articleId === article.id);
-                return (
-                  <div key={article.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50">
-                    <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                      {article.imageUrl ? (
-                        <img
-                          src={article.imageUrl}
-                          alt={article.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      )}
+            <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+              {filteredArticles.length > 0 ? (
+                filteredArticles.map((article) => {
+                  const isInTemplate = formData.items.some(item => item.articleId === article.id);
+                  return (
+                    <div key={article.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
+                        {article.imageUrl ? (
+                          <img
+                            src={article.imageUrl}
+                            alt={article.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src='https://placehold.co/48x48/F3F4F6/9CA3AF?text=NoImg' }}
+                          />
+                        ) : (
+                          <Package className="h-5 w-5 text-gray-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{article.sku}</p>
+                        <p className="text-xs text-muted-foreground truncate">{article.name}</p>
+                      </div>
+                      <div className="flex-shrink-0">
+                        {isInTemplate ? (
+                          <Badge className="bg-green-500 hover:bg-green-600 cursor-default">
+                            Added
+                          </Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                            onClick={() => addItemToTemplate(article)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{article.sku}</p>
-                      <p className="text-sm text-muted-foreground truncate">{article.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{article.description}</p>
-                    </div>
-                    <div className="flex-shrink-0">
-                      {isInTemplate ? (
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">
-                          Added
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => addItemToTemplate(article)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  No articles found.
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -292,7 +303,7 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
 
       {/* Selected Items */}
       {formData.items.length > 0 && (
-        <Card>
+        <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Template Items ({formData.items.length})</CardTitle>
           </CardHeader>
@@ -301,24 +312,23 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
               {formData.items.map((item) => {
                 const article = articles.find(a => a.id === item.articleId);
                 return (
-                  <div key={item.articleId} className="flex items-center space-x-3 p-3 border rounded-lg">
-                    <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                  <div key={item.articleId} className="flex items-center space-x-3 p-4 border rounded-lg bg-gray-50">
+                    <div className="w-12 h-12 rounded-md overflow-hidden bg-white flex-shrink-0 flex items-center justify-center border">
                       {article?.imageUrl ? (
                         <img
                           src={article.imageUrl}
                           alt={item.articleName}
                           className="w-full h-full object-cover"
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src='https://placehold.co/48x48/F3F4F6/9CA3AF?text=NoImg' }}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="h-4 w-4 text-muted-foreground" />
-                        </div>
+                        <Package className="h-5 w-5 text-gray-400" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{article?.sku}</p>
-                      <p className="text-sm text-muted-foreground">{item.articleName}</p>
-                      <p className="text-xs text-muted-foreground">{article?.description}</p>
+                      <p className="text-sm font-medium">{article?.sku || 'SKU N/A'}</p>
+                      <p className="text-sm text-gray-600">{item.articleName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{article?.description}</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Label htmlFor={`quantity-${item.articleId}`} className="text-sm">Qty:</Label>
@@ -328,11 +338,12 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
                         min="1"
                         value={item.quantity}
                         onChange={(e) => updateItemQuantity(item.articleId, parseInt(e.target.value) || 1)}
-                        className="w-16"
+                        className="w-16 text-center"
                       />
                       <Button
-                        size="sm"
-                        variant="outline"
+                        size="icon"
+                        variant="destructive"
+                        className="h-8 w-8"
                         onClick={() => removeItemFromTemplate(item.articleId)}
                       >
                         <X className="h-4 w-4" />
