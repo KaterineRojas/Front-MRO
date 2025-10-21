@@ -83,6 +83,19 @@ function transformKit(apiKit: KitResponse): Kit {
 }
 
 /**
+ * Request body for creating a new kit
+ */
+export interface CreateKitRequest {
+  binCode: string;
+  name: string;
+  description: string;
+  items: {
+    itemId: number;
+    quantity: number;
+  }[];
+}
+
+/**
  * Fetches all kits with their items from the API
  */
 export async function getKitsWithItems(): Promise<Kit[]> {
@@ -102,6 +115,31 @@ export async function getKitsWithItems(): Promise<Kit[]> {
     return data.map(transformKit);
   } catch (error) {
     console.error('Error fetching kits:', error);
+    throw error;
+  }
+}
+
+/**
+ * Creates a new kit
+ */
+export async function createKit(kitData: CreateKitRequest): Promise<Kit> {
+  try {
+    const response = await fetch(`${API_URL}/Kits`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(kitData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create kit: ${response.status} ${response.statusText}`);
+    }
+
+    const data: KitResponse = await response.json();
+    return transformKit(data);
+  } catch (error) {
+    console.error('Error creating kit:', error);
     throw error;
   }
 }

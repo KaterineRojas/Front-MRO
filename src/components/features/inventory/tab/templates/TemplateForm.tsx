@@ -6,6 +6,8 @@ import { Textarea } from '@/components/features/ui/textarea';
 import { Button } from '@/components/features/ui/button';
 import type { TemplateFormProps } from './types';
 
+
+// TEMPLATE INFORMATION TABLE
 export function TemplateForm({ formData, setFormData, handleSubmit, editing }: TemplateFormProps) {
   return (
     <Card>

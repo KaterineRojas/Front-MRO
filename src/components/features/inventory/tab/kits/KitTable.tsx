@@ -20,7 +20,6 @@ export function KitTable({
             <TableHead className="w-[50px]"></TableHead>
             <TableHead>Kit</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead>Category</TableHead>
             <TableHead>Items</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>

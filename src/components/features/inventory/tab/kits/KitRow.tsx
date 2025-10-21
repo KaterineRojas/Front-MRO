@@ -47,7 +47,6 @@ export function KitRow({
         <TableCell className="max-w-xs">
           <p className="text-sm line-clamp-2">{kit.description || '-'}</p>
         </TableCell>
-        <TableCell>{categories.find((c) => c.value === kit.category)?.label}</TableCell>
         <TableCell>
           <Badge variant="outline">{kit.items.length} items</Badge>
         </TableCell>
@@ -80,7 +79,7 @@ export function KitRow({
       </TableRow>
       {isExpanded && (
         <TableRow>
-          <TableCell colSpan={6} className="bg-muted/30 p-0">
+          <TableCell colSpan={5} className="bg-muted/30 p-0">
             <div className="p-4">
               <h4 className="flex items-center mb-3">
                 <Package className="h-4 w-4 mr-2" />
@@ -98,7 +97,7 @@ export function KitRow({
                   </TableHeader>
                   <TableBody>
                     {kit.items.map((item, index) => {
-                      const article = articles.find((a) => a.binCode === item.articleSku);
+                      const article = articles.find((a) => a.sku === item.articleSku);
                       return (
                         <TableRow key={index}>
                           <TableCell>

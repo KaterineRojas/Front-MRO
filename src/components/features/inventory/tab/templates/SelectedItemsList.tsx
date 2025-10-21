@@ -14,7 +14,7 @@ export function SelectedItemsList({
   return (
     <>
       <CardHeader>
-        <CardTitle>Selected Items ({formData.items.length})</CardTitle>
+        <CardTitle>Selected Items({formData.items.length})</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-2 max-h-96 overflow-y-auto">

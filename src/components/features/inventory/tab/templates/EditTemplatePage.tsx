@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/features/ui/button'
 import { Card } from '@/components/features/ui/card';
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
@@ -90,28 +90,18 @@ export function EditTemplatePage({ editingTemplate, onBack, onSave }: EditTempla
         </div>
       ) : (
         <>
-          {/* Form + Articles */}
+          {/* Articles List + Selected Items */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TemplateForm
-          formData={formData}
-          setFormData={setFormData}
-          handleSubmit={handleSubmit}
-          editing={isEditing}
-        />
+            <ArticlesList
+              articles={filteredArticles}
+              formData={formData}
+              addItemToTemplate={addItemToTemplate}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              categoryFilter={categoryFilter}
+              setCategoryFilter={setCategoryFilter}
+            />
 
-        <ArticlesList
-          articles={filteredArticles}
-          formData={formData}
-          addItemToTemplate={addItemToTemplate}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          categoryFilter={categoryFilter}
-          setCategoryFilter={setCategoryFilter}
-        />
-      </div>
-
-          {/* Selected Items */}
-          {formData.items.length > 0 && (
             <Card>
               <SelectedItemsList
                 formData={formData}
@@ -120,7 +110,15 @@ export function EditTemplatePage({ editingTemplate, onBack, onSave }: EditTempla
                 removeItemFromTemplate={removeItemFromTemplate}
               />
             </Card>
-          )}
+          </div>
+
+          {/* Template Form */}
+          <TemplateForm
+            formData={formData}
+            setFormData={setFormData}
+            handleSubmit={handleSubmit}
+            editing={!!isEditing}
+          />
         </>
       )}
     </div>

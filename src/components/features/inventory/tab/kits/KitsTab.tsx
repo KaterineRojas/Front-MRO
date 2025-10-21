@@ -47,7 +47,10 @@ export function KitsTab({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Kits</CardTitle>
+          <CardTitle className="flex items-center">
+            <Package className="h-5 w-5 mr-2" />
+             Kits
+          </CardTitle>
           <div className="flex space-x-2">
             <Button variant="outline" onClick={onCreateFromTemplate}>
               <Package className="h-4 w-4 mr-2" />

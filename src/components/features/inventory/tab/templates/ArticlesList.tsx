@@ -21,7 +21,7 @@ const categories = [
   { value: 'construction-materials', label: 'Construction Materials' },
   { value: 'laboratory-equipment', label: 'Laboratory Equipment' },
 ];
-
+// AVAILABLE ITEMS TABLE
 export function ArticlesList({
   articles,
   formData,

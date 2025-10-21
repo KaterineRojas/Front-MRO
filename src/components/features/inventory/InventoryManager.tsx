@@ -313,7 +313,6 @@ export function InventoryManager() {
   if (viewMode === 'create-kit') {
     return (
       <CreateKitPage
-        articles={articles}
         editingKit={editingKit}
         fromTemplate={selectedTemplateFromStore}
         onBack={handleBackToKits}
