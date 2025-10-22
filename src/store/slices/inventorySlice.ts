@@ -15,6 +15,7 @@ import {
   updateTemplateApi,
   createBinApi,
   updateBinApi,
+  deleteBinApi,
   recordMovementApi
 } from '../../components/features/inventory/services/inventoryApi';
 
@@ -158,10 +159,29 @@ export const createBinAsync = createAsyncThunk(
 
 export const updateBinAsync = createAsyncThunk(
   'inventory/updateBin',
-  async ({ id, data }: { id: number; data: Partial<Bin> }) => {
+  async ({ id, data }: { 
+    id: number; 
+    data: {
+      binCode: string;
+      type: 'good-condition' | 'on-revision' | 'scrap';
+      description: string;
+    }
+  }) => {
     const updatedBin = await updateBinApi(id, data);
-    return { id, data };
+    return updatedBin;
   }
+);
+
+export const deleteBin = createAsyncThunk(
+    'inventory/deleteBin',
+    async (binId: number, { rejectWithValue }) => {
+        try {
+            await deleteBinApi(binId);
+            return binId; 
+        } catch (error) {
+            return rejectWithValue(error.message); 
+        }
+    }
 );
 
 export const recordMovementAsync = createAsyncThunk(
@@ -228,9 +248,7 @@ const inventorySlice = createSlice({
         state.bins[index] = { ...state.bins[index], ...action.payload.data };
       }
     },
-    deleteBin: (state, action: PayloadAction<number>) => {
-      state.bins = state.bins.filter(bin => bin.id !== action.payload);
-    },
+  
 
     // Transaction reducers
     createTransaction: (state, action: PayloadAction<Transaction>) => {
@@ -354,6 +372,21 @@ builder.addCase(deleteArticleAsync.rejected, (state, action) => {
       state.loading = false;
       state.error = action.error.message || 'Failed to fetch bins';
     });
+   
+    // Delete bin
+builder.addCase(deleteBin.pending, (state) => {
+  state.loading = true;
+  state.error = null;
+});
+builder.addCase(deleteBin.fulfilled, (state, action) => {
+  state.loading = false;
+  //  action.payload es el binId (number)
+  state.bins = state.bins.filter(bin => bin.id !== action.payload);
+});
+builder.addCase(deleteBin.rejected, (state, action) => {
+  state.loading = false;
+  state.error = action.error.message || 'Failed to delete bin';
+});
 
     // Fetch transactions
     builder.addCase(fetchTransactions.pending, (state) => {
@@ -468,31 +501,32 @@ builder.addCase(updateArticleAsync.fulfilled, (state, action) => {
       state.loading = true;
       state.error = null;
     });
-    builder.addCase(createBinAsync.fulfilled, (state, action) => {
+    builder.addCase(createBinAsync.fulfilled, (state) => {
       state.loading = false;
-      state.bins.push(action.payload);
+     // state.bins.push(action.payload);
     });
     builder.addCase(createBinAsync.rejected, (state, action) => {
       state.loading = false;
       state.error = action.error.message || 'Failed to create bin';
     });
 
-    // Update bin
-    builder.addCase(updateBinAsync.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(updateBinAsync.fulfilled, (state, action) => {
-      state.loading = false;
-      const index = state.bins.findIndex(bin => bin.id === action.payload.id);
-      if (index !== -1) {
-        state.bins[index] = { ...state.bins[index], ...action.payload.data };
-      }
-    });
-    builder.addCase(updateBinAsync.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.error.message || 'Failed to update bin';
-    });
+ // Update bin
+builder.addCase(updateBinAsync.pending, (state) => {
+  state.loading = true;
+  state.error = null;
+});
+builder.addCase(updateBinAsync.fulfilled, (state, action) => {
+  state.loading = false;
+  // ✅ Actualizar con el bin completo que devuelve el backend
+  const index = state.bins.findIndex(bin => bin.id === action.payload.id);
+  if (index !== -1) {
+    state.bins[index] = action.payload;
+  }
+});
+builder.addCase(updateBinAsync.rejected, (state, action) => {
+  state.loading = false;
+  state.error = action.error.message || 'Failed to update bin';
+});
 
     // Record movement
     builder.addCase(recordMovementAsync.pending, (state) => {
@@ -566,7 +600,6 @@ export const {
   deleteTemplate,
   createBin,
   updateBin,
-  deleteBin,
   createTransaction,
   recordMovement,
 } = inventorySlice.actions;

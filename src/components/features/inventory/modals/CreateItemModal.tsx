@@ -11,7 +11,7 @@ import { Package, ChevronDown, ChevronRight } from 'lucide-react';
 import type { Article } from '../types';
 import { CATEGORIES } from '../constants';
 
-// Datos para api
+// Tipo de datos que la API realmente espera (sin cambios necesarios aquí)
 interface ApiPayload {
   name: string;
   description: string;
@@ -42,19 +42,20 @@ export function CreateItemModal({
   onSubmit
 }: CreateItemModalProps) {
   
-  // Función  booleano  'consumable' a un string para la UI
+  // Función auxiliar para convertir el booleano 'consumable' a un string para la UI
   const getUIType = (article: Article | null): ArticleTypeUI => {
       if (article?.consumable === false) return 'non-consumable';
       if (article?.consumable === true) return 'consumable';
       return 'consumable'; // Valor por defecto si no está en edición
   }
 
-
+  // ⭐ INICIALIZACIÓN DE ESTADO ACTUALIZADA: 
+  // Ahora usamos una propiedad local 'typeUI' que maneja el string de la selección.
   const [formData, setFormData] = useState({
     name: editingArticle?.name || '',
     description: editingArticle?.description || '',
     category: editingArticle?.category || ('office-supplies' as Article['category']),
-    // 'typeUI' para manejar el valor del Select
+    // Usamos el estado local 'typeUI' para manejar el valor del Select
     typeUI: getUIType(editingArticle),
     binCode: '', // El binCode ya no es una propiedad directa en Article, lo inicializamos vacío
     unit: editingArticle?.unit || '',
@@ -64,6 +65,7 @@ export function CreateItemModal({
   
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [showBinStock, setShowBinStock] = useState(false);
+  // Asumimos que ArticleBin[] no está tipado, si lo está, por favor proporcione ese tipo.
   const [articleBins, setArticleBins] = useState<any[]>(editingArticle?.bins || []); 
 
 
@@ -74,6 +76,7 @@ export function CreateItemModal({
         description: editingArticle.description,
         category: editingArticle.category,
         typeUI: getUIType(editingArticle),
+        // Asumimos que quieres usar el primer binCode si existe
         binCode: editingArticle.bins?.[0]?.binCode || '', 
         unit: editingArticle.unit,
         minStock: editingArticle.minStock.toString(),
@@ -109,15 +112,15 @@ export function CreateItemModal({
     }
   };
 
- //FUNCIÓN DE ENVÍO ACTUALIZADA
+ // ⭐ FUNCIÓN DE ENVÍO ACTUALIZADA
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Diferenciar entre creación y edición
+    // ✅ Diferenciar entre creación y edición
     if (editingArticle) {
       // MODO EDICIÓN - Enviar datos para PUT
       const updatePayload = {
-        sku: editingArticle.sku, 
+        sku: editingArticle.sku, // ✅ Incluir SKU para edición
         name: formData.name,
         description: formData.description,
         category: formData.category,
@@ -216,6 +219,7 @@ export function CreateItemModal({
               <Label htmlFor="category">Category *</Label>
               <Select 
                 value={formData.category} 
+                // Corregimos el tipado usando el tipo de Article, que existe
                 onValueChange={(value: Article['category']) => setFormData({...formData, category: value})}
               >
                 <SelectTrigger>
@@ -235,6 +239,7 @@ export function CreateItemModal({
               <Label htmlFor="typeUI">Type *</Label>
               <Select 
                 value={formData.typeUI} 
+                // ✅ Usa el tipo local ArticleTypeUI
                 onValueChange={(value: ArticleTypeUI) => setFormData({...formData, typeUI: value})}
               >
                 <SelectTrigger>
