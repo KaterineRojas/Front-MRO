@@ -81,37 +81,7 @@ const mockArticles: Article[] = [
   }
 ];
 
-const mockKits: Kit[] = [
-  {
-    id: 1,
-    binCode: 'KIT-OFFICE-001',
-    name: 'Basic Office Starter Kit',
-    description: 'Complete office setup kit for new employees',
-    category: 'office-supplies',
-    items: [
-      { articleId: 1, articleBinCode: 'BIN-OFF-001', articleName: 'Office Paper A4', quantity: 5 },
-      { articleId: 2, articleBinCode: 'BIN-TECH-002', articleName: 'Laptop Dell Latitude', quantity: 1 },
-      { articleId: 3, articleBinCode: 'BIN-USB-003', articleName: 'USB Cable Type-C', quantity: 2 }
-    ],
-    imageUrl: 'https://images.unsplash.com/photo-1698226930185-132277855882?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0b29sYm94JTIwa2l0JTIwY29udGFpbmVyfGVufDF8fHx8MTc1OTc4NDEzNXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    status: 'good-condition',
-    createdAt: '2025-01-15'
-  },
-  {
-    id: 2,
-    binCode: 'KIT-SAFETY-001',
-    name: 'Personal Safety Kit',
-    description: 'Complete personal protective equipment kit',
-    category: 'safety-equipment',
-    items: [
-      { articleId: 5, articleBinCode: 'BIN-SAFE-005', articleName: 'Safety Helmet', quantity: 1 },
-      { articleId: 4, articleBinCode: 'BIN-PROJ-004', articleName: 'Projector Epson', quantity: 1 }
-    ],
-    imageUrl: 'https://images.unsplash.com/photo-1698226930185-132277855882?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0b29sYm94JTIwa2l0JTIwY29udGFpbmVyfGVufDF8fHx8MTc1OTc4NDEzNXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    status: 'good-condition',
-    createdAt: '2025-01-16'
-  }
-];
+
 
 export function InventoryManager() {
   // Redux

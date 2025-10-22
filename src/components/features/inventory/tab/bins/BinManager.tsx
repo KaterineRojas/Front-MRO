@@ -4,7 +4,7 @@ import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '../../../ui/dialog';
-import { Plus, Search, Package2 } from 'lucide-react';
+import { Plus, Search, Package2, Warehouse } from 'lucide-react';
 import { BinForm } from './BinForm';
 import { BinTable } from './BinTable';
 import { UseBinForm } from './UseBinForm';
@@ -79,10 +79,15 @@ export function BinManager() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center">
-              <Package2 className="h-5 w-5 mr-2" />
-              Bin Management
-            </CardTitle>
+            <div>
+              <CardTitle className="flex items-center text-2xl font-bold">
+                <Warehouse className="h-6 w-6 mr-2" />
+                Bins
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Organize storage locations and bin assignments
+              </p>
+            </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button onClick={resetForm}>

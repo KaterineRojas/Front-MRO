@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Package } from 'lucide-react';
 import { AddItemModal } from '../../modals/AddItemModal';
 import { useAppDispatch } from '@/store/hooks';
 import { addArticle, updateArticle, deleteArticle } from '@/store/inventorySlice';
@@ -62,7 +62,15 @@ export function ItemsTab({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Items</CardTitle>
+          <div>
+            <CardTitle className="flex items-center text-2xl font-bold">
+              <Package className="h-6 w-6 mr-2" />
+              Items
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Manage individual inventory items and stock levels
+            </p>
+          </div>
           <Button onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Item

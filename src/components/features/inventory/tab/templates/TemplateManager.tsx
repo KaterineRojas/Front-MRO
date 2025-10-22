@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Badge } from '../../../ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../ui/alert-dialog';
-import { Plus, Search, Edit, Trash2, Package, Copy, ChevronDown, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Copy, ChevronDown, ChevronRight, Loader2, AlertCircle, FileText } from 'lucide-react';
 import type { Article, Template } from '../../types/inventory';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchTemplates, deleteTemplateAsync } from '@/store/inventorySlice';
@@ -85,10 +85,15 @@ export function TemplateManager({ articles, categories, onCreateKitFromTemplate,
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center">
-              <Package className="h-5 w-5 mr-2" />
-              Kit Templates
-            </CardTitle>
+            <div>
+              <CardTitle className="flex items-center text-2xl font-bold">
+                <FileText className="h-6 w-6 mr-2" />
+                Templates
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Create reusable templates for quick kit generation
+              </p>
+            </div>
             <Button onClick={onCreateNewTemplate}>
               <Plus className="h-4 w-4 mr-2" />
               Create Template

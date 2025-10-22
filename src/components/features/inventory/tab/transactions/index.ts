@@ -1,6 +1,6 @@
+// Main transaction components and utilities
 export * from './InventoryMovements';
-export * from './MovementFilters';
-export * from './MovementTable';
-export * from './CycleCountModal';
-export * from './UseMovementFilters';
-export * from './types';
+export * from './TransactionsTable';
+export * from './TransactionBadge';
+export * from './transactionTypes';
+export * from './transactionUtils';

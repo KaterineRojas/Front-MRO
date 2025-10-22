@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
-import { Plus, Package, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Boxes, Package, Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '../../../ui/alert';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { deleteKit, fetchKits } from '@/store/inventorySlice';
@@ -47,10 +47,15 @@ export function KitsTab({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center">
-            <Package className="h-5 w-5 mr-2" />
-             Kits
-          </CardTitle>
+          <div>
+            <CardTitle className="flex items-center text-2xl font-bold">
+              <Boxes className="h-6 w-6 mr-2" />
+              Kits
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Create and manage bundles of multiple items
+            </p>
+          </div>
           <div className="flex space-x-2">
             <Button variant="outline" onClick={onCreateFromTemplate}>
               <Package className="h-4 w-4 mr-2" />
