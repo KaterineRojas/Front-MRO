@@ -110,14 +110,14 @@ export function RecordMovementModal({
   const selectedKitForMovement = kits.find(kit => kit.binCode === movementData.kitBinCode);
   
   const filteredArticlesForMovement = articles.filter(article => 
-    article.sku.toLowerCase().includes(articleSearchTerm.toLowerCase()) ||
-    article.binCode.toLowerCase().includes(articleSearchTerm.toLowerCase()) ||
-    article.name.toLowerCase().includes(articleSearchTerm.toLowerCase())
+    article.sku?.toLowerCase().includes(articleSearchTerm.toLowerCase()) ||
+    article.binCode?.toLowerCase().includes(articleSearchTerm.toLowerCase()) ||
+    article.name?.toLowerCase().includes(articleSearchTerm.toLowerCase())
   );
   
   const filteredKitsForMovement = kits.filter(kit =>
-    kit.binCode.toLowerCase().includes(kitSearchTermMovement.toLowerCase()) ||
-    kit.name.toLowerCase().includes(kitSearchTermMovement.toLowerCase())
+    kit.binCode?.toLowerCase().includes(kitSearchTermMovement.toLowerCase()) ||
+    kit.name?.toLowerCase().includes(kitSearchTermMovement.toLowerCase())
   );
 
   return (

@@ -13,9 +13,9 @@ export function UseKitFilters(kits: Kit[]) {
 
     return kits.filter((kit) => {
       const matchesSearch =
-        kit.binCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        kit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        kit.description.toLowerCase().includes(searchTerm.toLowerCase());
+        kit.binCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        kit.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        kit.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesCategory =
         categoryFilter === 'all' ||
