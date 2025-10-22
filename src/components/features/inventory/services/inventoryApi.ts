@@ -378,7 +378,7 @@ export async function fetchTemplatesFromApi(): Promise<Template[]> {
 ..........................................................................................*/ 
 export async function fetchBinsFromApi(): Promise<Bin[]> {
   try {
-    const response = await fetch(`${API_URL}/Bins`, {
+    const response = await fetch(`${API_URL}/Bins?isActive=true`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -551,12 +551,12 @@ export async function updateArticleApi(
       throw new Error(`Failed to update item: ${response.status} - ${errorText}`);
     }
 
-    // ✅ Verificar si hay contenido en la respuesta
+    // Verificar si hay contenido en la respuesta
     const contentType = response.headers.get('content-type');
     const hasContent = contentType?.includes('application/json');
 
     if (!hasContent || response.status === 204) {
-      // ✅ Backend devolvió vacío - hacer GET del item actualizado
+      //  Backend devolvió vacío - hacer GET del item actualizado
       console.log('API: Update successful (no content), fetching updated item...');
       return await fetchArticleByIdApi(id);
     }
@@ -701,29 +701,32 @@ export async function createBinApi(binData: {
 /** ************************************************************************************************************************
  * Elimina un Bin por su ID a través de una solicitud DELETE.
  */
+// api.ts
+
 export async function deleteBinApi(id: number): Promise<void> {
-    try {
-        const response = await fetch(`${API_URL}/Bins/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
+  try {
+    console.log('🗑️ Attempting to delete bin with ID:', id); // ✅ Log para debug
+    
+    const response = await fetch(`${API_URL}/Bins/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-        if (!response.ok) {
-            // Intenta leer el cuerpo del error del servidor
-            const errorText = await response.text(); 
-            throw new Error(`Failed to delete bin: ${response.status} - ${errorText}`);
-        }
-        
-        // Si la eliminación es exitosa, el servidor suele devolver 204 No Content.
-        // No necesitamos parsear JSON.
-        return;
+    console.log('🗑️ Delete response status:', response.status); // ✅ Log
 
-    } catch (error) {
-        console.error('Error al eliminar Bin:', error);
-        throw error;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('🗑️ Delete failed:', errorText); // ✅ Log
+      throw new Error(`Failed to delete bin: ${response.status} - ${errorText}`);
     }
+    
+    console.log('✅ Bin deleted successfully'); // ✅ Log
+  } catch (error) {
+    console.error('❌ Error in deleteBinApi:', error);
+    throw error;
+  }
 }
 /**
  * Simulates updating a bin in the API

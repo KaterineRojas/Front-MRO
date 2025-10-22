@@ -173,15 +173,16 @@ export const updateBinAsync = createAsyncThunk(
 );
 
 export const deleteBin = createAsyncThunk(
-    'inventory/deleteBin',
-    async (binId: number, { rejectWithValue }) => {
-        try {
-            await deleteBinApi(binId);
-            return binId; 
-        } catch (error) {
-            return rejectWithValue(error.message); 
-        }
+  'inventory/deleteBin',
+  async (binId: number, { rejectWithValue }) => {
+    try {
+      await deleteBinApi(binId);
+      return binId;
+    } catch (error: any) {
+      console.error('Error in deleteBin thunk:', error);
+      return rejectWithValue(error.message || 'Failed to delete bin');
     }
+  }
 );
 
 export const recordMovementAsync = createAsyncThunk(
@@ -373,14 +374,14 @@ builder.addCase(deleteArticleAsync.rejected, (state, action) => {
       state.error = action.error.message || 'Failed to fetch bins';
     });
    
-    // Delete bin
+// Delete bin
 builder.addCase(deleteBin.pending, (state) => {
   state.loading = true;
   state.error = null;
 });
 builder.addCase(deleteBin.fulfilled, (state, action) => {
   state.loading = false;
-  //  action.payload es el binId (number)
+  // ✅ action.payload es el binId (number)
   state.bins = state.bins.filter(bin => bin.id !== action.payload);
 });
 builder.addCase(deleteBin.rejected, (state, action) => {

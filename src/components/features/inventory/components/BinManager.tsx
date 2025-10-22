@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
-import { createBinAsync, updateBinAsync, deleteBin as deleteBinAction , fetchBins} from '../../../../store/slices/inventorySlice'; 
+import { createBinAsync, updateBinAsync, deleteBin, fetchBins} from '../../../../store/slices/inventorySlice'; 
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
@@ -64,41 +64,73 @@ export function BinManager() {
     }
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const isDuplicate = bins.some(bin => 
-      bin.binCode.toLowerCase() === formData.binCode.toLowerCase() && 
-      bin.id !== editingBin?.id
-    );
-    
-    if (isDuplicate) {
-      alert(`Error: BIN Code "${formData.binCode}" already exists.`);
-      return;
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  const isDuplicate = bins.some(bin => 
+    bin.binCode.toLowerCase() === formData.binCode.toLowerCase() && 
+    bin.id !== editingBin?.id
+  );
+  
+  if (isDuplicate) {
+    alert(`Error: BIN Code "${formData.binCode}" already exists.`);
+    return;
+  }
+  
+  try {
+    if (editingBin) {
+      await dispatch(updateBinAsync({ id: editingBin.id, data: formData })).unwrap();
+      //  Recargar después de actualizar
+      await dispatch(fetchBins()).unwrap();
+      alert('Bin updated successfully!');
+    } else {
+      await dispatch(createBinAsync(formData)).unwrap();
+      //  Recargar después de crear
+      await dispatch(fetchBins()).unwrap();
+      alert('Bin created successfully!');
     }
     
-    try {
-      if (editingBin) {
-        await dispatch(updateBinAsync({ id: editingBin.id, data: formData })).unwrap();
-        alert('Bin updated successfully!');
-      } else {
-        await dispatch(createBinAsync(formData)).unwrap();
-        
-        await dispatch(fetchBins()).unwrap();
-        alert('Bin created successfully!');
-      }
-      
-      resetForm();
-      setDialogOpen(false);
-    } catch (error) {
-      console.error('Failed to save bin:', error);
-      alert('Failed to save bin. Please try again.');
-    }
-  };
-  const handleDeleteBin = (id: number) => {
-    dispatch(deleteBinAction(id));
+    resetForm();
+    setDialogOpen(false);
+  } catch (error) {
+    console.error('Failed to save bin:', error);
+    alert('Failed to save bin. Please try again.');
+  }
+};
+
+const handleEdit = (bin: Bin) => {
+  setEditingBin(bin);
+  setFormData({
+    binCode: bin.binCode,
+    type: bin.type,
+    description: bin.description
+  });
+  setDialogOpen(true);
+};
+
+// BinManager.tsx
+
+const handleDeleteBin = async (id: number) => {
+  console.log('🔴 handleDeleteBin called with ID:', id); // ✅ Log
+  
+  try {
+    console.log('🔴 Dispatching deleteBin...'); // ✅ Log
+    await dispatch(deleteBin(id)).unwrap();
+    
+    console.log('✅ deleteBin succeeded, fetching bins...'); // ✅ Log
+    await dispatch(fetchBins()).unwrap();
+    
     alert('Bin deleted successfully!');
-  };
+  } catch (error: any) {
+    console.error('❌ Failed to delete bin:', error); // ✅ Más detalle
+    console.error('❌ Error details:', {
+      message: error.message,
+      stack: error.stack,
+      full: error
+    });
+    alert(`Failed to delete bin: ${error.message || error}`);
+  }
+};
 
   return (
     <Card>
