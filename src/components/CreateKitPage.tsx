@@ -9,7 +9,7 @@ import { Badge } from './features/ui/badge';
 import { Alert, AlertDescription } from './features/ui/alert';
 import { ArrowLeft, Search, Plus, X, Package, Loader2, AlertCircle } from 'lucide-react';
 import type { Article, Kit, KitItem, Template } from './features/inventory/types/inventory';
-import { getItems } from '@/services/inventarioService';
+import { getItems, getCategories, type Category } from '@/services/inventarioService';
 import { createKit, type CreateKitRequest } from '@/services/kitsService';
 
 interface CreateKitPageProps {
@@ -19,24 +19,10 @@ interface CreateKitPageProps {
   onSave: (kitData: Omit<Kit, 'id' | 'createdAt'>) => void;
 }
 
-const categories = [
-  { value: 'office-supplies', label: 'Office Supplies' },
-  { value: 'technology', label: 'Technology' },
-  { value: 'tools', label: 'Tools' },
-  { value: 'clothing', label: 'Clothing' },
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'furniture', label: 'Furniture' },
-  { value: 'vehicles', label: 'Vehicles' },
-  { value: 'safety-equipment', label: 'Safety Equipment' },
-  { value: 'medical-supplies', label: 'Medical Supplies' },
-  { value: 'cleaning-supplies', label: 'Cleaning Supplies' },
-  { value: 'construction-materials', label: 'Construction Materials' },
-  { value: 'laboratory-equipment', label: 'Laboratory Equipment' },
-];
-
 export function CreateKitPage({ editingKit, fromTemplate, onBack, onSave }: CreateKitPageProps) {
   // State for loading items from API
   const [articles, setArticles] = useState<Article[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -52,30 +38,40 @@ export function CreateKitPage({ editingKit, fromTemplate, onBack, onSave }: Crea
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
-  // Load items from API on mount
+  // Load items and categories from API on mount
   useEffect(() => {
-    async function loadItems() {
+    async function loadData() {
       try {
         setLoading(true);
         setError(null);
-        const items = await getItems();
+        const [items, cats] = await Promise.all([
+          getItems(),
+          getCategories()
+        ]);
         setArticles(items);
+        setCategories(cats);
       } catch (err) {
-        console.error('Error loading items:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load items');
+        console.error('Error loading data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
         setLoading(false);
       }
     }
 
-    loadItems();
+    loadData();
   }, []);
+
+  // Normalize category for comparison (matches API format transformation)
+  const normalizeCategory = (cat: string | undefined) =>
+    cat ? cat.toLowerCase().replace(/\s+/g, '-') : '';
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = (article.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          (article.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          (article.description?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || article.category === categoryFilter;
+    const matchesCategory =
+      categoryFilter === 'all' ||
+      normalizeCategory(article.category as string) === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 

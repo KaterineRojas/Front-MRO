@@ -11,32 +11,19 @@ import type { Article, Template } from '../../types/inventory';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchTemplates, deleteTemplateAsync } from '@/store/inventorySlice';
 import { Alert, AlertDescription } from '../../../ui/alert';
+import type { Category } from '@/services/inventarioService';
 
 
 interface TemplateManagerProps {
   articles: Article[];
+  categories: Category[];
   onCreateKitFromTemplate: (template: Template) => void;
   onEditTemplate: (template: Template) => void;
   onCreateNewTemplate: () => void;
 }
 
-const categories = [
-  { value: 'office-supplies', label: 'Office Supplies' },
-  { value: 'technology', label: 'Technology' },
-  { value: 'tools', label: 'Tools' },
-  { value: 'clothing', label: 'Clothing' },
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'furniture', label: 'Furniture' },
-  { value: 'vehicles', label: 'Vehicles' },
-  { value: 'safety-equipment', label: 'Safety Equipment' },
-  { value: 'medical-supplies', label: 'Medical Supplies' },
-  { value: 'cleaning-supplies', label: 'Cleaning Supplies' },
-  { value: 'construction-materials', label: 'Construction Materials' },
-  { value: 'laboratory-equipment', label: 'Laboratory Equipment' },
-];
 
-
-export function TemplateManager({ articles, onCreateKitFromTemplate, onEditTemplate, onCreateNewTemplate }: TemplateManagerProps) {
+export function TemplateManager({ articles, categories, onCreateKitFromTemplate, onEditTemplate, onCreateNewTemplate }: TemplateManagerProps) {
   const dispatch = useAppDispatch();
   const { templates, loading, error } = useAppSelector((state) => state.inventory);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,10 +35,16 @@ export function TemplateManager({ articles, onCreateKitFromTemplate, onEditTempl
     dispatch(fetchTemplates());
   }, [dispatch]);
 
+  // Normalize category for comparison (matches API format transformation)
+  const normalizeCategory = (cat: string | undefined) =>
+    cat ? cat.toLowerCase().replace(/\s+/g, '-') : '';
+
   const filteredTemplates = templates.filter(template => {
     const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (template.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
-    const matchesCategory = categoryFilter === 'all' || template.category === categoryFilter;
+    const matchesCategory =
+      categoryFilter === 'all' ||
+      normalizeCategory(template.category) === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 

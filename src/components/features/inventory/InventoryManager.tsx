@@ -39,6 +39,7 @@ import { EditTemplatePage } from './tab/templates/EditTemplatePage';
 // Services
 import { createTemplate, updateTemplate } from '@/services/templateService';
 import { fetchTemplates } from '@/store/inventorySlice';
+import { getCategories, type Category } from '@/services/inventarioService';
 
 // Mock Data - TODO: Replace with API calls
 const mockArticles: Article[] = [
@@ -124,13 +125,28 @@ export function InventoryManager() {
   const [recordMovementOpen, setRecordMovementOpen] = useState(false);
   const [editingKit, setEditingKit] = useState<Kit | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
 
-  // Initialize mock data on mount
+  // Initialize mock data and load categories on mount
   useEffect(() => {
     if (articles.length === 0) {
       dispatch(setArticles(mockArticles));
     }
     // Kits are now loaded from API via fetchKits() in KitsTab
+
+    // Load categories from API
+    async function loadCategories() {
+      try {
+        const cats = await getCategories();
+        setCategories(cats);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+        // Fallback to hardcoded categories if API fails
+        setCategories(CATEGORIES);
+      }
+    }
+
+    loadCategories();
   }, [dispatch]);
 
   // Article Handlers
@@ -385,7 +401,7 @@ export function InventoryManager() {
         <TabsContent value="items">
           <ItemsTab
             articles={articles}
-            categories={CATEGORIES}
+            categories={categories}
             onArticleUpdate={handleArticleUpdate}
             onArticleDelete={handleArticleDelete}
             getStockStatus={getStockStatus}
@@ -398,7 +414,7 @@ export function InventoryManager() {
         <TabsContent value="kits">
           <KitsTab
             articles={articles}
-            categories={CATEGORIES}
+            categories={categories}
             onCreateKit={handleKitCreate}
             onCreateFromTemplate={() => dispatch(setSelectedView('templates'))}
             onEditKit={handleKitEdit}
@@ -410,6 +426,7 @@ export function InventoryManager() {
         <TabsContent value="templates" className="space-y-4">
           <TemplateManager
             articles={articles}
+            categories={categories}
             onCreateKitFromTemplate={handleCreateKitFromTemplate}
             onEditTemplate={handleEditTemplate}
             onCreateNewTemplate={handleCreateNewTemplate}

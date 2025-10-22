@@ -7,12 +7,20 @@ export function UseKitFilters(kits: Kit[]) {
   const [expandedKits, setExpandedKits] = useState<Set<number>>(new Set());
 
   const filteredKits = useMemo(() => {
+    // Normalize category for comparison (matches API format transformation)
+    const normalizeCategory = (cat: string | undefined) =>
+      cat ? cat.toLowerCase().replace(/\s+/g, '-') : '';
+
     return kits.filter((kit) => {
       const matchesSearch =
         kit.binCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
         kit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         kit.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || kit.category === categoryFilter;
+
+      const matchesCategory =
+        categoryFilter === 'all' ||
+        normalizeCategory(kit.category) === categoryFilter;
+
       return matchesSearch && matchesCategory;
     });
   }, [kits, searchTerm, categoryFilter]);

@@ -26,6 +26,7 @@ export interface Article {
 }
 
 export interface KitItem {
+  articleDescription: any;
   imageUrl: any;
   articleId: number;
   articleSku: string;

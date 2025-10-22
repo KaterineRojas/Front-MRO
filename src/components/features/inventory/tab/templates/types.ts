@@ -1,4 +1,5 @@
 import type { ItemType, StatusType, CategoryType } from '../../types/inventory';
+import type { Category } from '@/services/inventarioService';
 
 export interface Article {
   id: number;
@@ -56,6 +57,7 @@ export interface ArticlesListProps {
   setSearchTerm: (term: string) => void;
   categoryFilter: string;
   setCategoryFilter: (value: string) => void;
+  categories: Category[];
 }
 
 export interface SelectedItemsListProps {

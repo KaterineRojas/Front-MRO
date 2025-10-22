@@ -69,3 +69,39 @@ export async function getItems(): Promise<Article[]> {
     throw error;
   }
 }
+
+/**
+ * Category format from API
+ */
+export interface Category {
+  value: string;
+  label: string;
+}
+
+/**
+ * Fetches all categories from the API
+ */
+export async function getCategories(): Promise<Category[]> {
+  try {
+    const response = await fetch(`${API_URL}/Items/categories`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch categories: ${response.status} ${response.statusText}`);
+    }
+
+    const data: string[] = await response.json();
+    // Transform string array to Category format
+    return data.map((category) => ({
+      value: category.toLowerCase().replace(/\s+/g, '-'),
+      label: category,
+    }));
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    throw error;
+  }
+}

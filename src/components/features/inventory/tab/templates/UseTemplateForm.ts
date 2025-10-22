@@ -24,7 +24,15 @@ export function UseTemplateForm(
         article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         article.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         article.binCode?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || article.category === categoryFilter;
+
+      // Normalize category for comparison
+      const normalizeCategory = (cat: string | undefined) =>
+        cat ? cat.toLowerCase().replace(/\s+/g, '-') : '';
+
+      const matchesCategory =
+        categoryFilter === 'all' ||
+        normalizeCategory(article.category as string) === categoryFilter;
+
       return matchesSearch && matchesCategory;
     });
   }, [articles, searchTerm, categoryFilter]);

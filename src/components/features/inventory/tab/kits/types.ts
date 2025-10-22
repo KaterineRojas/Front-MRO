@@ -1,8 +1,9 @@
 import type { Kit, Article, KitItem } from '../../types/inventory';
+import type { Category } from '@/services/inventarioService';
 
 export interface KitsTabProps {
   articles?: Article[];
-  categories: { value: string; label: string }[];
+  categories: Category[];
   onCreateKit: () => void;
   onCreateFromTemplate: () => void;
   onEditKit: (kit: Kit) => void;
@@ -14,13 +15,13 @@ export interface KitFiltersProps {
   setSearchTerm: (value: string) => void;
   categoryFilter: string;
   setCategoryFilter: (value: string) => void;
-  categories: { value: string; label: string }[];
+  categories: Category[];
 }
 
 export interface KitTableProps {
   kits: Kit[];
   articles: Article[];
-  categories: { value: string; label: string }[];
+  categories: Category[];
   expandedKits: Set<number>;
   onToggleExpand: (kitId: number) => void;
   onEditKit: (kit: Kit) => void;
@@ -30,7 +31,7 @@ export interface KitTableProps {
 export interface KitRowProps {
   kit: Kit;
   articles: Article[];
-  categories: { value: string; label: string }[];
+  categories: Category[];
   isExpanded: boolean;
   onToggleExpand: (kitId: number) => void;
   onEditKit: (kit: Kit) => void;

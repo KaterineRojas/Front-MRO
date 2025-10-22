@@ -9,31 +9,36 @@ import { SelectedItemsList } from './SelectedItemsList';
 import { UseTemplateForm } from './UseTemplateForm';
 import type { EditTemplatePageProps } from './types';
 import type { Article } from './types';
-import { getItems } from '@/services/inventarioService';
+import { getItems, getCategories, type Category } from '@/services/inventarioService';
 
 export function EditTemplatePage({ editingTemplate, onBack, onSave }: EditTemplatePageProps) {
   // State for loading items from API
   const [articles, setArticles] = useState<Article[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load items from API on mount
+  // Load items and categories from API on mount
   useEffect(() => {
-    async function loadItems() {
+    async function loadData() {
       try {
         setLoading(true);
         setError(null);
-        const items = await getItems();
+        const [items, cats] = await Promise.all([
+          getItems(),
+          getCategories()
+        ]);
         setArticles(items);
+        setCategories(cats);
       } catch (err) {
-        console.error('Error loading items:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load items');
+        console.error('Error loading data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
         setLoading(false);
       }
     }
 
-    loadItems();
+    loadData();
   }, []);
 
   const {
@@ -100,6 +105,7 @@ export function EditTemplatePage({ editingTemplate, onBack, onSave }: EditTempla
               setSearchTerm={setSearchTerm}
               categoryFilter={categoryFilter}
               setCategoryFilter={setCategoryFilter}
+              categories={categories}
             />
 
             <Card>

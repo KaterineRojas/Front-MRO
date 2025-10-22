@@ -7,20 +7,6 @@ import { Badge } from '@/components/features/ui/badge';
 import { Search, Plus, Package } from 'lucide-react';
 import type { ArticlesListProps } from './types';
 
-const categories = [
-  { value: 'office-supplies', label: 'Office Supplies' },
-  { value: 'technology', label: 'Technology' },
-  { value: 'tools', label: 'Tools' },
-  { value: 'clothing', label: 'Clothing' },
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'furniture', label: 'Furniture' },
-  { value: 'vehicles', label: 'Vehicles' },
-  { value: 'safety-equipment', label: 'Safety Equipment' },
-  { value: 'medical-supplies', label: 'Medical Supplies' },
-  { value: 'cleaning-supplies', label: 'Cleaning Supplies' },
-  { value: 'construction-materials', label: 'Construction Materials' },
-  { value: 'laboratory-equipment', label: 'Laboratory Equipment' },
-];
 // AVAILABLE ITEMS TABLE
 export function ArticlesList({
   articles,
@@ -30,6 +16,7 @@ export function ArticlesList({
   setSearchTerm,
   categoryFilter,
   setCategoryFilter,
+  categories,
 }: ArticlesListProps) {
   return (
     <Card>

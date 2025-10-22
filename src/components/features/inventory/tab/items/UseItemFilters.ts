@@ -7,13 +7,21 @@ export function UseItemFilters(articles: Article[]) {
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
 
   const filteredArticles = useMemo(() => {
+    // Normalize category for comparison (matches API format transformation)
+    const normalizeCategory = (cat: string | undefined) =>
+      cat ? cat.toLowerCase().replace(/\s+/g, '-') : '';
+
     return articles.filter((article) => {
       const matchesSearch =
         article.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
         article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         article.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         article.binCode.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || article.category === categoryFilter;
+
+      const matchesCategory =
+        categoryFilter === 'all' ||
+        normalizeCategory(article.category as string) === categoryFilter;
+
       return matchesSearch && matchesCategory;
     });
   }, [articles, searchTerm, categoryFilter]);
