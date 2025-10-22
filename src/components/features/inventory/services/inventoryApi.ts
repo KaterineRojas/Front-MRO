@@ -239,7 +239,7 @@ export function transformInventoryItem(apiItem: InventoryItemResponse): Article 
     consumable: apiItem.consumable,
     minStock: apiItem.minStock || 0,
     
-    // ✅ NUEVO: Mapear array de bins
+    // Mapear array de bins
     bins: apiItem.bins?.map(bin => ({
       binId: bin.binId,
       binCode: bin.binCode,
@@ -247,7 +247,7 @@ export function transformInventoryItem(apiItem: InventoryItemResponse): Article 
       quantity: bin.quantity
     })) || [],
     
-    // ✅ NUEVO: Usar datos calculados del API
+    //  Usar datos calculados del API
     quantityAvailable: apiItem.quantityAvailable ?? 0,
     quantityOnLoan: apiItem.quantityOnLoan ?? 0,
     quantityReserved: apiItem.quantityReserved ?? 0,
@@ -345,6 +345,33 @@ export async function fetchArticlesFromApi(): Promise<Article[]> {
     return data.map(transformInventoryItem);
   } catch (error) {
     console.error('Error fetching all items with bins:', error);
+    throw error;
+  }
+}
+
+
+
+/** *************************************************************************************************************************************
+ * Fetches a single article by ID from the API
+ */
+export async function fetchArticleByIdApi(id: number): Promise<Article> {
+  try {
+    const response = await fetch(`${API_URL}/Items/${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch item: ${response.status} ${response.statusText}`);
+    }
+
+    const data: InventoryItemResponse = await response.json();
+    
+    return transformInventoryItem(data);
+  } catch (error) {
+    console.error(`Error fetching article ${id}:`, error);
     throw error;
   }
 }
@@ -489,7 +516,7 @@ export async function createArticleApi(
 /**
  * Simulates updating an article in the API
  */
-export async function updateArticleApi(id: number, data: Partial<Article>): Promise<Article> {
+export async function updateArticleApi2(id: number, data: Partial<Article>): Promise<Article> {
   await delay(500); // Simulate network delay
   
   // In a real API, this would update the article in the database
@@ -497,6 +524,73 @@ export async function updateArticleApi(id: number, data: Partial<Article>): Prom
   
   // Return the updated article (in reality, the backend would return the full updated object)
   return { id, ...data } as Article;
+}
+
+/** *********************************************************************************************************************************
+ * Updates an article/item via PUT request
+ */
+
+export async function updateArticleApi(
+  id: number,
+  articleData: {
+    sku: string;
+    name: string;
+    description: string;
+    category: string;
+    unit: string;
+    minStock: number;
+    consumable: boolean;
+    imageUrl?: string | null;
+  }
+): Promise<Article> {
+  try {
+    console.log('UPDATE API_DATA_RECEIVED:', articleData);
+    
+    const payload = {
+      sku: articleData.sku,
+      name: articleData.name,
+      description: articleData.description,
+      category: articleData.category,
+      unit: articleData.unit,
+      minStock: articleData.minStock,
+      isActive: true,
+      consumible: articleData.consumable,
+      urlImage: articleData.imageUrl || ''
+    };
+
+    console.log('UPDATE API_PAYLOAD:', payload);
+
+    const response = await fetch(`${API_URL}/Items/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to update item: ${response.status} - ${errorText}`);
+    }
+
+    // ✅ Verificar si hay contenido en la respuesta
+    const contentType = response.headers.get('content-type');
+    const hasContent = contentType?.includes('application/json');
+
+    if (!hasContent || response.status === 204) {
+      // ✅ Backend devolvió vacío - hacer GET del item actualizado
+      console.log('API: Update successful (no content), fetching updated item...');
+      return await fetchArticleByIdApi(id);
+    }
+
+    // Si devuelve JSON, parsearlo
+    const updatedItem = await response.json();
+    return transformInventoryItem(updatedItem);
+    
+  } catch (error) {
+    console.error('Error updating article:', error);
+    throw error;
+  }
 }
 
 /**

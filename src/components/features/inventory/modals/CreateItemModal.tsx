@@ -11,7 +11,7 @@ import { Package, ChevronDown, ChevronRight } from 'lucide-react';
 import type { Article } from '../types';
 import { CATEGORIES } from '../constants';
 
-// Tipo de datos que la API realmente espera (sin cambios necesarios aquí)
+// Datos para api
 interface ApiPayload {
   name: string;
   description: string;
@@ -20,7 +20,9 @@ interface ApiPayload {
   minStock: number;
   consumable: boolean;
   binCode: string; 
+   imageUrl?: string | null;
   imageFile?: File | null;
+  sku?: string;
 }
 
 interface CreateItemModalProps {
@@ -30,7 +32,7 @@ interface CreateItemModalProps {
   onSubmit: (articleData: ApiPayload) => void;
 }
 
-// ⭐ Definimos un tipo local para la UI (como 'type' ya no existe en Article)
+//  Definimos un tipo local para la UI (como 'type' ya no existe en Article)
 type ArticleTypeUI = 'consumable' | 'non-consumable' | 'pending-purchase';
 
 export function CreateItemModal({
@@ -40,20 +42,19 @@ export function CreateItemModal({
   onSubmit
 }: CreateItemModalProps) {
   
-  // Función auxiliar para convertir el booleano 'consumable' a un string para la UI
+  // Función  booleano  'consumable' a un string para la UI
   const getUIType = (article: Article | null): ArticleTypeUI => {
       if (article?.consumable === false) return 'non-consumable';
       if (article?.consumable === true) return 'consumable';
       return 'consumable'; // Valor por defecto si no está en edición
   }
 
-  // ⭐ INICIALIZACIÓN DE ESTADO ACTUALIZADA: 
-  // Ahora usamos una propiedad local 'typeUI' que maneja el string de la selección.
+
   const [formData, setFormData] = useState({
     name: editingArticle?.name || '',
     description: editingArticle?.description || '',
     category: editingArticle?.category || ('office-supplies' as Article['category']),
-    // Usamos el estado local 'typeUI' para manejar el valor del Select
+    // 'typeUI' para manejar el valor del Select
     typeUI: getUIType(editingArticle),
     binCode: '', // El binCode ya no es una propiedad directa en Article, lo inicializamos vacío
     unit: editingArticle?.unit || '',
@@ -63,7 +64,6 @@ export function CreateItemModal({
   
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [showBinStock, setShowBinStock] = useState(false);
-  // Asumimos que ArticleBin[] no está tipado, si lo está, por favor proporcione ese tipo.
   const [articleBins, setArticleBins] = useState<any[]>(editingArticle?.bins || []); 
 
 
@@ -74,7 +74,6 @@ export function CreateItemModal({
         description: editingArticle.description,
         category: editingArticle.category,
         typeUI: getUIType(editingArticle),
-        // Asumimos que quieres usar el primer binCode si existe
         binCode: editingArticle.bins?.[0]?.binCode || '', 
         unit: editingArticle.unit,
         minStock: editingArticle.minStock.toString(),
@@ -110,36 +109,41 @@ export function CreateItemModal({
     }
   };
 
-  // ⭐ FUNCIÓN DE ENVÍO ACTUALIZADA: Mapea typeUI a 'consumable' (booleano)
+ //FUNCIÓN DE ENVÍO ACTUALIZADA
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    onSubmit({
-      name: formData.name,
-      description: formData.description,
-      category: formData.category,
-      unit: formData.unit,
-      // ✅ Usa el estado local 'typeUI' para determinar el booleano 'consumable'
-      consumable: formData.typeUI === 'consumable',
-      minStock: parseInt(formData.minStock, 10),
-      binCode: formData.binCode,
-      imageFile: imageFile,
-    });
-    const payload = {
-    name: formData.name,
-    description: formData.description,
-    category: formData.category,
-    unit: formData.unit,
-    // ✅ Usa el estado local 'typeUI' para determinar el booleano 'consumable'
-    consumable: formData.typeUI === 'consumable',
-    minStock: parseInt(formData.minStock, 10),
-    binCode: formData.binCode,
-    imageFile: imageFile,
-  };
-    console.log('Final API Payload (desde Modal):', payload);
+    // Diferenciar entre creación y edición
+    if (editingArticle) {
+      // MODO EDICIÓN - Enviar datos para PUT
+      const updatePayload = {
+        sku: editingArticle.sku, 
+        name: formData.name,
+        description: formData.description,
+        category: formData.category,
+        unit: formData.unit,
+        consumable: formData.typeUI === 'consumable',
+        minStock: parseInt(formData.minStock, 10),
+        imageUrl: formData.imageUrl || null,
+      };
+      console.log('UPDATE PAYLOAD from Modal:', updatePayload);
+      onSubmit(updatePayload);
+    } else {
+      // MODO CREACIÓN - Enviar datos para POST
+      onSubmit({
+        name: formData.name,
+        description: formData.description,
+        category: formData.category,
+        unit: formData.unit,
+        consumable: formData.typeUI === 'consumable',
+        minStock: parseInt(formData.minStock, 10),
+        binCode: formData.binCode,
+        imageFile: imageFile,
+      });
+    }
     onOpenChange(false);
   };
-
+    
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'good-condition':
@@ -212,7 +216,6 @@ export function CreateItemModal({
               <Label htmlFor="category">Category *</Label>
               <Select 
                 value={formData.category} 
-                // Corregimos el tipado usando el tipo de Article, que existe
                 onValueChange={(value: Article['category']) => setFormData({...formData, category: value})}
               >
                 <SelectTrigger>
@@ -232,7 +235,6 @@ export function CreateItemModal({
               <Label htmlFor="typeUI">Type *</Label>
               <Select 
                 value={formData.typeUI} 
-                // ✅ Usa el tipo local ArticleTypeUI
                 onValueChange={(value: ArticleTypeUI) => setFormData({...formData, typeUI: value})}
               >
                 <SelectTrigger>

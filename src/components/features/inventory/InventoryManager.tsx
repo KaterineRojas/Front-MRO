@@ -69,9 +69,26 @@ const handleCreateItem = async(articleData: {
     alert('Failed to create item. Please try again.');
   }
 };
-  const handleUpdateItem = (id: number, articleData: Omit<Article, 'id' | 'createdAt' | 'currentStock' | 'location' | 'status'>) => {
-    dispatch(updateArticleAsync({ id, data: articleData }));
-  };
+const handleUpdateItem = async (id: number, articleData: {
+  name: string;
+  description: string;
+  category: string;
+  unit: string;
+  minStock: number;
+  consumable: boolean;
+  imageUrl?: string | null;
+  sku: string;
+}) => {
+  try {
+    await dispatch(updateArticleAsync({ id, data: articleData })).unwrap();
+    // ✅ CRÍTICO: Recargar datos DESPUÉS de que se complete el update
+    await dispatch(fetchArticles()).unwrap();
+    alert('Item updated successfully!');
+  } catch (error) {
+    console.error('Failed to update article:', error);
+    alert('Failed to update item. Please try again.');
+  }
+};
 
   const handleDeleteItem = (id: number) => {
     dispatch(deleteArticleAsync(id));

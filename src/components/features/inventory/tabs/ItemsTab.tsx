@@ -13,8 +13,26 @@ import { CATEGORIES } from '../constants';
 
 interface ItemsTabProps {
   articles: Article[];
-  onCreateItem: (articleData: Omit<Article, 'id' | 'createdAt' | 'bins' | 'quantityAvailable' | 'quantityOnLoan' | 'quantityReserved' | 'totalPhysical'>) => void;
-  onUpdateItem: (id: number, articleData: Omit<Article, 'id' | 'createdAt' | 'bins' | 'quantityAvailable' | 'quantityOnLoan' | 'quantityReserved' | 'totalPhysical'>) => void;
+  onCreateItem: (articleData: {
+    name: string;
+    description: string;
+    category: string;
+    unit: string;
+    minStock: number;
+    consumable: boolean;
+    binCode: string;
+    imageFile?: File | null;
+  }) => void;
+  onUpdateItem: (id: number, articleData: {
+    name: string;
+    description: string;
+    category: string;
+    unit: string;
+    minStock: number;
+    consumable: boolean;
+    imageUrl?: string | null;
+    sku: string;
+  }) => void;
   onDeleteItem: (id: number) => void;
 }
 
@@ -156,7 +174,6 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
             </TableHeader>
             <TableBody>
               {filteredArticles.map((article) => {
-                // ✅ CAMBIO 4: Usar totalPhysical del API en vez de cálculo hardcoded
                 const totalStock = article.totalPhysical;
                 const stockStatus = getStockStatus(totalStock, article.minStock);
                 return (
@@ -199,7 +216,7 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {/* ✅ CAMBIO 5: Mostrar tipo basado en consumable */}
+
                         <div className="flex items-center space-x-2">
                           {getTypeIcon(article.consumable)}
                           <span className="text-sm capitalize">
@@ -210,14 +227,14 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                       <TableCell>
                         <div className="space-y-1">
                           <div className="flex items-center space-x-2">
-                            {/* ✅ CAMBIO 6: Mostrar totalPhysical real */}
+                            {/* Mostrar totalPhysical real */}
                             <span>{totalStock} {article.unit}</span>
                             <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Min: {article.minStock} {article.unit}
                           </div>
-                          {/* ✅ CAMBIO 7: Mostrar info adicional del API */}
+                          {/* Mostrar info adicional del API */}
                           {article.quantityOnLoan > 0 && (
                             <div className="text-xs text-blue-500">
                               On Loan: {article.quantityOnLoan}
@@ -231,7 +248,7 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                         </div>
                       </TableCell>
                       <TableCell>
-                        {/* ✅ CAMBIO 11: Mostrar quantityAvailable en vez de cost */}
+                        {/*  Mostrar quantityAvailable en vez de cost */}
                         <div className="flex items-center space-x-2">
                           <span className="font-semibold">{article.quantityAvailable}</span>
                           <span className="text-xs text-muted-foreground">{article.unit}</span>
@@ -246,7 +263,7 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          {/* ✅ CAMBIO 8: Permitir borrar solo si totalPhysical es 0 */}
+                          {/* Permitir borrar solo si totalPhysical es 0 */}
                           {totalStock === 0 && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -277,7 +294,7 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                       </TableCell>
                     </TableRow>
 
-                    {/* ✅ CAMBIO 9: Sección de bins expandida - COMPLETAMENTE REFACTORIZADA */}
+                    {/* Sección de bins expandida - COMPLETAMENTE REFACTORIZADA */}
                     {expandedItems.has(article.id) && (
                       <TableRow>
                         <TableCell colSpan={10} className="bg-muted/30 p-0">
@@ -296,7 +313,7 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                  {/* ✅ USAR BINS REALES DEL API - NO MÁS MOCK DATA */}
+
                                   {article.bins.length > 0 ? (
                                     article.bins.map((bin) => (
                                       <TableRow key={bin.binId}>
@@ -315,7 +332,7 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                                 </TableBody>
                               </Table>
                             </div>
-                            {/* ✅ CAMBIO 10: Info adicional con datos reales */}
+
                             <div className="mt-2 space-y-1 text-sm text-muted-foreground">
                               <p>Total stock for this SKU across all bins: {article.totalPhysical} {article.unit}</p>
                               <div className="flex gap-4 text-xs">

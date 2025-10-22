@@ -90,9 +90,21 @@ export const createArticleAsync = createAsyncThunk(
 
 export const updateArticleAsync = createAsyncThunk(
   'inventory/updateArticle',
-  async ({ id, data }: { id: number; data: Partial<Article> }) => {
+  async ({ id, data }: { 
+    id: number; 
+    data: {
+      sku: string;
+      name: string;
+      description: string;
+      category: string;
+      unit: string;
+      minStock: number;
+      consumable: boolean;
+      imageUrl?: string | null;
+    }
+  }) => {
     const updatedArticle = await updateArticleApi(id, data);
-    return { id, data };
+    return updatedArticle;
   }
 );
 
@@ -376,13 +388,14 @@ builder.addCase(deleteArticleAsync.rejected, (state, action) => {
       state.loading = true;
       state.error = null;
     });
-    builder.addCase(updateArticleAsync.fulfilled, (state, action) => {
-      state.loading = false;
-      const index = state.articles.findIndex(article => article.id === action.payload.id);
-      if (index !== -1) {
-        state.articles[index] = { ...state.articles[index], ...action.payload.data };
-      }
-    });
+builder.addCase(updateArticleAsync.fulfilled, (state, action) => {
+  state.loading = false;
+  // Actualizar con el artículo completo que devuelve el backend
+ //const index = state.articles.findIndex(article => article.id === action.payload.id);
+  //if (index !== -1) {
+   // state.articles[index] = action.payload;
+  //}
+});
     builder.addCase(updateArticleAsync.rejected, (state, action) => {
       state.loading = false;
       state.error = action.error.message || 'Failed to update article';
