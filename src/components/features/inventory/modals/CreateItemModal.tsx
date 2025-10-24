@@ -177,10 +177,10 @@ export function CreateItemModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             
-            {/* Campo BIN Code (Input de texto) */}
+            {/* Campo BIN Code (Input de texto) */} 
             <div>
               <Label htmlFor="binCode">BIN Code *</Label>
-              <Input
+              <Input 
                 id="binCode"
                 value={formData.binCode}
                 onChange={(e) => setFormData({...formData, binCode: e.target.value})}

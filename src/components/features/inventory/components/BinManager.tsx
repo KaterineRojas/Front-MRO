@@ -65,38 +65,38 @@ export function BinManager() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  const isDuplicate = bins.some(bin => 
-    bin.binCode.toLowerCase() === formData.binCode.toLowerCase() && 
-    bin.id !== editingBin?.id
-  );
-  
-  if (isDuplicate) {
-    alert(`Error: BIN Code "${formData.binCode}" already exists.`);
-    return;
-  }
-  
-  try {
-    if (editingBin) {
-      await dispatch(updateBinAsync({ id: editingBin.id, data: formData })).unwrap();
-      //  Recargar después de actualizar
-      await dispatch(fetchBins()).unwrap();
-      alert('Bin updated successfully!');
-    } else {
-      await dispatch(createBinAsync(formData)).unwrap();
-      //  Recargar después de crear
-      await dispatch(fetchBins()).unwrap();
-      alert('Bin created successfully!');
+    e.preventDefault();
+    
+    const isDuplicate = bins.some(bin => 
+      bin.binCode.toLowerCase() === formData.binCode.toLowerCase() && 
+      bin.id !== editingBin?.id
+    );
+    
+    if (isDuplicate) {
+      alert(`Error: BIN Code "${formData.binCode}" already exists.`);
+      return;
     }
     
-    resetForm();
-    setDialogOpen(false);
-  } catch (error) {
-    console.error('Failed to save bin:', error);
-    alert('Failed to save bin. Please try again.');
-  }
-};
+    try {
+      if (editingBin) {
+        await dispatch(updateBinAsync({ id: editingBin.id, data: formData })).unwrap();
+        // ✅ Recargar bins después de actualizar
+        await dispatch(fetchBins()).unwrap();
+        alert('Bin updated successfully!');
+      } else {
+        await dispatch(createBinAsync(formData)).unwrap();
+        // ✅ Recargar bins después de crear
+        await dispatch(fetchBins()).unwrap();
+        alert('Bin created successfully!');
+      }
+      
+      resetForm();
+      setDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to save bin:', error);
+      alert('Failed to save bin. Please try again.');
+    }
+  };
 
 const handleEdit = (bin: Bin) => {
   setEditingBin(bin);

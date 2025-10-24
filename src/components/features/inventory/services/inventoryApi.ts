@@ -668,8 +668,10 @@ export async function createBinApi(binData: {
 
     const payload = {
       binCode: binData.binCode,
-      name: '', // ✅ Enviar vacío si no hay name
-      description: binData.description || '',
+     // name: '', //  Enviar vacío si no hay name
+     // description: binData.description || '',
+      name: binData.description || '', //  Enviar vacío si no hay name
+      description:  '',
       binPurpose: binPurposeMap[binData.type]
     };
 
@@ -705,7 +707,7 @@ export async function createBinApi(binData: {
 
 export async function deleteBinApi(id: number): Promise<void> {
   try {
-    console.log('🗑️ Attempting to delete bin with ID:', id); // ✅ Log para debug
+    console.log('🗑️ Attempting to delete bin with ID:', id); 
     
     const response = await fetch(`${API_URL}/Bins/${id}`, {
       method: 'DELETE',
@@ -714,34 +716,27 @@ export async function deleteBinApi(id: number): Promise<void> {
       },
     });
 
-    console.log('🗑️ Delete response status:', response.status); // ✅ Log
+    console.log('🗑️ Delete response status:', response.status); 
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('🗑️ Delete failed:', errorText); // ✅ Log
+      console.error('🗑️ Delete failed:', errorText);
       throw new Error(`Failed to delete bin: ${response.status} - ${errorText}`);
     }
     
-    console.log('✅ Bin deleted successfully'); // ✅ Log
+    console.log('✅ Bin deleted successfully'); 
   } catch (error) {
     console.error('❌ Error in deleteBinApi:', error);
     throw error;
   }
 }
-/**
- * Simulates updating a bin in the API
- */
-export async function updateBinApi(id: number, data: Partial<Bin>): Promise<Bin> {
-  await delay(500); // Simulate network delay
-  
-  console.log('API: Bin updated successfully', { id, data });
-  return { id, ...data } as Bin;
-}
+
+
 
 /** ********************************************************************************
  * Actualiza un bin existente vía PUT request
  */
-export async function updateBinApi2(
+export async function updateBinApi(
   id: number,
   binData: {
     binCode: string;
@@ -758,10 +753,10 @@ export async function updateBinApi2(
     };
 
     const payload = {
-      binCode: binData.binCode,
-      name: '', // Enviar vacío si no hay name
-      description: binData.description || '',
-      binPurpose: binPurposeMap[binData.type]
+      //binCode: binData.binCode,
+      name: binData.description || '', // Usar description como name
+      description: '', // Enviar vacío
+      //binPurpose: binPurposeMap[binData.type]
     };
 
     console.log('UPDATE BIN PAYLOAD:', payload);
