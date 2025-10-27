@@ -1,4 +1,26 @@
 import React, { useState } from 'react';
+import { ArrowLeft, Search, Plus, X, Package } from 'lucide-react';
+
+// 1. IMPORTACIÓN DE TIPOS: Importamos todos los tipos de tu archivo src/types.ts
+// (Ruta: Subir 3 niveles desde src/components/inventory/modals/ hasta src/ y acceder a types.ts)
+import { 
+  Article, 
+  Kit, 
+  KitItem, 
+  Template 
+} from '../../../types'; 
+
+// 2. IMPORTACIÓN DE LA LÓGICA DE SERVICIOS: Corregida para apuntar a un solo archivo (inventoryApi.ts)
+// y respetando el casing correcto ('Api' con mayúscula).
+import { 
+  getItems, 
+  getCategories, 
+  type Category, 
+  createKit, 
+  type CreateKitRequest 
+} from '../../../services/inventoryApi'; 
+
+// 3. IMPORTS DE COMPONENTES UI: Se mantienen
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
@@ -6,54 +28,9 @@ import { Label } from '../../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { Textarea } from '../../../ui/textarea';
 import { Badge } from '../../../ui/badge';
-import { ArrowLeft, Search, Plus, X, Package } from 'lucide-react';
 
-interface Article {
-  id: number;
-  binCode: string;
-  name: string;
-  description: string;
-  category: 'office-supplies' | 'technology' | 'tools' | 'clothing' | 'electronics' | 'furniture' | 'vehicles' | 'safety-equipment' | 'medical-supplies' | 'cleaning-supplies' | 'construction-materials' | 'laboratory-equipment';
-  type: 'consumable' | 'non-consumable' | 'pending-purchase';
-  unit: string;
-  cost: number;
-  supplier: string;
-  currentStock: number;
-  minStock: number;
-  location: string;
-  imageUrl?: string;
-  status: 'good-condition' | 'on-revision' | 'scrap' | 'repaired';
-  createdAt: string;
-}
-
-interface KitItem {
-  articleId: number;
-  articleBinCode: string;
-  articleName: string;
-  quantity: number;
-}
-
-interface Kit {
-  id: number;
-  binCode: string;
-  name: string;
-  description: string;
-  category: 'office-supplies' | 'technology' | 'tools' | 'clothing' | 'electronics' | 'furniture' | 'vehicles' | 'safety-equipment' | 'medical-supplies' | 'cleaning-supplies' | 'construction-materials' | 'laboratory-equipment';
-  items: KitItem[];
-  imageUrl?: string;
-  status: 'good-condition' | 'on-revision' | 'scrap' | 'repaired';
-  createdAt: string;
-}
-
-interface Template {
-  id: number;
-  name: string;
-  description: string;
-  category: string;
-  items: KitItem[];
-  createdAt: string;
-}
-
+// 4. INTERFACE DE PROPS: La definimos aquí usando los tipos que acabamos de importar
+// (Si no quieres mover esta interface a types.ts, es el lugar más limpio para que quede)
 interface CreateKitPageProps {
   articles: Article[];
   editingKit?: Kit | null;
@@ -62,6 +39,8 @@ interface CreateKitPageProps {
   onSave: (kitData: Omit<Kit, 'id' | 'createdAt'>) => void;
 }
 
+
+// La lista de categorías (variable) se mantiene aquí, ya que es la única variable fuera de la función:
 const categories = [
   { value: 'office-supplies', label: 'Office Supplies' },
   { value: 'technology', label: 'Technology' },
@@ -76,6 +55,7 @@ const categories = [
   { value: 'construction-materials', label: 'Construction Materials' },
   { value: 'laboratory-equipment', label: 'Laboratory Equipment' },
 ];
+
 
 export function CreateKitPage({ articles, editingKit, fromTemplate, onBack, onSave }: CreateKitPageProps) {
   const [formData, setFormData] = useState({

@@ -98,7 +98,7 @@ export interface BinResponse {
   description: string;
   binPurpose: number;
   // Usamos un tipo de unión literal para las posibles cadenas de texto de la API
-  binPurposeDisplay: 'GoodCondition' | 'OnRevision' | 'Scrap' | 'NotApplicable'; 
+  binPurposeDisplay:  'GoodCondition' | 'OnRevision' | 'Scrap' | 'Hold' | 'Packing' | 'Reception' ;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

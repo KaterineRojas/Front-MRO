@@ -14,7 +14,7 @@ import { CreateBinModal } from '../modals/CreateBinModal';
 interface Bin {
   id: number;
   binCode: string;
-  type: 'good-condition' | 'on-revision' | 'scrap';
+  type: 'good-condition' | 'on-revision' | 'scrap' | 'Hold' | 'Packing' | 'Reception' ;
   description: string;
 }
 
@@ -51,19 +51,25 @@ export function BinManager() {
     setEditingBin(null);
   };
 
-  const getTypeBadge = (type: Bin['type']) => {
-    switch (type) {
-      case 'good-condition':
-        return <Badge className="bg-green-600 hover:bg-green-700">Good Condition</Badge>;
-      case 'on-revision':
-        return <Badge className="bg-yellow-600 hover:bg-yellow-700">On Revision</Badge>;
-      case 'scrap':
-        return <Badge variant="destructive">Scrap</Badge>;
-      default:
-        return <Badge variant="secondary">Unknown</Badge>;
-    }
-  };
-
+const getTypeBadge = (type: Bin['type']) => {
+    switch (type) {
+      case 'good-condition':
+        return <Badge className="bg-green-600 hover:bg-green-700">Good Condition</Badge>;
+      case 'on-revision':
+        return <Badge className="bg-yellow-600 hover:bg-yellow-700">On Revision</Badge>;
+      case 'scrap':
+        return <Badge variant="destructive">Scrap</Badge>;
+      // 🚀 NUEVOS ESTADOS
+      case 'Hold':
+        return <Badge className="bg-purple-600 hover:bg-purple-700">Hold</Badge>;
+      case 'Packing':
+        return <Badge className="bg-blue-600 hover:bg-blue-700">Packing</Badge>;
+      case 'Reception':
+        return <Badge className="bg-red-600">Reception</Badge>;
+      default:
+        return <Badge variant="secondary">Unknown</Badge>;
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -173,6 +179,9 @@ const handleDeleteBin = async (id: number) => {
                 <SelectItem value="good-condition">Good Condition</SelectItem>
                 <SelectItem value="on-revision">On Revision</SelectItem>
                 <SelectItem value="scrap">Scrap</SelectItem>
+                <SelectItem value="Hold">Hold</SelectItem>
+                <SelectItem value="Packing">Packing</SelectItem>
+                <SelectItem value="Reception">Reception</SelectItem>
               </SelectContent>
             </Select>
           </div>

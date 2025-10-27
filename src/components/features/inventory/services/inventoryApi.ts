@@ -223,7 +223,7 @@ export function transformInventoryItem(apiItem: InventoryItemResponse): Article 
     bins: apiItem.bins?.map(bin => ({
       binId: bin.binId,
       binCode: bin.binCode,
-      binPurpose: bin.binPurpose as 'GoodCondition' | 'OnRevision' | 'Scrap',
+      binPurpose: bin.binPurpose as   'good-condition' | 'on-revision' | 'scrap' | 'Hold' | 'Packing' | 'Reception' ,
       quantity: bin.quantity
     })) || [],
     
@@ -248,8 +248,16 @@ function getBinPurposeDisplay(purpose: string): string {
       return 'On Revision';
     case 'Scrap':
       return 'Scrap';
+    case 'Hold':
+      return 'Hold';
+    case 'Packing':
+      return 'Packing';
+    case 'Reception':
+      return 'Reception';
+
     default:
       return 'Good Condition';
+      
   }
 }
 
@@ -261,7 +269,13 @@ function mapBinType(apiType: BinResponse['binPurposeDisplay']): Bin['type'] {
       return 'on-revision';
     case 'Scrap':
       return 'scrap';
-    case 'NotApplicable': // Los kits y otros bins especiales se mapean a good-condition por defecto
+    case 'Hold':
+      return 'Hold';
+    case 'Packing':
+      return 'Packing';
+    case 'Reception':
+      return 'Reception';
+    case 'NotApplicable': 
     default:
       return 'good-condition';
   }
@@ -774,12 +788,12 @@ export async function updateBinApi(
       throw new Error(`Failed to update bin: ${response.status} - ${errorText}`);
     }
 
-    // ✅ Verificar si hay contenido en la respuesta
+    // Verificar si hay contenido en la respuesta
     const contentType = response.headers.get('content-type');
     const hasContent = contentType?.includes('application/json');
 
     if (!hasContent || response.status === 204) {
-      // ✅ Backend devolvió vacío - hacer GET del bin actualizado
+      // Backend devolvió vacío - hacer GET del bin actualizado
       console.log('API: Update successful (no content), fetching updated bin...');
       return await fetchBinByIdApi(id);
     }
