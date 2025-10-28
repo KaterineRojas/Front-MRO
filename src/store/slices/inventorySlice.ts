@@ -1,11 +1,11 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { Article, Kit, Template, Bin, Transaction, MovementData } from '../../components/features/inventory/types';
 import { deleteArticleApi } from '../../components/features/inventory/services/inventoryApi';
-import { 
-  fetchArticlesFromApi, 
-  fetchKitsFromApi, 
-  fetchTemplatesFromApi, 
-  fetchBinsFromApi, 
+import {
+  fetchArticlesFromApi,
+  fetchKitsFromApi,
+  fetchTemplatesFromApi,
+  fetchBinsFromApi,
   fetchTransactionsFromApi,
   createArticleApi,
   updateArticleApi,
@@ -91,8 +91,8 @@ export const createArticleAsync = createAsyncThunk(
 
 export const updateArticleAsync = createAsyncThunk(
   'inventory/updateArticle',
-  async ({ id, data }: { 
-    id: number; 
+  async ({ id, data }: {
+    id: number;
     data: {
       sku: string;
       name: string;
@@ -159,8 +159,8 @@ export const createBinAsync = createAsyncThunk(
 
 export const updateBinAsync = createAsyncThunk(
   'inventory/updateBin',
-  async ({ id, data }: { 
-    id: number; 
+  async ({ id, data }: {
+    id: number;
     data: {
       binCode: string;
       type: 'good-condition' | 'on-revision' | 'scrap';
@@ -210,7 +210,7 @@ const inventorySlice = createSlice({
     deleteArticle: (state, action: PayloadAction<number>) => {
       state.articles = state.articles.filter(article => article.id !== action.payload);
     },
-    
+
     // Kit reducers
     createKit: (state, action: PayloadAction<Kit>) => {
       state.kits.push(action.payload);
@@ -249,7 +249,7 @@ const inventorySlice = createSlice({
         state.bins[index] = { ...state.bins[index], ...action.payload.data };
       }
     },
-  
+
 
     // Transaction reducers
     createTransaction: (state, action: PayloadAction<Transaction>) => {
@@ -259,16 +259,16 @@ const inventorySlice = createSlice({
     // Movement reducer
     recordMovement: (state, action: PayloadAction<MovementData>) => {
       const movementData = action.payload;
-      
+
       if (movementData.itemType === 'item') {
         let selectedArticle: Article | undefined;
-        
+
         if (movementData.movementType === 'entry') {
           selectedArticle = state.articles.find(article => article.sku === movementData.articleSKU);
         } else {
           selectedArticle = state.articles.find(article => article.binCode === movementData.articleBinCode);
         }
-        
+
         if (!selectedArticle) return;
 
         const quantityChange = parseInt(movementData.quantity);
@@ -286,9 +286,9 @@ const inventorySlice = createSlice({
             break;
         }
 
-        const index = state.articles.findIndex(article => 
-          movementData.movementType === 'entry' 
-            ? article.sku === movementData.articleSKU 
+        const index = state.articles.findIndex(article =>
+          movementData.movementType === 'entry'
+            ? article.sku === movementData.articleSKU
             : article.binCode === movementData.articleBinCode
         );
 
@@ -318,19 +318,19 @@ const inventorySlice = createSlice({
     });
 
     // Delete article
-builder.addCase(deleteArticleAsync.pending, (state) => {
-  state.loading = true;
-  state.error = null;
-});
-builder.addCase(deleteArticleAsync.fulfilled, (state, action) => {
-  state.loading = false;
-  //  Eliminar el artículo del estado local
-  state.articles = state.articles.filter(article => article.id !== action.payload);
-});
-builder.addCase(deleteArticleAsync.rejected, (state, action) => {
-  state.loading = false;
-  state.error = action.error.message || 'Failed to delete article';
-});
+    builder.addCase(deleteArticleAsync.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(deleteArticleAsync.fulfilled, (state, action) => {
+      state.loading = false;
+      //  Eliminar el artículo del estado local
+      state.articles = state.articles.filter(article => article.id !== action.payload);
+    });
+    builder.addCase(deleteArticleAsync.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.error.message || 'Failed to delete article';
+    });
 
     // Fetch kits
     builder.addCase(fetchKits.pending, (state) => {
@@ -373,21 +373,21 @@ builder.addCase(deleteArticleAsync.rejected, (state, action) => {
       state.loading = false;
       state.error = action.error.message || 'Failed to fetch bins';
     });
-   
-// Delete bin
-builder.addCase(deleteBin.pending, (state) => {
-  state.loading = true;
-  state.error = null;
-});
-builder.addCase(deleteBin.fulfilled, (state, action) => {
-  state.loading = false;
-  // ✅ action.payload es el binId (number)
-  state.bins = state.bins.filter(bin => bin.id !== action.payload);
-});
-builder.addCase(deleteBin.rejected, (state, action) => {
-  state.loading = false;
-  state.error = action.error.message || 'Failed to delete bin';
-});
+
+    // Delete bin
+    builder.addCase(deleteBin.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(deleteBin.fulfilled, (state, action) => {
+      state.loading = false;
+      // ✅ action.payload es el binId (number)
+      state.bins = state.bins.filter(bin => bin.id !== action.payload);
+    });
+    builder.addCase(deleteBin.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.error.message || 'Failed to delete bin';
+    });
 
     // Fetch transactions
     builder.addCase(fetchTransactions.pending, (state) => {
@@ -422,14 +422,14 @@ builder.addCase(deleteBin.rejected, (state, action) => {
       state.loading = true;
       state.error = null;
     });
-builder.addCase(updateArticleAsync.fulfilled, (state, action) => {
-  state.loading = false;
-  // Actualizar con el artículo completo que devuelve el backend
- //const index = state.articles.findIndex(article => article.id === action.payload.id);
-  //if (index !== -1) {
-   // state.articles[index] = action.payload;
-  //}
-});
+    builder.addCase(updateArticleAsync.fulfilled, (state, action) => {
+      state.loading = false;
+      // Actualizar con el artículo completo que devuelve el backend
+      //const index = state.articles.findIndex(article => article.id === action.payload.id);
+      //if (index !== -1) {
+      // state.articles[index] = action.payload;
+      //}
+    });
     builder.addCase(updateArticleAsync.rejected, (state, action) => {
       state.loading = false;
       state.error = action.error.message || 'Failed to update article';
@@ -504,30 +504,30 @@ builder.addCase(updateArticleAsync.fulfilled, (state, action) => {
     });
     builder.addCase(createBinAsync.fulfilled, (state) => {
       state.loading = false;
-     // state.bins.push(action.payload);
+      // state.bins.push(action.payload);
     });
     builder.addCase(createBinAsync.rejected, (state, action) => {
       state.loading = false;
       state.error = action.error.message || 'Failed to create bin';
     });
 
- // Update bin
-builder.addCase(updateBinAsync.pending, (state) => {
-  state.loading = true;
-  state.error = null;
-});
-builder.addCase(updateBinAsync.fulfilled, (state, action) => {
-  state.loading = false;
-  // ✅ Actualizar con el bin completo que devuelve el backend
-  const index = state.bins.findIndex(bin => bin.id === action.payload.id);
-  if (index !== -1) {
-    state.bins[index] = action.payload;
-  }
-});
-builder.addCase(updateBinAsync.rejected, (state, action) => {
-  state.loading = false;
-  state.error = action.error.message || 'Failed to update bin';
-});
+    // Update bin
+    builder.addCase(updateBinAsync.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(updateBinAsync.fulfilled, (state, action) => {
+      state.loading = false;
+      // ✅ Actualizar con el bin completo que devuelve el backend
+      const index = state.bins.findIndex(bin => bin.id === action.payload.id);
+      if (index !== -1) {
+        state.bins[index] = action.payload;
+      }
+    });
+    builder.addCase(updateBinAsync.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.error.message || 'Failed to update bin';
+    });
 
     // Record movement
     builder.addCase(recordMovementAsync.pending, (state) => {
@@ -537,20 +537,20 @@ builder.addCase(updateBinAsync.rejected, (state, action) => {
     builder.addCase(recordMovementAsync.fulfilled, (state, action) => {
       state.loading = false;
       const { movementData, transaction } = action.payload;
-      
+
       // Add transaction to state
       state.transactions.unshift(transaction);
-      
+
       // Update article stock based on movement
       if (movementData.itemType === 'item') {
         let selectedArticle: Article | undefined;
-        
+
         if (movementData.movementType === 'entry') {
           selectedArticle = state.articles.find(article => article.sku === movementData.articleSKU);
         } else {
           selectedArticle = state.articles.find(article => article.binCode === movementData.articleBinCode);
         }
-        
+
         if (!selectedArticle) return;
 
         const quantityChange = parseInt(movementData.quantity);
@@ -568,9 +568,9 @@ builder.addCase(updateBinAsync.rejected, (state, action) => {
             break;
         }
 
-        const index = state.articles.findIndex(article => 
-          movementData.movementType === 'entry' 
-            ? article.sku === movementData.articleSKU 
+        const index = state.articles.findIndex(article =>
+          movementData.movementType === 'entry'
+            ? article.sku === movementData.articleSKU
             : article.binCode === movementData.articleBinCode
         );
 

@@ -1013,7 +1013,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
     const itemKey = `${requestId}-${itemId}`;
     const request = readyForPacking.find(r => r.id === requestId);
     const item = request?.items.find(i => i.id === itemId);
-    
+
     if (item && newQuantity >= 0 && newQuantity <= item.quantity) {
       setItemQuantities(prev => ({
         ...prev,
@@ -1032,7 +1032,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
   const hasQuantityChanges = (requestId: number): boolean => {
     const request = readyForPacking.find(r => r.id === requestId);
     if (!request) return false;
-    
+
     return request.items.some(item => {
       const itemKey = `${requestId}-${item.id}`;
       const currentQty = itemQuantities[itemKey];
@@ -1169,7 +1169,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
 
     readyForPacking.forEach(request => {
       const selectedItemIds = itemsByRequest.get(request.id);
-      
+
       if (selectedItemIds) {
         // Split request into selected and remaining items
         const selectedItemsForRequest = request.items.filter(item => selectedItemIds.includes(item.id));
@@ -1214,7 +1214,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
 
   const handleCreateKitOrder = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const selectedKit = mockKits.find(k => k.id.toString() === kitOrderForm.kitId);
     if (!selectedKit) return;
 
@@ -1264,7 +1264,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
     alert('Kit request order created successfully and added to Ready for Packing!');
   };
 
-  const filteredKits = mockKits.filter(kit => 
+  const filteredKits = mockKits.filter(kit =>
     kit.binCode.toLowerCase().includes(kitSearchTerm.toLowerCase()) ||
     kit.name.toLowerCase().includes(kitSearchTerm.toLowerCase())
   );
@@ -1286,7 +1286,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
 
   const handlePrintSingleOrder = (request: LoanRequest) => {
     const quantityNote = quantityNotes[request.id];
-    
+
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -1341,9 +1341,9 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
               </thead>
               <tbody>
                 ${request.items.map(item => {
-                  const itemKey = `${request.id}-${item.id}`;
-                  const qty = itemQuantities[itemKey] !== undefined ? itemQuantities[itemKey] : item.quantity;
-                  return `
+      const itemKey = `${request.id}-${item.id}`;
+      const qty = itemQuantities[itemKey] !== undefined ? itemQuantities[itemKey] : item.quantity;
+      return `
                     <tr>
                       <td><span class="checkbox"></span></td>
                       <td>${item.articleBinCode}</td>
@@ -1353,7 +1353,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
                       <td>________________</td>
                     </tr>
                   `;
-                }).join('')}
+    }).join('')}
               </tbody>
             </table>
             
@@ -1402,7 +1402,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
       alert(`Kit order ${request.requestNumber} moved to packing list!`);
     } else {
       // For non-kit orders, only move selected items
-      const selectedItemsForThisRequest = request.items.filter(item => 
+      const selectedItemsForThisRequest = request.items.filter(item =>
         selectedItems.has(`${request.id}-${item.id}`)
       );
 
@@ -1411,7 +1411,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
         return;
       }
 
-      const remainingItems = request.items.filter(item => 
+      const remainingItems = request.items.filter(item =>
         !selectedItems.has(`${request.id}-${item.id}`)
       );
 
@@ -1425,8 +1425,8 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
 
       // Update or remove from ready for packing
       if (remainingItems.length > 0) {
-        setReadyForPacking(readyForPacking.map(req => 
-          req.id === request.id 
+        setReadyForPacking(readyForPacking.map(req =>
+          req.id === request.id
             ? { ...req, items: remainingItems }
             : req
         ));
@@ -1617,11 +1617,11 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
   // Filter requests for overview with pagination
   const getFilteredOverviewRequests = (): LoanRequest[] => {
     let allRequests = getAllRequests();
-    
+
     // First filter by type
     if (overviewFilterType === 'active') {
       allRequests = allRequests.filter(req => req.status !== 'completed' && req.status !== 'rejected');
-      
+
       // Then filter by status if selected (ignore 'all-statuses' sentinel value)
       if (overviewSecondaryFilter && overviewSecondaryFilter !== 'all-statuses') {
         allRequests = allRequests.filter(req => req.status === overviewSecondaryFilter);
@@ -1629,7 +1629,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
     } else if (overviewFilterType === 'department') {
       // Filter by department if selected (ignore 'all-departments' sentinel value)
       if (overviewSecondaryFilter && overviewSecondaryFilter !== 'all-departments') {
-        allRequests = allRequests.filter(req => 
+        allRequests = allRequests.filter(req =>
           req.department.toLowerCase().includes(overviewSecondaryFilter.toLowerCase())
         );
       }
@@ -1637,11 +1637,11 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
       allRequests = allRequests.filter(req => req.status === 'completed' || req.status === 'rejected');
     }
     // 'all' doesn't need filtering
-    
+
     // Then apply search term
     if (overviewSearchTerm.trim()) {
       const searchLower = overviewSearchTerm.toLowerCase();
-      allRequests = allRequests.filter(req => 
+      allRequests = allRequests.filter(req =>
         req.requestNumber.toLowerCase().includes(searchLower) ||
         req.borrower.toLowerCase().includes(searchLower) ||
         req.department.toLowerCase().includes(searchLower) ||
@@ -1652,7 +1652,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
         req.status.toLowerCase().includes(searchLower)
       );
     }
-    
+
     return allRequests;
   };
 
@@ -2080,7 +2080,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
                   </TableBody>
                 </Table>
               </div>
-              
+
               {hasMoreToLoad() && (
                 <div className="flex justify-center mt-4">
                   <Button onClick={handleLoadMore} variant="outline">
@@ -2206,7 +2206,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
                             </div>
                           </TableCell>
                         </TableRow>
-                        
+
                         {/* Expanded Items Section */}
                         {expandedRequests.has(request.id) && (
                           <TableRow>
@@ -2296,7 +2296,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
                                     </TableBody>
                                   </Table>
                                 </div>
-                                
+
                                 {/* Note field for quantity changes */}
                                 {!isKitOrder(request) && hasQuantityChanges(request.id) && (
                                   <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-md border border-amber-200 dark:border-amber-900">
@@ -2892,8 +2892,8 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
                 <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
                   {selectedKit.items.map((item) => (
                     <div key={item.id} className="flex items-center space-x-3 p-2 bg-card rounded border">
-                      <img 
-                        src={item.imageUrl} 
+                      <img
+                        src={item.imageUrl}
                         alt={item.articleName}
                         className="w-12 h-12 object-cover rounded"
                       />
@@ -3036,7 +3036,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 type="submit"
                 className="min-w-[100px] bg-blue-600 hover:bg-blue-700"
               >

@@ -1,4 +1,4 @@
-import type { Article, InventoryItemResponse, Kit, Template, Bin, BinResponse,  Transaction } from '../types';
+import type { Article, InventoryItemResponse, Kit, Template, Bin, BinResponse, Transaction } from '../types';
 import { CATEGORIES } from '../constants';
 import { strict } from 'assert';
 const API_URL = 'http://localhost:5000/api';
@@ -218,21 +218,21 @@ export function transformInventoryItem(apiItem: InventoryItemResponse): Article 
     category: mapCategory(apiItem.category),
     consumable: apiItem.consumable,
     minStock: apiItem.minStock || 0,
-    
+
     // NUEVO: Mapear array de bins
     bins: apiItem.bins?.map(bin => ({
       binId: bin.binId,
       binCode: bin.binCode,
-      binPurpose: bin.binPurpose as   'good-condition' | 'on-revision' | 'scrap' | 'Hold' | 'Packing' | 'Reception' ,
+      binPurpose: bin.binPurpose as 'good-condition' | 'on-revision' | 'scrap' | 'Hold' | 'Packing' | 'Reception',
       quantity: bin.quantity
     })) || [],
-    
+
     // NUEVO: Usar datos calculados del API
     quantityAvailable: apiItem.quantityAvailable ?? 0,
     quantityOnLoan: apiItem.quantityOnLoan ?? 0,
     quantityReserved: apiItem.quantityReserved ?? 0,
     totalPhysical: apiItem.totalPhysical ?? 0,
-    
+
     unit: 'units',
     cost: 0,
     createdAt: new Date().toISOString().split('T')[0]
@@ -257,7 +257,7 @@ function getBinPurposeDisplay(purpose: string): string {
 
     default:
       return 'Good Condition';
-      
+
   }
 }
 
@@ -275,7 +275,7 @@ function mapBinType(apiType: BinResponse['binPurposeDisplay']): Bin['type'] {
       return 'Packing';
     case 'Reception':
       return 'Reception';
-    case 'NotApplicable': 
+    case 'NotApplicable':
     default:
       return 'good-condition';
   }
@@ -301,6 +301,7 @@ function transformBin(apiBin: BinResponse): Bin {
     binCode: apiBin.binCode,
     description: apiBin.description,
     type: mapBinType(apiBin.binPurposeDisplay),
+    totalQuantity: apiBin.totalQuantity
   };
 }
 
@@ -322,13 +323,13 @@ export async function fetchArticlesFromApi(): Promise<Article[]> {
         'Content-Type': 'application/json',
       },
     });
-
+    console.log(response, 'get')
     if (!response.ok) {
       throw new Error(`Failed to fetch items: ${response.status} ${response.statusText}`);
     }
 
     const data: InventoryItemResponse[] = await response.json();
-
+    console.log(response, 'get22')
     // Validar y transformar
     if (!Array.isArray(data)) {
       throw new Error('Invalid response format: expected an array');
@@ -337,7 +338,7 @@ export async function fetchArticlesFromApi(): Promise<Article[]> {
     // Mapear cada elemento al modelo Article
     return data.map(transformInventoryItem);
   } catch (error) {
-    console.error('Error fetching all items with bins:', error);
+    console.error('Error fetching all items with bins:', error, Response);
     throw error;
   }
 }
@@ -361,7 +362,7 @@ export async function fetchArticleByIdApi(id: number): Promise<Article> {
     }
 
     const data: InventoryItemResponse = await response.json();
-    
+
     return transformInventoryItem(data);
   } catch (error) {
     console.error(`Error fetching article ${id}:`, error);
@@ -389,10 +390,10 @@ export async function fetchTemplatesFromApi(): Promise<Template[]> {
 
 
 /*FUNCIONAL.................................................................................
-..........................................................................................*/ 
+..........................................................................................*/
 export async function fetchBinsFromApi(): Promise<Bin[]> {
   try {
-    const response = await fetch(`${API_URL}/Bins?isActive=true`, {
+    const response = await fetch(`${API_URL}/Bins/with-quantity?isActive=true`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -406,7 +407,7 @@ export async function fetchBinsFromApi(): Promise<Bin[]> {
 
     // Casteamos la respuesta como un array de BinResponse
     const data: BinResponse[] = await response.json();
-    
+
     // Mapeamos y transformamos cada objeto BinResponse a nuestro modelo Bin
     return data.map(transformBin);
   } catch (error) {
@@ -416,8 +417,35 @@ export async function fetchBinsFromApi(): Promise<Bin[]> {
   }
 }
 
+// inventoryApi.ts - Agregar esta función
 
+/**
+ * Fetches available bins for creating new items (bins with BinPurpose = 0 - GoodCondition)
+ */
+export async function getNewBins(): Promise<Bin[]> {
+  try {
+    const response = await fetch(`${API_URL}/Bins?isActive=true`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
+    if (!response.ok) {
+      throw new Error(`Failed to fetch new bins: ${response.status} ${response.statusText}`);
+    }
+
+    const data: BinResponse[] = await response.json();
+
+    // Solo retornar bins en good condition (BinPurpose = 0)
+    return data
+      .filter(bin => bin.binPurposeDisplay === 'GoodCondition')
+      .map(transformBin);
+  } catch (error) {
+    console.error('Error fetching new bins:', error);
+    throw error;
+  }
+}
 /**
  * Simulates fetching transactions from an API
  */
@@ -431,7 +459,7 @@ export async function fetchTransactionsFromApi(): Promise<Transaction[]> {
  */
 export async function createArticleApi2(articleData: Omit<Article, 'id' | 'createdAt' | 'currentStock' | 'location' | 'status'>): Promise<Article> {
   await delay(500); // Simulate network delay
-  
+
   // Simulate successful creation
   const newArticle: Article = {
     id: Date.now(), // Generate a unique ID
@@ -441,7 +469,7 @@ export async function createArticleApi2(articleData: Omit<Article, 'id' | 'creat
     status: 'good-condition', // Default status
     createdAt: new Date().toISOString().split('T')[0]
   };
-  
+
   console.log('API: Article created successfully', newArticle);
   return newArticle;
 }
@@ -470,7 +498,7 @@ export async function createArticleApi(
     console.log('API_DATA_RECEIVED:', articleData);
     // ✅ Crear FormData para enviar multipart/form-data
     const formData = new FormData();
-    
+
     formData.append('name', articleData.name);
     formData.append('description', articleData.description);
     formData.append('category', articleData.category);
@@ -479,12 +507,12 @@ export async function createArticleApi(
     formData.append('isActive', 'true');
     formData.append('consumable', articleData.consumable.toString());
     formData.append('binCode', articleData.binCode);
-    
+
     // ✅ Añadir imagen si existe
     if (articleData.imageFile) {
       formData.append('file', articleData.imageFile);
     }
-    console.log('DATOS EN API',formData);
+    console.log('DATOS EN API', formData);
     const response = await fetch(`${API_URL}/Items/with-image`, {
       method: 'POST',
       body: formData,
@@ -496,7 +524,7 @@ export async function createArticleApi(
     }
 
     const createdItem = await response.json();
-    
+
     // Transformar respuesta a nuestro modelo
     return transformInventoryItem(createdItem);
   } catch (error) {
@@ -511,10 +539,10 @@ export async function createArticleApi(
  */
 export async function updateArticleApi2(id: number, data: Partial<Article>): Promise<Article> {
   await delay(500); // Simulate network delay
-  
+
   // In a real API, this would update the article in the database
   console.log('API: Article updated successfully', { id, data });
-  
+
   // Return the updated article (in reality, the backend would return the full updated object)
   return { id, ...data } as Article;
 }
@@ -537,7 +565,7 @@ export async function updateArticleApi(
 ): Promise<Article> {
   try {
     console.log('UPDATE API_DATA_RECEIVED:', articleData);
-    
+
     const payload = {
       sku: articleData.sku,
       name: articleData.name,
@@ -578,7 +606,7 @@ export async function updateArticleApi(
     // Si devuelve JSON, parsearlo
     const updatedItem = await response.json();
     return transformInventoryItem(updatedItem);
-    
+
   } catch (error) {
     console.error('Error updating article:', error);
     throw error;
@@ -616,13 +644,13 @@ export async function deleteArticleApi(id: number): Promise<void> {
  */
 export async function createKitApi(kitData: Omit<Kit, 'id' | 'createdAt'>): Promise<Kit> {
   await delay(500); // Simulate network delay
-  
+
   const newKit: Kit = {
     id: Date.now(),
     ...kitData,
     createdAt: new Date().toISOString().split('T')[0]
   };
-  
+
   console.log('API: Kit created successfully', newKit);
   return newKit;
 }
@@ -632,7 +660,7 @@ export async function createKitApi(kitData: Omit<Kit, 'id' | 'createdAt'>): Prom
  */
 export async function updateKitApi(id: number, data: Partial<Kit>): Promise<Kit> {
   await delay(500); // Simulate network delay
-  
+
   console.log('API: Kit updated successfully', { id, data });
   return { id, ...data } as Kit;
 }
@@ -642,13 +670,13 @@ export async function updateKitApi(id: number, data: Partial<Kit>): Promise<Kit>
  */
 export async function createTemplateApi(templateData: Omit<Template, 'id' | 'createdAt'>): Promise<Template> {
   await delay(500); // Simulate network delay
-  
+
   const newTemplate: Template = {
     id: Date.now(),
     ...templateData,
     createdAt: new Date().toISOString().split('T')[0]
   };
-  
+
   console.log('API: Template created successfully', newTemplate);
   return newTemplate;
 }
@@ -658,7 +686,7 @@ export async function createTemplateApi(templateData: Omit<Template, 'id' | 'cre
  */
 export async function updateTemplateApi(id: number, data: Partial<Template>): Promise<Template> {
   await delay(500); // Simulate network delay
-  
+
   console.log('API: Template updated successfully', { id, data });
   return { id, ...data } as Template;
 }
@@ -669,24 +697,39 @@ export async function updateTemplateApi(id: number, data: Partial<Template>): Pr
  */
 export async function createBinApi(binData: {
   binCode: string;
-  type: 'good-condition' | 'on-revision' | 'scrap';
+  type: 'good-condition' | 'on-revision' | 'scrap' | 'hold' | 'packing' | 'reception';
   description: string;
 }): Promise<Bin> {
   try {
+    console.log('purpose: ', binData);
     // Mapear el tipo de la UI al enum del backend
     const binPurposeMap = {
       'good-condition': 0,
       'on-revision': 1,
-      'scrap': 2
+      'scrap': 2,
+      'hold': 3,
+      'packing': 4,
+      'reception': 5
+
     };
+
+    // FIX APLICADO: Convertir el tipo a minúsculas para asegurar que coincida con las claves del mapa.
+    const normalizedType = binData.type.toLowerCase() as keyof typeof binPurposeMap;
+    const binPurposeValue = binPurposeMap[normalizedType];
+
+    if (binPurposeValue === undefined) {
+      console.error(`Invalid bin type provided after normalization: ${binData.type}`);
+      // Opcional: lanzar un error o usar un valor por defecto si es necesario.
+    }
+
 
     const payload = {
       binCode: binData.binCode,
-     // name: '', //  Enviar vacío si no hay name
-     // description: binData.description || '',
-      name: binData.description || '', //  Enviar vacío si no hay name
-      description:  '',
-      binPurpose: binPurposeMap[binData.type]
+      // name: '', //  Enviar vacío si no hay name
+      // description: binData.description || '',
+      name: binData.description || '', //  Usamos la description como name
+      description: '',
+      binPurpose: binPurposeValue // Usamos el valor mapeado
     };
 
     console.log('CREATE BIN PAYLOAD:', payload);
@@ -705,7 +748,7 @@ export async function createBinApi(binData: {
     }
 
     const createdBin = await response.json();
-    
+
     // Transformar respuesta a nuestro modelo
     return transformBin(createdBin);
   } catch (error) {
@@ -721,8 +764,8 @@ export async function createBinApi(binData: {
 
 export async function deleteBinApi(id: number): Promise<void> {
   try {
-    console.log('🗑️ Attempting to delete bin with ID:', id); 
-    
+    console.log('🗑️ Attempting to delete bin with ID:', id);
+
     const response = await fetch(`${API_URL}/Bins/${id}`, {
       method: 'DELETE',
       headers: {
@@ -730,15 +773,15 @@ export async function deleteBinApi(id: number): Promise<void> {
       },
     });
 
-    console.log('🗑️ Delete response status:', response.status); 
+    console.log('🗑️ Delete response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('🗑️ Delete failed:', errorText);
       throw new Error(`Failed to delete bin: ${response.status} - ${errorText}`);
     }
-    
-    console.log('✅ Bin deleted successfully'); 
+
+    console.log('✅ Bin deleted successfully');
   } catch (error) {
     console.error('❌ Error in deleteBinApi:', error);
     throw error;
@@ -763,7 +806,10 @@ export async function updateBinApi(
     const binPurposeMap = {
       'good-condition': 0,
       'on-revision': 1,
-      'scrap': 2
+      'scrap': 2,
+      'hold': 3,
+      'packing': 4,
+      'reception': 5
     };
 
     const payload = {
@@ -801,7 +847,7 @@ export async function updateBinApi(
     // Si devuelve JSON, parsearlo y transformarlo
     const updatedBin = await response.json();
     return transformBin(updatedBin);
-    
+
   } catch (error) {
     console.error('Error updating bin:', error);
     throw error;
@@ -840,13 +886,13 @@ async function fetchBinByIdApi(id: number): Promise<Bin> {
  */
 export async function recordMovementApi(movementData: any): Promise<{ transaction: Transaction; updatedArticle?: Article }> {
   await delay(500); // Simulate network delay
-  
+
   // Create a transaction record
   const transaction: Transaction = {
     id: Date.now(),
     type: movementData.movementType,
-    subtype: movementData.movementType === 'entry' ? 'purchase' : 
-             movementData.movementType === 'exit' ? 'consumption' : 'relocation',
+    subtype: movementData.movementType === 'entry' ? 'purchase' :
+      movementData.movementType === 'exit' ? 'consumption' : 'relocation',
     articleCode: movementData.articleSKU || movementData.kitBinCode || 'UNKNOWN',
     articleDescription: movementData.articleName || 'Movement',
     quantity: parseInt(movementData.quantity || '1'),
@@ -858,8 +904,8 @@ export async function recordMovementApi(movementData: any): Promise<{ transactio
     date: new Date().toISOString().split('T')[0],
     createdAt: new Date().toISOString()
   };
-  
+
   console.log('API: Movement recorded successfully', { movementData, transaction });
-  
+
   return { transaction };
 }

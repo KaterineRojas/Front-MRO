@@ -5,11 +5,11 @@ import { Input } from '../../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Badge } from '../../../ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../ui/alert-dialog';
 import { Package, Search, Edit, Trash2, Plus, ChevronDown, ChevronRight, TrendingDown, RotateCcw, TrendingUp } from 'lucide-react';
 import { CreateItemModal } from '../modals/CreateItemModal';
 import type { Article } from '../types';
-import { CATEGORIES } from '../constants';
 
 interface ItemsTabProps {
   articles: Article[];
@@ -39,19 +39,49 @@ interface ItemsTabProps {
 export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }: ItemsTabProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [stockFilter, setStockFilter] = useState<'all' | 'with-stock' | 'empty'>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
 
+  // ✅ Función helper para formatear la categoría del backend
+  const formatCategory = (category: string) => {
+    // Reemplaza guiones bajos y guiones por espacios y capitaliza
+    return category
+      .replace(/[-_]/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  // ✅ Obtener categorías únicas del backend dinámicamente
+  const uniqueCategories = Array.from(new Set(articles.map(a => a.category)));
+
+  const hasAnyStock = (article: Article) => {
+    return article.totalPhysical > 0 || 
+           article.quantityAvailable > 0 || 
+           article.quantityOnLoan > 0 || 
+           article.quantityReserved > 0;
+  };
+
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         // ✅ CAMBIO 1: Buscar en todos los bins
-                         article.bins.some(bin => bin.binCode.toLowerCase().includes(searchTerm.toLowerCase()));
+      article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.bins.some(bin => bin.binCode.toLowerCase().includes(searchTerm.toLowerCase()));
+    
     const matchesCategory = categoryFilter === 'all' || article.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    
+    const matchesStock = 
+      stockFilter === 'all' || 
+      (stockFilter === 'with-stock' && hasAnyStock(article)) ||
+      (stockFilter === 'empty' && !hasAnyStock(article));
+    
+    return matchesSearch && matchesCategory && matchesStock;
   });
+
+  const articlesWithStock = articles.filter(hasAnyStock).length;
+  const emptyArticles = articles.filter(a => !hasAnyStock(a)).length;
 
   const getStockStatus = (current: number, min: number) => {
     if (current === 0) return { label: 'Out of Stock', variant: 'destructive' as const };
@@ -59,7 +89,6 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
     return { label: 'In Stock', variant: 'default' as const };
   };
 
-  // ✅ CAMBIO 2: Nueva función para mapear el status del bin
   const getBinStatusBadge = (binPurpose: string) => {
     switch (binPurpose) {
       case 'GoodCondition':
@@ -74,7 +103,6 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
   };
 
   const getTypeIcon = (consumable: boolean) => {
-    // ✅ CAMBIO 3: Simplificado para usar boolean consumable
     if (consumable) {
       return <TrendingDown className="h-4 w-4 text-red-600" />;
     }
@@ -107,6 +135,215 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
     setEditingArticle(null);
   };
 
+  const renderArticlesTable = () => (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-12"></TableHead>
+            <TableHead>Image</TableHead>
+            <TableHead>SKU</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Stock</TableHead>
+            <TableHead>Available</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredArticles.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                No items found
+              </TableCell>
+            </TableRow>
+          ) : (
+            filteredArticles.map((article) => {
+              const totalStock = article.totalPhysical;
+              const stockStatus = getStockStatus(totalStock, article.minStock);
+              return (
+                <React.Fragment key={article.id}>
+                  <TableRow>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleExpandItem(article.id)}
+                      >
+                        {expandedItems.has(article.id) ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      {article.imageUrl ? (
+                        <img
+                          src={article.imageUrl}
+                          alt={article.name}
+                          className="w-12 h-12 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                          <Package className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{article.sku}</TableCell>
+                    <TableCell className="max-w-xs">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{article.name}</span>
+                        <span className="text-xs text-muted-foreground truncate" title={article.description}>
+                          {article.description}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {/* ✅ CAMBIO: Muestra directamente la categoría del backend formateada */}
+                      <Badge variant="outline">
+                        {formatCategory(article.category)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        {getTypeIcon(article.consumable)}
+                        <span className="text-sm capitalize">
+                          {article.consumable ? 'Consumable' : 'Non-Consumable'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <span>{totalStock} {article.unit}</span>
+                          <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Min: {article.minStock} {article.unit}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-semibold">{article.quantityAvailable}</span>
+                        <span className="text-xs text-muted-foreground">{article.unit}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(article)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        {totalStock === 0 && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Item</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{article.name}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDeleteItem(article.id)}>
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+
+                  {expandedItems.has(article.id) && (
+                    <TableRow>
+                      <TableCell colSpan={10} className="bg-muted/30 p-0">
+                        <div className="p-2 text-xs text-muted-foreground flex items-center justify-between border-b bg-background/70">
+                          <div className="flex items-center gap-6">
+                            <div>
+                              <span className="font-medium text-foreground">Available:</span> {article.quantityAvailable} {article.unit}
+                            </div>
+                            <div>
+                              <span className="font-medium text-foreground">On Loan:</span> {article.quantityOnLoan} {article.unit}
+                            </div>
+                            <div>
+                              <span className="font-medium text-foreground">Reserved:</span> {article.quantityReserved} {article.unit}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-4">
+                          <h4 className="flex items-center mb-3">
+                            <Package className="h-4 w-4 mr-2" />
+                            Stock Distribution for SKU: {article.sku}
+                          </h4>
+                          <div className="rounded-md border bg-card">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>BIN Code</TableHead>
+                                  <TableHead>Quantity</TableHead>
+                                  <TableHead>Type</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {article.bins.length > 0 ? (
+                                  article.bins.map((bin) => (
+                                    <TableRow key={bin.binId}>
+                                      <TableCell className="font-mono">{bin.binCode}</TableCell>
+                                      <TableCell>
+                                        <div className="flex flex-col">
+                                          <span>{bin.quantity} {article.unit}</span>
+                                          {bin.binPurpose === 'GoodCondition' && (
+                                            <div className="text-[11px] text-muted-foreground mt-1 space-y-[1px]">
+                                              <div>Available: {article.quantityAvailable} {article.unit}</div>
+                                              <div>On Loan: {article.quantityOnLoan} {article.unit}</div>
+                                              <div>Reserved: {article.quantityReserved} {article.unit}</div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>{getBinStatusBadge(bin.binPurpose)}</TableCell>
+                                    </TableRow>
+                                  ))
+                                ) : (
+                                  <TableRow>
+                                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                                      No bins assigned to this item
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                          <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                            <p>Total stock for this SKU across all bins: {article.totalPhysical} {article.unit}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
+              );
+            })
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -121,7 +358,7 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
               setDialogOpen(true);
             }}>
               <Plus className="h-4 w-4 mr-2" />
-              Create new Item
+              Register new Item
             </Button>
           </div>
         </div>
@@ -140,15 +377,16 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
             </div>
           </div>
           <div className="w-48">
+            {/* ✅ CAMBIO: Select ahora usa categorías dinámicas del backend */}
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {cat.label}
+                {uniqueCategories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {formatCategory(category)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -156,202 +394,21 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
           </div>
         </div>
 
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12"></TableHead>
-                <TableHead>Image</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Available</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredArticles.map((article) => {
-                // ✅ CAMBIO 4: Usar totalPhysical del API en vez de cálculo hardcoded
-                const totalStock = article.totalPhysical;
-                const stockStatus = getStockStatus(totalStock, article.minStock);
-                return (
-                  <React.Fragment key={article.id}>
-                    <TableRow>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleExpandItem(article.id)}
-                        >
-                          {expandedItems.has(article.id) ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        {article.imageUrl ? (
-                          <img 
-                            src={article.imageUrl} 
-                            alt={article.name}
-                            className="w-12 h-12 object-cover rounded"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                            <Package className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">{article.sku}</TableCell>
-                      <TableCell>{article.name}</TableCell>
-                      <TableCell className="max-w-xs truncate" title={article.description}>
-                        {article.description}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {CATEGORIES.find(cat => cat.value === article.category)?.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {/* ✅ CAMBIO 5: Mostrar tipo basado en consumable */}
-                        <div className="flex items-center space-x-2">
-                          {getTypeIcon(article.consumable)}
-                          <span className="text-sm capitalize">
-                            {article.consumable ? 'Consumable' : 'Non-Consumable'}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center space-x-2">
-                            {/* ✅ CAMBIO 6: Mostrar totalPhysical real */}
-                            <span>{totalStock} {article.unit}</span>
-                            <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Min: {article.minStock} {article.unit}
-                          </div>
-                          {/* ✅ CAMBIO 7: Mostrar info adicional del API */}
-                          {article.quantityOnLoan > 0 && (
-                            <div className="text-xs text-blue-500">
-                              On Loan: {article.quantityOnLoan}
-                            </div>
-                          )}
-                          {article.quantityReserved > 0 && (
-                            <div className="text-xs text-orange-500">
-                              Reserved: {article.quantityReserved}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {/* ✅ CAMBIO 11: Mostrar quantityAvailable en vez de cost */}
-                        <div className="flex items-center space-x-2">
-                          <span className="font-semibold">{article.quantityAvailable}</span>
-                          <span className="text-xs text-muted-foreground">{article.unit}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEditDialog(article)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          {/* ✅ CAMBIO 8: Permitir borrar solo si totalPhysical es 0 */}
-                          {totalStock === 0 && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Item</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete "{article.name}"? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => onDeleteItem(article.id)}>
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
+        <Tabs value={stockFilter} onValueChange={(value) => setStockFilter(value as 'all' | 'with-stock' | 'empty')} className="mb-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="all">
+              All Items ({articles.length})
+            </TabsTrigger>
+            <TabsTrigger value="with-stock">
+              With Stock ({articlesWithStock})
+            </TabsTrigger>
+            <TabsTrigger value="empty">
+              Empty ({emptyArticles})
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-                    {/* ✅ CAMBIO 9: Sección de bins expandida - COMPLETAMENTE REFACTORIZADA */}
-                    {expandedItems.has(article.id) && (
-                      <TableRow>
-                        <TableCell colSpan={10} className="bg-muted/30 p-0">
-                          <div className="p-4">
-                            <h4 className="flex items-center mb-3">
-                              <Package className="h-4 w-4 mr-2" />
-                              Stock Distribution for SKU: {article.sku}
-                            </h4>
-                            <div className="rounded-md border bg-card">
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead>BIN Code</TableHead>
-                                    <TableHead>Quantity</TableHead>
-                                    <TableHead>Type</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {/* ✅ USAR BINS REALES DEL API - NO MÁS MOCK DATA */}
-                                  {article.bins.length > 0 ? (
-                                    article.bins.map((bin) => (
-                                      <TableRow key={bin.binId}>
-                                        <TableCell className="font-mono">{bin.binCode}</TableCell>
-                                        <TableCell>{bin.quantity} {article.unit}</TableCell>
-                                        <TableCell>{getBinStatusBadge(bin.binPurpose)}</TableCell>
-                                      </TableRow>
-                                    ))
-                                  ) : (
-                                    <TableRow>
-                                      <TableCell colSpan={3} className="text-center text-muted-foreground">
-                                        No bins assigned to this item
-                                      </TableCell>
-                                    </TableRow>
-                                  )}
-                                </TableBody>
-                              </Table>
-                            </div>
-                            {/* ✅ CAMBIO 10: Info adicional con datos reales */}
-                            <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                              <p>Total stock for this SKU across all bins: {article.totalPhysical} {article.unit}</p>
-                              <div className="flex gap-4 text-xs">
-                                <span>Available: {article.quantityAvailable}</span>
-                                <span>On Loan: {article.quantityOnLoan}</span>
-                                <span>Reserved: {article.quantityReserved}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+        {renderArticlesTable()}
       </CardContent>
 
       <CreateItemModal

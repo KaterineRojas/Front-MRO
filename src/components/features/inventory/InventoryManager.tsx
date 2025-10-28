@@ -12,8 +12,8 @@ import { BinsTab } from './tabs/BinsTab';
 import { TransactionsTab } from './tabs/TransactionsTab';
 import type { Article, Kit, Template, MovementData } from './types';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
-import { 
-  fetchArticles, 
+import {
+  fetchArticles,
   fetchKits,
   fetchTemplates,
   fetchBins,
@@ -33,7 +33,7 @@ import {
 export function InventoryManager() {
   const dispatch = useAppDispatch();
   const { articles, kits, templates, bins, transactions, loading, error } = useAppSelector((state) => state.inventory);
-  
+
   const [viewMode, setViewMode] = useState<'items' | 'kits' | 'create-kit' | 'templates' | 'edit-template' | 'bins' | 'transactions'>('items');
   const [recordMovementOpen, setRecordMovementOpen] = useState(false);
   const [editingKit, setEditingKit] = useState<Kit | null>(null);
@@ -50,45 +50,45 @@ export function InventoryManager() {
   }, [dispatch]);
 
 
-const handleCreateItem = async(articleData: {
-  name: string;
-  description: string;
-  category: string;
-  unit: string;
-  minStock: number;
-  consumable: boolean;
-  imageFile?: File | null;
-}) => {
-  try {
-    await dispatch(createArticleAsync(articleData)).unwrap();
-    // ✅ Recargar todos los artículos desde el API después de crear
-    await dispatch(fetchArticles()).unwrap();
-    alert('Item created successfully!');
-  } catch (error) {
-    console.error('Failed to create article:', error);
-    alert('Failed to create item. Please try again.');
-  }
-};
-const handleUpdateItem = async (id: number, articleData: {
-  name: string;
-  description: string;
-  category: string;
-  unit: string;
-  minStock: number;
-  consumable: boolean;
-  imageUrl?: string | null;
-  sku: string;
-}) => {
-  try {
-    await dispatch(updateArticleAsync({ id, data: articleData })).unwrap();
-    // ✅ CRÍTICO: Recargar datos DESPUÉS de que se complete el update
-    await dispatch(fetchArticles()).unwrap();
-    alert('Item updated successfully!');
-  } catch (error) {
-    console.error('Failed to update article:', error);
-    alert('Failed to update item. Please try again.');
-  }
-};
+  const handleCreateItem = async (articleData: {
+    name: string;
+    description: string;
+    category: string;
+    unit: string;
+    minStock: number;
+    consumable: boolean;
+    imageFile?: File | null;
+  }) => {
+    try {
+      await dispatch(createArticleAsync(articleData)).unwrap();
+      // ✅ Recargar todos los artículos desde el API después de crear
+      await dispatch(fetchArticles()).unwrap();
+      alert('Item created successfully!');
+    } catch (error) {
+      console.error('Failed to create article:', error);
+      alert('Failed to create item. Please try again.');
+    }
+  };
+  const handleUpdateItem = async (id: number, articleData: {
+    name: string;
+    description: string;
+    category: string;
+    unit: string;
+    minStock: number;
+    consumable: boolean;
+    imageUrl?: string | null;
+    sku: string;
+  }) => {
+    try {
+      await dispatch(updateArticleAsync({ id, data: articleData })).unwrap();
+      // ✅ CRÍTICO: Recargar datos DESPUÉS de que se complete el update
+      await dispatch(fetchArticles()).unwrap();
+      alert('Item updated successfully!');
+    } catch (error) {
+      console.error('Failed to update article:', error);
+      alert('Failed to update item. Please try again.');
+    }
+  };
 
   const handleDeleteItem = (id: number) => {
     dispatch(deleteArticleAsync(id));
@@ -156,7 +156,7 @@ const handleUpdateItem = async (id: number, articleData: {
     } else {
       dispatch(createTemplateAsync(templateData));
     }
-    
+
     setViewMode('templates');
     setEditingTemplate(null);
     alert(editingTemplate ? 'Template updated successfully!' : 'Template created successfully!');
@@ -170,17 +170,17 @@ const handleUpdateItem = async (id: number, articleData: {
   const handleRecordMovement = (movementData: MovementData) => {
     if (movementData.itemType === 'item') {
       let selectedArticle;
-      
+
       if (movementData.movementType === 'entry') {
         selectedArticle = articles.find(article => article.sku === movementData.articleSKU);
       } else {
         selectedArticle = articles.find(article => article.binCode === movementData.articleBinCode);
       }
-      
+
       if (!selectedArticle) return;
 
       const quantityChange = parseInt(movementData.quantity);
-      
+
       if ((movementData.movementType === 'exit' || movementData.movementType === 'relocation') && quantityChange > selectedArticle.currentStock) {
         alert(`Error: Cannot process ${quantityChange} units. Only ${selectedArticle.currentStock} units available in stock.`);
         return;
@@ -209,7 +209,7 @@ const handleUpdateItem = async (id: number, articleData: {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-500">Error: {error}</p>
-          <Button 
+          <Button
             onClick={() => {
               dispatch(fetchArticles());
               dispatch(fetchKits());
@@ -265,9 +265,9 @@ const handleUpdateItem = async (id: number, articleData: {
         </Button>
       </div>
 
-      <Tabs 
-        value={viewMode === 'templates' ? 'templates' : viewMode === 'kits' ? 'kits' : viewMode === 'bins' ? 'bins' : viewMode === 'transactions' ? 'transactions' : 'items'} 
-        onValueChange={(value) => setViewMode(value as any)} 
+      <Tabs
+        value={viewMode === 'templates' ? 'templates' : viewMode === 'kits' ? 'kits' : viewMode === 'bins' ? 'bins' : viewMode === 'transactions' ? 'transactions' : 'items'}
+        onValueChange={(value) => setViewMode(value as any)}
         className="w-full"
       >
         <TabsList className="grid w-full grid-cols-5">

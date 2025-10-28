@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
-import { createBinAsync, updateBinAsync, deleteBin, fetchBins} from '../../../../store/slices/inventorySlice'; 
+import { createBinAsync, updateBinAsync, deleteBin, fetchBins } from '../../../../store/slices/inventorySlice';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
@@ -14,8 +14,9 @@ import { CreateBinModal } from '../modals/CreateBinModal';
 interface Bin {
   id: number;
   binCode: string;
-  type: 'good-condition' | 'on-revision' | 'scrap' | 'Hold' | 'Packing' | 'Reception' ;
+  type: 'good-condition' | 'on-revision' | 'scrap' | 'hold' | 'packing' | 'reception';
   description: string;
+  totalQuantity?: number;
 }
 
 export function BinManager() {
@@ -27,7 +28,7 @@ export function BinManager() {
   const [editingBin, setEditingBin] = useState<Bin | null>(null);
   const [formData, setFormData] = useState<{
     binCode: string;
-    type: 'good-condition' | 'on-revision' | 'scrap';
+    type: 'good-condition' | 'on-revision' | 'scrap'| 'hold' | 'packing' | 'reception';
     description: string;
   }>({
     binCode: '',
@@ -47,42 +48,43 @@ export function BinManager() {
       binCode: '',
       type: 'good-condition',
       description: ''
+
     });
     setEditingBin(null);
   };
 
-const getTypeBadge = (type: Bin['type']) => {
-    switch (type) {
-      case 'good-condition':
-        return <Badge className="bg-green-600 hover:bg-green-700">Good Condition</Badge>;
-      case 'on-revision':
-        return <Badge className="bg-yellow-600 hover:bg-yellow-700">On Revision</Badge>;
-      case 'scrap':
-        return <Badge variant="destructive">Scrap</Badge>;
-      // 🚀 NUEVOS ESTADOS
-      case 'Hold':
-        return <Badge className="bg-purple-600 hover:bg-purple-700">Hold</Badge>;
-      case 'Packing':
-        return <Badge className="bg-blue-600 hover:bg-blue-700">Packing</Badge>;
-      case 'Reception':
-        return <Badge className="bg-red-600">Reception</Badge>;
-      default:
-        return <Badge variant="secondary">Unknown</Badge>;
-    }
-  };
+  const getTypeBadge = (type: Bin['type']) => {
+    switch (type) {
+      case 'good-condition':
+        return <Badge className="bg-green-600 hover:bg-green-700">Good Condition</Badge>;
+      case 'on-revision':
+        return <Badge className="bg-yellow-600 hover:bg-yellow-700">On Revision</Badge>;
+      case 'scrap':
+        return <Badge variant="destructive">Scrap</Badge>;
+
+      case 'Hold':
+        return <Badge className="bg-purple-600 hover:bg-purple-700">Hold</Badge>;
+      case 'Packing':
+        return <Badge className="bg-blue-600 hover:bg-blue-700">Packing</Badge>;
+      case 'Reception':
+        return <Badge className="secondary">Reception</Badge>;
+      default:
+        return <Badge variant="secondary">Other</Badge>;
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const isDuplicate = bins.some(bin => 
-      bin.binCode.toLowerCase() === formData.binCode.toLowerCase() && 
+
+    const isDuplicate = bins.some(bin =>
+      bin.binCode.toLowerCase() === formData.binCode.toLowerCase() &&
       bin.id !== editingBin?.id
     );
-    
+
     if (isDuplicate) {
       alert(`Error: BIN Code "${formData.binCode}" already exists.`);
       return;
     }
-    
+
     try {
       if (editingBin) {
         await dispatch(updateBinAsync({ id: editingBin.id, data: formData })).unwrap();
@@ -95,7 +97,7 @@ const getTypeBadge = (type: Bin['type']) => {
         await dispatch(fetchBins()).unwrap();
         alert('Bin created successfully!');
       }
-      
+
       resetForm();
       setDialogOpen(false);
     } catch (error) {
@@ -104,39 +106,40 @@ const getTypeBadge = (type: Bin['type']) => {
     }
   };
 
-const handleEdit = (bin: Bin) => {
-  setEditingBin(bin);
-  setFormData({
-    binCode: bin.binCode,
-    type: bin.type,
-    description: bin.description
-  });
-  setDialogOpen(true);
-};
-
-// BinManager.tsx
-
-const handleDeleteBin = async (id: number) => {
-  console.log('🔴 handleDeleteBin called with ID:', id); // ✅ Log
-  
-  try {
-    console.log('🔴 Dispatching deleteBin...'); // ✅ Log
-    await dispatch(deleteBin(id)).unwrap();
-    
-    console.log('✅ deleteBin succeeded, fetching bins...'); // ✅ Log
-    await dispatch(fetchBins()).unwrap();
-    
-    alert('Bin deleted successfully!');
-  } catch (error: any) {
-    console.error('❌ Failed to delete bin:', error); // ✅ Más detalle
-    console.error('❌ Error details:', {
-      message: error.message,
-      stack: error.stack,
-      full: error
+  const handleEdit = (bin: Bin) => {
+    setEditingBin(bin);
+    setFormData({
+      binCode: bin.binCode,
+      type: bin.type,
+      description: bin.description,
+      totalQuantity: bin.totalQuantity
     });
-    alert(`Failed to delete bin: ${error.message || error}`);
-  }
-};
+    setDialogOpen(true);
+  };
+
+  // BinManager.tsx
+
+  const handleDeleteBin = async (id: number) => {
+    console.log('🔴 handleDeleteBin called with ID:', id); // ✅ Log
+
+    try {
+      console.log('🔴 Dispatching deleteBin...'); // ✅ Log
+      await dispatch(deleteBin(id)).unwrap();
+
+      console.log('✅ deleteBin succeeded, fetching bins...'); // ✅ Log
+      await dispatch(fetchBins()).unwrap();
+
+      alert('Bin deleted successfully!');
+    } catch (error: any) {
+      console.error('❌ Failed to delete bin:', error); // ✅ Más detalle
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        full: error
+      });
+      alert(`Failed to delete bin: ${error.message || error}`);
+    }
+  };
 
   return (
     <Card>
@@ -151,7 +154,7 @@ const handleDeleteBin = async (id: number) => {
             setDialogOpen(true);
           }}>
             <Plus className="h-4 w-4 mr-2" />
-            Create New Bin
+            Register New Bin
           </Button>
         </div>
       </CardHeader>
@@ -180,8 +183,8 @@ const handleDeleteBin = async (id: number) => {
                 <SelectItem value="on-revision">On Revision</SelectItem>
                 <SelectItem value="scrap">Scrap</SelectItem>
                 <SelectItem value="Hold">Hold</SelectItem>
-                <SelectItem value="Packing">Packing</SelectItem>
-                <SelectItem value="Reception">Reception</SelectItem>
+                <SelectItem value="Packing">Packing</SelectItem>
+                <SelectItem value="Reception">Reception</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -195,6 +198,7 @@ const handleDeleteBin = async (id: number) => {
                 <TableHead className="w-[200px]">BIN Code</TableHead>
                 <TableHead className="w-[150px]">Type</TableHead>
                 <TableHead>Description</TableHead>
+                <TableHead className="w-[120px] text-center">Total Quantity</TableHead>
                 <TableHead className="w-[100px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -207,6 +211,9 @@ const handleDeleteBin = async (id: number) => {
                     <TableCell className="max-w-xs truncate" title={bin.description}>
                       {bin.description || 'N/A'}
                     </TableCell>
+                    <TableCell className="text-center">
+                      {bin.totalQuantity ?? 0}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
                         <Button
@@ -218,9 +225,15 @@ const handleDeleteBin = async (id: number) => {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={bin.totalQuantity !== 0}
+                              className={bin.totalQuantity !== 0 ? "opacity-50 cursor-not-allowed" : ""}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
+
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
@@ -243,13 +256,14 @@ const handleDeleteBin = async (id: number) => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                     No bins found matching your criteria.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+
         </div>
       </CardContent>
 

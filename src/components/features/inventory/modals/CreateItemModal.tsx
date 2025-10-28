@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; 
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../ui/dialog';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
@@ -10,6 +10,8 @@ import { Badge } from '../../../ui/badge';
 import { Package, ChevronDown, ChevronRight } from 'lucide-react';
 import type { Article } from '../types';
 import { CATEGORIES } from '../constants';
+import { BinSelector } from '../components/BinSelector';
+
 
 // Tipo de datos que la API realmente espera (sin cambios necesarios aquí)
 interface ApiPayload {
@@ -19,8 +21,9 @@ interface ApiPayload {
   unit: string;
   minStock: number;
   consumable: boolean;
-  binCode: string; 
-   imageUrl?: string | null;
+  binCode: string;
+  idBinCode: number,
+  imageUrl?: string | null;
   imageFile?: File | null;
   sku?: string;
 }
@@ -41,12 +44,12 @@ export function CreateItemModal({
   editingArticle,
   onSubmit
 }: CreateItemModalProps) {
-  
+
   // Función auxiliar para convertir el booleano 'consumable' a un string para la UI
   const getUIType = (article: Article | null): ArticleTypeUI => {
-      if (article?.consumable === false) return 'non-consumable';
-      if (article?.consumable === true) return 'consumable';
-      return 'consumable'; // Valor por defecto si no está en edición
+    if (article?.consumable === false) return 'non-consumable';
+    if (article?.consumable === true) return 'consumable';
+    return 'consumable'; // Valor por defecto si no está en edición
   }
 
   // ⭐ INICIALIZACIÓN DE ESTADO ACTUALIZADA: 
@@ -62,11 +65,11 @@ export function CreateItemModal({
     minStock: editingArticle?.minStock.toString() || '',
     imageUrl: editingArticle?.imageUrl || '',
   });
-  
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [showBinStock, setShowBinStock] = useState(false);
   // Asumimos que ArticleBin[] no está tipado, si lo está, por favor proporcione ese tipo.
-  const [articleBins, setArticleBins] = useState<any[]>(editingArticle?.bins || []); 
+  const [articleBins, setArticleBins] = useState<any[]>(editingArticle?.bins || []);
 
 
   useEffect(() => {
@@ -77,7 +80,7 @@ export function CreateItemModal({
         category: editingArticle.category,
         typeUI: getUIType(editingArticle),
         // Asumimos que quieres usar el primer binCode si existe
-        binCode: editingArticle.bins?.[0]?.binCode || '', 
+        binCode: editingArticle.bins?.[0]?.binCode || '',
         unit: editingArticle.unit,
         minStock: editingArticle.minStock.toString(),
         imageUrl: editingArticle.imageUrl || ''
@@ -112,10 +115,10 @@ export function CreateItemModal({
     }
   };
 
- // ⭐ FUNCIÓN DE ENVÍO ACTUALIZADA
+  // ⭐ FUNCIÓN DE ENVÍO ACTUALIZADA
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // ✅ Diferenciar entre creación y edición
     if (editingArticle) {
       // MODO EDICIÓN - Enviar datos para PUT
@@ -133,7 +136,7 @@ export function CreateItemModal({
       onSubmit(updatePayload);
     } else {
       // MODO CREACIÓN - Enviar datos para POST
-      onSubmit({
+      const createPayload = {
         name: formData.name,
         description: formData.description,
         category: formData.category,
@@ -141,12 +144,15 @@ export function CreateItemModal({
         consumable: formData.typeUI === 'consumable',
         minStock: parseInt(formData.minStock, 10),
         binCode: formData.binCode,
+        idBinCode: formData.idBinCode,
         imageFile: imageFile,
-      });
+      };
+      console.log('CREATE PAYLOAD from Modal:', createPayload); // ✅ CORREGIDO: ahora usa createPayload
+      onSubmit(createPayload);
     }
     onOpenChange(false);
   };
-    
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'good-condition':
@@ -169,33 +175,21 @@ export function CreateItemModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingArticle ? 'Edit Item' : 'Create new Item'}</DialogTitle>
+          <DialogTitle>{editingArticle ? 'Edit Item' : 'Register new Item'}</DialogTitle>
           <DialogDescription>
             {editingArticle ? 'Update the item information below.' : 'Fill in the details to create a new item in your inventory.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            
-            {/* Campo BIN Code (Input de texto) */} 
-            <div>
-              <Label htmlFor="binCode">BIN Code *</Label>
-              <Input 
-                id="binCode"
-                value={formData.binCode}
-                onChange={(e) => setFormData({...formData, binCode: e.target.value})}
-                placeholder="e.g., A1-R2-S3 (Primary Bin)"
-                required
-              />
-            </div>
-            
+
             {/* Campo Name */}
             <div>
               <Label htmlFor="name">Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g., A4 Office Paper"
                 required
               />
@@ -207,7 +201,7 @@ export function CreateItemModal({
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Detailed description of the item..."
               rows={3}
             />
@@ -217,10 +211,10 @@ export function CreateItemModal({
             {/* Campo Category */}
             <div>
               <Label htmlFor="category">Category *</Label>
-              <Select 
-                value={formData.category} 
+              <Select
+                value={formData.category}
                 // Corregimos el tipado usando el tipo de Article, que existe
-                onValueChange={(value: Article['category']) => setFormData({...formData, category: value})}
+                onValueChange={(value: Article['category']) => setFormData({ ...formData, category: value })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -237,10 +231,10 @@ export function CreateItemModal({
             {/* Campo Type (ahora usa typeUI) */}
             <div>
               <Label htmlFor="typeUI">Type *</Label>
-              <Select 
-                value={formData.typeUI} 
+              <Select
+                value={formData.typeUI}
                 // ✅ Usa el tipo local ArticleTypeUI
-                onValueChange={(value: ArticleTypeUI) => setFormData({...formData, typeUI: value})}
+                onValueChange={(value: ArticleTypeUI) => setFormData({ ...formData, typeUI: value })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -248,7 +242,6 @@ export function CreateItemModal({
                 <SelectContent>
                   <SelectItem value="consumable">Consumable</SelectItem>
                   <SelectItem value="non-consumable">Non-Consumable</SelectItem>
-                  <SelectItem value="pending-purchase">Pending Purchase</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -261,7 +254,7 @@ export function CreateItemModal({
               <Input
                 id="unit"
                 value={formData.unit}
-                onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                 placeholder="e.g., pieces, sheets, units"
                 required
               />
@@ -273,35 +266,37 @@ export function CreateItemModal({
                 id="minStock"
                 type="number"
                 value={formData.minStock}
-                onChange={(e) => setFormData({...formData, minStock: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
                 placeholder="0"
                 required
               />
             </div>
           </div>
 
-          <div>
-            <Label>Article Image</Label>
-            <div className="space-y-2">
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleImageFileChange}
-              />
+          {/* Article Image - Solo visible en modo creación */}
+          {!editingArticle && (
+            <div>
+              <Label>Article Image</Label>
+              <div className="space-y-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageFileChange}
+                />
 
-              {/* Previsualización de imagen */}
-              {formData.imageUrl && (
-                <div className="w-24 h-24 border rounded overflow-hidden">
-                  <img
-                    src={formData.imageUrl}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
+                {/* Previsualización de imagen */}
+                {formData.imageUrl && (
+                  <div className="w-24 h-24 border rounded overflow-hidden">
+                    <img
+                      src={formData.imageUrl}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-
+          )}
           {/* Stock in Different Bins - Solo visible en modo edición (editingArticle) */}
           {editingArticle && (
             <div className="border rounded-lg overflow-hidden">
@@ -328,28 +323,23 @@ export function CreateItemModal({
                       <TableHeader>
                         <TableRow>
                           <TableHead>BIN Code</TableHead>
-                          <TableHead>Location</TableHead>
-                          <TableHead>Stock</TableHead>
-                          <TableHead>Status</TableHead>
+
+                          {/*  <TableHead>Stock</TableHead>
+                          <TableHead>Status</TableHead>*/}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {articleBins.map((bin, index) => (
-                           <TableRow key={bin.binCode || index}>
-                             <TableCell className="font-mono">{bin.binCode || 'N/A'}</TableCell>
-                             <TableCell>{bin.location || 'N/A'}</TableCell>
-                             <TableCell>{bin.currentStock || 0} {editingArticle.unit}</TableCell>
-                             <TableCell>{getStatusBadge(bin.status || 'N/A')}</TableCell>
-                           </TableRow>
+                          <TableRow key={bin.binCode || index}>
+                            <TableCell className="font-mono">{bin.binCode || 'N/A'}</TableCell>
+
+                            {/*  <TableCell>{bin.currentStock || 0} {editingArticle.unit}</TableCell>
+                             <TableCell>{getStatusBadge(bin.status || 'N/A')}</TableCell>*/}
+                          </TableRow>
                         ))}
-                        
+
                         {/* Fila MOCK de ejemplo para bins adicionales */}
-                        <TableRow>
-                          <TableCell className="font-mono">BIN-STORAGE-001</TableCell>
-                          <TableCell>Main Storage</TableCell>
-                          <TableCell>500 {editingArticle.unit}</TableCell>
-                          <TableCell><Badge className="bg-green-600">Good Condition</Badge></TableCell>
-                        </TableRow>
+
                       </TableBody>
                     </Table>
                   </div>
