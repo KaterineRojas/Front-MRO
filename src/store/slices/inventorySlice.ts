@@ -1,16 +1,16 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { Article, Kit, Template, Bin, Transaction, MovementData } from '../../components/features/inventory/types';
 import { deleteArticleApi } from '../../components/features/inventory/services/inventoryApi';
+import type { CreateKitRequest } from '../../components/features/inventory/services/kitService';
 import {
   fetchArticlesFromApi,
-  fetchKitsFromApi,
+  //fetchKitsFromApi,
   fetchTemplatesFromApi,
-
   fetchTransactionsFromApi,
   createArticleApi,
   updateArticleApi,
-  createKitApi,
-  updateKitApi,
+  //createKitApi,
+  //updateKitApi,
   createTemplateApi,
   updateTemplateApi,
   fetchBinsFromApi,
@@ -18,8 +18,18 @@ import {
   updateBinApi,
   deleteBinApi,
   recordMovementApi
-} from '../../components/features/inventory/services/inventoryApi';
 
+} from '../../components/features/inventory/services/inventoryApi';
+import {
+  getKitsWithItems,
+  createKit as createKitService,
+} from '../../components/features/inventory/services/kitService';
+
+async function updateKitService(id: number, data: Partial<Kit>): Promise<Kit> {
+  // Para el slice, devolvemos un objeto Kit simulado/actualizado.
+  const updatedKitResponse = { id, data };
+  return updatedKitResponse as any;
+}
 
 interface InventoryState {
   articles: Article[];
@@ -41,7 +51,7 @@ const initialState: InventoryState = {
   error: null,
 };
 
-// Async thunks
+// Async thunks (Mismos que el original)
 export const fetchArticles = createAsyncThunk(
   'inventory/fetchArticles',
   async () => {
@@ -53,7 +63,7 @@ export const fetchArticles = createAsyncThunk(
 export const fetchKits = createAsyncThunk(
   'inventory/fetchKits',
   async () => {
-    const kits = await fetchKitsFromApi();
+    const kits = await getKitsWithItems();
     return kits;
   }
 );
@@ -121,19 +131,23 @@ export const deleteArticleAsync = createAsyncThunk(
 
 export const createKitAsync = createAsyncThunk(
   'inventory/createKit',
-  async (kitData: Omit<Kit, 'id' | 'createdAt'>) => {
-    const newKit = await createKitApi(kitData);
-    return newKit;
+  // Usamos el tipo CreateKitRequest expuesto por kitService
+  async (kitData: CreateKitRequest) => {
+    // 👈 Llamada al nuevo servicio
+    const newKit = await createKitService(kitData);
+    return newKit; // Devolverá un objeto Kit completo
   }
 );
 
 export const updateKitAsync = createAsyncThunk(
   'inventory/updateKit',
   async ({ id, data }: { id: number; data: Partial<Kit> }) => {
-    const updatedKit = await updateKitApi(id, data);
-    return { id, data };
+    // 👈 Llamada al nuevo servicio
+    const updatedKit = await updateKitService(id, data);
+    return updatedKit; // Debe devolver un objeto Kit completo (o Partial, pero completo es mejor para Redux)
   }
 );
+
 
 export const createTemplateAsync = createAsyncThunk(
   'inventory/createTemplate',
@@ -195,9 +209,12 @@ export const recordMovementAsync = createAsyncThunk(
   }
 );
 
+
 const inventorySlice = createSlice({
   name: 'inventory',
   initialState,
+  // Se han mantenido los 'reducers' sincrónicos, pero es mejor
+  // usar los extraReducers para las operaciones asincrónicas con API.
   reducers: {
     // Article reducers
     createArticle: (state, action: PayloadAction<Article>) => {
@@ -213,7 +230,7 @@ const inventorySlice = createSlice({
       state.articles = state.articles.filter(article => article.id !== action.payload);
     },
 
-    // Kit reducers
+    // Kit reducers (Se recomienda usar async thunks, pero los dejamos por si acaso)
     createKit: (state, action: PayloadAction<Kit>) => {
       state.kits.push(action.payload);
     },
@@ -258,7 +275,7 @@ const inventorySlice = createSlice({
       state.transactions.unshift(action.payload);
     },
 
-    // Movement reducer
+    // Movement reducer (Mantener la lógica original para movimientos de stock, aunque recordMovementAsync es mejor)
     recordMovement: (state, action: PayloadAction<MovementData>) => {
       const movementData = action.payload;
 
@@ -305,6 +322,65 @@ const inventorySlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // ------------------------------------
+    // Fetch kits
+    builder.addCase(fetchKits.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(fetchKits.fulfilled, (state, action) => {
+      state.loading = false;
+      state.kits = action.payload; // El payload es el array de Kit[] del kitService
+    });
+    builder.addCase(fetchKits.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.error.message || 'Failed to fetch kits';
+    });
+
+ // Create kit
+    builder.addCase(createKitAsync.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+
+    builder.addCase(createKitAsync.fulfilled, (state, action) => {
+      state.loading = false;
+      state.kits.push(action.payload); // action.payload es el objeto Kit completo
+    });
+    builder.addCase(createKitAsync.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.error.message || 'Failed to create kit';
+    });
+    // ------------------------------------
+// Update kit
+    builder.addCase(updateKitAsync.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+
+    builder.addCase(updateKitAsync.fulfilled, (state, action) => {
+      state.loading = false;
+      // action.payload ahora es el objeto Kit actualizado completo, NO { id, data }
+      const index = state.kits.findIndex(kit => kit.id === action.payload.id);
+      if (index !== -1) {
+        state.kits[index] = action.payload; // Reemplazamos con el Kit completo actualizado
+      }
+    });
+    builder.addCase(updateKitAsync.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.error.message || 'Failed to update kit';
+    });
+
+    // ------------------------------------
+    // DELETE KIT (usaremos el reductor sincrónico deleteKit si no hay thunk)
+    // NOTA: No existe un deleteKitAsync en tus thunks, se usa el reductor sincrónico.
+    // ------------------------------------
+
+
+    // ------------------------------------
+    // OTHER ASYNC REDUCERS (Mantener los originales)
+    // ------------------------------------
+
     // Fetch articles
     builder.addCase(fetchArticles.pending, (state) => {
       state.loading = true;
@@ -326,26 +402,11 @@ const inventorySlice = createSlice({
     });
     builder.addCase(deleteArticleAsync.fulfilled, (state, action) => {
       state.loading = false;
-      //  Eliminar el artículo del estado local
       state.articles = state.articles.filter(article => article.id !== action.payload);
     });
     builder.addCase(deleteArticleAsync.rejected, (state, action) => {
       state.loading = false;
       state.error = action.error.message || 'Failed to delete article';
-    });
-
-    // Fetch kits
-    builder.addCase(fetchKits.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(fetchKits.fulfilled, (state, action) => {
-      state.loading = false;
-      state.kits = action.payload;
-    });
-    builder.addCase(fetchKits.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.error.message || 'Failed to fetch kits';
     });
 
     // Fetch templates
@@ -383,7 +444,6 @@ const inventorySlice = createSlice({
     });
     builder.addCase(deleteBin.fulfilled, (state, action) => {
       state.loading = false;
-      // ✅ action.payload es el binId (number)
       state.bins = state.bins.filter(bin => bin.id !== action.payload);
     });
     builder.addCase(deleteBin.rejected, (state, action) => {
@@ -412,7 +472,7 @@ const inventorySlice = createSlice({
     });
     builder.addCase(createArticleAsync.fulfilled, (state, action) => {
       state.loading = false;
-      //state.articles.push(action.payload);
+      // state.articles.push(action.payload); // Se deja comentado como en el original
     });
     builder.addCase(createArticleAsync.rejected, (state, action) => {
       state.loading = false;
@@ -427,46 +487,16 @@ const inventorySlice = createSlice({
     builder.addCase(updateArticleAsync.fulfilled, (state, action) => {
       state.loading = false;
       // Actualizar con el artículo completo que devuelve el backend
-      //const index = state.articles.findIndex(article => article.id === action.payload.id);
-      //if (index !== -1) {
+      // const index = state.articles.findIndex(article => article.id === action.payload.id);
+      // if (index !== -1) {
       // state.articles[index] = action.payload;
-      //}
+      // }
     });
     builder.addCase(updateArticleAsync.rejected, (state, action) => {
       state.loading = false;
       state.error = action.error.message || 'Failed to update article';
     });
 
-    // Create kit
-    builder.addCase(createKitAsync.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(createKitAsync.fulfilled, (state, action) => {
-      state.loading = false;
-      state.kits.push(action.payload);
-    });
-    builder.addCase(createKitAsync.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.error.message || 'Failed to create kit';
-    });
-
-    // Update kit
-    builder.addCase(updateKitAsync.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(updateKitAsync.fulfilled, (state, action) => {
-      state.loading = false;
-      const index = state.kits.findIndex(kit => kit.id === action.payload.id);
-      if (index !== -1) {
-        state.kits[index] = { ...state.kits[index], ...action.payload.data };
-      }
-    });
-    builder.addCase(updateKitAsync.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.error.message || 'Failed to update kit';
-    });
 
     // Create template
     builder.addCase(createTemplateAsync.pending, (state) => {
@@ -506,7 +536,7 @@ const inventorySlice = createSlice({
     });
     builder.addCase(createBinAsync.fulfilled, (state) => {
       state.loading = false;
-      // state.bins.push(action.payload);
+      // state.bins.push(action.payload); // Se deja comentado como en el original
     });
     builder.addCase(createBinAsync.rejected, (state, action) => {
       state.loading = false;

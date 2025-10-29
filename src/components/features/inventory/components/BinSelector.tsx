@@ -12,7 +12,7 @@ import { getNewBins } from "../services/inventoryApi"; // ajusta ruta si es nece
 interface Bin {
   id: number;
   binCode: string;
-  type: "good-condition" | "on-revision" | "scrap";
+  type: string;
   description?: string;
 }
 

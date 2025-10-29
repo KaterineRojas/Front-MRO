@@ -496,6 +496,79 @@ export async function updateArticleApi(
 
 
 /**
+ * Updates an article/item with image support using multipart/form-data
+ */
+export async function updateArticleWithImageApi(
+  id: number,
+  articleData: {
+    sku: string;
+    name: string;
+    description: string;
+    category: string;
+    unit: string;
+    minStock: number;
+    consumable: boolean;
+    imageFile?: File | null;
+    imageUrl?: string | null;
+  }
+): Promise<Article> {
+  try {
+    console.log('UPDATE API_DATA_RECEIVED (multipart):', articleData);
+    const formData = new FormData();
+
+    formData.append('sku', articleData.sku);
+    formData.append('name', articleData.name);
+    formData.append('description', articleData.description);
+    formData.append('category', articleData.category);
+    formData.append('unit', articleData.unit);
+    formData.append('minStock', articleData.minStock.toString());
+    formData.append('isActive', 'true');
+    formData.append('consumable', articleData.consumable.toString());
+
+    // ✅ Añadir imagen si existe (nueva imagen)
+    if (articleData.imageFile) {
+      formData.append('file', articleData.imageFile);
+      console.log('📎 Nueva imagen adjunta al FormData');
+    } else if (articleData.imageUrl) {
+      // Si no hay nueva imagen pero hay URL existente, mantenerla
+      formData.append('urlImage', articleData.imageUrl);
+      console.log(' Manteniendo URL de imagen existente:', articleData.imageUrl);
+    }
+
+    console.log('UPDATE FORMDATA preparado');
+
+    const response = await fetch(`${API_URL}/Items/${id}/update-with-image`, {
+      method: 'PUT',
+      body: formData, 
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to update item: ${response.status} - ${errorText}`);
+    }
+
+    // Verificar si hay contenido en la respuesta
+    const contentType = response.headers.get('content-type');
+    const hasContent = contentType?.includes('application/json');
+
+    if (!hasContent || response.status === 204) {
+      // Backend devolvió vacío - hacer GET del item actualizado
+      console.log('API: Update successful (no content), fetching updated item...');
+      return await fetchArticleByIdApi(id);
+    }
+
+    // Si devuelve JSON, parsearlo y transformarlo
+    const updatedItem = await response.json();
+    console.log('✅ Item actualizado exitosamente:', updatedItem);
+    return transformInventoryItem(updatedItem);
+
+  } catch (error) {
+    console.error('❌ Error updating article with image:', error);
+    throw error;
+  }
+}
+
+/**
  * ***************************************************************************************************
  * Deletes an article/item from the API
  */

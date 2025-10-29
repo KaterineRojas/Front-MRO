@@ -22,6 +22,33 @@ export interface Article {
   createdAt: string;
 }
 
+
+
+export type CategoryType = 'office-supplies' | 'technology' | 'tools' | 'clothing' | 'electronics' | 'furniture' | 'vehicles' | 'safety-equipment' | 'medical-supplies' | 'cleaning-supplies' | 'construction-materials' | 'laboratory-equipment';
+
+export type StatusType = 'good-condition' | 'on-revision' | 'scrap' | 'repaired';
+
+export type ItemType = 'consumable' | 'non-consumable' | 'pending-purchase';
+
+export interface Article2 {
+  id: number;
+  imageUrl?: string;
+  sku: string;
+  name: string;
+  description: string;
+  category: CategoryType | string;
+  type: ItemType;
+  currentStock: number;
+  cost: number;
+  binCode: string;
+  unit: string;
+  supplier: string;
+  minStock: number;
+  location: string;
+  status: StatusType | string;
+  createdAt: string;
+}
+
 // Nueva interface para bins individuales
 export interface ArticleBin {
   binId: number;
@@ -54,8 +81,10 @@ export interface InventoryItemResponse {
 
 
 export interface KitItem {
+  articleDescription: any;
+  imageUrl: any;
   articleId: number;
-  articleBinCode: string;
+  articleSku: string;
   articleName: string;
   quantity: number;
 }
@@ -65,10 +94,8 @@ export interface Kit {
   binCode: string;
   name: string;
   description: string;
-
-  category: 'office-supplies' | 'technology' | 'tools' | 'clothing' | 'electronics' | 'furniture' | 'vehicles' | 'safety-equipment' | 'medical-supplies' | 'cleaning-supplies' | 'construction-materials' | 'laboratory-equipment' | 'HandTools' | 'PowerTools' | 'CuttingTools' | 'MeasuringTools' | 'StrikingTools' | 'FasteningTools' | 'ClampingTools' | 'DiggingTools' | 'ElectricalTools' | 'ElectricalSupplies' | 'WiringMaterials' | 'LightingEquipment' | 'ElectricalComponents' | 'BatteriesPowerSupplies' | 'PlumbingTools' | 'PlumbingSupplies' | 'PipesFittings' | 'ValvesRegulators' | 'WoodworkingTools' | 'LumberMaterials' | 'WoodFinishing' | 'ConstructionTools' | 'BuildingMaterials' | 'ConcreteMasonry' | 'RoofingMaterials' | 'InsulationMaterials' | 'DrywallMaterials' | 'MetalworkingTools' | 'WeldingEquipment' | 'MetalMaterials' | 'HardwareSupplies' | 'PaintingTools' | 'PaintingSupplies' | 'SurfacePreparation' | 'AdhesivesSealants' | 'GardeningTools' | 'OutdoorEquipment' | 'IrrigationSupplies' | 'SafetyEquipment' | 'ProtectiveGear' | 'FirstAid' | 'FireSafety' | 'AutomotiveTools' | 'VehicleParts' | 'TransportationEquipment' | 'Electronics' | 'ComputersPeripherals' | 'AudioVideoEquipment' | 'NetworkEquipment' | 'OfficeSupplies' | 'OfficeEquipment' | 'FurnitureFixtures' | 'StorageOrganization' | 'CleaningTools' | 'CleaningSupplies' | 'MaintenanceEquipment' | 'JanitorialSupplies' | 'IndustrialEquipment' | 'ManufacturingSupplies' | 'MaterialHandling' | 'PackagingShipping' | 'MedicalEquipment' | 'LaboratoryEquipment' | 'ScientificInstruments' | 'ArtCraftSupplies' | 'MusicEquipment' | 'SportsEquipment' | 'Consumables' | 'LubricantsChemicals' | 'FuelPropane' | 'RawMaterials' | 'FinishedGoods' | 'RentalEquipment' | 'SeasonalItems' | 'Miscellaneous' | 'Other';
-
-  items: KitItem[];
+  category: string;
+   items: KitItem[];
   imageUrl?: string;
   status: 'good-condition' | 'on-revision' | 'scrap' | 'repaired';
   createdAt: string;

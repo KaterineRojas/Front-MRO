@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../../../ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Badge } from '../../../ui/badge';
-import { Package, ChevronDown, ChevronRight } from 'lucide-react';
+import { Package, ChevronDown, ChevronRight, X } from 'lucide-react';
 import type { Article } from '../types';
 
 interface ApiPayload {
@@ -17,8 +17,8 @@ interface ApiPayload {
   unit: string;
   minStock: number;
   consumable: boolean;
-  binCode: string;
-  idBinCode: number,
+  binCode?: string;
+  idBinCode?: number;
   imageUrl?: string | null;
   imageFile?: File | null;
   sku?: string;
@@ -66,7 +66,6 @@ export function CreateItemModal({
   const [articleBins, setArticleBins] = useState<any[]>(editingArticle?.bins || []);
 
   useEffect(() => {
-
     if (editingArticle) {
       setFormData({
         name: editingArticle.name,
@@ -98,10 +97,6 @@ export function CreateItemModal({
     setShowBinStock(false);
   }, [editingArticle, open, categories]);
 
-
-  useEffect(() => {
-  }, [categories, categoriesLoading, formData.category]);
-
   const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -114,11 +109,18 @@ export function CreateItemModal({
     }
   };
 
+  // ✅ NUEVA FUNCIÓN: Eliminar imagen
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setFormData(prev => ({ ...prev, imageUrl: '' }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (editingArticle) {
-      const updatePayload = {
+      // ✅ MODO EDICIÓN - Incluir imageFile si hay una nueva imagen
+      const updatePayload: ApiPayload = {
         sku: editingArticle.sku,
         name: formData.name,
         description: formData.description,
@@ -126,12 +128,14 @@ export function CreateItemModal({
         unit: formData.unit,
         consumable: formData.typeUI === 'consumable',
         minStock: parseInt(formData.minStock, 10),
-        imageUrl: formData.imageUrl || null,
+        imageFile: imageFile, // ✅ Nueva imagen si existe
+        imageUrl: imageFile ? null : formData.imageUrl, // ✅ Mantener URL existente si no hay nueva imagen
       };
       console.log('UPDATE PAYLOAD from Modal:', updatePayload);
       onSubmit(updatePayload);
     } else {
-      const createPayload = {
+      // MODO CREACIÓN
+      const createPayload: ApiPayload = {
         name: formData.name,
         description: formData.description,
         category: formData.category,
@@ -200,7 +204,6 @@ export function CreateItemModal({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* ✅ CAMBIO: Campo Category usa categorías dinámicas */}
             <div>
               <Label htmlFor="category">Category *</Label>
               <Select
@@ -261,28 +264,45 @@ export function CreateItemModal({
             </div>
           </div>
 
-          {!editingArticle && (
-            <div>
-              <Label>Article Image</Label>
-              <div className="space-y-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageFileChange}
-                />
-                {formData.imageUrl && (
-                  <div className="w-24 h-24 border rounded overflow-hidden">
-                    <img
-                      src={formData.imageUrl}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-              </div>
+          {/* ✅ CAMPO DE IMAGEN - Ahora visible tanto en creación como en edición */}
+          <div>
+            <Label>Article Image {editingArticle && '(Optional - Upload to change)'}</Label>
+            <div className="space-y-2">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleImageFileChange}
+              />
+              
+              {/* Previsualización de imagen */}
+              {formData.imageUrl && (
+                <div className="relative w-24 h-24 border rounded overflow-hidden">
+                  <img
+                    src={formData.imageUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                  {/* ✅ Botón para eliminar imagen */}
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              
+              {/* ✅ Mensaje informativo en modo edición */}
+              {editingArticle && !imageFile && formData.imageUrl && (
+                <p className="text-xs text-muted-foreground">
+                  Current image will be kept. Upload a new one to replace it.
+                </p>
+              )}
             </div>
-          )}
+          </div>
 
+          {/* Stock en diferentes bins - Solo en modo edición */}
           {editingArticle && (
             <div className="border rounded-lg overflow-hidden">
               <Button

@@ -6,7 +6,7 @@ import { CreateKitPage } from './modals/CreateKitPage';
 import { EditTemplatePage } from './components/EditTemplatePage';
 import { RecordMovementModal } from './modals/RecordMovementModal';
 import { ItemsTab } from './tabs/ItemsTab';
-import { KitsTab } from './tabs/KitsTab';
+import { KitsTab } from './tabs/Kits/KitsTab';
 import { TemplatesTab } from './tabs/TemplatesTab';
 import { BinsTab } from './tabs/BinsTab';
 import { TransactionsTab } from './tabs/TransactionsTab';
