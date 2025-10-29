@@ -17,7 +17,7 @@ export interface BinResponse {
  */
 export interface Bin {
   binCode: string;
-  type: 'good-condition' | 'on-revision' | 'scrap';
+  type: string;
   description: string;
 }
 
