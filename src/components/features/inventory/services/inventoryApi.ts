@@ -19,35 +19,6 @@ const MOCK_KITS_DATA: Kit[] = [
     imageUrl: 'https://images.unsplash.com/photo-1698226930185-132277855882?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0b29sYm94JTIwa2l0JTIwY29udGFpbmVyfGVufDF8fHx8MTc1OTc4NDEzNXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
     status: 'good-condition',
     createdAt: '2025-01-15'
-  },
-  {
-    id: 2,
-    binCode: 'KIT-SAFETY-001',
-    name: 'Personal Safety Kit',
-    description: 'Complete personal protective equipment kit',
-    category: 'safety-equipment',
-    items: [
-      { articleId: 5, articleBinCode: 'BIN-SAFE-005', articleName: 'Safety Helmet', quantity: 1 },
-      { articleId: 4, articleBinCode: 'BIN-PROJ-004', articleName: 'Projector Epson', quantity: 1 }
-    ],
-    imageUrl: 'https://images.unsplash.com/photo-1698226930185-132277855882?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0b29sYm94JTIwa2l0JTIwY29udGFpbmVyfGVufDF8fHx8MTc1OTc4NDEzNXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    status: 'good-condition',
-    createdAt: '2025-01-16'
-  },
-  {
-    id: 3,
-    binCode: 'KIT-TECH-001',
-    name: 'Presentation Equipment Kit',
-    description: 'Complete setup for presentations and meetings',
-    category: 'technology',
-    items: [
-      { articleId: 4, articleBinCode: 'BIN-PROJ-004', articleName: 'Projector Epson', quantity: 1 },
-      { articleId: 2, articleBinCode: 'BIN-TECH-002', articleName: 'Laptop Dell Latitude', quantity: 1 },
-      { articleId: 3, articleBinCode: 'BIN-USB-003', articleName: 'USB Cable Type-C', quantity: 3 }
-    ],
-    imageUrl: 'https://images.unsplash.com/photo-1698226930185-132277855882?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0b29sYm94JTIwa2l0JTIwY29udGFpbmVyfGVufDF8fHx8MTc1OTc4NDEzNXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    status: 'good-condition',
-    createdAt: '2025-01-17'
   }
 ];
 
@@ -78,48 +49,6 @@ const MOCK_TEMPLATES_DATA: Template[] = [
       }
     ],
     createdAt: '2025-01-15'
-  },
-  {
-    id: 2,
-    name: 'Safety Equipment Standard',
-    description: 'Basic personal protective equipment',
-    category: 'safety-equipment',
-    items: [
-      {
-        articleId: 5,
-        articleBinCode: 'BIN-SAFE-005',
-        articleName: 'Safety Helmet',
-        quantity: 1
-      },
-      {
-        articleId: 4,
-        articleBinCode: 'BIN-TOOL-004',
-        articleName: 'Electric Drill',
-        quantity: 1
-      }
-    ],
-    createdAt: '2025-01-16'
-  },
-  {
-    id: 3,
-    name: 'Presentation Kit Pro',
-    description: 'Complete presentation and meeting setup',
-    category: 'technology',
-    items: [
-      {
-        articleId: 2,
-        articleBinCode: 'BIN-TECH-002',
-        articleName: 'Dell Latitude Laptop',
-        quantity: 1
-      },
-      {
-        articleId: 3,
-        articleBinCode: 'BIN-USB-003',
-        articleName: 'USB Type-C Cable',
-        quantity: 3
-      }
-    ],
-    createdAt: '2025-01-17'
   }
 ];
 
@@ -140,55 +69,8 @@ const MOCK_TRANSACTIONS_DATA: Transaction[] = [
     project: 'Office Supplies Replenishment',
     date: '2025-01-20',
     createdAt: '2025-01-20T10:30:00Z'
-  },
-  {
-    id: 2,
-    type: 'exit',
-    subtype: 'loan',
-    articleCode: 'TECH-002',
-    articleDescription: 'Laptop Dell Latitude 5520',
-    quantity: 1,
-    unit: 'units',
-    reference: 'LOAN-001',
-    notes: 'Loan to Marketing team for presentation',
-    user: 'Mike Chen',
-    project: 'Product Launch Campaign',
-    date: '2025-01-20',
-    createdAt: '2025-01-20T14:15:00Z'
-  },
-  {
-    id: 3,
-    type: 'exit',
-    subtype: 'consumption',
-    articleCode: 'USB-003',
-    articleDescription: 'USB Cable Type-C 2m',
-    quantity: 2,
-    unit: 'units',
-    reference: 'CONS-001',
-    notes: 'IT department setup new workstations',
-    user: 'Anna Rodriguez',
-    project: 'Workstation Setup Project',
-    date: '2025-01-19',
-    createdAt: '2025-01-19T09:45:00Z'
-  },
-  {
-    id: 5,
-    type: 'adjustment',
-    subtype: 'audit',
-    articleCode: 'OFF-001',
-    articleDescription: 'Office Paper AA4 - 80gsm',
-    quantity: -50,
-    unit: 'sheets',
-    reference: 'AUD-2025-001',
-    notes: 'Physical count adjustment - damaged paper found',
-    user: 'Sarah Johnson',
-    project: 'Monthly Audit Process',
-    date: '2025-01-18',
-    createdAt: '2025-01-18T11:00:00Z'
   }
 ];
-
-
 
 /**
  * Mapea el propósito del bin (binPurpose o binPurposeDisplay)
@@ -211,7 +93,7 @@ function mapStatusType(apiStatus: string): Article['status'] {
 export function transformInventoryItem(apiItem: InventoryItemResponse): Article {
   return {
     id: apiItem.itemId,
-    imageUrl: apiItem.imageUrl || null,
+    imageUrl: apiItem.imageUrl || '',
     sku: apiItem.itemSku,
     name: apiItem.itemName,
     description: apiItem.description || '',
@@ -283,13 +165,29 @@ function mapBinType(apiType: BinResponse['binPurposeDisplay']): Bin['type'] {
 
 
 function mapCategory(apiCategory?: string): Article['category'] {
-  const validCategories = CATEGORIES.map(c => c.value) as Article['category'][];
-
-  if (apiCategory && validCategories.includes(apiCategory as Article['category'])) {
-    return apiCategory as Article['category'];
+  if (!apiCategory) {
+    //console.log(' mapCategory: No category provided, using "other"');
+    return 'other';
   }
-  // Valor por defecto si no coincide o viene vacío
-  return 'tools';
+
+  //console.log(' mapCategory input:', apiCategory);
+
+  // Normalizar la categoría del backend a kebab-case
+  // "AutomotiveTools" → "automotive-tools"
+  const normalizedCategory = apiCategory
+    .replace(/([a-z])([A-Z])/g, '$1-$2') // CamelCase → kebab-case
+    .toLowerCase();
+
+  //console.log(' mapCategory normalized:', normalizedCategory);
+
+  // Verificar si existe en las categorías válidas del tipo Article
+  const validCategories = CATEGORIES.map(c => c.value) as Article['category'][];
+  
+  if (validCategories.includes(normalizedCategory as Article['category'])) {
+    //console.log('✅ mapCategory found match:', normalizedCategory);
+    return normalizedCategory as Article['category'];
+  }
+  return normalizedCategory as Article['category'];
 }
 
 /**
@@ -474,11 +372,6 @@ export async function createArticleApi2(articleData: Omit<Article, 'id' | 'creat
   return newArticle;
 }
 
-/**NUEVO **********************************************************************************************************
- * *****************************************************************************************************************
- */
-
-
 /**
  * Creates a new article/item with image support using multipart/form-data
  */
@@ -534,18 +427,6 @@ export async function createArticleApi(
   }
 }
 
-/**
- * Simulates updating an article in the API
- */
-export async function updateArticleApi2(id: number, data: Partial<Article>): Promise<Article> {
-  await delay(500); // Simulate network delay
-
-  // In a real API, this would update the article in the database
-  console.log('API: Article updated successfully', { id, data });
-
-  // Return the updated article (in reality, the backend would return the full updated object)
-  return { id, ...data } as Article;
-}
 
 /** *********************************************************************************************************************************
  * Updates an article/item via PUT request
@@ -612,6 +493,7 @@ export async function updateArticleApi(
     throw error;
   }
 }
+
 
 /**
  * ***************************************************************************************************
@@ -713,22 +595,19 @@ export async function createBinApi(binData: {
 
     };
 
-    // FIX APLICADO: Convertir el tipo a minúsculas para asegurar que coincida con las claves del mapa.
+
     const normalizedType = binData.type.toLowerCase() as keyof typeof binPurposeMap;
     const binPurposeValue = binPurposeMap[normalizedType];
 
     if (binPurposeValue === undefined) {
       console.error(`Invalid bin type provided after normalization: ${binData.type}`);
-      // Opcional: lanzar un error o usar un valor por defecto si es necesario.
     }
 
 
     const payload = {
       binCode: binData.binCode,
-      // name: '', //  Enviar vacío si no hay name
-      // description: binData.description || '',
-      name: binData.description || '', //  Usamos la description como name
-      description: '',
+      description: binData.description || '',
+
       binPurpose: binPurposeValue // Usamos el valor mapeado
     };
 
@@ -764,7 +643,7 @@ export async function createBinApi(binData: {
 
 export async function deleteBinApi(id: number): Promise<void> {
   try {
-    console.log('🗑️ Attempting to delete bin with ID:', id);
+    //console.log('🗑️ Attempting to delete bin with ID:', id);
 
     const response = await fetch(`${API_URL}/Bins/${id}`, {
       method: 'DELETE',
@@ -773,7 +652,7 @@ export async function deleteBinApi(id: number): Promise<void> {
       },
     });
 
-    console.log('🗑️ Delete response status:', response.status);
+    //console.log('🗑️ Delete response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -797,7 +676,7 @@ export async function updateBinApi(
   id: number,
   binData: {
     binCode: string;
-    type: 'good-condition' | 'on-revision' | 'scrap';
+    type: 'good-condition' | 'on-revision' | 'scrap'  | 'hold'  | 'packing'  | 'reception';
     description: string;
   }
 ): Promise<Bin> {
@@ -813,10 +692,10 @@ export async function updateBinApi(
     };
 
     const payload = {
-      //binCode: binData.binCode,
-      name: binData.description || '', // Usar description como name
-      description: '', // Enviar vacío
-      //binPurpose: binPurposeMap[binData.type]
+      binCode: binData.binCode,
+      //name: binData.description || '', // Usar description como name
+      description:  binData.description || '',
+      binPurpose: binPurposeMap[binData.type]
     };
 
     console.log('UPDATE BIN PAYLOAD:', payload);
@@ -840,7 +719,7 @@ export async function updateBinApi(
 
     if (!hasContent || response.status === 204) {
       // Backend devolvió vacío - hacer GET del bin actualizado
-      console.log('API: Update successful (no content), fetching updated bin...');
+     // console.log('API: Update successful (no content), fetching updated bin...');
       return await fetchBinByIdApi(id);
     }
 
@@ -905,7 +784,45 @@ export async function recordMovementApi(movementData: any): Promise<{ transactio
     createdAt: new Date().toISOString()
   };
 
-  console.log('API: Movement recorded successfully', { movementData, transaction });
+ // console.log('API: Movement recorded successfully', { movementData, transaction });
 
   return { transaction };
 }
+
+
+// Función para obtener categorías del backend
+export const getCategories = async (): Promise<{ value: string; label: string }[]> => {
+  try {
+    //console.log('Llamando a /categories...');
+    const response = await fetch(`${API_URL}/Items/categories`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch categories: ${response.status}`);
+    }
+
+    const data = await response.json();
+    //console.log('🌐 Respuesta raw del backend:', data);
+
+    // ✅ TRANSFORMAR: El backend devuelve ["HandTools", "PowerTools", ...]
+    // Necesitamos convertir a [{ value: 'hand-tools', label: 'Hand Tools' }, ...]
+    const transformedCategories = data.map((category: string) => ({
+      value: category.toLowerCase().replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(), // HandTools -> hand-tools
+      label: category.replace(/([a-z])([A-Z])/g, '$1 $2') // HandTools -> Hand Tools
+    }));
+
+    //console.log('✅ Categorías transformadas:', transformedCategories);
+    return transformedCategories;
+  } catch (error) {
+    console.error('❌ Error fetching categories:', error);
+    // Fallback
+    return [
+      { value: 'other', label: 'Other' },
+      { value: 'tools', label: 'Tools' },
+    ];
+  }
+};

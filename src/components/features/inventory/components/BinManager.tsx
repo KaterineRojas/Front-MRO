@@ -88,12 +88,12 @@ export function BinManager() {
     try {
       if (editingBin) {
         await dispatch(updateBinAsync({ id: editingBin.id, data: formData })).unwrap();
-        // ✅ Recargar bins después de actualizar
+        //    Recargar bins después de actualizar
         await dispatch(fetchBins()).unwrap();
         alert('Bin updated successfully!');
       } else {
         await dispatch(createBinAsync(formData)).unwrap();
-        // ✅ Recargar bins después de crear
+        //    Recargar bins después de crear
         await dispatch(fetchBins()).unwrap();
         alert('Bin created successfully!');
       }
@@ -120,18 +120,18 @@ export function BinManager() {
   // BinManager.tsx
 
   const handleDeleteBin = async (id: number) => {
-    console.log('🔴 handleDeleteBin called with ID:', id); // ✅ Log
+    console.log('🔴 handleDeleteBin called with ID:', id);
 
     try {
-      console.log('🔴 Dispatching deleteBin...'); // ✅ Log
+      console.log('🔴 Dispatching deleteBin...');
       await dispatch(deleteBin(id)).unwrap();
 
-      console.log('✅ deleteBin succeeded, fetching bins...'); // ✅ Log
+      console.log('   deleteBin succeeded, fetching bins...');
       await dispatch(fetchBins()).unwrap();
 
       alert('Bin deleted successfully!');
     } catch (error: any) {
-      console.error('❌ Failed to delete bin:', error); // ✅ Más detalle
+      console.error('❌ Failed to delete bin:', error); 
       console.error('❌ Error details:', {
         message: error.message,
         stack: error.stack,

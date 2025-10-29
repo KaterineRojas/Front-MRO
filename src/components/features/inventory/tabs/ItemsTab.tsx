@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
@@ -7,9 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../../../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../ui/alert-dialog';
-import { Package, Search, Edit, Trash2, Plus, ChevronDown, ChevronRight, TrendingDown, RotateCcw, TrendingUp } from 'lucide-react';
+import { Package, Search, Edit, Trash2, Plus, ChevronDown, ChevronRight, TrendingDown, RotateCcw } from 'lucide-react';
 import { CreateItemModal } from '../modals/CreateItemModal';
 import type { Article } from '../types';
+import { getCategories } from '../services/inventoryApi';
 
 interface ItemsTabProps {
   articles: Article[];
@@ -44,24 +45,59 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
 
-  // ✅ Función helper para formatear la categoría del backend
+  // ✅ NUEVO: Estado para categorías
+  const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  // ✅ NUEVO: Cargar categorías al montar el componente
+  // ✅ Cargar categorías INMEDIATAMENTE al montar
+  useEffect(() => {
+    const loadCategories = async () => {
+      //console.log('🔄 Iniciando carga de categorías...');
+      setCategoriesLoading(true);
+      try {
+        const fetchedCategories = await getCategories();
+        //console.log('✅ Categorías cargadas exitosamente:', fetchedCategories);
+        setCategories(fetchedCategories);
+      } catch (error) {
+        console.error('❌ Error cargando categorías:', error);
+      } finally {
+        setCategoriesLoading(false);
+        //console.log('✅ Carga de categorías finalizada');
+      }
+    };
+
+    loadCategories();
+  }, []); // ← Sin dependencias para que solo se ejecute una vez
+
+
+  // Función helper mejorada para formatear categorías
   const formatCategory = (category: string) => {
-    // Reemplaza guiones bajos y guiones por espacios y capitaliza
+    if (!category) return 'Uncategorized';
+    const found = categories.find(cat => {      const normalizedCat = cat.value.toLowerCase().replace(/[-_]/g, '');
+      const normalizedCategory = category.toLowerCase().replace(/[-_]/g, '');
+      return normalizedCat === normalizedCategory;
+    });
+
+    if (found) {
+     // console.log(`✅ Categoría encontrada: ${category} -> ${found.label}`);
+      return found.label;
+    }
+
+    // Si no se encuentra, formatear manualmente
+    //console.log(`⚠️ Categoría NO encontrada: ${category}, formateando manualmente`);
     return category
       .replace(/[-_]/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2') // CamelCase a espacios
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
   };
-
-  // ✅ Obtener categorías únicas del backend dinámicamente
-  const uniqueCategories = Array.from(new Set(articles.map(a => a.category)));
-
   const hasAnyStock = (article: Article) => {
-    return article.totalPhysical > 0 || 
-           article.quantityAvailable > 0 || 
-           article.quantityOnLoan > 0 || 
-           article.quantityReserved > 0;
+    return article.totalPhysical > 0 ||
+      article.quantityAvailable > 0 ||
+      article.quantityOnLoan > 0 ||
+      article.quantityReserved > 0;
   };
 
   const filteredArticles = articles.filter(article => {
@@ -69,14 +105,14 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
       article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       article.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       article.bins.some(bin => bin.binCode.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
     const matchesCategory = categoryFilter === 'all' || article.category === categoryFilter;
-    
-    const matchesStock = 
-      stockFilter === 'all' || 
+
+    const matchesStock =
+      stockFilter === 'all' ||
       (stockFilter === 'with-stock' && hasAnyStock(article)) ||
       (stockFilter === 'empty' && !hasAnyStock(article));
-    
+
     return matchesSearch && matchesCategory && matchesStock;
   });
 
@@ -201,7 +237,6 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                       </div>
                     </TableCell>
                     <TableCell>
-                      {/* ✅ CAMBIO: Muestra directamente la categoría del backend formateada */}
                       <Badge variant="outline">
                         {formatCategory(article.category)}
                       </Badge>
@@ -270,6 +305,7 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                   {expandedItems.has(article.id) && (
                     <TableRow>
                       <TableCell colSpan={10} className="bg-muted/30 p-0">
+                           {/* 
                         <div className="p-2 text-xs text-muted-foreground flex items-center justify-between border-b bg-background/70">
                           <div className="flex items-center gap-6">
                             <div>
@@ -282,7 +318,7 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                               <span className="font-medium text-foreground">Reserved:</span> {article.quantityReserved} {article.unit}
                             </div>
                           </div>
-                        </div>
+                        </div> */}
 
                         <div className="p-4">
                           <h4 className="flex items-center mb-3">
@@ -377,16 +413,16 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
             </div>
           </div>
           <div className="w-48">
-            {/* ✅ CAMBIO: Select ahora usa categorías dinámicas del backend */}
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            {/* ✅ CAMBIO: Select usa categorías dinámicas del API */}
+            <Select value={categoryFilter} onValueChange={setCategoryFilter} disabled={categoriesLoading}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder={categoriesLoading ? "Loading..." : "All Categories"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {uniqueCategories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {formatCategory(category)}
+                {categories.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -411,11 +447,14 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
         {renderArticlesTable()}
       </CardContent>
 
+      {/* ✅ CAMBIO: Pasar categories como prop */}
       <CreateItemModal
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         editingArticle={editingArticle}
         onSubmit={handleSubmit}
+        categories={categories}
+        categoriesLoading={categoriesLoading}
       />
     </Card>
   );

@@ -61,7 +61,7 @@ export function InventoryManager() {
   }) => {
     try {
       await dispatch(createArticleAsync(articleData)).unwrap();
-      // ✅ Recargar todos los artículos desde el API después de crear
+      //   Recargar todos los artículos desde el API después de crear
       await dispatch(fetchArticles()).unwrap();
       alert('Item created successfully!');
     } catch (error) {
@@ -81,7 +81,7 @@ export function InventoryManager() {
   }) => {
     try {
       await dispatch(updateArticleAsync({ id, data: articleData })).unwrap();
-      // ✅ CRÍTICO: Recargar datos DESPUÉS de que se complete el update
+      //   CRÍTICO: Recargar datos DESPUÉS de que se complete el update
       await dispatch(fetchArticles()).unwrap();
       alert('Item updated successfully!');
     } catch (error) {

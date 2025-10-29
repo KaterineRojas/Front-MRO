@@ -4,14 +4,14 @@ export interface Article {
   sku: string;
   name: string;
   description: string;
-  category: 'office-supplies' | 'technology' | 'tools' | 'hand-tools' | 'power-tools' | 'electrical-supplies' | 'plumbing-supplies' | 'metalworking-supplies' | 'concrete-masonry' | 'woodworking-materials' | 'painting-supplies' | 'adhesives-sealants' | 'gardening-outdoor' | 'maintenance-equipment' | 'consumables' | 'raw-materials' | 'industrial-equipment' | 'art-craft-supplies' | 'miscellaneous' | 'other' | 'clothing' | 'electronics' | 'furniture' | 'vehicles' | 'safety-equipment' | 'medical-supplies' | 'cleaning-supplies' | 'construction-materials' | 'laboratory-equipment';
+  category: string;
   consumable: boolean;
   minStock: number;
-
-  // ✅ NUEVO: Array de bins en vez de un solo binCode
+  status: boolean;
+  //    NUEVO: Array de bins en vez de un solo binCode
   bins: ArticleBin[];
 
-  // ✅ NUEVO: Datos calculados del API
+  //    NUEVO: Datos calculados del API
   quantityAvailable: number;
   quantityOnLoan: number;
   quantityReserved: number;

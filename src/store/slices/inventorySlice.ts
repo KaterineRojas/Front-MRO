@@ -5,7 +5,7 @@ import {
   fetchArticlesFromApi,
   fetchKitsFromApi,
   fetchTemplatesFromApi,
-  fetchBinsFromApi,
+
   fetchTransactionsFromApi,
   createArticleApi,
   updateArticleApi,
@@ -13,11 +13,13 @@ import {
   updateKitApi,
   createTemplateApi,
   updateTemplateApi,
+  fetchBinsFromApi,
   createBinApi,
   updateBinApi,
   deleteBinApi,
   recordMovementApi
 } from '../../components/features/inventory/services/inventoryApi';
+
 
 interface InventoryState {
   articles: Article[];
