@@ -33,7 +33,7 @@ import {
 export function InventoryManager() {
   const dispatch = useAppDispatch();
   const { articles, kits, templates, bins, transactions, loading, error } = useAppSelector((state) => state.inventory);
-
+  const [usingKitAsTemplate, setUsingKitAsTemplate] = useState(false);
   const [viewMode, setViewMode] = useState<'items' | 'kits' | 'create-kit' | 'templates' | 'edit-template' | 'bins' | 'transactions'>('items');
   const [recordMovementOpen, setRecordMovementOpen] = useState(false);
   const [editingKit, setEditingKit] = useState<Kit | null>(null);
@@ -103,6 +103,7 @@ export function InventoryManager() {
   const handleEditKit = (kit: Kit) => {
     setEditingKit(kit);
     setSelectedTemplate(null);
+    setUsingKitAsTemplate(false);
     setViewMode('create-kit');
   };
 
@@ -110,29 +111,41 @@ export function InventoryManager() {
     dispatch(deleteKit(id));
   };
 
-  const handleKitSave = (kitData: Omit<Kit, 'id' | 'createdAt'>) => {
-    const kitDataWithImage = {
-      ...kitData,
-      imageUrl: kitData.imageUrl || 'https://images.unsplash.com/photo-1698226930185-132277855882?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0b29sYm94JTIwa2l0JTIwY29udGFpbmVyfGVufDF8fHx8MTc1OTc4NDEzNXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
-    };
+const handleKitSave = (kitData: Omit<Kit, 'id' | 'createdAt'>) => {
+  console.log('🔵 handleKitSave called with:', kitData);
+  console.log('🔵 editingKit:', editingKit);
+  console.log('🔵 usingKitAsTemplate:', usingKitAsTemplate);
 
-    if (editingKit) {
-      dispatch(updateKitAsync({ id: editingKit.id, data: kitDataWithImage }));
-    } else {
-      dispatch(createKitAsync(kitDataWithImage));
-    }
-
-    setViewMode('kits');
-    setEditingKit(null);
-    setSelectedTemplate(null);
-    alert(editingKit ? 'Kit updated successfully!' : 'Kit created successfully!');
+  const kitDataWithImage = {
+    ...kitData,
+    imageUrl: kitData.imageUrl || 'https://images.unsplash.com/photo-1698226930185-132277855882?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0b29sYm94JTIwa2l0JTIwY29udGFpbmVyfGVufDF8fHx8MTc1OTc4NDEzNXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
   };
 
-  const handleBackToKits = () => {
-    setViewMode('kits');
-    setEditingKit(null);
-    setSelectedTemplate(null);
-  };
+  // ✅ CORREGIDO: Verificar tanto el ID como el flag usingKitAsTemplate
+  if (editingKit && editingKit.id !== 0 && !usingKitAsTemplate) {
+    // MODO EDICIÓN - actualizar kit existente
+    console.log('🟡 Updating existing kit with ID:', editingKit.id);
+    dispatch(updateKitAsync({ id: editingKit.id, data: kitDataWithImage }));
+    alert('Kit updated successfully!');
+  } else {
+    // MODO CREACIÓN (nuevo o copia) - crear nuevo kit
+    console.log('🟢 Creating new kit');
+    dispatch(createKitAsync(kitDataWithImage));
+    alert('Kit created successfully!');
+  }
+
+  setViewMode('kits');
+  setEditingKit(null);
+  setSelectedTemplate(null);
+  setUsingKitAsTemplate(false); 
+};
+
+ const handleBackToKits = () => {
+  setViewMode('kits');
+  setEditingKit(null);
+  setSelectedTemplate(null);
+  setUsingKitAsTemplate(false); 
+};
 
   const handleCreateKitFromTemplate = (template: Template) => {
     setSelectedTemplate(template);
@@ -226,18 +239,18 @@ export function InventoryManager() {
     );
   }
 
-  // Special view modes
-  if (viewMode === 'create-kit') {
-    return (
-      <CreateKitPage
-        articles={articles}
-        editingKit={editingKit}
-        fromTemplate={selectedTemplate}
-        onBack={handleBackToKits}
-        onSave={handleKitSave}
-      />
-    );
-  }
+if (viewMode === 'create-kit') {
+  return (
+    <CreateKitPage
+      articles={articles}
+      editingKit={editingKit}
+      fromTemplate={selectedTemplate}
+      usingAsTemplate={usingKitAsTemplate} 
+      onBack={handleBackToKits}
+      onSave={handleKitSave}
+    />
+  );
+}
 
   if (viewMode === 'edit-template') {
     return (
@@ -289,12 +302,24 @@ export function InventoryManager() {
 
         <TabsContent value="kits" className="space-y-4">
           <KitsTab
-            kits={kits}
             articles={articles}
+            categories={[]}
             onCreateKit={handleCreateKit}
+            onCreateFromTemplate={() => setViewMode('templates')}
             onEditKit={handleEditKit}
+            onUseAsTemplate={(kit) => {
+              console.log('🟢 Creating new kit from template:', kit);
+              setEditingKit({
+                ...kit,
+                id: 0,
+                binCode: '',
+                quantity: 0,
+                name: `${kit.name} (Copy)`,
+              });
+              setUsingKitAsTemplate(true);
+              setViewMode('create-kit');
+            }}
             onDeleteKit={handleDeleteKit}
-            onViewTemplates={() => setViewMode('templates')}
           />
         </TabsContent>
 

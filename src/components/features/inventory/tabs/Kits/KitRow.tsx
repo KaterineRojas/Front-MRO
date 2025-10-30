@@ -123,7 +123,8 @@ export function KitRow({
   };
 
   const handleUseKit = () => {
-    // Create a new kit based on the current kit (use as template)
+  console.log('🔵 USE KIT clicked:', kit);
+  console.log('🔵 onUseAsTemplate function:', onUseAsTemplate);
     onUseAsTemplate(kit);
   };
 

@@ -94,10 +94,11 @@ export interface Kit {
   binCode: string;
   name: string;
   description: string;
-  category: string;
-   items: KitItem[];
+  category: CategoryType | string;
+  quantity: number;
+  items: KitItem[];
   imageUrl?: string;
-  status: 'good-condition' | 'on-revision' | 'scrap' | 'repaired';
+  status: StatusType | string;
   createdAt: string;
 }
 
