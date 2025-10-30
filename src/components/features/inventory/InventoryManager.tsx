@@ -9,7 +9,7 @@ import { ItemsTab } from './tabs/ItemsTab';
 import { KitsTab } from './tabs/Kits/KitsTab';
 import { TemplatesTab } from './tabs/TemplatesTab';
 import { BinsTab } from './tabs/BinsTab';
-import { TransactionsTab } from './tabs/TransactionsTab';
+import { TransactionsTab } from './tabs/transactions/TransactionsTab';
 import type { Article, Kit, Template, MovementData } from './types';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import {

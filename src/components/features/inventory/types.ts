@@ -142,7 +142,7 @@ export interface BinResponse {
   isActive: boolean; // Ignorado en la transformación
   createdAt: string; // Ignorado en la transformación
   updatedAt: string; // Ignorado en la transformación
-  totalQuantity: number;
+  totalQuantity: number; 
 }
 
 

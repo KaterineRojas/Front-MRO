@@ -4,23 +4,7 @@ import { strict } from 'assert';
 const API_URL = 'http://localhost:5000/api';
 
 
-const MOCK_KITS_DATA: Kit[] = [
-  {
-    id: 1,
-    binCode: 'KIT-OFFICE-001',
-    name: 'Basic Office Starter Kit',
-    description: 'Complete office setup kit for new employees',
-    category: 'office-supplies',
-    items: [
-      { articleId: 1, articleBinCode: 'BIN-OFF-001', articleName: 'Office Paper A4', quantity: 5 },
-      { articleId: 2, articleBinCode: 'BIN-TECH-002', articleName: 'Laptop Dell Latitude', quantity: 1 },
-      { articleId: 3, articleBinCode: 'BIN-USB-003', articleName: 'USB Cable Type-C', quantity: 2 }
-    ],
-    imageUrl: 'https://images.unsplash.com/photo-1698226930185-132277855882?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0b29sYm94JTIwa2l0JTIwY29udGFpbmVyfGVufDF8fHx8MTc1OTc4NDEzNXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    status: 'good-condition',
-    createdAt: '2025-01-15'
-  }
-];
+
 
 const MOCK_TEMPLATES_DATA: Template[] = [
   {
@@ -53,14 +37,13 @@ const MOCK_TEMPLATES_DATA: Template[] = [
 ];
 
 
-
 const MOCK_TRANSACTIONS_DATA: Transaction[] = [
   {
     id: 1,
     type: 'entry',
     subtype: 'purchase',
     articleCode: 'OFF-001',
-    articleDescription: 'Office Paper A4 - 800gsm',
+    articleDescription: 'Office Paper A4 - 80gsm',
     quantity: 500,
     unit: 'sheets',
     reference: 'PO-2025-001',
@@ -69,8 +52,78 @@ const MOCK_TRANSACTIONS_DATA: Transaction[] = [
     project: 'Office Supplies Replenishment',
     date: '2025-01-20',
     createdAt: '2025-01-20T10:30:00Z'
+  },
+  {
+    id: 2,
+    type: 'exit',
+    subtype: 'loan',
+    articleCode: 'TECH-002',
+    articleDescription: 'Laptop Dell Latitude 5520',
+    quantity: 1,
+    unit: 'units',
+    reference: 'LOAN-001',
+    notes: 'Loan to Marketing team for presentation',
+    user: 'Mike Chen',
+    project: 'Product Launch Campaign',
+    date: '2025-01-20',
+    createdAt: '2025-01-20T14:15:00Z'
+  },
+  {
+    id: 3,
+    type: 'exit',
+    subtype: 'consumption',
+    articleCode: 'USB-003',
+    articleDescription: 'USB Cable Type-C 2m',
+    quantity: 2,
+    unit: 'units',
+    reference: 'CONS-001',
+    notes: 'IT department setup new workstations',
+    user: 'Anna Rodriguez',
+    project: 'Workstation Setup Project',
+    date: '2025-01-19',
+    createdAt: '2025-01-19T09:45:00Z'
+  },
+  {
+    id: 4,
+    type: 'entry',
+    subtype: 'return',
+    articleCode: 'TECH-002',
+    articleDescription: 'Laptop Dell Latitude 5520',
+    quantity: 1,
+    unit: 'units',
+    reference: 'LOAN-001',
+    notes: 'Returned from Marketing team',
+    user: 'David Wilson',
+    project: 'Product Launch Campaign',
+    date: '2025-01-19',
+    createdAt: '2025-01-19T16:20:00Z'
+  },
+  {
+    id: 5,
+    type: 'adjustment',
+    subtype: 'audit',
+    articleCode: 'OFF-001',
+    articleDescription: 'Office Paper A4 - 80gsm',
+    quantity: -50,
+    unit: 'sheets',
+    reference: 'AUD-2025-001',
+    notes: 'Physical count adjustment - damaged paper found',
+    user: 'Sarah Johnson',
+    project: 'Monthly Audit Process',
+    date: '2025-01-18',
+    createdAt: '2025-01-18T11:00:00Z'
   }
 ];
+/**
+
+ * Simulates fetching templates from an API
+ */
+export async function fetchTemplatesFromApi(): Promise<Template[]> {
+  await delay(500); // Simulate network delay
+  return [...MOCK_TEMPLATES_DATA];
+}
+
+
 
 /**
  * Mapea el propósito del bin (binPurpose o binPurposeDisplay)
@@ -268,23 +321,6 @@ export async function fetchArticleByIdApi(id: number): Promise<Article> {
   }
 }
 
-/**
- * Simulates fetching kits from an API
- */
-export async function fetchKitsFromApi(): Promise<Kit[]> {
-  await delay(500); // Simulate network delay
-  return [...MOCK_KITS_DATA];
-}
-
-
-
-/**
- * Simulates fetching templates from an API
- */
-export async function fetchTemplatesFromApi(): Promise<Template[]> {
-  await delay(500); // Simulate network delay
-  return [...MOCK_TEMPLATES_DATA];
-}
 
 
 /*FUNCIONAL.................................................................................
