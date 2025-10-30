@@ -83,10 +83,12 @@ export function KitsTab({
             </p>
           </div>
           <div className="flex space-x-2">
+            {/*
             <Button variant="outline" onClick={onCreateFromTemplate}>
               <Package className="h-4 w-4 mr-2" />
               From Template
             </Button>
+            */}
             <Button onClick={onCreateKit}>
               <Plus className="h-4 w-4 mr-2" />
               Register Kit

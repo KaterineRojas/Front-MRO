@@ -283,10 +283,10 @@ if (viewMode === 'create-kit') {
         onValueChange={(value) => setViewMode(value as any)}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-5">
+         <TabsList className="w-full !flex !flex-row">
           <TabsTrigger value="items">Items</TabsTrigger>
           <TabsTrigger value="kits">Kits</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
+          {/*<TabsTrigger value="templates">Templates</TabsTrigger>*/}
           <TabsTrigger value="bins">Bins</TabsTrigger>
           <TabsTrigger value="transactions">Transaction</TabsTrigger>
         </TabsList>
@@ -322,7 +322,7 @@ if (viewMode === 'create-kit') {
             onDeleteKit={handleDeleteKit}
           />
         </TabsContent>
-
+{/*
         <TabsContent value="templates" className="space-y-4">
           <TemplatesTab
             articles={articles}
@@ -331,6 +331,7 @@ if (viewMode === 'create-kit') {
             onCreateNewTemplate={handleCreateNewTemplate}
           />
         </TabsContent>
+        */}
 
         <TabsContent value="bins" className="space-y-4">
           <BinsTab />
