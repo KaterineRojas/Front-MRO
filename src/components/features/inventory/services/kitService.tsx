@@ -1,8 +1,8 @@
 // src/services/kitsService.ts
 
 import { Article2 } from "../types";
-
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from "../../../../url";
+//const API_URL = 'http://localhost:5000/api';
 
 /**
  * API response format for kit items

@@ -82,19 +82,33 @@ const transactionConfig: Record<
     textColor: 'text-blue-800 dark:text-blue-200',
     iconColor: 'text-blue-600 dark:text-blue-400',
   },
+  
+};
+
+const fallbackConfig = {
+    label: 'Unknown',
+    icon: Settings, 
+    bgColor: 'bg-gray-100 dark:bg-gray-900',
+    textColor: 'text-gray-600 dark:text-gray-400',
+    iconColor: 'text-gray-400 dark:text-gray-600',
 };
 
 export function TransactionBadge({ type, className = '' }: TransactionBadgeProps) {
-  const config = transactionConfig[type];
-  const Icon = config.icon;
+    // 1. Obtiene la configuración O usa el fallback si no existe
+    const config = transactionConfig[type] || fallbackConfig;
+    
+    // 2. Extrae el componente de ícono (ahora es seguro, ya que 'config' siempre tiene un valor)
+    const Icon = config.icon; //!
 
-  return (
-    <Badge
-      variant="outline"
-      className={`${config.bgColor} ${config.textColor} border-0 font-medium inline-flex items-center gap-1.5 ${className}`}
-    >
-      <Icon className={`h-3.5 w-3.5 ${config.iconColor}`} />
-      <span>{config.label}</span>
-    </Badge>
-  );
+    return (
+        <Badge
+            variant="outline"
+            className={`${config.bgColor} ${config.textColor} border-0 font-medium inline-flex items-center gap-1.5 ${className}`}
+        >
+            <Icon className={`h-3.5 w-3.5 ${config.iconColor}`} />
+            
+            {/* Si es un tipo desconocido, mostramos el valor original o el label de fallback */}
+            <span>{config === fallbackConfig ? (type || 'Unknown') : config.label}</span>
+        </Badge>
+    );
 }

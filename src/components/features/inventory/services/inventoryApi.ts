@@ -1,7 +1,8 @@
 import type { Article, InventoryItemResponse, Kit, Template, Bin, BinResponse, Transaction } from '../types';
 import { CATEGORIES } from '../constants';
 import { strict } from 'assert';
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from "../../../../url";
+//const API_URL = 'http://localhost:5000/api';
 
 
 
@@ -874,7 +875,7 @@ async function fetchBinByIdApi(id: number): Promise<Bin> {
  */
 export async function recordMovementApi(movementData: any): Promise<{ transaction: Transaction; updatedArticle?: Article }> {
   await delay(500); // Simulate network delay
-
+  console.log('API: Movement recorded successfully', { movementData, transaction });
   // Create a transaction record
   const transaction: Transaction = {
     id: Date.now(),
@@ -893,7 +894,7 @@ export async function recordMovementApi(movementData: any): Promise<{ transactio
     createdAt: new Date().toISOString()
   };
 
- // console.log('API: Movement recorded successfully', { movementData, transaction });
+  console.log('API: Movement recorded successfully', { movementData, transaction });
 
   return { transaction };
 }

@@ -4,13 +4,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 import { ArrowUpDown } from 'lucide-react';
 import { CreateKitPage } from './modals/CreateKitPage';
 import { EditTemplatePage } from './components/EditTemplatePage';
-import { RecordMovementModal } from './modals/RecordMovementModal';
+import { RecordMovementModal } from './modals/RecordMovement/RecordMovementModal';
 import { ItemsTab } from './tabs/ItemsTab';
 import { KitsTab } from './tabs/Kits/KitsTab';
 import { TemplatesTab } from './tabs/TemplatesTab';
 import { BinsTab } from './tabs/BinsTab';
 import { TransactionsTab } from './tabs/transactions/TransactionsTab';
-import type { Article, Kit, Template, MovementData } from './types';
+import type { Article, Kit, Template } from './types';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import {
   fetchArticles,
@@ -29,6 +29,7 @@ import {
   deleteTemplate,
   recordMovementAsync
 } from '../../../store/slices/inventorySlice';
+import type { MovementData } from './modals/RecordMovement/types';
 
 export function InventoryManager() {
   const dispatch = useAppDispatch();
@@ -180,32 +181,115 @@ const handleKitSave = (kitData: Omit<Kit, 'id' | 'createdAt'>) => {
     setViewMode('edit-template');
   };
 
-  const handleRecordMovement = (movementData: MovementData) => {
-    if (movementData.itemType === 'item') {
-      let selectedArticle;
+const handleRecordMovement = async (movementData: MovementData) => {
+  console.log('📤 ========== RECORD MOVEMENT ==========');
+  console.log('📤 Movement Data Received:', movementData);
 
-      if (movementData.movementType === 'entry') {
-        selectedArticle = articles.find(article => article.sku === movementData.articleSKU);
-      } else {
-        selectedArticle = articles.find(article => article.binCode === movementData.articleBinCode);
-      }
 
-      if (!selectedArticle) return;
+  if (movementData.itemType === 'item') {
+    const selectedArticle = articles.find(article => article.id === movementData.articleId);
 
-      const quantityChange = parseInt(movementData.quantity);
+    if (!selectedArticle) {
+      alert('Error: Article not found');
+      return;
+    }
 
-      if ((movementData.movementType === 'exit' || movementData.movementType === 'relocation') && quantityChange > selectedArticle.currentStock) {
-        alert(`Error: Cannot process ${quantityChange} units. Only ${selectedArticle.currentStock} units available in stock.`);
+    console.log('📤 Selected Article:', selectedArticle);
+
+    // Validación para exit/relocation
+    if (movementData.movementType === 'exit' || movementData.movementType === 'relocation') {
+      const selectedBin = selectedArticle.bins?.find(bin => bin.binId === movementData.articleBinId);
+      
+      if (!selectedBin) {
+        alert('Error: Selected BIN not found');
         return;
       }
 
-      dispatch(recordMovementAsync(movementData));
-    } else {
-      alert('Kit movement recorded (relocation only)');
+      const quantityToMove = parseInt(movementData.quantity);
+      
+      if (quantityToMove > selectedBin.quantity) {
+        alert(`Error: Cannot process ${quantityToMove} units. Only ${selectedBin.quantity} units available in BIN ${selectedBin.binCode}.`);
+        return;
+      }
+
+      console.log('📤 Selected BIN:', selectedBin);
+      console.log('📤 Quantity to move:', quantityToMove);
     }
 
-    alert('Movement recorded successfully!');
-  };
+    // Validación para entry
+    if (movementData.movementType === 'entry') {
+      if (!movementData.newLocationBinId || movementData.newLocationBinId === 0) {
+        alert('Error: Please select a destination BIN');
+        return;
+      }
+      
+      if (!movementData.quantity || parseInt(movementData.quantity) <= 0) {
+        alert('Error: Please enter a valid quantity');
+        return;
+      }
+
+      console.log('📤 Entry validation passed');
+    }
+
+    // Validación para relocation
+    if (movementData.movementType === 'relocation') {
+      if (!movementData.newLocationBinId || movementData.newLocationBinId === 0) {
+        alert('Error: Please select a destination BIN');
+        return;
+      }
+
+      if (movementData.articleBinId === movementData.newLocationBinId) {
+        alert('Error: Cannot relocate to the same BIN');
+        return;
+      }
+
+      console.log('📤 Relocation validation passed');
+    }
+
+    try {
+      // ✅ Dispatch al thunk que llama a recordMovementApi
+      console.log('📤 Dispatching recordMovementAsync...');
+      await dispatch(recordMovementAsync(movementData)).unwrap();
+      
+      // ✅ Recargar datos después del movimiento
+      await dispatch(fetchArticles()).unwrap();
+      await dispatch(fetchTransactions()).unwrap();
+      
+      alert('Movement recorded successfully!');
+      console.log('✅ Movement recorded and data refreshed');
+    } catch (error) {
+      console.error('❌ Failed to record movement:', error);
+      alert('Failed to record movement. Please try again.');
+    }
+
+  } else if (movementData.itemType === 'kit') {
+    // Kit movement (solo relocation)
+    if (movementData.movementType !== 'relocation') {
+      alert('Error: Kits can only be relocated');
+      return;
+    }
+
+    if (!movementData.newLocationBinId || movementData.newLocationBinId === 0) {
+      alert('Error: Please select a destination BIN');
+      return;
+    }
+
+    try {
+      console.log('📦 Recording kit relocation:', movementData);
+      await dispatch(recordMovementAsync(movementData)).unwrap();
+      
+      // Recargar kits después del movimiento
+      await dispatch(fetchKits()).unwrap();
+      await dispatch(fetchTransactions()).unwrap();
+      
+      alert('Kit relocation recorded successfully!');
+      console.log('✅ Kit movement recorded');
+    } catch (error) {
+      console.error('❌ Failed to record kit movement:', error);
+      alert('Failed to record kit movement. Please try again.');
+    }
+  }
+};
 
   // Show loading state
   if (loading && articles.length === 0) {

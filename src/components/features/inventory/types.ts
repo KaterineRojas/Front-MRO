@@ -20,6 +20,7 @@ export interface Article {
   unit: string;
   cost: number;
   createdAt: string;
+  currentStock: number;
 }
 
 
@@ -38,7 +39,7 @@ export interface Article2 {
   description: string;
   category: CategoryType | string;
   type: ItemType;
-  currentStock: number;
+  currentStock: number ;
   cost: number;
   binCode: string;
   unit: string;
@@ -47,6 +48,7 @@ export interface Article2 {
   location: string;
   status: StatusType | string;
   createdAt: string;
+  
 }
 
 // Nueva interface para bins individuales
@@ -162,7 +164,7 @@ export interface MovementData {
 export interface Transaction {
   id: number;
   type: 'entry' | 'exit' | 'adjustment';
-  subtype: 'purchase' | 'return' | 'audit' | 'consumption' | 'loan' | 'sale';
+  subtype: string;
   articleCode: string;
   articleDescription: string;
   quantity: number;
@@ -174,3 +176,4 @@ export interface Transaction {
   date: string;
   createdAt: string;
 }
+

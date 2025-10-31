@@ -337,7 +337,7 @@ const inventorySlice = createSlice({
       state.error = action.error.message || 'Failed to fetch kits';
     });
 
- // Create kit
+    // Create kit
     builder.addCase(createKitAsync.pending, (state) => {
       state.loading = true;
       state.error = null;
@@ -352,7 +352,7 @@ const inventorySlice = createSlice({
       state.error = action.error.message || 'Failed to create kit';
     });
     // ------------------------------------
-// Update kit
+    // Update kit
     builder.addCase(updateKitAsync.pending, (state) => {
       state.loading = true;
       state.error = null;
@@ -568,57 +568,19 @@ const inventorySlice = createSlice({
     });
     builder.addCase(recordMovementAsync.fulfilled, (state, action) => {
       state.loading = false;
-      const { movementData, transaction } = action.payload;
-
-      // Add transaction to state
+      const { transaction } = action.payload;
+      // El estado real se actualizará cuando se haga fetchArticles()
       state.transactions.unshift(transaction);
 
-      // Update article stock based on movement
-      if (movementData.itemType === 'item') {
-        let selectedArticle: Article | undefined;
-
-        if (movementData.movementType === 'entry') {
-          selectedArticle = state.articles.find(article => article.sku === movementData.articleSKU);
-        } else {
-          selectedArticle = state.articles.find(article => article.binCode === movementData.articleBinCode);
-        }
-
-        if (!selectedArticle) return;
-
-        const quantityChange = parseInt(movementData.quantity);
-        let newStock = selectedArticle.currentStock;
-
-        switch (movementData.movementType) {
-          case 'entry':
-            newStock += quantityChange;
-            break;
-          case 'exit':
-            newStock -= quantityChange;
-            break;
-          case 'relocation':
-            // Stock doesn't change for relocation
-            break;
-        }
-
-        const index = state.articles.findIndex(article =>
-          movementData.movementType === 'entry'
-            ? article.sku === movementData.articleSKU
-            : article.binCode === movementData.articleBinCode
-        );
-
-        if (index !== -1) {
-          state.articles[index] = {
-            ...state.articles[index],
-            currentStock: Math.max(0, newStock),
-            location: movementData.newLocation || state.articles[index].location
-          };
-        }
-      }
+      console.log('✅ Movement recorded in Redux state');
     });
+
     builder.addCase(recordMovementAsync.rejected, (state, action) => {
       state.loading = false;
       state.error = action.error.message || 'Failed to record movement';
+      console.error('❌ Failed to record movement:', action.error);
     });
+
   },
 });
 
