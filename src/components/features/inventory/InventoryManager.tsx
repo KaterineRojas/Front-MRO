@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 import { ArrowUpDown } from 'lucide-react';
-import { CreateKitPage } from './modals/CreateKitPage';
+import { CreateKitPage } from './pages/CreateKitPage';
 import { RecordMovementModal } from './modals/RecordMovement/RecordMovementModal';
 import { ItemsTab } from './tabs/ItemsTab';
 import { KitsTab } from './tabs/Kits/KitsTab';

@@ -33,7 +33,7 @@ import { Input } from '../../../ui/input';
 import { Label } from '../../../ui/label';
 import { ChevronDown, ChevronRight, Trash2, Package, Loader2 } from 'lucide-react';
 import type { KitRowProps } from './types';
-import { BinSelector } from '../../../../BinSelector';
+import { BinSelector } from '../../components/BinSelector';
 import { getKitCurrentBin } from '@/services/binsService';
 import { createPhysicalKit } from '@/services/kitsService';
 

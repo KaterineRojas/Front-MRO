@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npm run build:*)",
       "Bash(npm install:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(git mv src/components/CreatePurchaseRequestPage.tsx src/components/features/orders/CreatePurchaseRequestPage.tsx)",
+      "Bash(git mv:*)",
+      "Bash(git mv src/components/OrderDetailView.tsx src/components/features/orders/OrderDetailView.tsx)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

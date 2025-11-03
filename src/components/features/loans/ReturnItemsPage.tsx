@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Checkbox } from './ui/checkbox';
-import { Badge } from './ui/badge';
-import { Textarea } from './ui/textarea';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
+import { Button } from '../../ui/button';
+import { Input } from '../../ui/input';
+import { Label } from '../../ui/label';
+import { Checkbox } from '../../ui/checkbox';
+import { Badge } from '../../ui/badge';
+import { Textarea } from '../../ui/textarea';
+import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import { ArrowLeft, Package, CheckCircle, AlertTriangle, Save, Camera, Upload, X, History, FileText } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 
 interface LoanItem {
   id: number;

@@ -3,19 +3,19 @@ import { Provider } from 'react-redux';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { store, useAppSelector } from './store';
 import { Layout } from './components/Layout';
-import { Dashboard } from './components/Dashboard';
+import { Dashboard } from './components/features/dashboard/Dashboard';
 import { InventoryManager } from './components/features/inventory/InventoryManager';
-import { RequestOrders } from './components/RequestOrders';
-import { PurchaseOrders } from './components/PurchaseOrders';
-import { RequestManagement } from './components/RequestManagement';
-import { Reports } from './components/Reports';
-import { UserManagement } from './components/UserManagement';
-import { QuickFind } from './components/QuickFind';
-import { CycleCount } from './components/CycleCount';
-import { LoanDetailView } from './components/LoanDetailView';
-import { OrderDetailView } from './components/OrderDetailView';
-import { CycleCountView } from './components/CycleCountView';
-import { ReturnItemsPage } from './components/ReturnItemsPage';
+import { RequestOrders } from './components/features/loans/RequestOrders';
+import { PurchaseOrders } from './components/features/orders/PurchaseOrders';
+import { RequestManagement } from './components/features/requests/RequestManagement';
+import { Reports } from './components/features/reports/Reports';
+import { UserManagement } from './components/features/users/UserManagement';
+import { QuickFind } from './components/features/quick-find/QuickFind';
+import { CycleCount } from './components/features/cycle-count/CycleCount';
+import { LoanDetailView } from './components/features/loans/LoanDetailView';
+import { OrderDetailView } from './components/features/orders/OrderDetailView';
+import { CycleCountView } from './components/features/cycle-count/CycleCountView';
+import { ReturnItemsPage } from './components/features/loans/ReturnItemsPage';
 
 // Wrapper components for route navigation
 function CycleCountWrapper() {

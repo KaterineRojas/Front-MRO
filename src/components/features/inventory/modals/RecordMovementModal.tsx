@@ -6,7 +6,7 @@ import { Label } from '../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Textarea } from '../../ui/textarea';
 import { Badge } from '../../ui/badge';
-import { BinSelector } from '../../../BinSelector';
+import { BinSelector } from '../components/BinSelector';
 
 interface Article {
   id: number;

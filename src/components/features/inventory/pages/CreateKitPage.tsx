@@ -1,26 +1,24 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './features/ui/card';
-import { Button } from './features/ui/button';
-import { Input } from './features/ui/input';
-import { Label } from './features/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './features/ui/select';
-import { Textarea } from './features/ui/textarea';
-import { Badge } from './features/ui/badge';
-import { Alert, AlertDescription } from './features/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Input } from '../../../ui/input';
+import { Label } from '../../../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Textarea } from '../../../ui/textarea';
+import { Badge } from '../../../ui/badge';
+import { Alert, AlertDescription } from '../../../ui/alert';
 import { ArrowLeft, Search, Plus, X, Package, Loader2, AlertCircle } from 'lucide-react';
-import type { Article, Kit, KitItem, Template } from './features/inventory/types/inventory';
+import type { Article, Kit, KitItem } from '../types';
 import { getItems, getCategories, type Category } from '@/services/inventarioService';
 import { createKit, getKitCategories, type CreateKitRequest, type KitCategory } from '@/services/kitsService';
 
 interface CreateKitPageProps {
   editingKit?: Kit | null;
-  fromTemplate?: Template | null;
-  usingAsTemplate?: boolean;
   onBack: () => void;
   onSave: (kitData: Omit<Kit, 'id' | 'createdAt'>) => void;
 }
 
-export function CreateKitPage({ editingKit, fromTemplate, usingAsTemplate = false, onBack, onSave }: CreateKitPageProps) {
+export function CreateKitPage({ editingKit, onBack, onSave }: CreateKitPageProps) {
   // State for loading items from API
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -36,10 +34,10 @@ export function CreateKitPage({ editingKit, fromTemplate, usingAsTemplate = fals
     items: KitItem[];
     status: 'good-condition' | 'needs-repair' | 'damaged';
   }>({
-    name: editingKit?.name || (fromTemplate ? fromTemplate.name : ''),
-    description: editingKit?.description || (fromTemplate ? fromTemplate.description : ''),
+    name: editingKit?.name || '',
+    description: editingKit?.description || '',
     category: undefined,
-    items: editingKit?.items || (fromTemplate ? fromTemplate.items : []),
+    items: editingKit?.items || [],
     status: editingKit?.status || 'good-condition' as const
   });
 
