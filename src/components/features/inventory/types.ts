@@ -104,15 +104,6 @@ export interface Kit {
   createdAt: string;
 }
 
-export interface Template {
-  id: number;
-  name: string;
-  description: string;
-  category: string;
-  items: KitItem[];
-  createdAt: string;
-}
-
 export interface Bin {
   id: number;
   binCode: string;

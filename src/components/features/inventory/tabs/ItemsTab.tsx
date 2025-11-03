@@ -44,6 +44,7 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
 
   // ✅ NUEVO: Estado para categorías
   const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
@@ -215,11 +216,15 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                       </Button>
                     </TableCell>
                     <TableCell>
-                      {article.imageUrl ? (
+                      {article.imageUrl && !imageErrors.has(article.id) ? (
                         <img
                           src={article.imageUrl}
                           alt={article.name}
                           className="w-12 h-12 object-cover rounded"
+                          onError={() => {
+                            console.error('Failed to load image:', article.imageUrl);
+                            setImageErrors(prev => new Set(prev).add(article.id));
+                          }}
                         />
                       ) : (
                         <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../../../ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Badge } from '../../../ui/badge';
-import { Package, ChevronDown, ChevronRight, X } from 'lucide-react';
+import { Package, ChevronDown, ChevronRight, X, FileText, Tag, Layers, Box, Image as ImageIcon, TrendingDown, RotateCcw } from 'lucide-react';
 import type { Article } from '../types';
 
 interface ApiPayload {
@@ -171,187 +171,297 @@ export function CreateItemModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingArticle ? 'Edit Item' : 'Register new Item'}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-2xl">
+            <Package className="h-6 w-6" />
+            {editingArticle ? 'Edit Item' : 'Register New Item'}
+          </DialogTitle>
           <DialogDescription>
             {editingArticle ? 'Update the item information below.' : 'Fill in the details to create a new item in your inventory.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., A4 Office Paper"
-                required
-              />
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b">
+              <FileText className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold text-sm">Basic Information</h3>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <Label htmlFor="name" className="flex items-center gap-2">
+                  <Tag className="h-3 w-3" />
+                  Item Name *
+                </Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., A4 Office Paper, Wrench Set, etc."
+                  required
+                  className="mt-1.5"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description" className="flex items-center gap-2">
+                  <FileText className="h-3 w-3" />
+                  Description
+                </Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Detailed description of the item, specifications, notes..."
+                  rows={3}
+                  className="mt-1.5 resize-none"
+                />
+              </div>
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Detailed description of the item..."
-              rows={3}
-            />
-          </div>
+          {/* Classification Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b">
+              <Layers className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold text-sm">Classification</h3>
+            </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="category">Category *</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value: string) => setFormData({ ...formData, category: value })}
-                disabled={categoriesLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={categoriesLoading ? "Loading..." : "Select category"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="category" className="flex items-center gap-2">
+                  <Tag className="h-3 w-3" />
+                  Category *
+                </Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value: string) => setFormData({ ...formData, category: value })}
+                  disabled={categoriesLoading}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder={categoriesLoading ? "Loading..." : "Select category"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="typeUI" className="flex items-center gap-2">
+                  {formData.typeUI === 'consumable' ? (
+                    <TrendingDown className="h-3 w-3" />
+                  ) : (
+                    <RotateCcw className="h-3 w-3" />
+                  )}
+                  Item Type *
+                </Label>
+                <Select
+                  value={formData.typeUI}
+                  onValueChange={(value: ArticleTypeUI) => setFormData({ ...formData, typeUI: value })}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="consumable">
+                      <div className="flex items-center gap-2">
+                        <TrendingDown className="h-3 w-3" />
+                        Consumable
+                      </div>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="typeUI">Type *</Label>
-              <Select
-                value={formData.typeUI}
-                onValueChange={(value: ArticleTypeUI) => setFormData({ ...formData, typeUI: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="consumable">Consumable</SelectItem>
-                  <SelectItem value="non-consumable">Non-Consumable</SelectItem>
-                </SelectContent>
-              </Select>
+                    <SelectItem value="non-consumable">
+                      <div className="flex items-center gap-2">
+                        <RotateCcw className="h-3 w-3" />
+                        Non-Consumable
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="unit">Unit *</Label>
-              <Input
-                id="unit"
-                value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                placeholder="e.g., pieces, sheets, units"
-                required
-              />
+          {/* Stock Settings Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b">
+              <Box className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold text-sm">Stock Settings</h3>
             </div>
-            <div>
-              <Label htmlFor="minStock">Min Stock *</Label>
-              <Input
-                id="minStock"
-                type="number"
-                value={formData.minStock}
-                onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
-                placeholder="0"
-                required
-              />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="unit" className="flex items-center gap-2">
+                  <Box className="h-3 w-3" />
+                  Unit of Measure *
+                </Label>
+                <Input
+                  id="unit"
+                  value={formData.unit}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                  placeholder="e.g., pieces, sheets, kg, liters"
+                  required
+                  className="mt-1.5"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="minStock" className="flex items-center gap-2">
+                  <Package className="h-3 w-3" />
+                  Minimum Stock Level *
+                </Label>
+                <Input
+                  id="minStock"
+                  type="number"
+                  min="0"
+                  value={formData.minStock}
+                  onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
+                  placeholder="0"
+                  required
+                  className="mt-1.5"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Alert when stock falls below this level</p>
+              </div>
             </div>
           </div>
 
-          {/* ✅ CAMPO DE IMAGEN - Ahora visible tanto en creación como en edición */}
-          <div>
-            <Label>Article Image {editingArticle && '(Optional - Upload to change)'}</Label>
-            <div className="space-y-2">
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleImageFileChange}
-              />
-              
-              {/* Previsualización de imagen */}
-              {formData.imageUrl && (
-                <div className="relative w-24 h-24 border rounded overflow-hidden">
-                  <img
-                    src={formData.imageUrl}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                  {/* ✅ Botón para eliminar imagen */}
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              )}
-              
-              {/* ✅ Mensaje informativo en modo edición */}
-              {editingArticle && !imageFile && formData.imageUrl && (
-                <p className="text-xs text-muted-foreground">
-                  Current image will be kept. Upload a new one to replace it.
-                </p>
-              )}
+          {/* Image Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b">
+              <ImageIcon className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold text-sm">Item Image</h3>
             </div>
-          </div>
 
-          {/* Stock en diferentes bins - Solo en modo edición */}
-          {editingArticle && (
-            <div className="border rounded-lg overflow-hidden">
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full flex items-center justify-between p-4 hover:bg-muted/50"
-                onClick={() => setShowBinStock(!showBinStock)}
-              >
-                <span className="flex items-center">
-                  <Package className="h-4 w-4 mr-2" />
-                  Stock in Different Bins ({articleBins.length} Bins)
-                </span>
-                {showBinStock ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </Button>
-              {showBinStock && (
-                <div className="p-4 bg-muted/30 border-t">
-                  <div className="rounded-md border bg-card">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>BIN Code</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {articleBins.map((bin, index) => (
-                          <TableRow key={bin.binCode || index}>
-                            <TableCell className="font-mono">{bin.binCode || 'N/A'}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+            <div className="space-y-3">
+              <div className="flex items-start gap-4">
+                {/* Image Preview */}
+                {formData.imageUrl ? (
+                  <div className="relative w-32 h-32 border-2 border-dashed border-primary/20 rounded-lg overflow-hidden bg-muted/30 flex-shrink-0">
+                    <img
+                      src={formData.imageUrl}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1.5 hover:bg-destructive/90 transition-colors shadow-lg"
+                      title="Remove image"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Total Physical Stock for SKU {editingArticle.sku}: {totalStock} {editingArticle.unit}
-                  </p>
+                ) : (
+                  <div className="w-32 h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center bg-muted/30 flex-shrink-0">
+                    <ImageIcon className="h-12 w-12 text-muted-foreground/40" />
+                  </div>
+                )}
+
+                {/* Upload Input */}
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="image-upload" className="cursor-pointer">
+                    <div className="border-2 border-dashed rounded-lg p-4 hover:border-primary/50 hover:bg-muted/50 transition-colors">
+                      <div className="flex flex-col items-center gap-2 text-center">
+                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Click to upload image</p>
+                          <p className="text-xs text-muted-foreground">PNG, JPG up to 10MB</p>
+                        </div>
+                      </div>
+                    </div>
+                  </Label>
+                  <input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageFileChange}
+                    style={{ display: 'none' }}
+                  />
+
+                  {editingArticle && !imageFile && formData.imageUrl && (
+                    <p className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-2 rounded border border-blue-200 dark:border-blue-900">
+                      Current image will be kept. Upload a new one to replace it.
+                    </p>
+                  )}
                 </div>
-              )}
+              </div>
+            </div>
+          </div>
+
+          {/* Stock Distribution - Only in Edit Mode */}
+          {editingArticle && (
+            <div className="space-y-4">
+              <div className="border rounded-lg overflow-hidden bg-muted/30">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full flex items-center justify-between p-4 hover:bg-muted/50"
+                  onClick={() => setShowBinStock(!showBinStock)}
+                >
+                  <span className="flex items-center gap-2 font-semibold">
+                    <Package className="h-4 w-4" />
+                    Stock Distribution Across Bins
+                    <Badge variant="secondary">{articleBins.length} Bins</Badge>
+                  </span>
+                  {showBinStock ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </Button>
+                {showBinStock && (
+                  <div className="p-4 border-t">
+                    <div className="rounded-md border bg-card">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>BIN Code</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {articleBins.length > 0 ? (
+                            articleBins.map((bin, index) => (
+                              <TableRow key={bin.binCode || index}>
+                                <TableCell className="font-mono">{bin.binCode || 'N/A'}</TableCell>
+                              </TableRow>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell className="text-center text-muted-foreground py-4">
+                                No bins assigned yet
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <div className="mt-3 p-3 bg-primary/5 rounded-md border border-primary/10">
+                      <p className="text-sm font-medium">
+                        Total Physical Stock: <span className="text-primary">{totalStock} {editingArticle.unit}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        SKU: {editingArticle.sku}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="min-w-[100px]">
               Cancel
             </Button>
-            <Button type="submit">
+            <Button type="submit" className="min-w-[100px]">
               {editingArticle ? 'Update Item' : 'Create Item'}
             </Button>
           </div>

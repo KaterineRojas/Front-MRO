@@ -8,7 +8,6 @@ export interface KitsTabProps {
   articles?: Article2[];
   categories: Category[];
   onCreateKit: () => void;
-  onCreateFromTemplate: () => void;
   onEditKit: (kit: Kit) => void;
   onUseAsTemplate: (kit: Kit) => void;
   onDeleteKit: (id: number) => void;

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../ui/card';
 import { Button } from '../../../../ui/button';
-import { Plus, Boxes, Package, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Boxes, Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '../../../../ui/alert';
 import { useAppSelector } from '../../../../../store/hooks';
 import { useAppDispatch } from '../../../../../store/hooks';
@@ -16,7 +16,6 @@ export function KitsTab({
   articles = [],
   categories,
   onCreateKit,
-  onCreateFromTemplate,
   onEditKit,
   onUseAsTemplate,
   onDeleteKit,
@@ -83,12 +82,6 @@ export function KitsTab({
             </p>
           </div>
           <div className="flex space-x-2">
-            {/*
-            <Button variant="outline" onClick={onCreateFromTemplate}>
-              <Package className="h-4 w-4 mr-2" />
-              From Template
-            </Button>
-            */}
             <Button onClick={onCreateKit}>
               <Plus className="h-4 w-4 mr-2" />
               Register Kit
@@ -113,12 +106,7 @@ export function KitsTab({
           </Alert>
         )}
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">Loading kits...</span>
-          </div>
-        ) : (
+        
           <KitTable
             kits={filteredKits}
             articles={articles}
@@ -130,7 +118,7 @@ export function KitsTab({
             onDeleteKit={handleDeleteKit}
             onRefreshKits={handleRefreshKits}
           />
-        )}
+        
       </CardContent>
     </Card>
   );

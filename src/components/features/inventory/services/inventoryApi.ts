@@ -1,4 +1,4 @@
-import type { Article, InventoryItemResponse, Kit, Template, Bin, BinResponse, Transaction } from '../types';
+import type { Article, InventoryItemResponse, Kit, Bin, BinResponse, Transaction } from '../types';
 import { CATEGORIES } from '../constants';
 import { strict } from 'assert';
 import { API_URL } from "../../../../url";
@@ -6,148 +6,30 @@ import { API_URL } from "../../../../url";
 
 
 
-
-const MOCK_TEMPLATES_DATA: Template[] = [
-  {
-    id: 1,
-    name: 'Basic Office Setup',
-    description: 'Standard office equipment for new employees',
-    category: 'office-supplies',
-    items: [
-      {
-        articleId: 1,
-        articleBinCode: 'BIN-OFF-001',
-        articleName: 'A4 Office Paper',
-        quantity: 5
-      },
-      {
-        articleId: 2,
-        articleBinCode: 'BIN-TECH-002',
-        articleName: 'Dell Latitude Laptop',
-        quantity: 1
-      },
-      {
-        articleId: 3,
-        articleBinCode: 'BIN-USB-003',
-        articleName: 'USB Type-C Cable',
-        quantity: 2
-      }
-    ],
-    createdAt: '2025-01-15'
-  }
-];
-
-
-const MOCK_TRANSACTIONS_DATA: Transaction[] = [
-  {
-    id: 1,
-    type: 'entry',
-    subtype: 'purchase',
-    articleCode: 'OFF-001',
-    articleDescription: 'Office Paper A4 - 80gsm',
-    quantity: 500,
-    unit: 'sheets',
-    reference: 'PO-2025-001',
-    notes: 'Quarterly paper stock replenishment',
-    user: 'Sarah Johnson',
-    project: 'Office Supplies Replenishment',
-    date: '2025-01-20',
-    createdAt: '2025-01-20T10:30:00Z'
-  },
-  {
-    id: 2,
-    type: 'exit',
-    subtype: 'loan',
-    articleCode: 'TECH-002',
-    articleDescription: 'Laptop Dell Latitude 5520',
-    quantity: 1,
-    unit: 'units',
-    reference: 'LOAN-001',
-    notes: 'Loan to Marketing team for presentation',
-    user: 'Mike Chen',
-    project: 'Product Launch Campaign',
-    date: '2025-01-20',
-    createdAt: '2025-01-20T14:15:00Z'
-  },
-  {
-    id: 3,
-    type: 'exit',
-    subtype: 'consumption',
-    articleCode: 'USB-003',
-    articleDescription: 'USB Cable Type-C 2m',
-    quantity: 2,
-    unit: 'units',
-    reference: 'CONS-001',
-    notes: 'IT department setup new workstations',
-    user: 'Anna Rodriguez',
-    project: 'Workstation Setup Project',
-    date: '2025-01-19',
-    createdAt: '2025-01-19T09:45:00Z'
-  },
-  {
-    id: 4,
-    type: 'entry',
-    subtype: 'return',
-    articleCode: 'TECH-002',
-    articleDescription: 'Laptop Dell Latitude 5520',
-    quantity: 1,
-    unit: 'units',
-    reference: 'LOAN-001',
-    notes: 'Returned from Marketing team',
-    user: 'David Wilson',
-    project: 'Product Launch Campaign',
-    date: '2025-01-19',
-    createdAt: '2025-01-19T16:20:00Z'
-  },
-  {
-    id: 5,
-    type: 'adjustment',
-    subtype: 'audit',
-    articleCode: 'OFF-001',
-    articleDescription: 'Office Paper A4 - 80gsm',
-    quantity: -50,
-    unit: 'sheets',
-    reference: 'AUD-2025-001',
-    notes: 'Physical count adjustment - damaged paper found',
-    user: 'Sarah Johnson',
-    project: 'Monthly Audit Process',
-    date: '2025-01-18',
-    createdAt: '2025-01-18T11:00:00Z'
-  }
-];
-/**
-
- * Simulates fetching templates from an API
- */
-export async function fetchTemplatesFromApi(): Promise<Template[]> {
-  await delay(500); // Simulate network delay
-  return [...MOCK_TEMPLATES_DATA];
-}
-
-
-
-/**
- * Mapea el propósito del bin (binPurpose o binPurposeDisplay)
- */
-function mapStatusType(apiStatus: string): Article['status'] {
-  switch (apiStatus) {
-    case 'GoodCondition':
-      return 'good-condition';
-    case 'OnRevision':
-      return 'on-revision';
-    case 'Scrap':
-      return 'scrap';
-    case 'NotApplicable':
-    default:
-      return 'good-condition';
-  }
-}
-
-
 export function transformInventoryItem(apiItem: InventoryItemResponse): Article {
+  // Helper para construir URL completa de imagen
+  const getFullImageUrl = (imageUrl: string | null | undefined): string => {
+    if (!imageUrl) return '';
+
+    // Si ya es una URL completa (http/https), retornarla tal cual
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      //console.log('📷 Image URL from API:', imageUrl);
+      return imageUrl;
+    }
+
+    // Si es una ruta relativa, construir URL completa
+    // Remover '/api' del API_URL y agregar la ruta de la imagen
+    const baseUrl = API_URL.replace('/api', '');
+
+    // Si la imageUrl empieza con '/', no agregar otro '/'
+    const separator = imageUrl.startsWith('/') ? '' : '/';
+
+    return `${baseUrl}${separator}${imageUrl}`;
+  };
+
   return {
     id: apiItem.itemId,
-    imageUrl: apiItem.imageUrl || '',
+    imageUrl: getFullImageUrl(apiItem.imageUrl),
     sku: apiItem.itemSku,
     name: apiItem.itemName,
     description: apiItem.description || '',
@@ -275,13 +157,13 @@ export async function fetchArticlesFromApi(): Promise<Article[]> {
         'Content-Type': 'application/json',
       },
     });
-    console.log(response, 'get')
+    //console.log(response, 'get')
     if (!response.ok) {
       throw new Error(`Failed to fetch items: ${response.status} ${response.statusText}`);
     }
 
     const data: InventoryItemResponse[] = await response.json();
-    console.log(response, 'get22')
+    //console.log(response, 'get22')
     // Validar y transformar
     if (!Array.isArray(data)) {
       throw new Error('Invalid response format: expected an array');
@@ -386,7 +268,7 @@ export async function getNewBins(): Promise<Bin[]> {
  */
 export async function fetchTransactionsFromApi(): Promise<Transaction[]> {
   await delay(500); // Simulate network delay
-  return [...MOCK_TRANSACTIONS_DATA];
+  return [];
 }
 
 /**
@@ -657,31 +539,7 @@ export async function updateKitApi(id: number, data: Partial<Kit>): Promise<Kit>
   return { id, ...data } as Kit;
 }
 
-/**
- * Simulates creating a template in the API
- */
-export async function createTemplateApi(templateData: Omit<Template, 'id' | 'createdAt'>): Promise<Template> {
-  await delay(500); // Simulate network delay
 
-  const newTemplate: Template = {
-    id: Date.now(),
-    ...templateData,
-    createdAt: new Date().toISOString().split('T')[0]
-  };
-
-  console.log('API: Template created successfully', newTemplate);
-  return newTemplate;
-}
-
-/**
- * Simulates updating a template in the API
- */
-export async function updateTemplateApi(id: number, data: Partial<Template>): Promise<Template> {
-  await delay(500); // Simulate network delay
-
-  console.log('API: Template updated successfully', { id, data });
-  return { id, ...data } as Template;
-}
 
 
 /** **************************************************************************************************

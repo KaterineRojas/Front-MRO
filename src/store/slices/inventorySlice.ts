@@ -1,18 +1,15 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { Article, Kit, Template, Bin, Transaction, MovementData } from '../../components/features/inventory/types';
+import type { Article, Kit, Bin, Transaction, MovementData } from '../../components/features/inventory/types';
 import { deleteArticleApi } from '../../components/features/inventory/services/inventoryApi';
 import type { CreateKitRequest } from '../../components/features/inventory/services/kitService';
 import {
   fetchArticlesFromApi,
   //fetchKitsFromApi,
-  fetchTemplatesFromApi,
   fetchTransactionsFromApi,
   createArticleApi,
   updateArticleApi,
   //createKitApi,
   //updateKitApi,
-  createTemplateApi,
-  updateTemplateApi,
   fetchBinsFromApi,
   createBinApi,
   updateBinApi,
@@ -34,7 +31,6 @@ async function updateKitService(id: number, data: Partial<Kit>): Promise<Kit> {
 interface InventoryState {
   articles: Article[];
   kits: Kit[];
-  templates: Template[];
   bins: Bin[];
   transactions: Transaction[];
   loading: boolean;
@@ -44,7 +40,6 @@ interface InventoryState {
 const initialState: InventoryState = {
   articles: [],
   kits: [],
-  templates: [],
   bins: [],
   transactions: [],
   loading: false,
@@ -65,14 +60,6 @@ export const fetchKits = createAsyncThunk(
   async () => {
     const kits = await getKitsWithItems();
     return kits;
-  }
-);
-
-export const fetchTemplates = createAsyncThunk(
-  'inventory/fetchTemplates',
-  async () => {
-    const templates = await fetchTemplatesFromApi();
-    return templates;
   }
 );
 
@@ -114,8 +101,16 @@ export const updateArticleAsync = createAsyncThunk(
       minStock: number;
       consumable: boolean;
       imageUrl?: string | null;
+      imageFile?: File | null;
     }
   }) => {
+    // Si hay imageFile, usar el endpoint con multipart/form-data
+    if (data.imageFile) {
+      const { updateArticleWithImageApi } = await import('../../components/features/inventory/services/inventoryApi');
+      const updatedArticle = await updateArticleWithImageApi(id, data);
+      return updatedArticle;
+    }
+    // Si no hay imageFile, usar el endpoint regular
     const updatedArticle = await updateArticleApi(id, data);
     return updatedArticle;
   }
@@ -148,22 +143,6 @@ export const updateKitAsync = createAsyncThunk(
   }
 );
 
-
-export const createTemplateAsync = createAsyncThunk(
-  'inventory/createTemplate',
-  async (templateData: Omit<Template, 'id' | 'createdAt'>) => {
-    const newTemplate = await createTemplateApi(templateData);
-    return newTemplate;
-  }
-);
-
-export const updateTemplateAsync = createAsyncThunk(
-  'inventory/updateTemplate',
-  async ({ id, data }: { id: number; data: Partial<Template> }) => {
-    const updatedTemplate = await updateTemplateApi(id, data);
-    return { id, data };
-  }
-);
 
 export const createBinAsync = createAsyncThunk(
   'inventory/createBin',
@@ -244,20 +223,7 @@ const inventorySlice = createSlice({
       state.kits = state.kits.filter(kit => kit.id !== action.payload);
     },
 
-    // Template reducers
-    createTemplate: (state, action: PayloadAction<Template>) => {
-      state.templates.push(action.payload);
-    },
-    updateTemplate: (state, action: PayloadAction<{ id: number; data: Partial<Template> }>) => {
-      const index = state.templates.findIndex(template => template.id === action.payload.id);
-      if (index !== -1) {
-        state.templates[index] = { ...state.templates[index], ...action.payload.data };
-      }
-    },
-    deleteTemplate: (state, action: PayloadAction<number>) => {
-      state.templates = state.templates.filter(template => template.id !== action.payload);
-    },
-
+  
     // Bin reducers
     createBin: (state, action: PayloadAction<Bin>) => {
       state.bins.push(action.payload);
@@ -409,20 +375,6 @@ const inventorySlice = createSlice({
       state.error = action.error.message || 'Failed to delete article';
     });
 
-    // Fetch templates
-    builder.addCase(fetchTemplates.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(fetchTemplates.fulfilled, (state, action) => {
-      state.loading = false;
-      state.templates = action.payload;
-    });
-    builder.addCase(fetchTemplates.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.error.message || 'Failed to fetch templates';
-    });
-
     // Fetch bins
     builder.addCase(fetchBins.pending, (state) => {
       state.loading = true;
@@ -498,36 +450,7 @@ const inventorySlice = createSlice({
     });
 
 
-    // Create template
-    builder.addCase(createTemplateAsync.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(createTemplateAsync.fulfilled, (state, action) => {
-      state.loading = false;
-      state.templates.push(action.payload);
-    });
-    builder.addCase(createTemplateAsync.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.error.message || 'Failed to create template';
-    });
-
-    // Update template
-    builder.addCase(updateTemplateAsync.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(updateTemplateAsync.fulfilled, (state, action) => {
-      state.loading = false;
-      const index = state.templates.findIndex(template => template.id === action.payload.id);
-      if (index !== -1) {
-        state.templates[index] = { ...state.templates[index], ...action.payload.data };
-      }
-    });
-    builder.addCase(updateTemplateAsync.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.error.message || 'Failed to update template';
-    });
+  
 
     // Create bin
     builder.addCase(createBinAsync.pending, (state) => {
@@ -590,9 +513,6 @@ export const {
   createKit,
   updateKit,
   deleteKit,
-  createTemplate,
-  updateTemplate,
-  deleteTemplate,
   createBin,
   updateBin,
   createTransaction,

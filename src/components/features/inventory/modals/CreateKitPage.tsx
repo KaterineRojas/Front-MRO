@@ -9,7 +9,7 @@ import { Textarea } from '../../../ui/textarea';
 import { Badge } from '../../../ui/badge';
 import { Alert, AlertDescription } from '../../../ui/alert';
 import { ArrowLeft, Search, Plus, X, Package, Loader2, AlertCircle } from 'lucide-react';
-import type { Article, Kit, KitItem, Template }  from '../types';
+import type { Article, Kit, KitItem }  from '../types';
 import type { Category } from '../services/kitService';
 import { getCategories } from '../services/inventoryApi';
 import { getItems } from '../services/kitService';
@@ -18,13 +18,12 @@ import { CATEGORIES } from '../constants';
 
 interface CreateKitPageProps {
   editingKit?: Kit | null;
-  fromTemplate?: Template | null;
-  usingAsTemplate?: boolean;
+  articles: Article[];
   onBack: () => void;
   onSave: (kitData: Omit<Kit, 'id' | 'createdAt'>) => void;
 }
 
-export function CreateKitPage({ editingKit, fromTemplate, usingAsTemplate = false, onBack, onSave }: CreateKitPageProps) {
+export function CreateKitPage({ editingKit, articles: articlesFromParent, onBack, onSave }: CreateKitPageProps) {
   // State for loading items from API
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -34,10 +33,10 @@ export function CreateKitPage({ editingKit, fromTemplate, usingAsTemplate = fals
   const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: editingKit?.name || (fromTemplate ? fromTemplate.name : ''),
-    description: editingKit?.description || (fromTemplate ? fromTemplate.description : ''),
+    name: editingKit?.name || '',
+    description: editingKit?.description || '',
     category: 0,
-    items: editingKit?.items || (fromTemplate ? fromTemplate.items : []),
+    items: editingKit?.items || [],
     status: editingKit?.status || 'good-condition' as const
   });
 
@@ -138,8 +137,8 @@ export function CreateKitPage({ editingKit, fromTemplate, usingAsTemplate = fals
       setSubmitting(true);
       setError(null);
 
-      // If editing an existing kit (not using as template), use the old onSave callback
-      if (editingKit && !usingAsTemplate) {
+      // If editing an existing kit, use the old onSave callback
+      if (editingKit && editingKit.id !== 0) {
         onSave({ ...formData, binCode: editingKit.binCode || '', category: 'office-supplies' });
         return;
       }
@@ -166,16 +165,15 @@ export function CreateKitPage({ editingKit, fromTemplate, usingAsTemplate = fals
     }
   };
 
-  // Determine if we're using a kit as template or editing existing
-  const isEditingExisting = editingKit && !usingAsTemplate;
+  // Determine if we're editing an existing kit or creating a new one (possibly based on existing kit)
+  const isEditingExisting = editingKit && editingKit.id !== 0;
+  const isCreatingFromExisting = editingKit && editingKit.id === 0;
 
   const pageTitle = isEditingExisting
     ? 'Edit Kit'
-    : fromTemplate
-      ? `Register Kit from Template: ${fromTemplate.name}`
-      : usingAsTemplate && editingKit
-        ? `New kit based on "${editingKit.name}"`
-        : 'Register New Kit';
+    : isCreatingFromExisting
+      ? `New kit based on "${editingKit.name.replace(' (Copy)', '')}"`
+      : 'Register New Kit';
 
   return (
     <div className="space-y-6">
@@ -190,11 +188,9 @@ export function CreateKitPage({ editingKit, fromTemplate, usingAsTemplate = fals
             <p className="text-muted-foreground">
               {isEditingExisting
                 ? 'Update the kit information and items below'
-                : fromTemplate
-                  ? 'Customize the template and create your kit'
-                  : usingAsTemplate && editingKit
-                    ? `Creating a new kit using "${editingKit.name}" as a template. All items have been preloaded - customize as needed.`
-                    : 'Create a new kit by grouping multiple items together. BIN assignment will be done when building the kit.'
+                : isCreatingFromExisting
+                  ? `Creating a new kit using "${editingKit.name.replace(' (Copy)', '')}" as a template. All items have been preloaded - customize as needed.`
+                  : 'Create a new kit by grouping multiple items together. BIN assignment will be done when building the kit.'
               }
             </p>
           </div>
@@ -415,10 +411,10 @@ export function CreateKitPage({ editingKit, fromTemplate, usingAsTemplate = fals
                     {submitting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {isEditingExisting ? 'Updating...' : usingAsTemplate ? 'Creating new kit...' : 'Registering...'}
+                        {isEditingExisting ? 'Updating...' : isCreatingFromExisting ? 'Creating new kit...' : 'Registering...'}
                       </>
                     ) : (
-                      <>{isEditingExisting ? 'Update Kit' : usingAsTemplate ? 'Create New Kit' : 'Register Kit'}</>
+                      <>{isEditingExisting ? 'Update Kit' : isCreatingFromExisting ? 'Create New Kit' : 'Register Kit'}</>
                     )}
                   </Button>
                 </div>
