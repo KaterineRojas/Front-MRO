@@ -1,6 +1,12 @@
 // src/services/templateService.ts
-import type { TemplateResponse, TemplateItemResponse, Template, KitItem } from '@/components/features/inventory/types/inventory';
-import type { CreateTemplateRequest, UpdateTemplateRequest } from '@/components/features/inventory/tab/templates/types';
+import type {
+  TemplateResponse,
+  TemplateItemResponse,
+  Template,
+  KitItem,
+  CreateTemplateRequest,
+  UpdateTemplateRequest
+} from '@/components/features/inventory/types/inventory';
 
 const API_URL = 'http://localhost:5044/api';
 

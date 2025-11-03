@@ -1,6 +1,6 @@
 // src/services/transactionService.ts
 
-import type { Transaction, TransactionType } from '@/components/features/inventory/tab/transactions/transactionTypes';
+import type { Transaction, TransactionType } from '@/components/features/inventory/tabs/transactions/transactionTypes';
 
 const API_URL = 'http://localhost:5044/api';
 

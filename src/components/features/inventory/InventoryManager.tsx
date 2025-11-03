@@ -367,8 +367,12 @@ export function InventoryManager() {
           open={recordMovementOpen}
           onOpenChange={setRecordMovementOpen}
           articles={articles}
-          kits={kits}
-          onRecordMovement={handleRecordMovement}
+          onRecordTransaction={handleRecordMovement}
+          onSuccess={() => {
+            // Refresh data after successful transaction
+            dispatch(fetchArticles());
+            dispatch(fetchTransactions());
+          }}
         />
       </div>
     </LoadingOverlay>

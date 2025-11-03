@@ -16,6 +16,7 @@ export interface BinResponse {
  * Application Bin type
  */
 export interface Bin {
+  id: number;
   binCode: string;
   type: string;
   description: string;
@@ -51,6 +52,7 @@ function transformBinType(apiType: string | undefined | null): 'good-condition' 
  */
 function transformBin(apiBin: BinResponse): Bin {
   return {
+    id: apiBin.id,
     binCode: apiBin.binCode,
     type: transformBinType(apiBin.type),
     description: apiBin.description || '',
@@ -59,13 +61,20 @@ function transformBin(apiBin: BinResponse): Bin {
 
 /**
  * Fetches all available bins from the API
- * @param binPurpose - Optional parameter to filter bins by purpose (e.g., 0 for kit building)
+ * @param binPurpose - Optional parameter to filter bins by purpose (e.g., 0 for GoodCondition)
+ * @param isActive - Optional parameter to filter only active bins
  */
-export async function getAvailableBins(binPurpose?: number): Promise<Bin[]> {
+export async function getAvailableBins(binPurpose?: number, isActive?: boolean): Promise<Bin[]> {
   try {
-    const url = binPurpose !== undefined
-      ? `${API_URL}/Bins/available?binPurpose=${binPurpose}`
-      : `${API_URL}/Bins/available`;
+    const params = new URLSearchParams();
+    if (binPurpose !== undefined) {
+      params.append('binPurpose', binPurpose.toString());
+    }
+    if (isActive !== undefined) {
+      params.append('isActive', isActive.toString());
+    }
+
+    const url = `${API_URL}/Bins/available${params.toString() ? '?' + params.toString() : ''}`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -89,7 +98,7 @@ export async function getAvailableBins(binPurpose?: number): Promise<Bin[]> {
 /**
  * API response format for check-item-occupation endpoint
  */
-interface CheckItemOccupationResponse {
+export interface CheckItemOccupationResponse {
   isOccupied: boolean;
   message: string;
   occupiedBin: {
@@ -103,6 +112,64 @@ interface CheckItemOccupationResponse {
     updatedAt: string;
   };
   quantity: number;
+}
+
+/**
+ * Checks if an item has an occupied bin of type GoodCondition
+ * @param itemId - The ID of the item
+ * @returns The occupation info including bin details, or null if not occupied
+ */
+export async function checkItemOccupation(itemId: number): Promise<CheckItemOccupationResponse | null> {
+  try {
+    const response = await fetch(`${API_URL}/Bins/check-item-occupation?itemId=${itemId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null; // Item not found or not occupied
+      }
+      throw new Error(`Failed to check item occupation: ${response.status} ${response.statusText}`);
+    }
+
+    const data: CheckItemOccupationResponse = await response.json();
+    return data.isOccupied ? data : null;
+  } catch (error) {
+    console.error('Error checking item occupation:', error);
+    return null;
+  }
+}
+
+/**
+ * Checks if a kit has an occupied bin of type GoodCondition
+ * @param kitId - The ID of the kit
+ * @returns The occupation info including bin details, or null if not occupied
+ */
+export async function checkKitOccupation(kitId: number): Promise<CheckItemOccupationResponse | null> {
+  try {
+    const response = await fetch(`${API_URL}/Bins/check-item-occupation?kitId=${kitId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null; // Kit not found or not occupied
+      }
+      throw new Error(`Failed to check kit occupation: ${response.status} ${response.statusText}`);
+    }
+
+    const data: CheckItemOccupationResponse = await response.json();
+    return data.isOccupied ? data : null;
+  } catch (error) {
+    console.error('Error checking kit occupation:', error);
+    return null;
+  }
 }
 
 /**

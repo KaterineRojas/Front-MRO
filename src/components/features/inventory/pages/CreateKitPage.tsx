@@ -27,6 +27,10 @@ export function CreateKitPage({ editingKit, onBack, onSave }: CreateKitPageProps
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Template-related flags (not currently implemented, but referenced in UI)
+  const usingAsTemplate = false;
+  const fromTemplate = null;
+
   const [formData, setFormData] = useState<{
     name: string;
     description: string;

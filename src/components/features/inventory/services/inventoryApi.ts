@@ -1,4 +1,5 @@
 import type { Article, InventoryItemResponse, Kit, Bin, BinResponse, Transaction } from '../types';
+import type { PurchaseRequest } from '../modals/RecordMovement/types';
 import { CATEGORIES } from '../constants';
 import { strict } from 'assert';
 import { API_URL } from "../../../../url";
@@ -794,3 +795,29 @@ export const getCategories = async (): Promise<{ value: string; label: string }[
     ];
   }
 };
+
+/**
+ * Creates a purchase transaction for inventory items
+ * POST /api/Inventory/purchase
+ */
+export async function createPurchaseApi(purchaseData: PurchaseRequest): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/Inventory/purchase`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(purchaseData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || `Failed to create purchase: ${response.status} ${response.statusText}`);
+    }
+
+    console.log('✅ Purchase transaction created successfully');
+  } catch (error) {
+    console.error('❌ Error creating purchase:', error);
+    throw error;
+  }
+}

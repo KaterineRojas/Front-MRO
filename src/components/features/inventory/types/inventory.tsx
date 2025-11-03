@@ -79,4 +79,23 @@ export interface Template {
   updatedAt?: string;
 }
 
+// Template request types for API calls
+export interface CreateTemplateRequest {
+  templateName: string;
+  description: string;
+  items: {
+    itemId: number;
+    quantity: number;
+  }[];
+}
+
+export interface UpdateTemplateRequest {
+  templateName: string;
+  description: string;
+  items: {
+    itemId: number;
+    quantity: number;
+  }[];
+}
+
 export type ViewMode = 'items' | 'kits' | 'create-kit' | 'bins' | 'transactions';
