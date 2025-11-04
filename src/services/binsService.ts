@@ -1,6 +1,5 @@
 // src/services/binsService.ts
-
-const API_URL = 'http://localhost:5044/api';
+import { API_URL } from '../url';
 
 /**
  * API response format for bins

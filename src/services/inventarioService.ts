@@ -1,7 +1,6 @@
 // src/services/inventarioService.ts
 import type { Article, ItemType } from '../components/features/inventory/types/inventory';
-
-const API_URL = 'http://localhost:5044/api';
+import { API_URL } from '../url';
 
 /**
  * API response format for items

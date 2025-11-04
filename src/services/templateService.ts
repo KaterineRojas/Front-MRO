@@ -1,4 +1,5 @@
 // src/services/templateService.ts
+import { API_URL } from '../url';
 import type {
   TemplateResponse,
   TemplateItemResponse,
@@ -7,8 +8,6 @@ import type {
   CreateTemplateRequest,
   UpdateTemplateRequest
 } from '@/components/features/inventory/types/inventory';
-
-const API_URL = 'http://localhost:5044/api';
 
 /**
  * Transforms API response item to application KitItem format
