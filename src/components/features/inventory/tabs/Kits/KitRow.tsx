@@ -14,14 +14,18 @@ import {
   AlertDialogTrigger,
 } from '../../../../ui/alert-dialog';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '../../../../ui/dialog';
+  PackageMinus,
+  ChevronDown,
+  ChevronRight,
+  Trash2,
+  Package,
+  Loader2,
+  Plus,
+  MapPin,
+  Minus,
+  AlertCircle,
+  PackagePlus 
+} from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -31,11 +35,12 @@ import {
 } from '../../../../ui/select';
 import { Input } from '../../../../ui/input';
 import { Label } from '../../../../ui/label';
-import { ChevronDown, ChevronRight, Trash2, Package, Loader2, Plus, MapPin, Minus, AlertCircle } from 'lucide-react';
 import type { KitRowProps } from './types';
-import { BinSelector } from '../../components/BinSelector';
-import { getKitCurrentBin, createPhysicalKit } from '../../services/kitService';
 import { getAvailableBins, checkKitOccupation, type Bin } from '../../services/binsService';
+import { BinSelector } from '../../components/BinSelector';
+import { getKitCurrentBin, createPhysicalKit, deleteKit as deleteKitService, dismantleKit } from '../../services/kitService';
+import { DismantleKitModal } from '../../modals/DismantleKitModal';
+
 
 export function KitRow({
   kit,
@@ -49,7 +54,7 @@ export function KitRow({
   onRefreshKits,
 }: KitRowProps) {
   const [isBuilding, setIsBuilding] = useState(false);
-  
+
   // Estado para la sección expandida de "Kit Assembly"
   const [assemblyQuantity, setAssemblyQuantity] = useState(1);
   const [confirmAssemblyOpen, setConfirmAssemblyOpen] = useState(false);
@@ -60,6 +65,12 @@ export function KitRow({
   const [modalBinId, setModalBinId] = useState<number>(0);
   const [modalBinCode, setModalBinCode] = useState('');
 
+
+  const [dismantleModalOpen, setDismantleModalOpen] = useState(false);
+  const [dismantleQuantity, setDismantleQuantity] = useState(1);
+  const [dismantleNotes, setDismantleNotes] = useState('');
+  const [isDismantling, setIsDismantling] = useState(false);
+
   // Cargar bins disponibles y verificar si el kit ya tiene un BIN asignado
   useEffect(() => {
     async function loadKitBinInfo() {
@@ -68,7 +79,7 @@ export function KitRow({
       try {
         setLoadingAvailableBins(true);
         const occupation = await checkKitOccupation(kit.id);
-        
+
         if (occupation && occupation.isOccupied) {
           setAssemblyBinId(occupation.occupiedBin.id);
           setAssemblyBinCode(occupation.occupiedBin.binCode);
@@ -130,14 +141,14 @@ export function KitRow({
 
     try {
       setIsBuilding(true);
-      
+
       console.log(' Building kit with:', {
         kitId: kit.id,
         binCode: modalBinCode,
         binId: modalBinId,
         quantity: assemblyQuantity
       });
-      
+
       await createPhysicalKit({
         kitId: kit.id,
         binCode: modalBinCode,
@@ -151,7 +162,7 @@ export function KitRow({
       setAssemblyQuantity(1);
       setModalBinId(0);
       setModalBinCode('');
-      
+
       onRefreshKits();
     } catch (error) {
       console.error('Error building kit:', error);
@@ -176,6 +187,18 @@ export function KitRow({
     }
   };
 
+  const handleDeleteKit = async () => {
+    try {
+      console.log('🗑️ Deleting kit:', kit.id);
+      await deleteKitService(kit.id);
+      alert(`✓ Kit "${kit.name}" deleted successfully`);
+      onRefreshKits(); // ✅ Refrescar la lista de kits
+    } catch (error) {
+      console.error('❌ Error deleting kit:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to delete kit\n\nReason: ${errorMessage}`);
+    }
+  };
   // Handler para el botón "+" que solo expande el kit
   const handleExpandAndFocusAssembly = () => {
     if (!isExpanded) {
@@ -190,6 +213,39 @@ export function KitRow({
     }, 100);
   };
 
+
+  //  Handler para abrir modal de dismantle
+  const handleOpenDismantleModal = () => {
+    setDismantleQuantity(1);
+    setDismantleNotes('');
+    setDismantleModalOpen(true);
+  };
+
+  // Handler para confirmar dismantle
+  const handleConfirmDismantle = async () => {
+    try {
+      setIsDismantling(true);
+
+      await dismantleKit(kit.id, {
+        quantity: dismantleQuantity,
+        notes: dismantleNotes || undefined,
+      });
+
+      alert(`✓ Successfully dismantled ${dismantleQuantity} kit(s) of "${kit.name}"`);
+      setDismantleModalOpen(false);
+      setDismantleQuantity(1);
+      setDismantleNotes('');
+
+      onRefreshKits();
+    } catch (error) {
+      console.error('❌ Error dismantling kit:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to dismantle kit\n\nReason: ${errorMessage}`);
+    } finally {
+      setIsDismantling(false);
+    }
+  };
+
   return (
     <React.Fragment>
       <TableRow>
@@ -200,6 +256,7 @@ export function KitRow({
         </TableCell>
         <TableCell>
           <div className="flex items-center space-x-3">
+                {/*  
             {kit.imageUrl ? (
               <img src={kit.imageUrl} alt={kit.name} className="w-10 h-10 object-cover rounded" />
             ) : (
@@ -207,6 +264,7 @@ export function KitRow({
                 <Package className="h-5 w-5 text-muted-foreground" />
               </div>
             )}
+              */}
             <div>
               <p className="font-medium">{kit.name}</p>
               <p className="text-xs text-muted-foreground">{kit.binCode}</p>
@@ -224,14 +282,16 @@ export function KitRow({
         </TableCell>
         <TableCell className="text-right">
           <div className="flex justify-end space-x-2">
-            {/* ✅ ACTUALIZADO: Botón "+" ahora solo expande el kit */}
-            <Button 
-              variant="outline" 
-              size="sm" 
+            
+            {/*  Botón de Ensamblar (PackagePlus) - Verde Neutro */}
+            <Button
+              variant="secondary"
+              size="sm"
               title="Kit Assembly"
               onClick={handleExpandAndFocusAssembly}
+              className="text-green-700 hover:text-green-800 hover:bg-green-50/50"
             >
-              <Plus className="h-4 w-4" />
+              <PackagePlus className="h-4 w-4" />
             </Button>
 
             {/* Use Button */}
@@ -239,12 +299,27 @@ export function KitRow({
               Clone
             </Button>
 
-            {/* Delete Button - Solo si stock es 0 */}
+            {/*Botón de Desarmar (PackageMinus) - */}
+            {kit.quantity > 0 && (
+              <Button
+                variant="secondary"
+                size="sm"
+                title="Dismantle Kit"
+                onClick={handleOpenDismantleModal}
+                className="text-red-700 hover:text-red-800 hover:bg-red-50/50"
+              >
+                <PackageMinus className="h-4 w-4" />
+              </Button>
+            )}
+
+            {/*  Botón de Borrar (Delete) - Misma estética que Minus, pero en variante 'ghost' */}
             {kit.quantity === 0 && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm" title="Delete kit">
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                  {/* Usamos 'ghost' para que no tenga color de fondo, pero le ponemos el color al icono */}
+                  <Button variant="ghost" size="sm" title="Delete kit"> 
+                    {/* Color sutilmente rojo para indicar peligro sin ser chillón */}
+                    <Trash2 className="h-4 w-4 text-red-700 hover:text-red-800" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -256,7 +331,13 @@ export function KitRow({
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => onDeleteKit(kit.id)}>Delete</AlertDialogAction>
+                    <AlertDialogAction
+                      onClick={handleDeleteKit}
+                      // Mantenemos el botón de confirmación en rojo vivo por ser la acción final y destructiva
+                      className="bg-destructive hover:bg-destructive/90" 
+                    >
+                      Delete
+                    </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
@@ -296,7 +377,7 @@ export function KitRow({
                       {kit.items.map((item, index) => {
                         const article = articles.find((a) => a.sku === item.articleSku);
                         const estimatedQty = item.quantity * assemblyQuantity;
-                        
+
                         return (
                           <TableRow key={index}>
                             <TableCell>
@@ -390,7 +471,7 @@ export function KitRow({
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
-                        
+
                         <Input
                           id="assembly-qty"
                           type="number"
@@ -401,7 +482,7 @@ export function KitRow({
                           className="flex-1 text-center font-semibold"
                           placeholder="Qty"
                         />
-                        
+
                         <Button
                           type="button"
                           variant="outline"
@@ -410,15 +491,15 @@ export function KitRow({
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
-                        
-                        {/* ✅ ACTUALIZADO: Botón ahora dice "Kit Building" */}
+
+                        {/* Botón Kit Building */}
                         <AlertDialog open={confirmAssemblyOpen} onOpenChange={setConfirmAssemblyOpen}>
                           <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="default" 
+                            <Button
+                              variant="default"
                               title="Build kits"
                               disabled={assemblyQuantity < 1 || loadingAvailableBins}
-                              className="bg-green-600 hover:bg-green-700"
+                              className="bg-green-600 hover:bg-green-700" 
                             >
                               Kit Building
                             </Button>
@@ -431,7 +512,7 @@ export function KitRow({
                                   <p>
                                     Build <strong>{assemblyQuantity}</strong> kit(s) of "{kit.name}"
                                   </p>
-                                  
+
                                   {/* Selector de BIN en el modal (solo si no hay BIN asignado) */}
                                   {!assemblyBinCode && (
                                     <div className="space-y-2">
@@ -443,8 +524,8 @@ export function KitRow({
                                         </div>
                                       ) : availableBins.length > 0 ? (
                                         <>
-                                          <Select 
-                                            value={modalBinId > 0 ? modalBinId.toString() : ''} 
+                                          <Select
+                                            value={modalBinId > 0 ? modalBinId.toString() : ''}
                                             onValueChange={handleModalBinChange}
                                           >
                                             <SelectTrigger id="modal-bin">
@@ -477,7 +558,7 @@ export function KitRow({
                                       )}
                                     </div>
                                   )}
-                                  
+
                                   {/* Mostrar BIN asignado o seleccionado */}
                                   {(assemblyBinCode || modalBinCode) && (
                                     <div className="p-3 border rounded-md bg-muted/50">
@@ -490,7 +571,7 @@ export function KitRow({
                                       </p>
                                     </div>
                                   )}
-                                  
+
                                   {/* Items Required */}
                                   <div>
                                     <p className="font-semibold mb-2">Items that will be consumed:</p>
@@ -520,11 +601,11 @@ export function KitRow({
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel disabled={isBuilding}>Cancel</AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={handleConfirmAssembly} 
+                              <AlertDialogAction
+                                onClick={handleConfirmAssembly}
                                 disabled={
-                                  isBuilding || 
-                                  loadingAvailableBins || 
+                                  isBuilding ||
+                                  loadingAvailableBins ||
                                   (!assemblyBinCode && modalBinId === 0)
                                 }
                               >
@@ -542,7 +623,7 @@ export function KitRow({
                         </AlertDialog>
                       </div>
                     </div>
-                    
+
                     {/* Resumen visual */}
                     <div className="p-2 bg-muted rounded text-xs space-y-1">
                       <div className="flex justify-between">
@@ -556,7 +637,7 @@ export function KitRow({
                         </span>
                       </div>
                     </div>
-                    
+
                     <p className="text-xs text-muted-foreground">
                       Click "Kit Building" to assemble kits
                     </p>
@@ -567,6 +648,18 @@ export function KitRow({
           </TableCell>
         </TableRow>
       )}
+      <DismantleKitModal
+        open={dismantleModalOpen}
+        onOpenChange={setDismantleModalOpen}
+        kitName={kit.name}
+        maxQuantity={kit.quantity}
+        quantity={dismantleQuantity}
+        notes={dismantleNotes}
+        onQuantityChange={setDismantleQuantity}
+        onNotesChange={setDismantleNotes}
+        onConfirm={handleConfirmDismantle}
+        isSubmitting={isDismantling}
+      />
     </React.Fragment>
   );
 }

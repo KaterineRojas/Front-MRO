@@ -225,6 +225,7 @@ export async function createKit(kitData: CreateKitRequest): Promise<Kit> {
 export interface CreatePhysicalKitRequest {
   kitId: number;
   binCode: string;
+  binId: number; 
   quantity: number;
   notes?: string;
 }
@@ -357,6 +358,73 @@ export async function getItems(): Promise<Article2[]> {
     return data.map(transformItemToArticle);
   } catch (error) {
     console.error('Error fetching items:', error);
+    throw error;
+  }
+}
+
+/**
+ * Deletes a kit by ID
+
+ */
+export async function deleteKit(kitId: number): Promise<void> {
+  try {
+    console.log('🗑️ Deleting kit with ID:', kitId);
+    
+    const response = await fetch(`${API_URL}/Kits/${kitId}/deactivate`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to delete kit: ${response.status} ${response.statusText}`);
+    }
+
+    console.log('✅ Kit deleted successfully');
+  } catch (error) {
+    console.error('❌ Error deleting kit:', error);
+    throw error;
+  }
+}
+
+
+
+/**
+ * Request payload for dismantling a kit
+ */
+export interface DismantleKitRequest {
+  quantity: number;
+  notes?: string;
+}
+
+/**
+ * Dismantles (disassembles) a kit
+ */
+export async function dismantleKit(kitId: number, data: DismantleKitRequest): Promise<void> {
+  try {
+    console.log(' Dismantling kit:', { kitId, ...data });
+    
+    const response = await fetch(`${API_URL}/Kits/${kitId}/dismantle`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        quantity: data.quantity,
+        notes: data.notes || '',
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to dismantle kit: ${response.status} ${response.statusText}`);
+    }
+
+    console.log('✅ Kit dismantled successfully');
+  } catch (error) {
+    console.error('❌ Error dismantling kit:', error);
     throw error;
   }
 }
