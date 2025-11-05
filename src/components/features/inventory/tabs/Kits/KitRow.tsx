@@ -24,7 +24,11 @@ import {
   MapPin,
   Minus,
   AlertCircle,
-  PackagePlus 
+  PackagePlus,
+  CopyPlus,
+  Archive,
+  UserCheck,
+  Lock
 } from 'lucide-react';
 import {
   Select,
@@ -37,10 +41,8 @@ import { Input } from '../../../../ui/input';
 import { Label } from '../../../../ui/label';
 import type { KitRowProps } from './types';
 import { getAvailableBins, checkKitOccupation, type Bin } from '../../services/binsService';
-import { BinSelector } from '../../components/BinSelector';
 import { getKitCurrentBin, createPhysicalKit, deleteKit as deleteKitService, dismantleKit } from '../../services/kitService';
 import { DismantleKitModal } from '../../modals/DismantleKitModal';
-
 
 export function KitRow({
   kit,
@@ -54,8 +56,6 @@ export function KitRow({
   onRefreshKits,
 }: KitRowProps) {
   const [isBuilding, setIsBuilding] = useState(false);
-
-  // Estado para la sección expandida de "Kit Assembly"
   const [assemblyQuantity, setAssemblyQuantity] = useState(1);
   const [confirmAssemblyOpen, setConfirmAssemblyOpen] = useState(false);
   const [assemblyBinId, setAssemblyBinId] = useState<number>(0);
@@ -64,14 +64,11 @@ export function KitRow({
   const [loadingAvailableBins, setLoadingAvailableBins] = useState(false);
   const [modalBinId, setModalBinId] = useState<number>(0);
   const [modalBinCode, setModalBinCode] = useState('');
-
-
   const [dismantleModalOpen, setDismantleModalOpen] = useState(false);
   const [dismantleQuantity, setDismantleQuantity] = useState(1);
   const [dismantleNotes, setDismantleNotes] = useState('');
   const [isDismantling, setIsDismantling] = useState(false);
 
-  // Cargar bins disponibles y verificar si el kit ya tiene un BIN asignado
   useEffect(() => {
     async function loadKitBinInfo() {
       if (!isExpanded) return;
@@ -83,9 +80,7 @@ export function KitRow({
         if (occupation && occupation.isOccupied) {
           setAssemblyBinId(occupation.occupiedBin.id);
           setAssemblyBinCode(occupation.occupiedBin.binCode);
-          console.log(' Kit has BIN assigned:', occupation.occupiedBin);
         } else {
-          console.log(' Kit has no BIN assigned, loading available bins...');
           const bins = await getAvailableBins(0, true);
           setAvailableBins(bins);
           setAssemblyBinId(0);
@@ -101,7 +96,6 @@ export function KitRow({
     loadKitBinInfo();
   }, [isExpanded, kit.id]);
 
-  // Cargar bins disponibles cuando se abre el modal (si no hay BIN asignado)
   useEffect(() => {
     async function loadBinsForModal() {
       if (!confirmAssemblyOpen) {
@@ -121,7 +115,6 @@ export function KitRow({
           setLoadingAvailableBins(true);
           const bins = await getAvailableBins(0, true);
           setAvailableBins(bins);
-          console.log(' Loaded available bins for modal:', bins);
         } catch (error) {
           console.error('Error loading bins for modal:', error);
         } finally {
@@ -142,13 +135,6 @@ export function KitRow({
     try {
       setIsBuilding(true);
 
-      console.log(' Building kit with:', {
-        kitId: kit.id,
-        binCode: modalBinCode,
-        binId: modalBinId,
-        quantity: assemblyQuantity
-      });
-
       await createPhysicalKit({
         kitId: kit.id,
         binCode: modalBinCode,
@@ -162,7 +148,6 @@ export function KitRow({
       setAssemblyQuantity(1);
       setModalBinId(0);
       setModalBinCode('');
-
       onRefreshKits();
     } catch (error) {
       console.error('Error building kit:', error);
@@ -174,7 +159,6 @@ export function KitRow({
   };
 
   const handleUseKit = () => {
-    console.log(' USE KIT clicked:', kit);
     onUseAsTemplate(kit);
   };
 
@@ -183,28 +167,25 @@ export function KitRow({
     if (selectedBin) {
       setModalBinId(selectedBin.id);
       setModalBinCode(selectedBin.binCode);
-      console.log(' Modal BIN Selected:', selectedBin);
     }
   };
 
   const handleDeleteKit = async () => {
     try {
-      console.log('🗑️ Deleting kit:', kit.id);
       await deleteKitService(kit.id);
       alert(`✓ Kit "${kit.name}" deleted successfully`);
-      onRefreshKits(); // ✅ Refrescar la lista de kits
+      onRefreshKits();
     } catch (error) {
       console.error('❌ Error deleting kit:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       alert(`Failed to delete kit\n\nReason: ${errorMessage}`);
     }
   };
-  // Handler para el botón "+" que solo expande el kit
+
   const handleExpandAndFocusAssembly = () => {
     if (!isExpanded) {
       onToggleExpand(kit.id);
     }
-    // scroll hacia la sección de assembly después de expandir
     setTimeout(() => {
       const assemblySection = document.getElementById(`kit-assembly-${kit.id}`);
       if (assemblySection) {
@@ -213,15 +194,12 @@ export function KitRow({
     }, 100);
   };
 
-
-  //  Handler para abrir modal de dismantle
   const handleOpenDismantleModal = () => {
     setDismantleQuantity(1);
     setDismantleNotes('');
     setDismantleModalOpen(true);
   };
 
-  // Handler para confirmar dismantle
   const handleConfirmDismantle = async () => {
     try {
       setIsDismantling(true);
@@ -235,7 +213,6 @@ export function KitRow({
       setDismantleModalOpen(false);
       setDismantleQuantity(1);
       setDismantleNotes('');
-
       onRefreshKits();
     } catch (error) {
       console.error('❌ Error dismantling kit:', error);
@@ -256,15 +233,6 @@ export function KitRow({
         </TableCell>
         <TableCell>
           <div className="flex items-center space-x-3">
-                {/*  
-            {kit.imageUrl ? (
-              <img src={kit.imageUrl} alt={kit.name} className="w-10 h-10 object-cover rounded" />
-            ) : (
-              <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
-                <Package className="h-5 w-5 text-muted-foreground" />
-              </div>
-            )}
-              */}
             <div>
               <p className="font-medium">{kit.name}</p>
               <p className="text-xs text-muted-foreground">{kit.binCode}</p>
@@ -274,74 +242,87 @@ export function KitRow({
         <TableCell className="max-w-xs">
           <p className="text-sm line-clamp-2">{kit.description || '-'}</p>
         </TableCell>
-        <TableCell>
+        <TableCell className="text-center">
           <Badge variant="outline">{kit.items.length} items</Badge>
         </TableCell>
+        {/* Stock Total */}
         <TableCell className="text-center">
           <Badge variant="secondary" className="font-semibold">{kit.quantity}</Badge>
         </TableCell>
-        <TableCell className="text-right">
-          <div className="flex justify-end space-x-2">
-            
-            {/*  Botón de Ensamblar (PackagePlus) - Verde Neutro */}
-            <Button
-              variant="secondary"
-              size="sm"
-              title="Kit Assembly"
-              onClick={handleExpandAndFocusAssembly}
-              className="text-green-700 hover:text-green-800 hover:bg-green-50/50"
-            >
-              <PackagePlus className="h-4 w-4" />
-            </Button>
 
-            {/* Use Button */}
-            <Button variant="outline" size="sm" title="Use kit" onClick={handleUseKit}>
-              Clone
-            </Button>
-
-            {/*Botón de Desarmar (PackageMinus) - */}
-            {kit.quantity > 0 && (
+        <TableCell className="text-center">
+          <span className="font-semibold">{kit.quantityAvailable}</span>
+        </TableCell>
+        {/*  y botones alineados */}
+        <TableCell className="text-center">
+          <div className="flex justify-center items-center space-x-2">
+            <div className="flex space-x-1">
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
-                title="Dismantle Kit"
-                onClick={handleOpenDismantleModal}
-                className="text-red-700 hover:text-red-800 hover:bg-red-50/50"
+                title="Kit Assembly"
+                onClick={handleExpandAndFocusAssembly}
               >
-                <PackageMinus className="h-4 w-4" />
+                <PackagePlus className="h-4 w-4 mr-1" />
+                Assemble
               </Button>
-            )}
 
-            {/*  Botón de Borrar (Delete) - Misma estética que Minus, pero en variante 'ghost' */}
-            {kit.quantity === 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  {/* Usamos 'ghost' para que no tenga color de fondo, pero le ponemos el color al icono */}
-                  <Button variant="ghost" size="sm" title="Delete kit"> 
-                    {/* Color sutilmente rojo para indicar peligro sin ser chillón */}
-                    <Trash2 className="h-4 w-4 text-red-700 hover:text-red-800" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Kit</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete "{kit.name}"? This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDeleteKit}
-                      // Mantenemos el botón de confirmación en rojo vivo por ser la acción final y destructiva
-                      className="bg-destructive hover:bg-destructive/90" 
+              <Button
+                variant="outline"
+                size="sm"
+                title="Use as template or Duplicate kit"
+                onClick={handleUseKit}
+              >
+                <CopyPlus className="h-4 w-4 mr-1" />
+                Clone
+              </Button>
+            </div>
+
+            <div className="w-[120px]"> {/* ← Ancho fijo para mantener alineación */}
+              {kit.quantityAvailable > 0 ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  title="Dismantle Kit"
+                  onClick={handleOpenDismantleModal}
+                  className="w-full"
+                >
+                  <PackageMinus className="h-4 w-4 mr-1" />
+                  To disarm
+                </Button>
+              ) : kit.quantity === 0 ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      title="Delete kit"
+                      className="w-full"
                     >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete kit
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Kit</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete "{kit.name}"? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteKit}
+                        className="bg-destructive hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : null}
+            </div>
           </div>
         </TableCell>
       </TableRow>
@@ -349,7 +330,7 @@ export function KitRow({
       {/* SECCIÓN EXPANDIDA */}
       {isExpanded && (
         <TableRow>
-          <TableCell colSpan={6} className="bg-muted/30 p-0">
+          <TableCell colSpan={7} className="bg-muted/30 p-0">
             <div className="p-4 space-y-4">
               {/* Items Table */}
               <div>
@@ -418,13 +399,13 @@ export function KitRow({
                 </div>
               </div>
 
-              {/* ✅ AGREGADO: ID para scroll automático */}
+              {/* BIN Info y Kit Assembly */}
               <div id={`kit-assembly-${kit.id}`} className="grid grid-cols-2 gap-4">
-                {/* BIN Information */}
+                {/* BIN Information & Stock Breakdown */}
                 <div className="p-4 border rounded-lg bg-card">
                   <h4 className="flex items-center mb-3 font-semibold text-sm">
                     <MapPin className="h-4 w-4 mr-2" />
-                    BIN Location
+                    BIN Location & Stock
                   </h4>
                   {loadingAvailableBins ? (
                     <div className="flex items-center justify-center p-4">
@@ -432,24 +413,60 @@ export function KitRow({
                       <span className="text-sm text-muted-foreground">Loading BIN info...</span>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
+                    <div className="space-y-3">
+                      {/* BIN Code */}
+                      <div className="flex justify-between items-center pb-2 border-b">
                         <span className="text-sm text-muted-foreground">BIN Code:</span>
                         <span className="font-mono font-medium">
-                          {assemblyBinCode || <span className="text-muted-foreground">No BIN Assigned</span>}
+                          {assemblyBinCode || kit.binCode || <span className="text-muted-foreground">No BIN Assigned</span>}
                         </span>
                       </div>
+
+                      {/* Total Stock */}
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Current Stock:</span>
-                        <Badge variant="secondary" className="font-semibold">{kit.quantity}</Badge>
+                        <span className="text-sm font-semibold">Total Stock:</span>
+                        <Badge variant="secondary" className="font-bold text-base">{kit.quantity}</Badge>
                       </div>
-                      <div className="flex justify-between items-center text-xs text-muted-foreground">
+
+                   
+                      <div className="space-y-2 pl-2 border-l-2 border-muted">
+                        {/* Available */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground flex items-center">
+                            <Archive className="h-3 w-3 mr-1" />
+                            Available:
+                          </span>
+                          <span className="text-xs font-semibold">{kit.quantityAvailable}</span>
+                        </div>
+
+                        {/* On Loan */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground flex items-center">
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            On Loan:
+                          </span>
+                          <span className="text-xs font-semibold">{kit.quantityLoan}</span>
+                        </div>
+
+                        {/* Reserved */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground flex items-center">
+                            <Lock className="h-3 w-3 mr-1" />
+                            Reserved:
+                          </span>
+                          <span className="text-xs font-semibold">{kit.quantityReserved}</span>
+                        </div>
+                      </div>
+
+                      {/* Created Date */}
+                      <div className="flex justify-between items-center text-xs text-muted-foreground pt-2 border-t">
                         <span>Created:</span>
                         <span>{kit.createdAt}</span>
                       </div>
                     </div>
                   )}
                 </div>
+
 
                 {/* Kit Assembly Section */}
                 <div className="p-4 border rounded-lg bg-card">
@@ -458,7 +475,6 @@ export function KitRow({
                     Kit Assembly
                   </h4>
                   <div className="space-y-3">
-                    {/* Quantity input */}
                     <div>
                       <Label htmlFor="assembly-qty" className="text-sm">Quantity to Build</Label>
                       <div className="flex items-center space-x-2 mt-1">
@@ -492,14 +508,13 @@ export function KitRow({
                           <Plus className="h-4 w-4" />
                         </Button>
 
-                        {/* Botón Kit Building */}
                         <AlertDialog open={confirmAssemblyOpen} onOpenChange={setConfirmAssemblyOpen}>
                           <AlertDialogTrigger asChild>
                             <Button
                               variant="default"
                               title="Build kits"
                               disabled={assemblyQuantity < 1 || loadingAvailableBins}
-                              className="bg-green-600 hover:bg-green-700" 
+                              className="bg-green-600 hover:bg-green-700"
                             >
                               Kit Building
                             </Button>
@@ -513,7 +528,6 @@ export function KitRow({
                                     Build <strong>{assemblyQuantity}</strong> kit(s) of "{kit.name}"
                                   </p>
 
-                                  {/* Selector de BIN en el modal (solo si no hay BIN asignado) */}
                                   {!assemblyBinCode && (
                                     <div className="space-y-2">
                                       <Label htmlFor="modal-bin">Select BIN Location *</Label>
@@ -559,7 +573,6 @@ export function KitRow({
                                     </div>
                                   )}
 
-                                  {/* Mostrar BIN asignado o seleccionado */}
                                   {(assemblyBinCode || modalBinCode) && (
                                     <div className="p-3 border rounded-md bg-muted/50">
                                       <p className="text-sm flex items-center">
@@ -572,7 +585,6 @@ export function KitRow({
                                     </div>
                                   )}
 
-                                  {/* Items Required */}
                                   <div>
                                     <p className="font-semibold mb-2">Items that will be consumed:</p>
                                     <div className="border rounded-md max-h-48 overflow-y-auto">
@@ -603,11 +615,7 @@ export function KitRow({
                               <AlertDialogCancel disabled={isBuilding}>Cancel</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={handleConfirmAssembly}
-                                disabled={
-                                  isBuilding ||
-                                  loadingAvailableBins ||
-                                  (!assemblyBinCode && modalBinId === 0)
-                                }
+                                disabled={isBuilding || loadingAvailableBins || (!assemblyBinCode && modalBinId === 0)}
                               >
                                 {isBuilding ? (
                                   <>
@@ -624,7 +632,6 @@ export function KitRow({
                       </div>
                     </div>
 
-                    {/* Resumen visual */}
                     <div className="p-2 bg-muted rounded text-xs space-y-1">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Kits to build:</span>
@@ -648,11 +655,13 @@ export function KitRow({
           </TableCell>
         </TableRow>
       )}
+
+      {/*  Modal de Dismantle */}
       <DismantleKitModal
         open={dismantleModalOpen}
         onOpenChange={setDismantleModalOpen}
         kitName={kit.name}
-        maxQuantity={kit.quantity}
+        maxQuantity={kit.quantityAvailable}
         quantity={dismantleQuantity}
         notes={dismantleNotes}
         onQuantityChange={setDismantleQuantity}

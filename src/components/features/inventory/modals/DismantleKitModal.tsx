@@ -106,10 +106,10 @@ export function DismantleKitModal({
           >
             Cancel
           </Button>
-          <Button
+          <Button 
             onClick={onConfirm}
             disabled={isSubmitting || quantity < 1 || quantity > maxQuantity}
-            className="bg-orange-600 hover:bg-orange-700"
+            type="submit" className="min-w-[100px]"
           >
             {isSubmitting ? (
               <>
@@ -122,6 +122,7 @@ export function DismantleKitModal({
                 Dismantle {quantity} Kit{quantity > 1 ? 's' : ''}
               </>
             )}
+                  
           </Button>
         </DialogFooter>
       </DialogContent>

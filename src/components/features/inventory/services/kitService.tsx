@@ -27,6 +27,9 @@ interface KitResponse {
   binId: number;
   binCode: string;
   quantity: number;
+  quantityAvailable: number; 
+  quantityLoan: number; 
+  quantityReserved: number; 
   items: KitItemResponse[];
 }
 
@@ -40,6 +43,9 @@ export interface Kit {
   description: string;
   category: string;
   quantity: number;
+    quantityAvailable: number; 
+  quantityLoan: number; 
+  quantityReserved: number; 
   imageUrl?: string;
   items: {
     articleId: number;
@@ -104,20 +110,27 @@ function transformKitItem(apiItem: KitItemResponse) {
   };
 }
 
+
+
 /**
  * Transforms API kit response to application Kit format
  */
 function transformKit(apiKit: KitResponse): Kit {
   return {
     id: apiKit.id,
+    sku: apiKit.sku || '',
     binCode: apiKit.binCode || '',
+    binId: apiKit.binId || 0,
     name: apiKit.name || '',
     description: apiKit.description || '',
     category: inferCategoryFromSKU(apiKit.sku || ''),
     quantity: apiKit.quantity || 0,
+    quantityAvailable: apiKit.quantityAvailable || 0, // ✅ NUEVO
+    quantityLoan: apiKit.quantityLoan || 0, // ✅ NUEVO
+    quantityReserved: apiKit.quantityReserved || 0, // ✅ NUEVO
     items: (apiKit.items || []).map(transformKitItem),
-    status: 'good-condition', // Default status
-    createdAt: new Date().toISOString().split('T')[0], // Use current date as API doesn't provide it
+    status: 'good-condition',
+    createdAt: new Date().toISOString().split('T')[0],
   };
 }
 
