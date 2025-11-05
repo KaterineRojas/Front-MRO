@@ -796,6 +796,39 @@ export const getCategories = async (): Promise<{ value: string; label: string }[
   }
 };
 
+
+// Función para obtener bins del backend
+export const getBinTypes = async (): Promise<{ value: string; label: string }[]> => {
+  
+    // console.log('Llamando a /Bins/types...');
+    const response = await fetch(`${API_URL}/Bins/types`, {
+      method: 'GET',
+      headers: {
+        // Nota: 'Content-Type' no suele ser necesario en un GET
+        // Pero si tu API lo requiere, mantenlo.
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch bins: ${response.status}`);
+    }
+
+    // 1. Obtener los datos (tu array de strings)
+    const data: string[] = await response.json();
+    
+    // 2. Transformar el array de strings a un array de objetos
+    //    usando .map() para que coincida con el tipo de retorno
+    const formattedData = data.map(binType => ({
+      value: binType,
+      label: binType, // Usamos el mismo valor para 'label' y 'value'
+    }));
+
+    // 3. Retornar los datos transformados
+    return formattedData;
+  
+};
+
 /**
  * Creates a purchase transaction for inventory items
  * POST /api/Inventory/purchase

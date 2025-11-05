@@ -175,7 +175,7 @@ export async function getKitCategories(): Promise<KitCategory[]> {
  */
 export async function getKitsWithItems(): Promise<Kit[]> {
   try {
-    const response = await fetch(`${API_URL}/Kits/with-items`, {
+    const response = await fetch(`${API_URL}/Kits/with-items?isActive=true`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

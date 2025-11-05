@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,18 +18,14 @@ import {
 } from '../../../ui/select';
 import { Textarea } from '../../../ui/textarea';
 import { Alert, AlertDescription } from '../../../ui/alert';
-import { Info } from 'lucide-react';
+import { Info, Loader2 } from 'lucide-react';
+//import { getBinTypes } from '../services/inventoryApi';
+import { getBinTypes } from '../services/binsService';
 
 interface Bin {
   id: number;
   binCode: string;
-  type:
-  | 'good-condition'
-  | 'on-revision'
-  | 'scrap'
-  | 'hold'
-  | 'packing'
-  | 'reception';
+  type: string;
   isActive: boolean;
   description: string;
 }
@@ -40,30 +36,16 @@ interface CreateBinModalProps {
   editingBin: Bin | null;
   formData: {
     binCode: string;
-    type:
-    | 'good-condition'
-    | 'on-revision'
-    | 'scrap'
-    | 'hold'
-    | 'packing'
-    | 'reception';
-    isActive: boolean;
+    type: string;
     description: string;
   };
   onFormDataChange: (data: {
     binCode: string;
-    type:
-    | 'good-condition'
-    | 'on-revision'
-    | 'scrap'
-    | 'hold'
-    | 'packing'
-    | 'reception';
-    isActive: boolean;
+    type: string;
     description: string;
   }) => void;
   onSubmit: (e: React.FormEvent) => void;
-  hasStock?: boolean; // Nueva prop para indicar si tiene stock
+  hasStock?: boolean;
 }
 
 export function CreateBinModal({
@@ -75,6 +57,32 @@ export function CreateBinModal({
   onSubmit,
   hasStock = false,
 }: CreateBinModalProps) {
+  const [binTypes, setBinTypes] = useState<{ value: string; label: string }[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
+  const [errorTypes, setErrorTypes] = useState<string | null>(null);
+
+  // ✅ Cargar tipos de bins desde el backend cuando se abre el modal
+  useEffect(() => {
+    async function loadBinTypes() {
+      if (!open) return;
+
+      try {
+        setLoadingTypes(true);
+        setErrorTypes(null);
+        const types = await getBinTypes();
+        setBinTypes(types);
+        console.log('✅ Bin types loaded:', types);
+      } catch (error) {
+        console.error('❌ Error loading bin types:', error);
+        setErrorTypes(error instanceof Error ? error.message : 'Failed to load bin types');
+      } finally {
+        setLoadingTypes(false);
+      }
+    }
+
+    loadBinTypes();
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -112,41 +120,48 @@ export function CreateBinModal({
             />
           </div>
 
-          {/* Type - Deshabilitado si tiene stock */}
+          {/* ✅ Type - Selector dinámico desde el backend */}
           <div>
-            <Label>Type *</Label>
-            <Select
-              value={formData.type}
-              onValueChange={(value: string) =>
-                onFormDataChange({
-                  ...formData,
-                  type: value as
-                    | 'good-condition'
-                    | 'on-revision'
-                    | 'scrap'
-                    | 'hold'
-                    | 'packing'
-                    | 'reception',
-                })
-              }
-              disabled={editingBin !== null && hasStock}
-            >
-              <SelectTrigger className={editingBin && hasStock ? 'opacity-60 cursor-not-allowed' : ''}>
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="good-condition">Good Condition</SelectItem>
-                <SelectItem value="on-revision">On Revision</SelectItem>
-                <SelectItem value="scrap">Scrap</SelectItem>
-                <SelectItem value="hold">Hold</SelectItem>
-                <SelectItem value="packing">Packing</SelectItem>
-                <SelectItem value="reception">Reception</SelectItem>
-              </SelectContent>
-            </Select>
-            {editingBin && hasStock && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Type cannot be changed while bin contains items
-              </p>
+            <Label htmlFor="type">Type *</Label>
+            {loadingTypes ? (
+              <div className="flex items-center justify-center p-4 border rounded-md">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
+                <span className="text-sm text-muted-foreground">Loading types...</span>
+              </div>
+            ) : errorTypes ? (
+              <div className="p-3 border border-destructive rounded-md bg-destructive/10">
+                <p className="text-destructive text-sm">{errorTypes}</p>
+              </div>
+            ) : (
+              <>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value: string) =>
+                    onFormDataChange({ ...formData, type: value })
+                  }
+                  disabled={(editingBin !== null && hasStock) || binTypes.length === 0}
+                  required
+                >
+                  <SelectTrigger 
+                    id="type"
+                    className={editingBin && hasStock ? 'opacity-60 cursor-not-allowed' : ''}
+                  >
+                    <SelectValue placeholder="Select bin type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {binTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {editingBin && hasStock && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Type cannot be changed while bin contains items
+                  </p>
+                )}
+              </>
             )}
           </div>
 
@@ -173,7 +188,7 @@ export function CreateBinModal({
             >
               Cancel
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={loadingTypes || !!errorTypes}>
               {editingBin ? 'Update Bin' : 'Create Bin'}
             </Button>
           </div>

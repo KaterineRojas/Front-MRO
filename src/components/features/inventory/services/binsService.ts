@@ -1,6 +1,4 @@
-// src/services/binsService.ts
-import { API_URL } from "../../../../url";
-//const API_URL = 'http://localhost:5000/api';
+import { API_URL } from "../../../../url"; 
 
 /**
  * API response format for bins
@@ -11,40 +9,15 @@ export interface BinResponse {
   type?: string | null;
   description?: string | null;
 }
-
+ 
 /**
  * Application Bin type
  */
 export interface Bin {
   id: number;
   binCode: string;
-  type: string;
+  type: string; 
   description: string;
-}
-
-/**
- * Transforms API bin type to application type format
- */
-function transformBinType(apiType: string | undefined | null): 'good-condition' | 'on-revision' | 'scrap' {
-  // Handle undefined, null, or empty string
-  if (!apiType) {
-    return 'good-condition';
-  }
-
-  const normalizedType = apiType.toLowerCase().trim();
-
-  if (normalizedType.includes('good') || normalizedType.includes('condition')) {
-    return 'good-condition';
-  }
-  if (normalizedType.includes('revision')) {
-    return 'on-revision';
-  }
-  if (normalizedType.includes('scrap')) {
-    return 'scrap';
-  }
-
-  // Default to good-condition if type is unknown
-  return 'good-condition';
 }
 
 /**
@@ -54,7 +27,7 @@ function transformBin(apiBin: BinResponse): Bin {
   return {
     id: apiBin.id,
     binCode: apiBin.binCode,
-    type: transformBinType(apiBin.type),
+    type: apiBin.type || 'Unknown', // ✅ Usar el tipo tal cual viene del backend
     description: apiBin.description || '',
   };
 }
@@ -130,7 +103,7 @@ export async function checkItemOccupation(itemId: number): Promise<CheckItemOccu
 
     if (!response.ok) {
       if (response.status === 404) {
-        return null; // Item not found or not occupied
+        return null;
       }
       throw new Error(`Failed to check item occupation: ${response.status} ${response.statusText}`);
     }
@@ -159,7 +132,7 @@ export async function checkKitOccupation(kitId: number): Promise<CheckItemOccupa
 
     if (!response.ok) {
       if (response.status === 404) {
-        return null; // Kit not found or not occupied
+        return null;
       }
       throw new Error(`Failed to check kit occupation: ${response.status} ${response.statusText}`);
     }
@@ -191,10 +164,40 @@ export async function getKitCurrentBin(kitId: number): Promise<string> {
     }
 
     const data: CheckItemOccupationResponse = await response.json();
-    // Extract the binCode from the occupiedBin object
-    return data.occupiedBin.binCode;
+    return data.occupiedBin.binCode; 
   } catch (error) {
     console.error('Error fetching kit current bin:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetches available bin types from the API
+ * @returns Array of bin types with value and label
+ */
+export async function getBinTypes(): Promise<{ value: string; label: string }[]> {
+  try {
+    const response = await fetch(`${API_URL}/Bins/types`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch bin types: ${response.status} ${response.statusText}`);
+    }
+
+    const data: string[] = await response.json();
+
+    const formattedData = data.map(binType => ({
+      value: binType,
+      label: binType,
+    }));
+
+    return formattedData;
+  } catch (error) {
+    console.error('Error fetching bin types:', error);
     throw error;
   }
 }
