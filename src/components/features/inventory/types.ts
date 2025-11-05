@@ -53,6 +53,7 @@ export interface Article2 {
 
 // Nueva interface para bins individuales
 export interface ArticleBin {
+  inventoryId: number; // ID de la relación Inventory (item + bin)
   binId: number;
   binCode: string;
   binPurpose: 'GoodCondition' | 'OnRevision' | 'Scrap' | 'Hold' | 'Packing' | 'Reception';
@@ -70,6 +71,7 @@ export interface InventoryItemResponse {
   minStock: number;
   imageUrl: string | null;
   bins: {
+    inventoryId: number; // ID de la relación Inventory
     binId: number;
     binCode: string;
     binPurpose: string;

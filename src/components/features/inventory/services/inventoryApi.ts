@@ -1,5 +1,5 @@
 import type { Article, InventoryItemResponse, Kit, Bin, BinResponse, Transaction } from '../types';
-import type { PurchaseRequest } from '../modals/RecordMovement/types';
+import type { PurchaseRequest, DamagedRequest, StockCorrectionRequest, WarehouseTransferRequest } from '../modals/RecordMovement/types';
 import { CATEGORIES } from '../constants';
 import { strict } from 'assert';
 import { API_URL } from "../../../../url";
@@ -40,6 +40,7 @@ export function transformInventoryItem(apiItem: InventoryItemResponse): Article 
 
     // NUEVO: Mapear array de bins
     bins: apiItem.bins?.map(bin => ({
+      inventoryId: bin.inventoryId,
       binId: bin.binId,
       binCode: bin.binCode,
       binPurpose: bin.binPurpose as 'good-condition' | 'on-revision' | 'scrap' | 'Hold' | 'Packing' | 'Reception',
@@ -851,6 +852,84 @@ export async function createPurchaseApi(purchaseData: PurchaseRequest): Promise<
     console.log('✅ Purchase transaction created successfully');
   } catch (error) {
     console.error('❌ Error creating purchase:', error);
+    throw error;
+  }
+}
+
+/**
+ * Creates a damaged transaction for inventory items
+ * POST /api/Inventory/damaged
+ */
+export async function createDamagedApi(damagedData: DamagedRequest): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/Inventory/damaged`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(damagedData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || `Failed to create damaged transaction: ${response.status} ${response.statusText}`);
+    }
+
+    console.log('✅ Damaged transaction created successfully');
+  } catch (error) {
+    console.error('❌ Error creating damaged transaction:', error);
+    throw error;
+  }
+}
+
+/**
+ * Creates a stock correction transaction for inventory items
+ * POST /api/Inventory/stock-correction
+ */
+export async function createStockCorrectionApi(correctionData: StockCorrectionRequest): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/Inventory/stock-correction`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(correctionData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || `Failed to create stock correction: ${response.status} ${response.statusText}`);
+    }
+
+    console.log('✅ Stock correction created successfully');
+  } catch (error) {
+    console.error('❌ Error creating stock correction:', error);
+    throw error;
+  }
+}
+
+/**
+ * Creates a warehouse transfer transaction for inventory items
+ * POST /api/Inventory/warehouse-transfer
+ */
+export async function createWarehouseTransferApi(transferData: WarehouseTransferRequest): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/Inventory/warehouse-transfer`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(transferData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || `Failed to create warehouse transfer: ${response.status} ${response.statusText}`);
+    }
+
+    console.log('✅ Warehouse transfer created successfully');
+  } catch (error) {
+    console.error('❌ Error creating warehouse transfer:', error);
     throw error;
   }
 }
