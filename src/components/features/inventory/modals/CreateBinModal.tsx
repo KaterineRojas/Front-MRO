@@ -17,6 +17,8 @@ import {
   SelectValue,
 } from '../../../ui/select';
 import { Textarea } from '../../../ui/textarea';
+import { Alert, AlertDescription } from '../../../ui/alert';
+import { Info } from 'lucide-react';
 
 interface Bin {
   id: number;
@@ -25,9 +27,9 @@ interface Bin {
   | 'good-condition'
   | 'on-revision'
   | 'scrap'
-  | 'Hold'
-  | 'Packing'
-  | 'Reception';
+  | 'hold'
+  | 'packing'
+  | 'reception';
   isActive: boolean;
   description: string;
 }
@@ -42,9 +44,9 @@ interface CreateBinModalProps {
     | 'good-condition'
     | 'on-revision'
     | 'scrap'
-    | 'Hold'
-    | 'Packing'
-    | 'Reception';
+    | 'hold'
+    | 'packing'
+    | 'reception';
     isActive: boolean;
     description: string;
   };
@@ -54,13 +56,14 @@ interface CreateBinModalProps {
     | 'good-condition'
     | 'on-revision'
     | 'scrap'
-    | 'Hold'
-    | 'Packing'
-    | 'Reception';
+    | 'hold'
+    | 'packing'
+    | 'reception';
     isActive: boolean;
     description: string;
   }) => void;
   onSubmit: (e: React.FormEvent) => void;
+  hasStock?: boolean; // Nueva prop para indicar si tiene stock
 }
 
 export function CreateBinModal({
@@ -70,6 +73,7 @@ export function CreateBinModal({
   formData,
   onFormDataChange,
   onSubmit,
+  hasStock = false,
 }: CreateBinModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -84,6 +88,16 @@ export function CreateBinModal({
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="space-y-4">
+          {/* Alerta informativa cuando el bin tiene stock */}
+          {editingBin && hasStock && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                This bin contains items. Only BIN Code and Description can be edited.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* BIN Code */}
           <div>
             <Label htmlFor="binCode">BIN Code *</Label>
@@ -98,36 +112,42 @@ export function CreateBinModal({
             />
           </div>
 
-          {/* Type */}
+          {/* Type - Deshabilitado si tiene stock */}
           <div>
             <Label>Type *</Label>
             <Select
               value={formData.type}
-              onValueChange={(value) =>
+              onValueChange={(value: string) =>
                 onFormDataChange({
                   ...formData,
                   type: value as
                     | 'good-condition'
                     | 'on-revision'
                     | 'scrap'
-                    | 'Hold'
-                    | 'Packing'
-                    | 'Reception',
+                    | 'hold'
+                    | 'packing'
+                    | 'reception',
                 })
               }
+              disabled={editingBin !== null && hasStock}
             >
-              <SelectTrigger>
+              <SelectTrigger className={editingBin && hasStock ? 'opacity-60 cursor-not-allowed' : ''}>
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="good-condition">Good Condition</SelectItem>
                 <SelectItem value="on-revision">On Revision</SelectItem>
                 <SelectItem value="scrap">Scrap</SelectItem>
-                <SelectItem value="Hold">Hold</SelectItem>
-                <SelectItem value="Packing">Packing</SelectItem>
-                <SelectItem value="Reception">Reception</SelectItem>
+                <SelectItem value="hold">Hold</SelectItem>
+                <SelectItem value="packing">Packing</SelectItem>
+                <SelectItem value="reception">Reception</SelectItem>
               </SelectContent>
             </Select>
+            {editingBin && hasStock && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Type cannot be changed while bin contains items
+              </p>
+            )}
           </div>
 
           {/* Description */}

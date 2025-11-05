@@ -34,7 +34,7 @@ import { Label } from '../../../../ui/label';
 import { ChevronDown, ChevronRight, Trash2, Package, Loader2 } from 'lucide-react';
 import type { KitRowProps } from './types';
 import { BinSelector } from '../../components/BinSelector';
-import { getKitCurrentBin} from '../../services/kitService'
+import { getKitCurrentBin } from '../../services/kitService'
 import { createPhysicalKit } from '../../services/kitService'
 
 export function KitRow({
@@ -123,8 +123,8 @@ export function KitRow({
   };
 
   const handleUseKit = () => {
-  console.log('🔵 USE KIT clicked:', kit);
-  console.log('🔵 onUseAsTemplate function:', onUseAsTemplate);
+    console.log('🔵 USE KIT clicked:', kit);
+    console.log('🔵 onUseAsTemplate function:', onUseAsTemplate);
     onUseAsTemplate(kit);
   };
 
@@ -161,13 +161,13 @@ export function KitRow({
             {/* Build Button with Modal */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" title="Build kits">
-                  Build
+                <Button variant="outline" size="sm" title="Kit Assembly">
+                  +
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Build Kits</DialogTitle>
+                  <DialogTitle>Kit Assembly</DialogTitle>
                   <DialogDescription>
                     Select a BIN location and specify how many "{kit.name}" kits you'd like to assemble.
                   </DialogDescription>
@@ -237,96 +237,99 @@ export function KitRow({
 
             {/* Use Button */}
             <Button variant="outline" size="sm" title="Use kit" onClick={handleUseKit}>
-              Use
+              Clone
             </Button>
 
-            {/* Delete Button */}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm" title="Delete kit">
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Kit</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete "{kit.name}"? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => onDeleteKit(kit.id)}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {/* 🗑️ Delete Button - Condicional: Solo si kit.quantity es 0 */}
+            {kit.quantity === 0 && ( // AÑADIDO: Condición para stock cero
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" title="Delete kit">
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Kit</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{kit.name}"? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onDeleteKit(kit.id)}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )} 
+      </div>
+    </TableCell>
+      </TableRow >
+    { isExpanded && (
+      <TableRow>
+        <TableCell colSpan={6} className="bg-muted/30 p-0">
+          <div className="p-4">
+            <h4 className="flex items-center mb-3">
+              <Package className="h-4 w-4 mr-2" />
+              Items in this kit
+            </h4>
+            <div className="rounded-md border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-20">Image</TableHead>
+                    <TableHead>Sku</TableHead>
+                    <TableHead>Name & Description</TableHead>
+                    <TableHead>Quantity</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {kit.items.map((item, index) => {
+                    const article = articles.find((a) => a.sku === item.articleSku);
+                    return (
+                      <TableRow key={index}>
+                        <TableCell>
+                          {article?.imageUrl || item.imageUrl ? (
+                            <img
+                              src={article?.imageUrl || item.imageUrl}
+                              alt={item.articleName}
+                              className="w-12 h-12 object-cover rounded"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                              <Package className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono">{item.articleSku}</TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{item.articleName}</p>
+                            {item.articleDescription && (
+                              <p className="text-sm text-muted-foreground">{item.articleDescription}</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">x{item.quantity}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="flex gap-4 text-sm mt-3">
+              <div>
+                <span className="text-muted-foreground">Created:</span>
+                <span className="ml-2">{kit.createdAt}</span>
+              </div>
+            </div>
           </div>
         </TableCell>
       </TableRow>
-      {isExpanded && (
-        <TableRow>
-          <TableCell colSpan={6} className="bg-muted/30 p-0">
-            <div className="p-4">
-              <h4 className="flex items-center mb-3">
-                <Package className="h-4 w-4 mr-2" />
-                Items in this kit
-              </h4>
-              <div className="rounded-md border bg-card">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-20">Image</TableHead>
-                      <TableHead>Sku</TableHead>
-                      <TableHead>Name & Description</TableHead>
-                      <TableHead>Quantity</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {kit.items.map((item, index) => {
-                      const article = articles.find((a) => a.sku === item.articleSku);
-                      return (
-                        <TableRow key={index}>
-                          <TableCell>
-                            {article?.imageUrl || item.imageUrl ? (
-                              <img
-                                src={article?.imageUrl || item.imageUrl}
-                                alt={item.articleName}
-                                className="w-12 h-12 object-cover rounded"
-                              />
-                            ) : (
-                              <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                                <Package className="h-6 w-6 text-muted-foreground" />
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="font-mono">{item.articleSku}</TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{item.articleName}</p>
-                              {item.articleDescription && (
-                                <p className="text-sm text-muted-foreground">{item.articleDescription}</p>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">x{item.quantity}</Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="flex gap-4 text-sm mt-3">
-                <div>
-                  <span className="text-muted-foreground">Created:</span>
-                  <span className="ml-2">{kit.createdAt}</span>
-                </div>
-              </div>
-            </div>
-          </TableCell>
-        </TableRow>
-      )}
-    </React.Fragment>
+    )
+}
+    </React.Fragment >
   );
 }

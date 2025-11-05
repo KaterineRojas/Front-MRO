@@ -9,8 +9,12 @@ import { Badge } from '../../../ui/badge';
 import { Alert, AlertDescription } from '../../../ui/alert';
 import { ArrowLeft, Search, Plus, X, Package, Loader2, AlertCircle } from 'lucide-react';
 import type { Article, Kit, KitItem } from '../types';
-import { getItems, getCategories, type Category } from '@/services/inventarioService';
-import { createKit, getKitCategories, type CreateKitRequest, type KitCategory } from '@/services/kitsService';
+import { getItems, type Category } from '../services/kitService';
+//import { getCategories } from '../../../../services/inventarioService';
+import { getCategories } from '../services/inventoryApi';
+import { createKit, getKitCategories, type CreateKitRequest, type KitCategory } from '../services/kitService';
+
+
 
 interface CreateKitPageProps {
   editingKit?: Kit | null;

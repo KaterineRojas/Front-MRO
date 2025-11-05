@@ -93,6 +93,7 @@ export interface KitItem {
 
 export interface Kit {
   id: number;
+  sku: string;
   binCode: string;
   name: string;
   description: string;

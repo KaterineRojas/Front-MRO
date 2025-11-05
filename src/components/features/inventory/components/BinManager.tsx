@@ -16,8 +16,10 @@ interface Bin {
   binCode: string;
   type: 'good-condition' | 'on-revision' | 'scrap' | 'hold' | 'packing' | 'reception';
   description: string;
-  totalQuantity?: number;
+  totalQuantity: number;
 }
+
+type StockFilter = 'all' | 'empty' | 'with-stock';
 
 export function BinManager() {
   const dispatch = useAppDispatch();
@@ -26,9 +28,10 @@ export function BinManager() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBin, setEditingBin] = useState<Bin | null>(null);
+  const [stockFilter, setStockFilter] = useState<StockFilter>('all');
   const [formData, setFormData] = useState<{
     binCode: string;
-    type: 'good-condition' | 'on-revision' | 'scrap'| 'hold' | 'packing' | 'reception';
+    type: 'good-condition' | 'on-revision' | 'scrap' | 'hold' | 'packing' | 'reception';
     description: string;
   }>({
     binCode: '',
@@ -40,7 +43,12 @@ export function BinManager() {
     const matchesSearch = bin.binCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bin.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === 'all' || bin.type === typeFilter;
-    return matchesSearch && matchesType;
+    const totalQuantity = bin.totalQuantity ?? 0;
+    const matchesStock =
+      stockFilter === 'all' ||
+      (stockFilter === 'empty' && totalQuantity === 0) ||
+      (stockFilter === 'with-stock' && totalQuantity > 0);
+    return matchesSearch && matchesType && matchesStock;
   });
 
   const resetForm = () => {
@@ -62,16 +70,17 @@ export function BinManager() {
       case 'scrap':
         return <Badge variant="destructive">Scrap</Badge>;
 
-      case 'Hold':
+      case 'hold':
         return <Badge className="bg-purple-600 hover:bg-purple-700">Hold</Badge>;
-      case 'Packing':
+      case 'packing':
         return <Badge className="bg-blue-600 hover:bg-blue-700">Packing</Badge>;
-      case 'Reception':
+      case 'reception':
         return <Badge className="secondary">Reception</Badge>;
       default:
         return <Badge variant="secondary">Other</Badge>;
     }
   };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -87,7 +96,17 @@ export function BinManager() {
 
     try {
       if (editingBin) {
-        await dispatch(updateBinAsync({ id: editingBin.id, data: formData })).unwrap();
+        // Si el bin tiene stock, mantener el tipo original
+        const hasStock = (editingBin.totalQuantity ?? 0) > 0;
+        const dataToUpdate = hasStock 
+          ? { 
+              binCode: formData.binCode, 
+              description: formData.description,
+              type: editingBin.type // Mantener el tipo original
+            }
+          : formData; // Enviar todos los datos si no tiene stock
+
+        await dispatch(updateBinAsync({ id: editingBin.id, data: dataToUpdate })).unwrap();
         //    Recargar bins después de actualizar
         await dispatch(fetchBins()).unwrap();
         alert('Bin updated successfully!');
@@ -111,13 +130,13 @@ export function BinManager() {
     setFormData({
       binCode: bin.binCode,
       type: bin.type,
-      description: bin.description,
-      totalQuantity: bin.totalQuantity
+      description: bin.description
     });
     setDialogOpen(true);
   };
 
-  // BinManager.tsx
+  // Verificar si el bin que se está editando tiene stock
+  const hasStock = editingBin ? (editingBin.totalQuantity ?? 0) > 0 : false;
 
   const handleDeleteBin = async (id: number) => {
     console.log('🔴 handleDeleteBin called with ID:', id);
@@ -131,7 +150,7 @@ export function BinManager() {
 
       alert('Bin deleted successfully!');
     } catch (error: any) {
-      console.error('❌ Failed to delete bin:', error); 
+      console.error('❌ Failed to delete bin:', error);
       console.error('❌ Error details:', {
         message: error.message,
         stack: error.stack,
@@ -159,6 +178,36 @@ export function BinManager() {
         </div>
       </CardHeader>
       <CardContent>
+        {/* --- Filtro de Pestañas por Cantidad --- */}
+        <div className="mb-4 border-b">
+          <div className="flex space-x-1">
+            {/* Opción 'All Bins' */}
+            <Button
+              variant={stockFilter === 'all' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setStockFilter('all')}
+            >
+              All Bins ({bins.length})
+            </Button>
+            {/* Opción 'Empty' */}
+            <Button
+              variant={stockFilter === 'empty' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setStockFilter('empty')}
+            >
+              Empty ({bins.filter(b => (b.totalQuantity ?? 0) === 0).length})
+            </Button>
+            {/* Opción 'With Stock' */}
+            <Button
+              variant={stockFilter === 'with-stock' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setStockFilter('with-stock')}
+            >
+              With Stock ({bins.filter(b => (b.totalQuantity ?? 0) > 0).length})
+            </Button>
+          </div>
+        </div>
+
         {/* Filters */}
         <div className="flex items-center space-x-4 mb-4">
           <div className="flex-1">
@@ -182,9 +231,9 @@ export function BinManager() {
                 <SelectItem value="good-condition">Good Condition</SelectItem>
                 <SelectItem value="on-revision">On Revision</SelectItem>
                 <SelectItem value="scrap">Scrap</SelectItem>
-                <SelectItem value="Hold">Hold</SelectItem>
-                <SelectItem value="Packing">Packing</SelectItem>
-                <SelectItem value="Reception">Reception</SelectItem>
+                <SelectItem value="hold">Hold</SelectItem>
+                <SelectItem value="packing">Packing</SelectItem>
+                <SelectItem value="reception">Reception</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -275,6 +324,7 @@ export function BinManager() {
         formData={formData}
         onFormDataChange={setFormData}
         onSubmit={handleSubmit}
+        hasStock={hasStock}
       />
     </Card>
   );
