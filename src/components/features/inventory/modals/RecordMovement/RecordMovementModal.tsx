@@ -16,7 +16,8 @@ import {
   createPurchaseApi,
   createDamagedApi,
   createStockCorrectionApi,
-  createWarehouseTransferApi
+  createWarehouseTransferApi,
+  getValidDestinationBins
 } from '../../services/inventoryApi';
 
 interface RecordMovementModalProps {
@@ -56,7 +57,7 @@ const ITEM_TRANSACTION_OPTIONS = [
   },
   {
     value: 'relocation-transfer',
-    label: 'Relocation - Warehouse Transfer',
+    label: 'Transfer - Relocation',
     transactionType: 2,
     transactionSubType: 0,
     showFromBin: true,
@@ -110,6 +111,7 @@ export function RecordMovementModal({
   const [selectedTransactionOption, setSelectedTransactionOption] = useState<string>('entry-purchase');
   const [activeTab, setActiveTab] = useState('transaction');
   const [allBins, setAllBins] = useState<{ id: number; code: string; purpose: string }[]>([]);
+  const [validDestinationBins, setValidDestinationBins] = useState<{ binId: number; binCode: string; binPurpose: string; description: string }[]>([]);
 
   // Get transaction options based on entity type
   const TRANSACTION_OPTIONS = entityType === 'item' ? ITEM_TRANSACTION_OPTIONS : KIT_TRANSACTION_OPTIONS;
@@ -250,6 +252,7 @@ export function RecordMovementModal({
       setEntityType('item');
       setSelectedTransactionOption('entry-purchase');
       setActiveTab('transaction');
+      setValidDestinationBins([]);
     }
   }, [open]);
 
@@ -338,9 +341,6 @@ export function RecordMovementModal({
             fromBinId: updatedFormData.fromBinId!,
             toBinId: updatedFormData.toBinId!,
             quantity: updatedFormData.quantity,
-            fromWarehouse: fromBins.find(b => b.binId === updatedFormData.fromBinId)?.binCode || '',
-            toWarehouse: allBins.find(b => b.id === updatedFormData.toBinId)?.code || '',
-            transferNumber: `TR-${Date.now()}`, // Auto-generate transfer number
             notes: updatedFormData.notes
           };
 
@@ -356,10 +356,12 @@ export function RecordMovementModal({
         // Reset form and close modal
         setFormData(initialFormData);
         setSelectedTransactionOption('entry-purchase');
+        setValidDestinationBins([]);
         onOpenChange(false);
       } catch (error) {
-        console.error('Failed to create transaction:', error);
-        alert('Failed to create transaction. Please try again.');
+        // Extract backend error message
+        const errorMessage = error instanceof Error ? error.message : 'Failed to create transaction. Please try again.';
+        alert(errorMessage);
       }
       return;
     }
@@ -375,12 +377,14 @@ export function RecordMovementModal({
     // Reset form and close modal
     setFormData(initialFormData);
     setSelectedTransactionOption('entry-purchase');
+    setValidDestinationBins([]);
     onOpenChange(false);
   };
 
   const handleCancel = () => {
     setFormData(initialFormData);
     setSelectedTransactionOption('entry-purchase');
+    setValidDestinationBins([]);
     onOpenChange(false);
   };
 
@@ -409,14 +413,18 @@ export function RecordMovementModal({
               <Label htmlFor="entityType">Transaction For *</Label>
               <Select
                 value={entityType}
-                onValueChange={(value: 'item' | 'kit') => setEntityType(value)}
+                onValueChange={(value: 'item' | 'kit') => {
+                  setEntityType(value);
+                  setFormData(initialFormData);
+                  setValidDestinationBins([]);
+                }}
               >
                 <SelectTrigger id="entityType">
                   <SelectValue placeholder="Select entity type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="item">Item</SelectItem>
-                  <SelectItem value="kit">Kit</SelectItem>
+                  {/*<SelectItem value="kit">Kit</SelectItem>*/}
                 </SelectContent>
               </Select>
             </div>
@@ -434,6 +442,7 @@ export function RecordMovementModal({
                     fromBinId: undefined,
                     toBinId: undefined
                   }));
+                  setValidDestinationBins([]);
                 }}
               >
                 <SelectTrigger id="transactionType">
@@ -455,11 +464,15 @@ export function RecordMovementModal({
                 <Label htmlFor="item">Item *</Label>
                 <Select
                   value={formData.itemId > 0 ? formData.itemId.toString() : ''}
-                  onValueChange={(value: string) => setFormData(prev => ({
-                    ...prev,
-                    itemId: parseInt(value),
-                    fromBinId: undefined
-                  }))}
+                  onValueChange={(value: string) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      itemId: parseInt(value),
+                      fromBinId: undefined,
+                      toBinId: undefined
+                    }));
+                    setValidDestinationBins([]);
+                  }}
                 >
                   <SelectTrigger id="item">
                     <SelectValue placeholder="Select an item" />
@@ -522,7 +535,21 @@ export function RecordMovementModal({
                 {entityType === 'item' ? (
                   <Select
                     value={formData.fromBinId?.toString() || ''}
-                    onValueChange={(value: string) => setFormData(prev => ({ ...prev, fromBinId: parseInt(value) }))}
+                    onValueChange={async (value: string) => {
+                      const fromBinId = parseInt(value);
+                      setFormData(prev => ({ ...prev, fromBinId, toBinId: undefined }));
+
+                      // If this is a warehouse transfer, fetch valid destination bins
+                      if (currentOption.value === 'relocation-transfer' && formData.itemId) {
+                        try {
+                          const destinations = await getValidDestinationBins(formData.itemId, fromBinId);
+                          setValidDestinationBins(destinations);
+                        } catch (error) {
+                          console.error('Failed to load valid destination bins:', error);
+                          setValidDestinationBins([]);
+                        }
+                      }
+                    }}
                     disabled={!formData.itemId}
                   >
                     <SelectTrigger id="fromBin">
@@ -554,16 +581,33 @@ export function RecordMovementModal({
                 <Select
                   value={formData.toBinId ? formData.toBinId.toString() : ''}
                   onValueChange={(value: string) => setFormData(prev => ({ ...prev, toBinId: parseInt(value) }))}
+                  disabled={currentOption.value === 'relocation-transfer' && !formData.fromBinId}
                 >
                   <SelectTrigger id="toBin">
-                    <SelectValue placeholder="Select destination bin" />
+                    <SelectValue placeholder={
+                      currentOption.value === 'relocation-transfer' && !formData.fromBinId
+                        ? "Select from bin first"
+                        : "Select destination bin"
+                    } />
                   </SelectTrigger>
                   <SelectContent>
-                    {allBins.map((bin, index) => (
-                      <SelectItem key={`to-bin-${bin.id}-${index}`} value={bin.id.toString()}>
-                        {bin.code} ({bin.purpose})
-                      </SelectItem>
-                    ))}
+                    {currentOption.value === 'relocation-transfer' && validDestinationBins.length > 0 ? (
+                      // For warehouse transfers, use valid destination bins
+                      validDestinationBins.map((bin, index) => (
+                        <SelectItem key={`to-bin-${bin.binId}-${index}`} value={bin.binId.toString()}>
+                          {bin.binCode} ({bin.binPurpose}) - {bin.description}
+                        </SelectItem>
+                      ))
+                    ) : currentOption.value !== 'relocation-transfer' ? (
+                      // For other transactions, use all bins
+                      allBins.map((bin, index) => (
+                        <SelectItem key={`to-bin-${bin.id}-${index}`} value={bin.id.toString()}>
+                          {bin.code} ({bin.purpose})
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="none" disabled>No valid destination bins</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -590,10 +634,15 @@ export function RecordMovementModal({
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
+                name="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Add any additional notes or observations..."
                 rows={3}
+                autoComplete="off"
+                data-gramm="false"
+                data-gramm_editor="false"
+                data-enable-grammarly="false"
               />
             </div>
 

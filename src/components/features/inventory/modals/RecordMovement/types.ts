@@ -47,9 +47,6 @@ export interface WarehouseTransferRequest {
   fromBinId: number;
   toBinId: number;
   quantity: number;
-  fromWarehouse: string;
-  toWarehouse: string;
-  transferNumber: string;
   notes: string;
 }
 
