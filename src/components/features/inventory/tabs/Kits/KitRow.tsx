@@ -231,6 +231,12 @@ export function KitRow({
             {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
         </TableCell>
+
+        <TableCell>
+          <span className="font-mono text-sm">{kit.sku}</span>
+        </TableCell>
+
+
         <TableCell>
           <div className="flex items-center space-x-3">
             <div>
@@ -330,7 +336,7 @@ export function KitRow({
       {/* SECCIÓN EXPANDIDA */}
       {isExpanded && (
         <TableRow>
-          <TableCell colSpan={7} className="bg-muted/30 p-0">
+          <TableCell colSpan={8} className="bg-muted/30 p-0">
             <div className="p-4 space-y-4">
               {/* Items Table */}
               <div>
@@ -428,7 +434,7 @@ export function KitRow({
                         <Badge variant="secondary" className="font-bold text-base">{kit.quantity}</Badge>
                       </div>
 
-                   
+
                       <div className="space-y-2 pl-2 border-l-2 border-muted">
                         {/* Available */}
                         <div className="flex justify-between items-center">

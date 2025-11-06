@@ -1,39 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
-import { Button } from '../../../ui/button';
-import { Input } from '../../../ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
-import { Badge } from '../../../ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../ui/alert-dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../../ui/card';
+import { Button } from '../../../../ui/button';
+import { Input } from '../../../../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../ui/table';
+import { Badge } from '../../../../ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '../../../../ui/tabs';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../../ui/alert-dialog';
 import { Package, Search, Edit, Trash2, Plus, ChevronDown, ChevronRight, TrendingDown, RotateCcw } from 'lucide-react';
-import { CreateItemModal } from '../modals/CreateItemModal';
-import type { Article } from '../types';
-import { getCategories } from '../services/inventoryApi';
+import { CreateItemModal, ApiPayload } from '../../modals/CreateItemModal';
+import type { Article } from '../../types';
+import { getCategories } from '../../services/inventoryApi';
+
+
+type CreateArticleData = Pick<ApiPayload, 'name' | 'description' | 'category' | 'unit' | 'minStock' | 'consumable' | 'binCode' | 'imageFile'>;
+type UpdateArticleData = Pick<ApiPayload, 'name' | 'description' | 'category' | 'unit' | 'minStock' | 'consumable' | 'imageUrl' | 'imageFile' | 'sku'>;
+
 
 interface ItemsTabProps {
   articles: Article[];
-  onCreateItem: (articleData: {
-    name: string;
-    description: string;
-    category: string;
-    unit: string;
-    minStock: number;
-    consumable: boolean;
-    binCode: string;
-    imageFile?: File | null;
-  }) => void;
-  onUpdateItem: (id: number, articleData: {
-    name: string;
-    description: string;
-    category: string;
-    unit: string;
-    minStock: number;
-    consumable: boolean;
-    imageUrl?: string | null;
-    sku: string;
-  }) => void;
+  onCreateItem: (articleData: CreateArticleData) => void; 
+  onUpdateItem: (id: number, articleData: UpdateArticleData) => void; 
   onDeleteItem: (id: number) => void;
 }
 
@@ -45,55 +32,48 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
-
-  // ✅ NUEVO: Estado para categorías
   const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
-  // ✅ NUEVO: Cargar categorías al montar el componente
-  // ✅ Cargar categorías INMEDIATAMENTE al montar
   useEffect(() => {
     const loadCategories = async () => {
-      //console.log('🔄 Iniciando carga de categorías...');
       setCategoriesLoading(true);
       try {
         const fetchedCategories = await getCategories();
-        //console.log('✅ Categorías cargadas exitosamente:', fetchedCategories);
         setCategories(fetchedCategories);
       } catch (error) {
         console.error('❌ Error cargando categorías:', error);
       } finally {
         setCategoriesLoading(false);
-        //console.log('✅ Carga de categorías finalizada');
       }
     };
 
     loadCategories();
-  }, []); // ← Sin dependencias para que solo se ejecute una vez
+  }, []);
 
 
   // Función helper mejorada para formatear categorías
   const formatCategory = (category: string) => {
     if (!category) return 'Uncategorized';
-    const found = categories.find(cat => {      const normalizedCat = cat.value.toLowerCase().replace(/[-_]/g, '');
+    const found = categories.find(cat => {
+      const normalizedCat = cat.value.toLowerCase().replace(/[-_]/g, '');
       const normalizedCategory = category.toLowerCase().replace(/[-_]/g, '');
       return normalizedCat === normalizedCategory;
     });
 
     if (found) {
-     // console.log(`✅ Categoría encontrada: ${category} -> ${found.label}`);
       return found.label;
     }
 
     // Si no se encuentra, formatear manualmente
-    //console.log(`⚠️ Categoría NO encontrada: ${category}, formateando manualmente`);
     return category
       .replace(/[-_]/g, ' ')
-      .replace(/([a-z])([A-Z])/g, '$1 $2') // CamelCase a espacios
+      .replace(/([a-z])([A-Z])/g, '$1 $2') 
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
   };
+
   const hasAnyStock = (article: Article) => {
     return article.totalPhysical > 0 ||
       article.quantityAvailable > 0 ||
@@ -163,13 +143,41 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
     setDialogOpen(true);
   };
 
-  const handleSubmit = (articleData: Omit<Article, 'id' | 'createdAt' | 'bins' | 'quantityAvailable' | 'quantityOnLoan' | 'quantityReserved' | 'totalPhysical'>) => {
+  // 2. Función handleSubmit corregida para manejar ApiPayload
+  const handleSubmit = (articleData: ApiPayload) => {
     if (editingArticle) {
-      onUpdateItem(editingArticle.id, articleData);
+      // MODO EDICIÓN: Creamos un objeto que solo contenga las propiedades que onUpdateItem espera
+      const updateData: UpdateArticleData = {
+        name: articleData.name,
+        description: articleData.description,
+        category: articleData.category,
+        unit: articleData.unit,
+        minStock: articleData.minStock,
+        consumable: articleData.consumable,
+        sku: articleData.sku!, // El modal debe garantizar que SKU existe en edición
+        imageUrl: articleData.imageUrl,
+        imageFile: articleData.imageFile,
+      };
+
+      onUpdateItem(editingArticle.id, updateData);
+
     } else {
-      onCreateItem(articleData);
+      // MODO CREACIÓN: Creamos un objeto que solo contenga las propiedades que onCreateItem espera
+      const createData: CreateArticleData = {
+        name: articleData.name,
+        description: articleData.description,
+        category: articleData.category,
+        unit: articleData.unit,
+        minStock: articleData.minStock,
+        consumable: articleData.consumable,
+        binCode: articleData.binCode!, // El modal debe garantizar que binCode existe en creación
+        imageFile: articleData.imageFile,
+      };
+
+      onCreateItem(createData);
     }
     setEditingArticle(null);
+    setDialogOpen(false); // Cierra el modal después de la operación (aunque el modal también lo hace)
   };
 
   const renderArticlesTable = () => (
@@ -310,21 +318,6 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
                   {expandedItems.has(article.id) && (
                     <TableRow>
                       <TableCell colSpan={10} className="bg-muted/30 p-0">
-                           {/* 
-                        <div className="p-2 text-xs text-muted-foreground flex items-center justify-between border-b bg-background/70">
-                          <div className="flex items-center gap-6">
-                            <div>
-                              <span className="font-medium text-foreground">Available:</span> {article.quantityAvailable} {article.unit}
-                            </div>
-                            <div>
-                              <span className="font-medium text-foreground">On Loan:</span> {article.quantityOnLoan} {article.unit}
-                            </div>
-                            <div>
-                              <span className="font-medium text-foreground">Reserved:</span> {article.quantityReserved} {article.unit}
-                            </div>
-                          </div>
-                        </div> */}
-
                         <div className="p-4">
                           <h4 className="flex items-center mb-3">
                             <Package className="h-4 w-4 mr-2" />
@@ -418,7 +411,6 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
             </div>
           </div>
           <div className="w-48">
-            {/* ✅ CAMBIO: Select usa categorías dinámicas del API */}
             <Select value={categoryFilter} onValueChange={setCategoryFilter} disabled={categoriesLoading}>
               <SelectTrigger>
                 <SelectValue placeholder={categoriesLoading ? "Loading..." : "All Categories"} />
@@ -435,7 +427,7 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
           </div>
         </div>
 
-        <Tabs value={stockFilter} onValueChange={(value) => setStockFilter(value as 'all' | 'with-stock' | 'empty')} className="mb-4">
+        <Tabs value={stockFilter} onValueChange={(value: any) => setStockFilter(value as 'all' | 'with-stock' | 'empty')} className="mb-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="all">
               All Items ({articles.length})
@@ -452,12 +444,11 @@ export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }:
         {renderArticlesTable()}
       </CardContent>
 
-      {/* ✅ CAMBIO: Pasar categories como prop */}
       <CreateItemModal
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         editingArticle={editingArticle}
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmit} 
         categories={categories}
         categoriesLoading={categoriesLoading}
       />

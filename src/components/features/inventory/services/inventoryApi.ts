@@ -1,33 +1,60 @@
 import type { Article, InventoryItemResponse, Kit, Bin, BinResponse, Transaction } from '../types';
 import type { PurchaseRequest } from '../modals/RecordMovement/types';
 import { CATEGORIES } from '../constants';
-import { strict } from 'assert';
 import { API_URL } from "../../../../url";
-//const API_URL = 'http://localhost:5000/api';
 
+// ============================================================================
+// TRANSFORMERS & UTILITIES
+// ============================================================================
 
+/**
+ * Helper para construir URL completa de imagen
+ */
+const getFullImageUrl = (imageUrl: string | null | undefined): string => {
+  if (!imageUrl) return '';
 
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+
+  const baseUrl = API_URL.replace('/api', '');
+  const separator = imageUrl.startsWith('/') ? '' : '/';
+  return `${baseUrl}${separator}${imageUrl}`;
+};
+
+/**
+ * Mapea la categoría del backend a kebab-case
+ */
+function mapCategory(apiCategory?: string): Article['category'] {
+  if (!apiCategory) return 'other';
+
+  const normalizedCategory = apiCategory
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .toLowerCase();
+
+  return normalizedCategory as Article['category'];
+}
+
+/**
+ * Mapea el BinPurpose del backend al tipo de la UI
+ */
+function mapBinType(apiType: BinResponse['binPurposeDisplay']): Bin['type'] {
+  switch (apiType) {
+    case 'GoodCondition': return 'good-condition';
+    case 'OnRevision': return 'on-revision';
+    case 'Scrap': return 'scrap';
+    case 'Hold': return 'Hold';
+    case 'Packing': return 'Packing';
+    case 'Reception': return 'Reception';
+    case 'NotApplicable':
+    default: return 'good-condition';
+  }
+}
+
+/**
+ * Transforma InventoryItemResponse a Article
+ */
 export function transformInventoryItem(apiItem: InventoryItemResponse): Article {
-  // Helper para construir URL completa de imagen
-  const getFullImageUrl = (imageUrl: string | null | undefined): string => {
-    if (!imageUrl) return '';
-
-    // Si ya es una URL completa (http/https), retornarla tal cual
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      //console.log('📷 Image URL from API:', imageUrl);
-      return imageUrl;
-    }
-
-    // Si es una ruta relativa, construir URL completa
-    // Remover '/api' del API_URL y agregar la ruta de la imagen
-    const baseUrl = API_URL.replace('/api', '');
-
-    // Si la imageUrl empieza con '/', no agregar otro '/'
-    const separator = imageUrl.startsWith('/') ? '' : '/';
-
-    return `${baseUrl}${separator}${imageUrl}`;
-  };
-
   return {
     id: apiItem.itemId,
     imageUrl: getFullImageUrl(apiItem.imageUrl),
@@ -37,98 +64,24 @@ export function transformInventoryItem(apiItem: InventoryItemResponse): Article 
     category: mapCategory(apiItem.category),
     consumable: apiItem.consumable,
     minStock: apiItem.minStock || 0,
-
-    // NUEVO: Mapear array de bins
     bins: apiItem.bins?.map(bin => ({
       binId: bin.binId,
       binCode: bin.binCode,
       binPurpose: bin.binPurpose as 'good-condition' | 'on-revision' | 'scrap' | 'Hold' | 'Packing' | 'Reception',
       quantity: bin.quantity
     })) || [],
-
-    // NUEVO: Usar datos calculados del API
     quantityAvailable: apiItem.quantityAvailable ?? 0,
     quantityOnLoan: apiItem.quantityOnLoan ?? 0,
     quantityReserved: apiItem.quantityReserved ?? 0,
     totalPhysical: apiItem.totalPhysical ?? 0,
-
     unit: 'units',
     cost: 0,
     createdAt: new Date().toISOString().split('T')[0]
   };
 }
 
-// Función helper para mapear el status del bin
-function getBinPurposeDisplay(purpose: string): string {
-  switch (purpose) {
-    case 'GoodCondition':
-      return 'Good Condition';
-    case 'OnRevision':
-      return 'On Revision';
-    case 'Scrap':
-      return 'Scrap';
-    case 'Hold':
-      return 'Hold';
-    case 'Packing':
-      return 'Packing';
-    case 'Reception':
-      return 'Reception';
-
-    default:
-      return 'Good Condition';
-
-  }
-}
-
-function mapBinType(apiType: BinResponse['binPurposeDisplay']): Bin['type'] {
-  switch (apiType) {
-    case 'GoodCondition':
-      return 'good-condition';
-    case 'OnRevision':
-      return 'on-revision';
-    case 'Scrap':
-      return 'scrap';
-    case 'Hold':
-      return 'Hold';
-    case 'Packing':
-      return 'Packing';
-    case 'Reception':
-      return 'Reception';
-    case 'NotApplicable':
-    default:
-      return 'good-condition';
-  }
-}
-
-
-function mapCategory(apiCategory?: string): Article['category'] {
-  if (!apiCategory) {
-    //console.log(' mapCategory: No category provided, using "other"');
-    return 'other';
-  }
-
-  //console.log(' mapCategory input:', apiCategory);
-
-  // Normalizar la categoría del backend a kebab-case
-  // "AutomotiveTools" → "automotive-tools"
-  const normalizedCategory = apiCategory
-    .replace(/([a-z])([A-Z])/g, '$1-$2') // CamelCase → kebab-case
-    .toLowerCase();
-
-  //console.log(' mapCategory normalized:', normalizedCategory);
-
-  // Verificar si existe en las categorías válidas del tipo Article
-  const validCategories = CATEGORIES.map(c => c.value) as Article['category'][];
-  
-  if (validCategories.includes(normalizedCategory as Article['category'])) {
-    //console.log('✅ mapCategory found match:', normalizedCategory);
-    return normalizedCategory as Article['category'];
-  }
-  return normalizedCategory as Article['category'];
-}
-
 /**
- * Transforma la respuesta de la API (BinResponse) a nuestro modelo de aplicación (Bin)
+ * Transforma BinResponse a Bin
  */
 function transformBin(apiBin: BinResponse): Bin {
   return {
@@ -141,55 +94,49 @@ function transformBin(apiBin: BinResponse): Bin {
 }
 
 /**
- * Simulates an API delay
+ * Simula delay de API (para funciones mock)
  */
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// ============================================================================
+// ITEMS / ARTICLES API
+// ============================================================================
 
-
-/** ALL ITEMS *************************************************************************
- * ***********************************************************************************
+/**
+ * Obtiene todos los items con bins
  */
 export async function fetchArticlesFromApi(): Promise<Article[]> {
   try {
     const response = await fetch(`${API_URL}/Inventory/items-with-bins?isActive=true`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
-    //console.log(response, 'get')
+
     if (!response.ok) {
       throw new Error(`Failed to fetch items: ${response.status} ${response.statusText}`);
     }
 
     const data: InventoryItemResponse[] = await response.json();
-    //console.log(response, 'get22')
-    // Validar y transformar
+
     if (!Array.isArray(data)) {
       throw new Error('Invalid response format: expected an array');
     }
 
-    // Mapear cada elemento al modelo Article
     return data.map(transformInventoryItem);
   } catch (error) {
-    console.error('Error fetching all items with bins:', error, Response);
+    console.error('Error fetching all items with bins:', error);
     throw error;
   }
 }
 
-
-
-/** *************************************************************************************************************************************
- * Fetches a single article by ID from the API
+/**
+ * Obtiene un item por ID
  */
 export async function fetchArticleByIdApi(id: number): Promise<Article> {
   try {
     const response = await fetch(`${API_URL}/Items/${id}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
 
     if (!response.ok) {
@@ -197,7 +144,6 @@ export async function fetchArticleByIdApi(id: number): Promise<Article> {
     }
 
     const data: InventoryItemResponse = await response.json();
-
     return transformInventoryItem(data);
   } catch (error) {
     console.error(`Error fetching article ${id}:`, error);
@@ -205,113 +151,21 @@ export async function fetchArticleByIdApi(id: number): Promise<Article> {
   }
 }
 
-
-
-/*FUNCIONAL.................................................................................
-..........................................................................................*/
-export async function fetchBinsFromApi(): Promise<Bin[]> {
+/**
+ * Crea un nuevo item con imagen
+ */
+export async function createArticleApi(articleData: {
+  name: string;
+  description: string;
+  category: string;
+  unit: string;
+  minStock: number;
+  consumable: boolean;
+  binCode: string;
+  imageFile?: File | null;
+}): Promise<Article> {
   try {
-    const response = await fetch(`${API_URL}/Bins/with-quantity?isActive=true`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      // Manejo de errores HTTP
-      throw new Error(`Failed to fetch bins: ${response.status} ${response.statusText}`);
-    }
-
-    // Casteamos la respuesta como un array de BinResponse
-    const data: BinResponse[] = await response.json();
-
-    // Mapeamos y transformamos cada objeto BinResponse a nuestro modelo Bin
-    return data.map(transformBin);
-  } catch (error) {
-    console.error('Error fetching all bins:', error);
-    // Vuelve a lanzar el error para que el componente (o Redux thunk) lo maneje
-    throw error;
-  }
-}
-
-// inventoryApi.ts - Agregar esta función
-
-/**
- * Fetches available bins for creating new items (bins with BinPurpose = 0 - GoodCondition)
- */
-export async function getNewBins(): Promise<Bin[]> {
-  try {
-    const response = await fetch(`${API_URL}/Bins?isActive=true`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch new bins: ${response.status} ${response.statusText}`);
-    }
-
-    const data: BinResponse[] = await response.json();
-
-    // Solo retornar bins en good condition (BinPurpose = 0)
-    return data
-      .filter(bin => bin.binPurposeDisplay === 'GoodCondition')
-      .map(transformBin);
-  } catch (error) {
-    console.error('Error fetching new bins:', error);
-    throw error;
-  }
-}
-/**
- * Simulates fetching transactions from an API
- */
-export async function fetchTransactionsFromApi(): Promise<Transaction[]> {
-  await delay(500); // Simulate network delay
-  return [];
-}
-
-/**
- * Simulates creating an article in the API
- */
-export async function createArticleApi2(articleData: Omit<Article, 'id' | 'createdAt' | 'currentStock' | 'location' | 'status'>): Promise<Article> {
-  await delay(500); // Simulate network delay
-
-  // Simulate successful creation
-  const newArticle: Article = {
-    id: Date.now(), // Generate a unique ID
-    ...articleData,
-    currentStock: 0, // New items start with 0 stock
-    location: 'Warehouse', // Default location
-    status: 'good-condition', // Default status
-    createdAt: new Date().toISOString().split('T')[0]
-  };
-
-  console.log('API: Article created successfully', newArticle);
-  return newArticle;
-}
-
-/**
- * Creates a new article/item with image support using multipart/form-data
- */
-export async function createArticleApi(
-  articleData: {
-    name: string;
-    description: string;
-    category: string;
-    unit: string;
-    minStock: number;
-    consumable: boolean;
-    binCode: string;
-    imageFile?: File | null;
-  }
-): Promise<Article> {
-  try {
-    console.log('API_DATA_RECEIVED:', articleData);
-    // ✅ Crear FormData para enviar multipart/form-data
     const formData = new FormData();
-
     formData.append('name', articleData.name);
     formData.append('description', articleData.description);
     formData.append('category', articleData.category);
@@ -321,11 +175,10 @@ export async function createArticleApi(
     formData.append('consumable', articleData.consumable.toString());
     formData.append('binCode', articleData.binCode);
 
-    // ✅ Añadir imagen si existe
     if (articleData.imageFile) {
       formData.append('file', articleData.imageFile);
     }
-    console.log('DATOS EN API', formData);
+
     const response = await fetch(`${API_URL}/Items/with-image`, {
       method: 'POST',
       body: formData,
@@ -337,36 +190,27 @@ export async function createArticleApi(
     }
 
     const createdItem = await response.json();
-
-    // Transformar respuesta a nuestro modelo
     return transformInventoryItem(createdItem);
   } catch (error) {
-    console.log('Error creating article:', error);
     console.error('Error creating article:', error);
     throw error;
   }
 }
 
-
-/** *********************************************************************************************************************************
- * Updates an article/item via PUT request
+/**
+ * Actualiza un item existente (sin imagen)
  */
-export async function updateArticleApi(
-  id: number,
-  articleData: {
-    sku: string;
-    name: string;
-    description: string;
-    category: string;
-    unit: string;
-    minStock: number;
-    consumable: boolean;
-    imageUrl?: string | null;
-  }
-): Promise<Article> {
+export async function updateArticleApi(id: number, articleData: {
+  sku: string;
+  name: string;
+  description: string;
+  category: string;
+  unit: string;
+  minStock: number;
+  consumable: boolean;
+  imageUrl?: string | null;
+}): Promise<Article> {
   try {
-    console.log('UPDATE API_DATA_RECEIVED:', articleData);
-
     const payload = {
       sku: articleData.sku,
       name: articleData.name,
@@ -379,13 +223,9 @@ export async function updateArticleApi(
       urlImage: articleData.imageUrl || ''
     };
 
-    console.log('UPDATE API_PAYLOAD:', payload);
-
     const response = await fetch(`${API_URL}/Items/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
@@ -394,48 +234,37 @@ export async function updateArticleApi(
       throw new Error(`Failed to update item: ${response.status} - ${errorText}`);
     }
 
-    // Verificar si hay contenido en la respuesta
     const contentType = response.headers.get('content-type');
     const hasContent = contentType?.includes('application/json');
 
     if (!hasContent || response.status === 204) {
-      //  Backend devolvió vacío - hacer GET del item actualizado
-      console.log('API: Update successful (no content), fetching updated item...');
       return await fetchArticleByIdApi(id);
     }
 
-    // Si devuelve JSON, parsearlo
     const updatedItem = await response.json();
     return transformInventoryItem(updatedItem);
-
   } catch (error) {
     console.error('Error updating article:', error);
     throw error;
   }
 }
 
-
 /**
- * Updates an article/item with image support using multipart/form-data
+ * Actualiza un item con imagen
  */
-export async function updateArticleWithImageApi(
-  id: number,
-  articleData: {
-    sku: string;
-    name: string;
-    description: string;
-    category: string;
-    unit: string;
-    minStock: number;
-    consumable: boolean;
-    imageFile?: File | null;
-    imageUrl?: string | null;
-  }
-): Promise<Article> {
+export async function updateArticleWithImageApi(id: number, articleData: {
+  sku: string;
+  name: string;
+  description: string;
+  category: string;
+  unit: string;
+  minStock: number;
+  consumable: boolean;
+  imageFile?: File | null;
+  imageUrl?: string | null;
+}): Promise<Article> {
   try {
-    console.log('UPDATE API_DATA_RECEIVED (multipart):', articleData);
     const formData = new FormData();
-
     formData.append('sku', articleData.sku);
     formData.append('name', articleData.name);
     formData.append('description', articleData.description);
@@ -445,21 +274,15 @@ export async function updateArticleWithImageApi(
     formData.append('isActive', 'true');
     formData.append('consumable', articleData.consumable.toString());
 
-    // ✅ Añadir imagen si existe (nueva imagen)
     if (articleData.imageFile) {
       formData.append('file', articleData.imageFile);
-      console.log('📎 Nueva imagen adjunta al FormData');
     } else if (articleData.imageUrl) {
-      // Si no hay nueva imagen pero hay URL existente, mantenerla
       formData.append('urlImage', articleData.imageUrl);
-      console.log(' Manteniendo URL de imagen existente:', articleData.imageUrl);
     }
-
-    console.log('UPDATE FORMDATA preparado');
 
     const response = await fetch(`${API_URL}/Items/${id}/update-with-image`, {
       method: 'PUT',
-      body: formData, 
+      body: formData,
     });
 
     if (!response.ok) {
@@ -467,247 +290,168 @@ export async function updateArticleWithImageApi(
       throw new Error(`Failed to update item: ${response.status} - ${errorText}`);
     }
 
-    // Verificar si hay contenido en la respuesta
     const contentType = response.headers.get('content-type');
     const hasContent = contentType?.includes('application/json');
 
     if (!hasContent || response.status === 204) {
-      // Backend devolvió vacío - hacer GET del item actualizado
-      console.log('API: Update successful (no content), fetching updated item...');
       return await fetchArticleByIdApi(id);
     }
 
-    // Si devuelve JSON, parsearlo y transformarlo
     const updatedItem = await response.json();
-    console.log('✅ Item actualizado exitosamente:', updatedItem);
     return transformInventoryItem(updatedItem);
-
   } catch (error) {
-    console.error('❌ Error updating article with image:', error);
+    console.error('Error updating article with image:', error);
     throw error;
   }
 }
 
 /**
- * ***************************************************************************************************
- * Deletes an article/item from the API
+ * Elimina un item
  */
 export async function deleteArticleApi(id: number): Promise<void> {
   try {
     const response = await fetch(`${API_URL}/Items/${id}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Failed to delete item: ${response.status} - ${errorText}`);
     }
-
-    console.log('API: Article deleted successfully', { id });
   } catch (error) {
     console.error('Error deleting article:', error);
     throw error;
   }
 }
 
-
-/**
- * Simulates creating a kit in the API
+/** 
+ * Obtiene categorías disponibles
  */
-export async function createKitApi(kitData: Omit<Kit, 'id' | 'createdAt'>): Promise<Kit> {
-  await delay(500); // Simulate network delay
-
-  const newKit: Kit = {
-    id: Date.now(),
-    ...kitData,
-    createdAt: new Date().toISOString().split('T')[0]
-  };
-
-  console.log('API: Kit created successfully', newKit);
-  return newKit;
-}
-
-/**
- * Simulates updating a kit in the API
- */
-export async function updateKitApi(id: number, data: Partial<Kit>): Promise<Kit> {
-  await delay(500); // Simulate network delay
-
-  console.log('API: Kit updated successfully', { id, data });
-  return { id, ...data } as Kit;
-}
-
-
-
-
-/** **************************************************************************************************
- * Creates a new bin via POST request
- */
-export async function createBinApi(binData: {
-  binCode: string;
-  type: 'good-condition' | 'on-revision' | 'scrap' | 'hold' | 'packing' | 'reception';
-  description: string;
-}): Promise<Bin> {
+export async function getCategories(): Promise<{ value: string; label: string }[]> {
   try {
-    console.log('purpose: ', binData);
-    // Mapear el tipo de la UI al enum del backend
-    const binPurposeMap = {
-      'good-condition': 0,
-      'on-revision': 1,
-      'scrap': 2,
-      'hold': 3,
-      'packing': 4,
-      'reception': 5
+    const response = await fetch(`${API_URL}/Items/categories`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-    };
-
-
-    const normalizedType = binData.type.toLowerCase() as keyof typeof binPurposeMap;
-    const binPurposeValue = binPurposeMap[normalizedType];
-
-    if (binPurposeValue === undefined) {
-      console.error(`Invalid bin type provided after normalization: ${binData.type}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch categories: ${response.status}`);
     }
 
+    const data: string[] = await response.json();
 
-    const payload = {
-      binCode: binData.binCode,
-      description: binData.description || '',
+    return data.map((category: string) => ({
+      value: category.toLowerCase().replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(),
+      label: category.replace(/([a-z])([A-Z])/g, '$1 $2')
+    }));
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    return [
+      { value: 'other', label: 'Other' },
+      { value: 'tools', label: 'Tools' },
+    ];
+  }
+}
 
-      binPurpose: binPurposeValue // Usamos el valor mapeado
-    };
-
-    console.log('CREATE BIN PAYLOAD:', payload);
-
-    const response = await fetch(`${API_URL}/Bins`, {
+/**
+ * Crea una compra de inventario
+ */
+export async function createPurchaseApi(purchaseData: PurchaseRequest): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/Inventory/purchase`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(purchaseData),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to create bin: ${response.status} - ${errorText}`);
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || `Failed to create purchase: ${response.status} ${response.statusText}`);
     }
-
-    const createdBin = await response.json();
-
-    // Transformar respuesta a nuestro modelo
-    return transformBin(createdBin);
   } catch (error) {
-    console.error('Error creating bin:', error);
+    console.error('Error creating purchase:', error);
     throw error;
   }
 }
 
-/** ************************************************************************************************************************
- * Elimina un Bin por su ID a través de una solicitud DELETE.
+// ============================================================================
+// BINS API
+// ============================================================================
+
+/**
+ * Mapeo de tipos de bin a binPurpose (número)
  */
-// api.ts
+const BIN_PURPOSE_MAP: Record<string, number> = {
+  'GoodCondition': 0,
+  'OnRevision': 1,
+  'Scrap': 2,
+  'Hold': 3,
+  'Packing': 4,
+  'Reception': 5,
+  'good-condition': 0,
+  'on-revision': 1,
+  'scrap': 2,
+  'hold': 3,
+  'packing': 4,
+  'reception': 5
+};
 
-export async function deleteBinApi(id: number): Promise<void> {
-  try {
-    //console.log('🗑️ Attempting to delete bin with ID:', id);
-
-    const response = await fetch(`${API_URL}/Bins/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    //console.log('🗑️ Delete response status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('🗑️ Delete failed:', errorText);
-      throw new Error(`Failed to delete bin: ${response.status} - ${errorText}`);
-    }
-
-    console.log('✅ Bin deleted successfully');
-  } catch (error) {
-    console.error('❌ Error in deleteBinApi:', error);
-    throw error;
-  }
-}
-
-
-
-/** ********************************************************************************
- * Actualiza un bin existente vía PUT request
+/**
+ * Obtiene todos los bins con cantidad
  */
-export async function updateBinApi(
-  id: number,
-  binData: {
-    binCode: string;
-    type: string;
-    description: string;
-  }
-): Promise<Bin> {
+export async function fetchBinsFromApi(): Promise<Bin[]> {
   try {
-    const binPurposeMap: Record<string, number> = {
-      'GoodCondition': 0,
-      'OnRevision': 1,
-      'Scrap': 2,
-      'Hold': 3,
-      'Packing': 4,
-      'Reception': 5
-    };
-
-    const binPurpose = binPurposeMap[binData.type as keyof typeof binPurposeMap] ?? 0;
-
-    const payload = {
-      binCode: binData.binCode,
-      description: binData.description || '',
-      binPurpose: binPurpose 
-    };
-
-    console.log('UPDATE BIN PAYLOAD:', payload);
-
-    const response = await fetch(`${API_URL}/Bins/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+    const response = await fetch(`${API_URL}/Bins/with-quantity?isActive=true`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to update bin: ${response.status} - ${errorText}`);
+      throw new Error(`Failed to fetch bins: ${response.status} ${response.statusText}`);
     }
- 
-    const contentType = response.headers.get('content-type');
-    const hasContent = contentType?.includes('application/json');
 
-    if (!hasContent || response.status === 204) {
-       return await fetchBinByIdApi(id);
-    } 
- 
-    const updatedBin = await response.json();
-    return transformBin(updatedBin);
-
+    const data: BinResponse[] = await response.json();
+    return data.map(transformBin);
   } catch (error) {
-    console.error('Error updating bin:', error);
+    console.error('Error fetching all bins:', error);
     throw error;
   }
 }
 
 /**
- * Obtiene un bin por su ID (helper para cuando PUT devuelve 204)
+ * Obtiene bins disponibles para crear items (GoodCondition)
+ */
+export async function getNewBins(): Promise<Bin[]> {
+  try {
+    const response = await fetch(`${API_URL}/Bins?isActive=true`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch new bins: ${response.status} ${response.statusText}`);
+    }
+
+    const data: BinResponse[] = await response.json();
+
+    return data
+      .filter(bin => bin.binPurposeDisplay === 'GoodCondition')
+      .map(transformBin);
+  } catch (error) {
+    console.error('Error fetching new bins:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene un bin por ID
  */
 async function fetchBinByIdApi(id: number): Promise<Bin> {
   try {
     const response = await fetch(`${API_URL}/Bins/${id}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
 
     if (!response.ok) {
@@ -722,16 +466,183 @@ async function fetchBinByIdApi(id: number): Promise<Bin> {
   }
 }
 
+/**
+ * Crea un nuevo bin
+ */
+export async function createBinApi(binData: {
+  binCode: string;
+  type: string;
+  description: string;
+}): Promise<Bin> {
+  try {
+    const normalizedType = binData.type.toLowerCase();
+    const binPurpose = BIN_PURPOSE_MAP[normalizedType] ?? BIN_PURPOSE_MAP[binData.type] ?? 0;
 
+    const payload = {
+      binCode: binData.binCode,
+      description: binData.description || '',
+      binPurpose: binPurpose
+    };
 
+    console.log('CREATE BIN PAYLOAD:', payload);
+
+    const response = await fetch(`${API_URL}/Bins`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to create bin: ${response.status} - ${errorText}`);
+    }
+
+    const createdBin = await response.json();
+    return transformBin(createdBin);
+  } catch (error) {
+    console.error('Error creating bin:', error);
+    throw error;
+  }
+}
 
 /**
- * Simulates recording a movement in the API
+ * Actualiza un bin existente
+ */
+export async function updateBinApi(id: number, binData: {
+  binCode: string;
+  type: string;
+  description: string;
+}): Promise<Bin> {
+  try {
+    const binPurpose = BIN_PURPOSE_MAP[binData.type] ?? 0;
+
+    const payload = {
+      binCode: binData.binCode,
+      description: binData.description || '',
+      binPurpose: binPurpose
+    };
+
+    console.log('UPDATE BIN PAYLOAD:', payload);
+
+    const response = await fetch(`${API_URL}/Bins/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to update bin: ${response.status} - ${errorText}`);
+    }
+
+    const contentType = response.headers.get('content-type');
+    const hasContent = contentType?.includes('application/json');
+
+    if (!hasContent || response.status === 204) {
+      return await fetchBinByIdApi(id);
+    }
+
+    const updatedBin = await response.json();
+    return transformBin(updatedBin);
+  } catch (error) {
+    console.error('Error updating bin:', error);
+    throw error;
+  }
+}
+
+/**
+ * Elimina un bin
+ */
+export async function deleteBinApi(id: number): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/Bins/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to delete bin: ${response.status} - ${errorText}`);
+    }
+  } catch (error) {
+    console.error('Error deleting bin:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene tipos de bins disponibles
+ */
+export async function getBinTypes(): Promise<{ value: string; label: string }[]> {
+  try {
+    const response = await fetch(`${API_URL}/Bins/types`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch bin types: ${response.status}`);
+    }
+
+    const data: string[] = await response.json();
+
+    return data.map(binType => ({
+      value: binType,
+      label: binType,
+    }));
+  } catch (error) {
+    console.error('Error fetching bin types:', error);
+    throw error;
+  }
+}
+
+// ============================================================================
+// KITS API (SIMULATED - TO BE IMPLEMENTED)
+// ============================================================================
+
+/**
+ * Crea un kit (simulado)
+ */
+export async function createKitApi(kitData: Omit<Kit, 'id' | 'createdAt'>): Promise<Kit> {
+  await delay(500);
+
+  const newKit: Kit = {
+    id: Date.now(),
+    ...kitData,
+    createdAt: new Date().toISOString().split('T')[0]
+  };
+
+  console.log('API: Kit created successfully', newKit);
+  return newKit;
+}
+
+/**
+ * Actualiza un kit (simulado)
+ */
+export async function updateKitApi(id: number, data: Partial<Kit>): Promise<Kit> {
+  await delay(500);
+  console.log('API: Kit updated successfully', { id, data });
+  return { id, ...data } as Kit;
+}
+
+// ============================================================================
+// TRANSACTIONS API (SIMULATED - TO BE IMPLEMENTED)
+// ============================================================================
+
+/**
+ * Obtiene transacciones (simulado)
+ */
+export async function fetchTransactionsFromApi(): Promise<Transaction[]> {
+  await delay(500);
+  return [];
+}
+
+/**
+ * Registra un movimiento (simulado)
  */
 export async function recordMovementApi(movementData: any): Promise<{ transaction: Transaction; updatedArticle?: Article }> {
-  await delay(500); // Simulate network delay
-  console.log('API: Movement recorded successfully', { movementData, transaction });
-  // Create a transaction record
+  await delay(500);
+
   const transaction: Transaction = {
     id: Date.now(),
     type: movementData.movementType,
@@ -750,103 +661,5 @@ export async function recordMovementApi(movementData: any): Promise<{ transactio
   };
 
   console.log('API: Movement recorded successfully', { movementData, transaction });
-
   return { transaction };
-}
-
-
-// Función para obtener categorías del backend
-export const getCategories = async (): Promise<{ value: string; label: string }[]> => {
-  try {
-    //console.log('Llamando a /categories...');
-    const response = await fetch(`${API_URL}/Items/categories`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch categories: ${response.status}`);
-    }
-
-    const data = await response.json();
-    //console.log('🌐 Respuesta raw del backend:', data);
-
-    // ✅ TRANSFORMAR: El backend devuelve ["HandTools", "PowerTools", ...]
-    // Necesitamos convertir a [{ value: 'hand-tools', label: 'Hand Tools' }, ...]
-    const transformedCategories = data.map((category: string) => ({
-      value: category.toLowerCase().replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(), // HandTools -> hand-tools
-      label: category.replace(/([a-z])([A-Z])/g, '$1 $2') // HandTools -> Hand Tools
-    }));
-
-    //console.log('✅ Categorías transformadas:', transformedCategories);
-    return transformedCategories;
-  } catch (error) {
-    console.error('❌ Error fetching categories:', error);
-    // Fallback
-    return [
-      { value: 'other', label: 'Other' },
-      { value: 'tools', label: 'Tools' },
-    ];
-  }
-};
-
-
-// Función para obtener bins del backend
-export const getBinTypes = async (): Promise<{ value: string; label: string }[]> => {
-  
-    // console.log('Llamando a /Bins/types...');
-    const response = await fetch(`${API_URL}/Bins/types`, {
-      method: 'GET',
-      headers: {
-        // Nota: 'Content-Type' no suele ser necesario en un GET
-        // Pero si tu API lo requiere, mantenlo.
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch bins: ${response.status}`);
-    }
-
-    // 1. Obtener los datos (tu array de strings)
-    const data: string[] = await response.json();
-    
-    // 2. Transformar el array de strings a un array de objetos
-    //    usando .map() para que coincida con el tipo de retorno
-    const formattedData = data.map(binType => ({
-      value: binType,
-      label: binType, // Usamos el mismo valor para 'label' y 'value'
-    }));
-
-    // 3. Retornar los datos transformados
-    return formattedData;
-  
-};
-
-/**
- * Creates a purchase transaction for inventory items
- * POST /api/Inventory/purchase
- */
-export async function createPurchaseApi(purchaseData: PurchaseRequest): Promise<void> {
-  try {
-    const response = await fetch(`${API_URL}/Inventory/purchase`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(purchaseData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new Error(errorData?.message || `Failed to create purchase: ${response.status} ${response.statusText}`);
-    }
-
-    console.log('✅ Purchase transaction created successfully');
-  } catch (error) {
-    console.error('❌ Error creating purchase:', error);
-    throw error;
-  }
-}
+} 

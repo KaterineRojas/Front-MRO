@@ -1,23 +1,17 @@
 import React, { useState } from 'react';
-import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
-import { createBinAsync, updateBinAsync, deleteBin, fetchBins } from '../../../../store/slices/inventorySlice';
+import { useAppDispatch, useAppSelector } from '../../../../../store/hooks';
+import { createBinAsync, updateBinAsync, deleteBin, fetchBins } from '../../../../../store/slices/inventorySlice';
 import { Button } from '../../../ui/button';
-import { Input } from '../../../ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Badge } from '../../../ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../ui/alert-dialog';
-import { Plus, Search, Edit, Trash2, Package2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Package2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
-import { CreateBinModal } from '../modals/CreateBinModal';
+import { CreateBinModal } from '../../modals/CreateBinModal';
+import { BinsFilters } from './BinsFilters';
+import type { Bin } from '../../types';
 
-interface Bin {
-  id: number;
-  binCode: string;
-  type: string; // ✅ Cambiado a string genérico
-  description: string;
-  totalQuantity: number;
-}
+
 
 type StockFilter = 'all' | 'empty' | 'with-stock';
 
@@ -31,17 +25,19 @@ export function BinManager() {
   const [stockFilter, setStockFilter] = useState<StockFilter>('all');
   const [formData, setFormData] = useState<{
     binCode: string;
-    type: string; // ✅ Cambiado a string genérico
+    type: string;
     description: string;
+    
   }>({
     binCode: '',
     type: '',
     description: ''
   });
 
-  // ✅ Obtener tipos únicos dinámicamente del backend
+  // Obtener tipos únicos dinámicamente del backend
   const uniqueTypes = Array.from(new Set(bins.map(bin => bin.type))).sort();
 
+  // Filtrar bins
   const filteredBins = bins.filter(bin => {
     const matchesSearch = bin.binCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bin.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -54,6 +50,13 @@ export function BinManager() {
     return matchesSearch && matchesType && matchesStock;
   });
 
+  // Contadores para los filtros
+  const binsCount = {
+    all: bins.length,
+    empty: bins.filter(b => (b.totalQuantity ?? 0) === 0).length,
+    withStock: bins.filter(b => (b.totalQuantity ?? 0) > 0).length,
+  };
+
   const resetForm = () => {
     setFormData({
       binCode: '',
@@ -63,7 +66,6 @@ export function BinManager() {
     setEditingBin(null);
   };
 
-  // ✅ SIMPLIFICADO: Badge genérico sin colores hardcodeados
   const getTypeBadge = (type: string) => {
     return <Badge variant="secondary">{type}</Badge>;
   };
@@ -122,15 +124,9 @@ export function BinManager() {
   const hasStock = editingBin ? (editingBin.totalQuantity ?? 0) > 0 : false;
 
   const handleDeleteBin = async (id: number) => {
-    console.log('🔴 handleDeleteBin called with ID:', id);
-
     try {
-      console.log('🔴 Dispatching deleteBin...');
       await dispatch(deleteBin(id)).unwrap();
-
-      console.log('✅ deleteBin succeeded, fetching bins...');
       await dispatch(fetchBins()).unwrap();
-
       alert('Bin deleted successfully!');
     } catch (error: any) {
       console.error('❌ Failed to delete bin:', error);
@@ -156,63 +152,16 @@ export function BinManager() {
         </div>
       </CardHeader>
       <CardContent>
-        {/* Filtro de Stock */}
-        <div className="mb-4 border-b">
-          <div className="flex space-x-1">
-            <Button
-              variant={stockFilter === 'all' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setStockFilter('all')}
-            >
-              All Bins ({bins.length})
-            </Button>
-            <Button
-              variant={stockFilter === 'empty' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setStockFilter('empty')}
-            >
-              Empty ({bins.filter(b => (b.totalQuantity ?? 0) === 0).length})
-            </Button>
-            <Button
-              variant={stockFilter === 'with-stock' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setStockFilter('with-stock')}
-            >
-              With Stock ({bins.filter(b => (b.totalQuantity ?? 0) > 0).length})
-            </Button>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="flex items-center space-x-4 mb-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search bins by code or description..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-          </div>
-          <div className="w-48">
-            {/* ✅ Selector dinámico de tipos */}
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {uniqueTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <BinsFilters
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          typeFilter={typeFilter}
+          setTypeFilter={setTypeFilter}
+          stockFilter={stockFilter}
+          setStockFilter={setStockFilter}
+          uniqueTypes={uniqueTypes}
+          binsCount={binsCount}
+        />
 
         {/* Table */}
         <div className="rounded-md border">
@@ -297,7 +246,6 @@ export function BinManager() {
         onFormDataChange={setFormData}
         onSubmit={handleSubmit}
         hasStock={hasStock}
-        availableTypes={uniqueTypes} // ✅ Pasar tipos disponibles al modal
       />
     </Card>
   );

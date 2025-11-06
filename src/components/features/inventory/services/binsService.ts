@@ -34,8 +34,6 @@ function transformBin(apiBin: BinResponse): Bin {
 
 /**
  * Fetches all available bins from the API
- * @param binPurpose - Optional parameter to filter bins by purpose (e.g., 0 for GoodCondition)
- * @param isActive - Optional parameter to filter only active bins
  */
 export async function getAvailableBins(binPurpose?: number, isActive?: boolean): Promise<Bin[]> {
   try {

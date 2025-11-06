@@ -110,6 +110,7 @@ export interface Bin {
   binCode: string;
   type?: string | null;
   description: string;
+  totalQuantity: number;
 }
 
 

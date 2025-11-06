@@ -1,5 +1,5 @@
 import React from 'react';
-import { BinManager } from '../components/BinManager';
+import { BinManager } from './BinManager';
 export function BinsTab() {
   return <BinManager />;
 }
