@@ -160,6 +160,7 @@ export const updateBinAsync = createAsyncThunk(
       binCode: string;
       type: 'good-condition' | 'on-revision' | 'scrap';
       description: string;
+      
     }
   }) => {
     const updatedBin = await updateBinApi(id, data);

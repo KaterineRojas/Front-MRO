@@ -645,26 +645,26 @@ export async function updateBinApi(
   id: number,
   binData: {
     binCode: string;
-    type: 'good-condition' | 'on-revision' | 'scrap'  | 'hold'  | 'packing'  | 'reception';
+    type: string;
     description: string;
   }
 ): Promise<Bin> {
   try {
-    // Mapear el tipo de la UI al enum del backend
-    const binPurposeMap = {
-      'good-condition': 0,
-      'on-revision': 1,
-      'scrap': 2,
-      'hold': 3,
-      'packing': 4,
-      'reception': 5
+    const binPurposeMap: Record<string, number> = {
+      'GoodCondition': 0,
+      'OnRevision': 1,
+      'Scrap': 2,
+      'Hold': 3,
+      'Packing': 4,
+      'Reception': 5
     };
+
+    const binPurpose = binPurposeMap[binData.type as keyof typeof binPurposeMap] ?? 0;
 
     const payload = {
       binCode: binData.binCode,
-      //name: binData.description || '', // Usar description como name
-      description:  binData.description || '',
-      binPurpose: binPurposeMap[binData.type]
+      description: binData.description || '',
+      binPurpose: binPurpose 
     };
 
     console.log('UPDATE BIN PAYLOAD:', payload);
@@ -681,18 +681,14 @@ export async function updateBinApi(
       const errorText = await response.text();
       throw new Error(`Failed to update bin: ${response.status} - ${errorText}`);
     }
-
-    // Verificar si hay contenido en la respuesta
+ 
     const contentType = response.headers.get('content-type');
     const hasContent = contentType?.includes('application/json');
 
     if (!hasContent || response.status === 204) {
-      // Backend devolvió vacío - hacer GET del bin actualizado
-     // console.log('API: Update successful (no content), fetching updated bin...');
-      return await fetchBinByIdApi(id);
-    }
-
-    // Si devuelve JSON, parsearlo y transformarlo
+       return await fetchBinByIdApi(id);
+    } 
+ 
     const updatedBin = await response.json();
     return transformBin(updatedBin);
 
