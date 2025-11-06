@@ -35,9 +35,9 @@ export interface DamagedRequest {
 
 // Stock correction request data for API
 export interface StockCorrectionRequest {
-  inventoryId: number;
-  correctedQuantity: number;
-  correctionReason: string;
+  itemId: number;
+  binId: number;
+  quantity: number;
   notes: string;
 }
 

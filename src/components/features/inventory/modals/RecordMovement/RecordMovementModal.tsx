@@ -51,8 +51,8 @@ const ITEM_TRANSACTION_OPTIONS = [
     label: 'Adjustment - Correction Stock',
     transactionType: 3,
     transactionSubType: 0,
-    showFromBin: false,
-    showToBin: true
+    showFromBin: true,
+    showToBin: false
   },
   {
     value: 'relocation-transfer',
@@ -320,20 +320,11 @@ export function RecordMovementModal({
 
         // Stock correction transaction (Adjustment - Correction Stock)
         else if (currentOption.value === 'adjustment-correction') {
-          // For stock correction, we need to use the toBinId to find the inventory
-          const article = articles.find(a => a.id === updatedFormData.itemId);
-          const selectedBin = article?.bins.find(bin => bin.binId === updatedFormData.toBinId);
-
-          if (!selectedBin) {
-            alert('Could not find inventory record for selected bin');
-            return;
-          }
-
           const correctionData: StockCorrectionRequest = {
-            inventoryId: selectedBin.inventoryId,
-            correctedQuantity: updatedFormData.quantity,
-            correctionReason: updatedFormData.notes || 'Stock correction',
-            notes: updatedFormData.notes
+            itemId: updatedFormData.itemId,
+            binId: updatedFormData.fromBinId!,
+            quantity: updatedFormData.quantity,
+            notes: updatedFormData.notes || ''
           };
 
           await createStockCorrectionApi(correctionData);
