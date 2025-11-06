@@ -10,7 +10,7 @@ import { Badge } from '../../../ui/badge';
 import { Package, ChevronDown, ChevronRight, X, FileText, Tag, Layers, Box, Image as ImageIcon, TrendingDown, RotateCcw } from 'lucide-react';
 import type { Article } from '../types';
 
-interface ApiPayload {
+export interface ApiPayload {
   name: string;
   description: string;
   category: string;
@@ -109,7 +109,7 @@ export function CreateItemModal({
     }
   };
 
-  // ✅ NUEVA FUNCIÓN: Eliminar imagen
+  // Eliminar imagen
   const handleRemoveImage = () => {
     setImageFile(null);
     setFormData(prev => ({ ...prev, imageUrl: '' }));
@@ -119,7 +119,6 @@ export function CreateItemModal({
     e.preventDefault();
 
     if (editingArticle) {
-      // ✅ MODO EDICIÓN - Incluir imageFile si hay una nueva imagen
       const updatePayload: ApiPayload = {
         sku: editingArticle.sku,
         name: formData.name,
@@ -128,8 +127,8 @@ export function CreateItemModal({
         unit: formData.unit,
         consumable: formData.typeUI === 'consumable',
         minStock: parseInt(formData.minStock, 10),
-        imageFile: imageFile, // ✅ Nueva imagen si existe
-        imageUrl: imageFile ? null : formData.imageUrl, // ✅ Mantener URL existente si no hay nueva imagen
+        imageFile: imageFile, 
+        imageUrl: imageFile ? null : formData.imageUrl, 
       };
       console.log('UPDATE PAYLOAD from Modal:', updatePayload);
       onSubmit(updatePayload);
@@ -223,7 +222,7 @@ export function CreateItemModal({
             </div>
           </div>
 
-          {/* Classification Section */}
+          {/* Classification Section */} 
           <div className="space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b">
               <Layers className="h-4 w-4 text-primary" />
@@ -464,7 +463,7 @@ export function CreateItemModal({
             <Button type="submit" className="min-w-[100px]">
               {editingArticle ? 'Update Item' : 'Create Item'}
             </Button>
-          </div>
+          </div> 
         </form>
       </DialogContent>
     </Dialog>

@@ -1,8 +1,35 @@
-import type {  Article2, KitItem } from '../../types';
-import type { Kit } from '../../types';
+import type { Article2, KitItem } from '../../types';
+//import type { Kit } from '../../types';
 
 import type { Category } from '../../services/kitService';
 import type { KitCategory } from '../../services/kitService';
+
+export interface Kit {
+  id: number;
+  sku: string;
+  binCode: string;
+  name: string;
+  description: string;
+  binId: number;
+  category: string;
+  quantity: number;
+  quantityAvailable: number;
+  quantityLoan: number;
+  quantityReserved: number;
+  imageUrl?: string;
+  items: {
+    id?: number;
+    articleId: number;
+    articleSku: string;
+    articleName: string;
+    articleDescription?: string;
+    imageUrl?: string;
+    quantity: number;
+  }[];
+  status: string;
+  createdAt: string;
+  updatedAt?: string;
+}
 
 export interface KitsTabProps {
   articles?: Article2[];
@@ -20,6 +47,13 @@ export interface KitFiltersProps {
   setCategoryFilter: (value: string) => void;
   kitCategories: KitCategory[];
   loadingCategories: boolean;
+  stockFilter: 'all' | 'with-stock' | 'empty';
+  setStockFilter: (value: 'all' | 'with-stock' | 'empty') => void;
+  kitsCount: {
+    all: number;
+    withStock: number;
+    empty: number;
+  };
 }
 
 export interface KitTableProps {
@@ -46,4 +80,4 @@ export interface KitRowProps {
   onRefreshKits: () => void;
 }
 
-export { Kit, Article2, KitItem };
+export { Article2, KitItem };

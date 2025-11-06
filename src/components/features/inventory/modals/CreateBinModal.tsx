@@ -19,8 +19,8 @@ import {
 import { Textarea } from '../../../ui/textarea';
 import { Alert, AlertDescription } from '../../../ui/alert';
 import { Info, Loader2 } from 'lucide-react';
-//import { getBinTypes } from '../services/inventoryApi';
-import { getBinTypes } from '../services/binsService';
+import { getBinTypes } from '../services/inventoryApi';
+//import { getBinTypes } from '../services/binsService';
 
 interface Bin {
   id: number;

@@ -27,6 +27,9 @@ interface KitResponse {
   binId: number;
   binCode: string;
   quantity: number;
+  quantityAvailable: number; 
+  quantityLoan: number; 
+  quantityReserved: number; 
   items: KitItemResponse[];
 }
 
@@ -40,6 +43,9 @@ export interface Kit {
   description: string;
   category: string;
   quantity: number;
+    quantityAvailable: number; 
+  quantityLoan: number; 
+  quantityReserved: number; 
   imageUrl?: string;
   items: {
     articleId: number;
@@ -104,20 +110,27 @@ function transformKitItem(apiItem: KitItemResponse) {
   };
 }
 
+
+
 /**
  * Transforms API kit response to application Kit format
  */
 function transformKit(apiKit: KitResponse): Kit {
   return {
     id: apiKit.id,
+    sku: apiKit.sku || '',
     binCode: apiKit.binCode || '',
+    binId: apiKit.binId || 0,
     name: apiKit.name || '',
     description: apiKit.description || '',
     category: inferCategoryFromSKU(apiKit.sku || ''),
     quantity: apiKit.quantity || 0,
+    quantityAvailable: apiKit.quantityAvailable || 0, // ✅ NUEVO
+    quantityLoan: apiKit.quantityLoan || 0, // ✅ NUEVO
+    quantityReserved: apiKit.quantityReserved || 0, // ✅ NUEVO
     items: (apiKit.items || []).map(transformKitItem),
-    status: 'good-condition', // Default status
-    createdAt: new Date().toISOString().split('T')[0], // Use current date as API doesn't provide it
+    status: 'good-condition',
+    createdAt: new Date().toISOString().split('T')[0],
   };
 }
 
@@ -225,6 +238,7 @@ export async function createKit(kitData: CreateKitRequest): Promise<Kit> {
 export interface CreatePhysicalKitRequest {
   kitId: number;
   binCode: string;
+  binId: number; 
   quantity: number;
   notes?: string;
 }
@@ -357,6 +371,73 @@ export async function getItems(): Promise<Article2[]> {
     return data.map(transformItemToArticle);
   } catch (error) {
     console.error('Error fetching items:', error);
+    throw error;
+  }
+}
+
+/**
+ * Deletes a kit by ID
+
+ */
+export async function deleteKit(kitId: number): Promise<void> {
+  try {
+    console.log('🗑️ Deleting kit with ID:', kitId);
+    
+    const response = await fetch(`${API_URL}/Kits/${kitId}/deactivate`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to delete kit: ${response.status} ${response.statusText}`);
+    }
+
+    console.log('✅ Kit deleted successfully');
+  } catch (error) {
+    console.error('❌ Error deleting kit:', error);
+    throw error;
+  }
+}
+
+
+
+/**
+ * Request payload for dismantling a kit
+ */
+export interface DismantleKitRequest {
+  quantity: number;
+  notes?: string;
+}
+
+/**
+ * Dismantles (disassembles) a kit
+ */
+export async function dismantleKit(kitId: number, data: DismantleKitRequest): Promise<void> {
+  try {
+    console.log(' Dismantling kit:', { kitId, ...data });
+    
+    const response = await fetch(`${API_URL}/Kits/${kitId}/dismantle`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        quantity: data.quantity,
+        notes: data.notes || '',
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to dismantle kit: ${response.status} ${response.statusText}`);
+    }
+
+    console.log('✅ Kit dismantled successfully');
+  } catch (error) {
+    console.error('❌ Error dismantling kit:', error);
     throw error;
   }
 }

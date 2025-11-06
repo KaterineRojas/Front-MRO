@@ -34,8 +34,6 @@ function transformBin(apiBin: BinResponse): Bin {
 
 /**
  * Fetches all available bins from the API
- * @param binPurpose - Optional parameter to filter bins by purpose (e.g., 0 for GoodCondition)
- * @param isActive - Optional parameter to filter only active bins
  */
 export async function getAvailableBins(binPurpose?: number, isActive?: boolean): Promise<Bin[]> {
   try {
@@ -200,4 +198,32 @@ export async function getBinTypes(): Promise<{ value: string; label: string }[]>
     console.error('Error fetching bin types:', error);
     throw error;
   }
+}
+
+// Al inicio del archivo, después de los imports
+/**
+ * Mapeo de tipos de bin (string) a binPurpose (número)
+ */
+const BIN_PURPOSE_MAP: Record<string, number> = {
+  'GoodCondition': 0,
+  'OnRevision': 1,
+  'Scrap': 2,
+  'Hold': 3,
+  'Packing': 4,
+  'Reception': 5,
+};
+
+/**
+ * Convierte un tipo de bin (string) a su binPurpose (número)
+ */
+export function getBinPurposeFromType(type: string): number {
+  return BIN_PURPOSE_MAP[type] ?? 0; // Default a 0 si no encuentra
+}
+
+/**
+ * Convierte un binPurpose (número) a tipo de bin (string)
+ */
+export function getTypeFromBinPurpose(binPurpose: number): string {
+  const entry = Object.entries(BIN_PURPOSE_MAP).find(([_, value]) => value === binPurpose);
+  return entry ? entry[0] : 'GoodCondition';
 }

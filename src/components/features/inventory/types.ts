@@ -110,8 +110,9 @@ export interface Kit {
 export interface Bin {
   id: number;
   binCode: string;
-  type: 'good-condition' | 'on-revision' | 'scrap';
+  type?: string | null;
   description: string;
+  totalQuantity: number;
 }
 
 

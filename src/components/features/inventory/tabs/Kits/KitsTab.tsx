@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../ui/card';
 import { Button } from '../../../../ui/button';
-import { Plus, Boxes, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Boxes, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '../../../../ui/alert';
 import { useAppSelector, useAppDispatch } from '../../../../../store/hooks';
 import { deleteKit, fetchKits } from '../../../../../store/slices/inventorySlice';
@@ -10,9 +10,6 @@ import { KitFilters } from './KitFilters';
 import { KitTable } from './KitTable';
 import { UseKitFilters } from './UseKitFilters';
 import type { KitsTabProps } from './types';
-// Importamos los componentes de Tabs
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../ui/tabs';
-
 
 export function KitsTab({
   articles = [],
@@ -22,22 +19,16 @@ export function KitsTab({
   onUseAsTemplate,
   onDeleteKit,
 }: KitsTabProps) {
-  // Redux
   const dispatch = useAppDispatch();
   const { kits, loading, error } = useAppSelector((state) => state.inventory);
 
-  // Local state for kit categories
   const [kitCategories, setKitCategories] = useState<KitCategory[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-
-  // ✅ NUEVO: Estado para el filtro de Stock
   const [stockFilter, setStockFilter] = useState<'all' | 'with-stock' | 'empty'>('all');
 
-  // Fetch kits and categories on component mount
   useEffect(() => {
     dispatch(fetchKits());
 
-    // Load kit categories
     async function loadKitCategories() {
       try {
         setLoadingCategories(true);
@@ -53,7 +44,6 @@ export function KitsTab({
     loadKitCategories();
   }, [dispatch]);
 
-  // Custom hook for filters and state
   const {
     searchTerm,
     setSearchTerm,
@@ -62,7 +52,7 @@ export function KitsTab({
     expandedKits,
     filteredKits,
     handleToggleExpandKit,
-  } = UseKitFilters(kits, stockFilter); // ✅ CAMBIO: Pasar stockFilter a UseKitFilters
+  } = UseKitFilters(kits, stockFilter);
 
   const handleDeleteKit = (id: number) => {
     dispatch(deleteKit(id));
@@ -73,9 +63,11 @@ export function KitsTab({
     dispatch(fetchKits());
   };
 
-  // ✅ NUEVO: Contadores de kits
-  const kitsWithStock = kits.filter(k => k.quantity > 0).length;
-  const emptyKits = kits.filter(k => k.quantity === 0).length;
+  const kitsCount = {
+    all: kits.length,
+    withStock: kits.filter(k => k.quantity > 0).length,
+    empty: kits.filter(k => k.quantity === 0).length,
+  };
 
   return (
     <Card>
@@ -99,8 +91,7 @@ export function KitsTab({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-
-        {/* Componente de filtros (barra de búsqueda y categoría) */}
+       
         <KitFilters
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
@@ -108,48 +99,29 @@ export function KitsTab({
           setCategoryFilter={setCategoryFilter}
           kitCategories={kitCategories}
           loadingCategories={loadingCategories}
+          stockFilter={stockFilter}
+          setStockFilter={setStockFilter}
+          kitsCount={kitsCount}
         />
 
-        {/* ✅ NUEVO: Pestañas de filtrado por Stock */}
-        <Tabs
-          value={stockFilter}
-          onValueChange={(value:any) => setStockFilter(value as 'all' | 'with-stock' | 'empty')}
-          className="mb-4"
-        >
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="all">
-              All Kits ({kits.length})
-            </TabsTrigger>
-            <TabsTrigger value="with-stock">
-              With Stock ({kitsWithStock})
-            </TabsTrigger>
-            <TabsTrigger value="empty">
-              Empty ({emptyKits})
-            </TabsTrigger>
-          </TabsList>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-          {/* Usamos TabsContent para envolver la tabla y el error */}
-          <TabsContent value={stockFilter} className="mt-4 p-0 border-none">
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <KitTable
-              kits={filteredKits}
-              articles={articles}
-              categories={categories}
-              expandedKits={expandedKits}
-              onToggleExpand={handleToggleExpandKit}
-              onEditKit={onEditKit}
-              onUseAsTemplate={onUseAsTemplate}
-              onDeleteKit={handleDeleteKit}
-              onRefreshKits={handleRefreshKits}
-            />
-          </TabsContent>
-        </Tabs>
+        <KitTable
+          kits={filteredKits}
+          articles={articles}
+          categories={categories}
+          expandedKits={expandedKits}
+          onToggleExpand={handleToggleExpandKit}
+          onEditKit={onEditKit}
+          onUseAsTemplate={onUseAsTemplate}
+          onDeleteKit={handleDeleteKit}
+          onRefreshKits={handleRefreshKits}
+        />
       </CardContent>
     </Card>
   );
