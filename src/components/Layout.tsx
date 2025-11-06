@@ -84,13 +84,13 @@ export function Layout() {
   const navigation = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/', disabled: false },
     { id: 'articles', label: 'Inventory Management', icon: Package, path: '/inventory', disabled: false },
-    { id: 'loans', label: 'Request Orders', icon: UserCheck, path: '/loans', disabled: false },
-    { id: 'orders', label: 'Purchase Request', icon: ShoppingCart, path: '/orders', disabled: false },
-    { id: 'cyclecount', label: 'Cycle Count', icon: Calculator, path: '/cycle-count', disabled: false },
-    { id: 'quickfind', label: 'Quick Find', icon: Search, path: '/quick-find', disabled: false },
-    ...(['administrator', 'manager'].includes(currentUser.role) ? [{ id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests', disabled: false }] : []),
-    { id: 'reports', label: 'Reports', icon: FileText, path: '/reports', disabled: false },
-    ...(currentUser.role === 'administrator' ? [{ id: 'users', label: 'User Management', icon: Users, path: '/users', disabled: false }] : []),
+    { id: 'loans', label: 'Request Orders', icon: UserCheck, path: '/loans', disabled: true },
+    { id: 'orders', label: 'Purchase Request', icon: ShoppingCart, path: '/orders', disabled: true },
+    { id: 'cyclecount', label: 'Cycle Count', icon: Calculator, path: '/cycle-count', disabled: true },
+    { id: 'quickfind', label: 'Quick Find', icon: Search, path: '/quick-find', disabled: true },
+    ...(['administrator', 'manager'].includes(currentUser.role) ? [{ id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests', disabled: true }] : []),
+    { id: 'reports', label: 'Reports', icon: FileText, path: '/reports', disabled: true },
+    ...(currentUser.role === 'administrator' ? [{ id: 'users', label: 'User Management', icon: Users, path: '/users', disabled: true }] : []),
   ] as const;
 
   const isActivePath = (path: string) => {
