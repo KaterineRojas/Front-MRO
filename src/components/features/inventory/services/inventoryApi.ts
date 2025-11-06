@@ -664,3 +664,111 @@ export async function recordMovementApi(movementData: any): Promise<{ transactio
   console.log('API: Movement recorded successfully', { movementData, transaction });
   return { transaction };
 } 
+/**
+ * Creates a damaged transaction for inventory items
+ * POST /api/Inventory/damaged
+ */
+export async function createDamagedApi(damagedData: DamagedRequest): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/Inventory/damaged`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(damagedData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || `Failed to create damaged transaction: ${response.status} ${response.statusText}`);
+    }
+
+    console.log('✅ Damaged transaction created successfully');
+  } catch (error) {
+    // Re-throw the error without logging to avoid duplicate console messages
+    throw error;
+  }
+}
+
+/**
+ * Creates a stock correction transaction for inventory items
+ * POST /api/Inventory/stock-correction
+ */
+export async function createStockCorrectionApi(correctionData: StockCorrectionRequest): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/Inventory/stock-correction`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(correctionData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || `Failed to create stock correction: ${response.status} ${response.statusText}`);
+    }
+
+    console.log('✅ Stock correction created successfully');
+  } catch (error) {
+    // Re-throw the error without logging to avoid duplicate console messages
+    throw error;
+  }
+}
+
+/**
+ * Gets valid destination bins for relocating an item
+ * GET /api/Inventory/valid-destinations?itemId=1&fromBinId=1
+ */
+export async function getValidDestinationBins(itemId: number, fromBinId: number): Promise<{
+  binId: number;
+  binCode: string;
+  binPurpose: string;
+  description: string;
+}[]> {
+  try {
+    const response = await fetch(`${API_URL}/Inventory/valid-destinations?itemId=${itemId}&fromBinId=${fromBinId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || `Failed to fetch valid destinations: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.warn('⚠️ Could not fetch valid destination bins:', error instanceof Error ? error.message : error);
+    throw error;
+  }
+}
+
+/**
+ * Creates a warehouse transfer transaction for inventory items
+ * POST /api/Inventory/relocate-item
+ */
+export async function createWarehouseTransferApi(transferData: WarehouseTransferRequest): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/Inventory/relocate-item`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(transferData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || `Failed to create warehouse transfer: ${response.status} ${response.statusText}`);
+    }
+
+    console.log('✅ Warehouse transfer created successfully');
+  } catch (error) {
+    // Re-throw the error without logging to avoid duplicate console messages
+    throw error;
+  }
+}
