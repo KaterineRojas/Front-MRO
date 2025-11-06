@@ -5,6 +5,7 @@ export interface TransactionFormData {
   transactionType: number;        // Type value (0=Entry, 1=Exit, 2=Transfer, 3=Adjustment, 4=Kit)
   transactionSubType: number;     // SubType value
   itemId: number;                 // Selected item ID
+  kitId?: number;                 // Selected kit ID (for kit transactions)
   quantity: number;               // Quantity (positive or negative based on type)
   fromBinId?: number;             // Source bin (required for Exit and Transfer)
   toBinId?: number;               // Destination bin (required for Entry and Transfer)
@@ -20,6 +21,32 @@ export interface PurchaseRequest {
   binId: number;
   quantity: number;
   unitCost: number;
+  notes: string;
+}
+
+// Damaged request data for API
+export interface DamagedRequest {
+  itemId: number;
+  binId: number;
+  quantity: number;
+  damageDescription: string;
+  notes: string;
+}
+
+// Stock correction request data for API
+export interface StockCorrectionRequest {
+  itemId: number;
+  binId: number;
+  quantity: number;
+  notes: string;
+}
+
+// Warehouse transfer request data for API
+export interface WarehouseTransferRequest {
+  itemId: number;
+  fromBinId: number;
+  toBinId: number;
+  quantity: number;
   notes: string;
 }
 

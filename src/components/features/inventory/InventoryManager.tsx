@@ -367,10 +367,12 @@ export function InventoryManager() {
           open={recordMovementOpen}
           onOpenChange={setRecordMovementOpen}
           articles={articles}
+          kits={kits}
           onRecordTransaction={handleRecordMovement}
           onSuccess={() => {
             // Refresh data after successful transaction
             dispatch(fetchArticles());
+            dispatch(fetchKits());
             dispatch(fetchTransactions());
           }}
         />
