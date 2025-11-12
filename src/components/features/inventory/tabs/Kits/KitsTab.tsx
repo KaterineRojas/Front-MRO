@@ -20,7 +20,7 @@ export function KitsTab({
   onDeleteKit,
 }: KitsTabProps) {
   const dispatch = useAppDispatch();
-  const { kits, loading, error } = useAppSelector((state) => state.inventory);
+  const { kits, error } = useAppSelector((state) => state.inventory);
 
   const [kitCategories, setKitCategories] = useState<KitCategory[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);

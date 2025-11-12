@@ -293,14 +293,14 @@ export function InventoryManager() {
     }
   };
 
-  // Show loading state
-  if (loading && articles.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading inventory data...</p>
-      </div>
-    );
-  }
+  // // Show loading state
+  // if (loading && articles.length === 0) {
+  //   return (
+  //     <div className="flex items-center justify-center h-64">
+  //       <p className="text-muted-foreground">Loading inventory data...</p>
+  //     </div>
+  //   );
+  // }
 
   // Show error state
   if (error) {
