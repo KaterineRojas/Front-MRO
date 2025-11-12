@@ -1,6 +1,6 @@
 // src/components/features/inventory/tabs/Items/types.ts
 import type { Article } from '../../types';
-import type { ApiPayload } from '../../modals/CreateItemModal';
+import type { ApiPayload } from '../../modals/CreateItemModal/CreateItemModal';
 
 export type CreateArticleData = Pick<ApiPayload, 'name' | 'description' | 'category' | 'unit' | 'minStock' | 'consumable' | 'binCode' | 'imageFile'>;
 export type UpdateArticleData = Pick<ApiPayload, 'name' | 'description' | 'category' | 'unit' | 'minStock' | 'consumable' | 'imageUrl' | 'imageFile' | 'sku'>;
