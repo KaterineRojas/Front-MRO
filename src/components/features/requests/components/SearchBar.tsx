@@ -1,18 +1,14 @@
-// src/components/SearchBar.tsx
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronDown, Check } from 'lucide-react';
+import { useSelector } from 'react-redux';
 
-import React from 'react';
-import { Search } from 'lucide-react'; // O tu ícono de 'icons.ts'
 
-/**
- * Define la "forma" de una opción para el select.
- * Es mejor usar objetos (value + label) que solo strings.
- */
+
 export interface SelectOption {
     value: string;
     label: string;
 }
 
-// Define las props que el componente SearchBar recibirá
 interface SearchBarProps {
     searchQuery: string;
     setSearchQuery: (query: string) => void;
@@ -22,55 +18,116 @@ interface SearchBarProps {
     placeholder?: string;
 }
 
-export const SearchBar = ({
+export default function SearchBar({
     searchQuery,
     setSearchQuery,
     selectedType,
     setSelectedType,
     typesOptions,
-    placeholder = "Search by request #, requester, department, or item..." // Placeholder por defecto
-}: SearchBarProps) => {
+    placeholder = "Search by request #, requester, department, or item..."
+}: SearchBarProps) {
+
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    
+
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const darkMode = useSelector((state: any) => state.ui.darkMode);
+
+    const handleTypeSelect = (value: string) => {
+        setSelectedType(value);
+        setIsDropdownOpen(false);
+    };
+
+    const getSelectedLabel = () => {
+        const option = typesOptions.find(opt => opt.value === selectedType);
+        return option?.label || selectedType;
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        if (isDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isDropdownOpen]);
 
     return (
-        // Contenedor principal: blanco, con borde, redondeado (como en tu imagen)
-        <div className="flex items-center w-full gap-4 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
+        <div className="w-full max-w-7xl mx-auto p-4 border rounded-xl">
+            <div className="flex gap-4 items-center">
+                {/* Search Input */}
+                <div className="flex-1 rounded-xl"
+                    style={{
+                        background: `${darkMode ? '#121212' : '#F3F3F5'}`,
+                    }}
+                >
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder={placeholder}
+                        className="w-full px-4 py-2 bg-gray-50 border-0 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    />
+                </div>
 
-            {/* --- 1. La Caja de Búsqueda (Input) --- */}
-            {/* Contenedor gris claro para el input y el ícono */}
-            <div className="flex-grow flex items-center gap-3 px-4 py-2 bg-gray-100 rounded-lg">
+                {/* Dropdown */}
+                <div className="relative" ref={dropdownRef}>
+                    <button
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        className="min-w-[180px] px-4 py-2 bg-gray-50 rounded-lg text-gray-700 flex items-center justify-between 
+                        hover:bg-gray-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        style={{
+                            background: `${darkMode ? '#121212' : '#F3F3F5'}`,
+                        }}
+                    >
+                        <span>{getSelectedLabel()}</span>
+                        <ChevronDown
+                            className={`w-5 h-5 ml-2 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                            style={{
+                                transition: '.2s',
+                                transform: `${isDropdownOpen ? 'rotate(180deg)' : ''}`
+                            }}
+                        />
+                    </button>
 
-                {/* Ícono de Búsqueda */}
-                <Search className="h-5 w-5 text-gray-400" />
+                    {/* Dropdown Menu */}
+                    {isDropdownOpen && (
+                        <div className="flex flex-col gap-2 absolute right-0 mt-2 min-w-[220px] bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10 "
+                            style={{
+                                background: `${darkMode ? '#121212' : '#F3F3F5'}`,
+                            }}
+                        >
+                            {typesOptions.map((option) => (
+                                <button
+                                    key={option.value}
+                                    onClick={() => handleTypeSelect(option.value)}
+                                    className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors flex items-center justify-between group"
 
-                {/* Input */}
-                <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={placeholder}
-                    // Estilos para que el input se integre con su contenedor
-                    className="w-full bg-transparent focus:outline-none text-gray-800 placeholder-gray-500"
-                />
+                                >
+                                    <span className="text-gray-700">{option.label}</span>
+                                    {selectedType === option.value && (
+                                        <Check className="w-5 h-5 text-blue-600" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* --- 2. La Caja de Selección (Select) --- */}
-            {/* Contenedor gris claro para el select */}
-            <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                // Estilos para que el select se vea como un bloque (similar a la imagen)
-                // 'appearance-none' quita el feo estilo por defecto del navegador
-                className="px-4 py-2 bg-gray-100 rounded-lg text-gray-800 focus:outline-none"
-            >
-                {typesOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                        {option.label}
-                    </option>
-                ))}
-            </select>
-
+            {/* Results Preview (opcional) */}
+            {searchQuery && (
+                <div className="mt-4 text-sm text-gray-500">
+                    Buscando "{searchQuery}" en: {getSelectedLabel()}
+                </div>
+            )}
         </div>
     );
-};
-
-export default SearchBar;
+}

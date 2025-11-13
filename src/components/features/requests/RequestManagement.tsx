@@ -14,21 +14,11 @@ import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import { mockRequests, type Request } from './data/mockRequest'
 import CardRequest from './components/Card'
 import TabsGroup from './components/Tabs'
-import SearchBar, {SelectOption} from './components/SearchBar'
+import SearchBar, { SelectOption } from './components/SearchBar'
 
 
 
-// variables for search bar do not remove
-const [query, setQuery] = useState("");
-const [type, setType] = useState("all"); // 'all' es el valor inicial
 
-// --- 2. Definimos las opciones para el select ---
-const requestTypeOptions: SelectOption[] = [
-  { value: "all", label: "All Types" },
-  { value: "loan", label: "Loan" },
-  { value: "purchase", label: "Purchase" },
-  { value: "purchase-on-site", label: "Purchase on Site" },
-];
 
 
 export function RequestManagement() {
@@ -41,6 +31,18 @@ export function RequestManagement() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [expandedRequests, setExpandedRequests] = useState<Set<number>>(new Set());
   const [rejectNotes, setRejectNotes] = useState('');
+
+  // variables for search bar do not remove
+  const [query, setQuery] = useState("");
+  const [type, setType] = useState("all"); // 
+
+  const requestTypeOptions: SelectOption[] = [
+    { value: "all", label: "All Types" },
+    { value: "loan", label: "Loan" },
+    { value: "purchase", label: "Purchase" },
+    { value: "purchase-on-site", label: "Purchase on Site" },
+  ];
+
 
   const handleToggleExpand = (requestId: number) => {
     setExpandedRequests(prev => {
@@ -480,7 +482,13 @@ export function RequestManagement() {
         <TabsContent value="overview" className="space-y-6">
 
 
-          <SearchBar />
+          <SearchBar
+            searchQuery={searchTerm}
+            setSearchQuery={setSearchTerm}
+            selectedType={type}
+            setSelectedType={setType}
+            typesOptions={requestTypeOptions}
+          />
 
 
           <Card>
