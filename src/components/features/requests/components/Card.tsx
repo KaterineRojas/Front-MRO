@@ -21,11 +21,11 @@ function Card({ title, iconType, description, value, mainColor }: cardProps) {
     const selectIconType = () => {
         switch (iconType) {
             case 'clock':
-                return <Clock className="h-4 w-4 text-orange-600" />
+                return <Clock className="h-6 w-6 text-yellow-500" />
             case 'check':
-                return <Check className="h-4 w-4 text-green-600" />
+                return <Check className="h-6 w-6 text-green-600" />
             case 'xCircle':
-                return <XCircle className="h-4 w-4 text-red-600" />
+                return <XCircle className="h-6 w-6 text-red-600" />
             default:
                 break;
         }

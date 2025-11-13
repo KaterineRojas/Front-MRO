@@ -13,7 +13,22 @@ import { ClipboardCheck, Check, X, Clock, Package, AlertTriangle, ChevronDown, C
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import { mockRequests, type Request } from './data/mockRequest'
 import CardRequest from './components/Card'
+import TabsGroup from './components/Tabs'
+import SearchBar, {SelectOption} from './components/SearchBar'
 
+
+
+// variables for search bar do not remove
+const [query, setQuery] = useState("");
+const [type, setType] = useState("all"); // 'all' es el valor inicial
+
+// --- 2. Definimos las opciones para el select ---
+const requestTypeOptions: SelectOption[] = [
+  { value: "all", label: "All Types" },
+  { value: "loan", label: "Loan" },
+  { value: "purchase", label: "Purchase" },
+  { value: "purchase-on-site", label: "Purchase on Site" },
+];
 
 
 export function RequestManagement() {
@@ -175,8 +190,8 @@ export function RequestManagement() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          
-          
+
+
           {filteredRequests.map((request) => {
             const totalCost = calculateTotalCost(request);
             return (
@@ -393,7 +408,7 @@ export function RequestManagement() {
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <CardRequest 
+        <CardRequest
           title='Pending'
           iconType='clock'
           value={pendingCount}
@@ -401,7 +416,7 @@ export function RequestManagement() {
           mainColor='yellow'
         />
 
-        <CardRequest 
+        <CardRequest
           title='Approved'
           iconType='check'
           value={approvedCount}
@@ -409,7 +424,7 @@ export function RequestManagement() {
           mainColor='green'
         />
 
-        <CardRequest 
+        <CardRequest
           title='Rejected'
           iconType='xCircle'
           value={rejectedCount}
@@ -422,6 +437,26 @@ export function RequestManagement() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+
+        <TabsGroup
+          tabsList={[
+            {
+              name: 'Pending',
+              iconType: 'clock',
+            },
+            {
+              name: 'Approved',
+              iconType: 'check',
+            },
+            {
+              name: 'Rejected',
+              iconType: 'xCircle',
+            },
+
+          ]}
+        />
+
+        {/* tabs browser */}
         <TabsList className="w-full">
           <TabsTrigger value="overview" className="flex items-center space-x-2 flex-1">
             <FileText className="h-4 w-4" />
@@ -443,6 +478,11 @@ export function RequestManagement() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
+
+
+          <SearchBar />
+
+
           <Card>
             <CardContent className="pt-6">
               <div className="flex gap-4">
