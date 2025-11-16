@@ -28,7 +28,7 @@ export default function SearchBar({
 }: SearchBarProps) {
 
     const dropdownRef = useRef<HTMLDivElement>(null);
-    
+
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const darkMode = useSelector((state: any) => state.ui.darkMode);
@@ -73,7 +73,9 @@ export default function SearchBar({
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder={placeholder}
-                        className="w-full px-4 py-2 bg-gray-50 border-0 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                        className={`w-full px-4 py-1 rounded-lg  placeholder-gray-400 
+                            transition-all ${darkMode ? 'bg-[#121212]' : 'bg-[#F3F3F5]'}
+                        `}
                     />
                 </div>
 
@@ -81,10 +83,13 @@ export default function SearchBar({
                 <div className="relative" ref={dropdownRef}>
                     <button
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className="min-w-[180px] px-4 py-2 bg-gray-50 rounded-lg text-gray-700 flex items-center justify-between 
-                        hover:bg-gray-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className={`min-w-[200px]  px-4 py-2 bg-gray-50 rounded-lg text-gray-700 flex items-center justify-between 
+                        hover:bg-gray-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm
+                            ${darkMode ? 'text-white' : 'text-black'}
+                        `}
                         style={{
                             background: `${darkMode ? '#121212' : '#F3F3F5'}`,
+                            minWidth: '180px'
                         }}
                     >
                         <span>{getSelectedLabel()}</span>
@@ -99,19 +104,25 @@ export default function SearchBar({
 
                     {/* Dropdown Menu */}
                     {isDropdownOpen && (
-                        <div className="flex flex-col gap-2 absolute right-0 mt-2 min-w-[220px] bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10 "
+                        <div className={`flex flex-col gap-0 absolute right-0 mt-2 min-w-[220px] rounded-lg shadow-lg border border-gray-200 py-2 z-10
+                                ${darkMode ? 'bg-[#000]' : 'bg-[#fff]'}
+                            `}
                             style={{
-                                background: `${darkMode ? '#121212' : '#F3F3F5'}`,
+                                minWidth: '180px'
                             }}
                         >
                             {typesOptions.map((option) => (
                                 <button
                                     key={option.value}
                                     onClick={() => handleTypeSelect(option.value)}
-                                    className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors flex items-center justify-between group"
+                                    className={`w-full px-4 py-2 text-left text-sm  
+                                        transition-colors flex items-center justify-between group transition
+                                        ${darkMode ? 'hover:bg-[#262626]' : 'hover:bg-[#ECECF0]'}
+                                    `}
 
                                 >
-                                    <span className="text-gray-700">{option.label}</span>
+                                    <span className={`text-gray-700 ${darkMode ? 'text-white' : 'text-black'}
+                                        `}>{option.label}</span>
                                     {selectedType === option.value && (
                                         <Check className="w-5 h-5 text-blue-600" />
                                     )}
