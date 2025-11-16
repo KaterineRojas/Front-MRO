@@ -15,6 +15,7 @@ import { mockRequests, type Request } from './data/mockRequest'
 import CardRequest from './components/Card'
 import TabsGroup from './components/Tabs'
 import SearchBar, { SelectOption } from './components/SearchBar'
+import RequestsTable from './components/DataTable';
 
 
 
@@ -174,209 +175,7 @@ export function RequestManagement() {
     }, 0);
   };
 
-  const renderRequestsTable = (filteredRequests: Request[]) => (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-12"></TableHead>
-            <TableHead>Request #</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Requested By</TableHead>
-            <TableHead>Department</TableHead>
-            <TableHead>Project</TableHead>
-            <TableHead>Urgency</TableHead>
-            <TableHead>Request Date</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
 
-
-          {filteredRequests.map((request) => {
-            const totalCost = calculateTotalCost(request);
-            return (
-              <React.Fragment key={request.id}>
-                <TableRow className="hover:bg-muted/50">
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleToggleExpand(request.id)}
-                    >
-                      {expandedRequests.has(request.id) ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </TableCell>
-                  <TableCell className="font-mono">
-                    <div>
-                      <p>{request.requestNumber}</p>
-                      {(request.type === 'purchase' || request.type === 'purchase-on-site') && totalCost > 0 && (
-                        <p className="text-xs text-green-600 font-mono">
-                          ${totalCost.toFixed(2)}
-                        </p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(request.status)}
-                      {getStatusBadge(request.status)}
-                    </div>
-                  </TableCell>
-                  <TableCell>{getTypeBadge(request.type)}</TableCell>
-                  <TableCell>
-                    <div>
-                      <p>{request.requestedBy}</p>
-                      <p className="text-xs text-muted-foreground">{request.requestedByEmail}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{request.department}</TableCell>
-                  <TableCell>
-                    {request.project ? (
-                      <p className="text-sm">{request.project}</p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">-</p>
-                    )}
-                  </TableCell>
-                  <TableCell>{getUrgencyBadge(request.urgency)}</TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="text-sm">{request.requestDate}</p>
-                      {request.requiredDate && (
-                        <p className="text-xs text-muted-foreground">
-                          Need by: {request.requiredDate}
-                        </p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {request.status === 'pending' ? (
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedRequest(request);
-                            setApproveDialogOpen(true);
-                          }}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedRequest(request);
-                            setRejectDialogOpen(true);
-                          }}
-                        >
-                          Reject
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="text-xs text-muted-foreground">
-                        {request.reviewedBy && (
-                          <p>By: {request.reviewedBy}</p>
-                        )}
-                        {request.reviewDate && (
-                          <p>{request.reviewDate}</p>
-                        )}
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-
-                {/* Expanded Item Details Section */}
-                {expandedRequests.has(request.id) && (
-                  <TableRow>
-                    <TableCell colSpan={10} className="bg-muted/30 p-0">
-                      <div className="p-4">
-                        <h4 className="flex items-center mb-3">
-                          <Package className="h-4 w-4 mr-2" />
-                          Request Details ({request.items.length} item{request.items.length > 1 ? 's' : ''})
-                        </h4>
-                        <div className="rounded-md border bg-card p-4 space-y-4">
-                          {/* Return Date (for loan types) */}
-                          {request.returnDate && (
-                            <div className="pb-4 border-b">
-                              <Label>Return Date</Label>
-                              <p className="text-sm">{request.returnDate}</p>
-                            </div>
-                          )}
-
-                          {/* Purchase Info (for purchase types) */}
-                          {(request.type === 'purchase' || request.type === 'purchase-on-site') && request.purchasedBy && (
-                            <div className="pb-4 border-b">
-                              <Label>Purchased By</Label>
-                              <p className="text-sm capitalize">{request.purchasedBy}</p>
-                            </div>
-                          )}
-
-                          {/* Reason */}
-                          <div className="pb-4 border-b">
-                            <Label>Reason</Label>
-                            <p className="text-sm text-muted-foreground">{request.reason}</p>
-                          </div>
-
-                          {/* Items */}
-                          <div>
-                            <Label className="mb-3 block">Items</Label>
-                            <div className="space-y-3">
-                              {request.items.map((item) => (
-                                <div key={item.id} className="flex items-start space-x-4 p-3 border rounded-lg">
-                                  <ImageWithFallback
-                                    src={item.imageUrl || ''}
-                                    alt={item.articleDescription}
-                                    className="w-20 h-20 object-cover rounded"
-                                  />
-                                  <div className="flex-1">
-                                    <p className="font-mono text-sm">{item.articleCode}</p>
-                                    <p>{item.articleDescription}</p>
-                                    <div className="flex items-center space-x-2 mt-2">
-                                      <Badge variant="outline">
-                                        {item.quantity} {item.unit}
-                                      </Badge>
-                                      {item.estimatedCost && (
-                                        <Badge variant="outline" className="text-green-600 border-green-600">
-                                          ${item.estimatedCost.toFixed(2)} each
-                                        </Badge>
-                                      )}
-                                      {item.estimatedCost && (
-                                        <Badge variant="default">
-                                          Total: ${(item.estimatedCost * item.quantity).toFixed(2)}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Review Notes */}
-                          {request.reviewNotes && (
-                            <div className="pt-4 border-t">
-                              <Label>Review Notes</Label>
-                              <p className="text-sm text-muted-foreground">{request.reviewNotes}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
-  );
 
 
 
@@ -485,8 +284,8 @@ export function RequestManagement() {
           <SearchBar
             searchQuery={searchTerm}
             setSearchQuery={setSearchTerm}
-            selectedType={type}
-            setSelectedType={setType}
+            selectedType={typeFilter}
+            setSelectedType={setTypeFilter}
             typesOptions={requestTypeOptions}
           />
 
@@ -524,14 +323,16 @@ export function RequestManagement() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {renderRequestsTable(getFilteredRequests().filter(r => r.status !== 'completed' && r.status !== 'rejected'))}
+              {/* {renderRequestsTable(getFilteredRequests().filter(r => r.status !== 'completed' && r.status !== 'rejected'))} */}
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Pending Tab */}
+        hola mundo
+
         <TabsContent value="pending" className="space-y-6">
-          <Card>
+          {/* <Card>
             <CardContent className="pt-6">
               <div className="flex gap-4">
                 <div className="flex-1">
@@ -554,7 +355,7 @@ export function RequestManagement() {
                 </Select>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
 
           <Card>
             <CardHeader>
@@ -564,7 +365,26 @@ export function RequestManagement() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {renderRequestsTable(getFilteredRequests('pending'))}
+              {/* {renderRequestsTable(getFilteredRequests('pending'))} */}
+
+              <RequestsTable
+                // Datos
+                requests={mockRequests}
+                expandedRequests={expandedRequests}
+
+                // Funciones de ayuda
+                calculateTotalCost={calculateTotalCost}
+                getStatusIcon={getStatusIcon}
+                getStatusBadge={getStatusBadge}
+                getTypeBadge={getTypeBadge}
+                getUrgencyBadge={getUrgencyBadge}
+
+                // Manejadores de eventos
+                handleToggleExpand={handleToggleExpand}
+                setSelectedRequest={setSelectedRequest}
+                setApproveDialogOpen={setApproveDialogOpen}
+                setRejectDialogOpen={setRejectDialogOpen}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -604,7 +424,7 @@ export function RequestManagement() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {renderRequestsTable(getFilteredRequests('approved'))}
+              {/* {renderRequestsTable(getFilteredRequests('approved'))} */}
             </CardContent>
           </Card>
         </TabsContent>
@@ -644,7 +464,7 @@ export function RequestManagement() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {renderRequestsTable([...getFilteredRequests('completed'), ...getFilteredRequests('rejected')])}
+              {/* {renderRequestsTable([...getFilteredRequests('completed'), ...getFilteredRequests('rejected')])} */}
             </CardContent>
           </Card>
         </TabsContent>
