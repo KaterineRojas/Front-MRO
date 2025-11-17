@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, ChevronRight, Package } from 'lucide-react';
+import { ChevronDown, ChevronRight, Package, FileText } from 'lucide-react';
 import { type Request, type RequestItem } from '../data/mockRequest.ts';
 import { useSelector } from 'react-redux';
 
@@ -57,7 +57,7 @@ export default function RequestsTable({
     <div className="w-full overflow-auto rounded-md border">
       <table className="w-full caption-bottom text-sm">
         <thead className="[&_tr]:border-b">
-          <tr className="border-b transition-colors hover:bg-gray-100/50 text-center">
+          <tr className="border-b transition-colors">
             <th className="h-12 w-12 px-4 text-left align-middle font-medium"></th>
             <th className="h-12 px-6 text-center align-middle font-medium">Request #</th>
             <th className="h-12 px-6 text-center align-middle font-medium">Status</th>
@@ -76,19 +76,20 @@ export default function RequestsTable({
             return (
               <React.Fragment key={request.id}>
                 {/* Esta es la <TableRow> */}
-                <tr className="border-b transition-colors hover:bg-gray-100/50">
+                <tr className="border-b transition-colors hover:bg-[#F5F5F7] dark:hover:bg-gray-400/10">
                   {/* Esta es la <TableCell> */}
                   <td className="p-0 align-middle text-center">
                     {/* Este es el <Button variant="ghost"> */}
                     <button
                       onClick={() => handleToggleExpand(request.id)}
-                      className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 w-10 hover:bg-gray-200"
+                      className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 w-10
+                      hover:bg-gray-200 dark:text-white dark:bg-[#1f1f1f] dark:hover:bg-white dark:hover:text-black
+                      "
                     >
-                      {expandedRequests.has(request.id) ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
+                      <ChevronRight className={`h-4 w-4 transition duration-200
+                            ${expandedRequests.has(request.id) ? 'rotate-90' : 'rotate-0'}
+                          `}
+                      />
                     </button>
                   </td>
                   <td className="p-0 align-middle font-mono ">
@@ -143,8 +144,12 @@ export default function RequestsTable({
                             setApproveDialogOpen(true);
                           }}
                           className={`inline-flex items-center justify-center rounded-md text-sm 
-                          font-medium h-10 px-4 py-2 border border-gray-300 bg-white hover:bg-gray-100
-                          ${darkMode ? 'dar:bg-black' : ''}`}
+                            font-medium h-10 px-4 py-2 border border-gray-300 
+                            hover:bg-[#04A63E] hover:text-white transition duration-100
+                            ${darkMode ? 'bg-[#1F1F1F]' : 'bg-white'}
+                            ${darkMode ? 'text-white' : 'text-black'}
+                          `}
+
                         >
                           Approve
                         </button>
@@ -153,7 +158,12 @@ export default function RequestsTable({
                             setSelectedRequest(request);
                             setRejectDialogOpen(true);
                           }}
-                          className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 border border-gray-300 bg-white hover:bg-gray-100"
+                          className={`inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 
+                            py-2 border border-gray-300
+                            hover:bg-[#FB2C36] hover:text-white transition duration-100
+                            ${darkMode ? 'bg-[#1F1F1F]' : 'bg-white'}
+                            ${darkMode ? 'text-white' : 'text-black'}
+                          `}
                         >
                           Reject
                         </button>
@@ -173,21 +183,82 @@ export default function RequestsTable({
 
                 {/* Expanded Item Details Section */}
                 {expandedRequests.has(request.id) && (
-                  <tr className="border-b transition-colors">
-                    <td colSpan={10} className="bg-gray-100/30 p-0">
-                      <div className="p-4">
-                        <h4 className="flex items-center mb-3 font-medium">
-                          <Package className="h-4 w-4 mr-2" />
-                          Request Details ({request.items.length} item{request.items.length > 1 ? 's' : ''})
+                  <tr className="border-b transition-colors" data-state="open">
+                    <td colSpan={10} className="p-0 bg-gray-50 hover:bg-[#F2F2F4] dark:bg-gray-900/50 transition duration-300">
+                      <div className="p-6">
+                        <h4 className="flex items-center mb-4 text-lg font-semibold">
+                          <FileText className="h-5 w-5 mr-2 text-gray-700" />
+                          Request Details
                         </h4>
-                        <div className="rounded-md border bg-white p-4 space-y-4">
-                          {/* ... (El resto del código interno es casi igual) ... */}
-                          {/* Este era el <Label> */}
-                          <label className="text-sm font-medium leading-none">Reason</label>
-                          <p className="text-sm text-gray-500">{request.reason}</p>
 
-                          {/* ... etc ... */}
+                        {/* --- Reason Layout and Date --- */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+                          {/* Return date */}
+                          {request.returnDate && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-500 mb-1">
+                                Return Date
+                              </label>
+                              <p className="text-lg text-gray-900 dark:text-gray-100">
+                                {request.returnDate}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Reason */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-500 mb-1">
+                              Reason
+                            </label>
+                            <p className="text-lg text-gray-900 dark:text-gray-100">
+                              {request.reason}
+                            </p>
+                          </div>
                         </div>
+
+                        <div>
+                          <h5 className="text-md font-semibold mb-3">
+                            Items ({request.items.length})
+                          </h5>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {request.items.map(item => (
+                              <div
+                                key={item.id}
+                                // 👇 NOTA: Se quitó 'w-auto'. La grid maneja el ancho.
+                                className="flex items-center p-3 bg-white dark:bg-gray-800/30 border dark:border-gray-700 rounded-lg shadow-sm"
+                              >
+
+                                {/* Imagen */}
+                                <img
+                                  src={item.imageUrl || 'https://via.placeholder.com/150'}
+                                  alt={item.articleDescription}
+                                  className="h-20 w-20 object-cover rounded-md mr-4"
+                                />
+
+                                {/* Detalles del Item */}
+                                <div className="flex-grow">
+                                  <span className="block text-sm font-medium text-gray-500 dark:text-gray-400">
+                                    {item.articleCode}
+                                  </span>
+                                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                    {item.articleDescription}
+                                  </p>
+
+                                  {/* Etiqueta de cantidad */}
+                                  <span className="block text-sm font-medium text-blue-700 bg-blue-100 dark:text-blue-200 dark:bg-blue-800/50 px-2 py-0.5 rounded-full w-fit mt-1">
+                                    {item.quantity} {item.unit}
+                                  </span>
+                                </div>
+
+                              </div>
+                            ))}
+                          </div>
+
+
+                        </div>
+
                       </div>
                     </td>
                   </tr>
@@ -198,5 +269,8 @@ export default function RequestsTable({
         </tbody>
       </table>
     </div>
+
+
+
   );
 }

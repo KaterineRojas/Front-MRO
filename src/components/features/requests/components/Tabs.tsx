@@ -4,11 +4,11 @@ import { ClipboardCheck, Check, X, Clock, Package, AlertTriangle, ChevronDown, C
 
 interface TabItem {
     name: string,
-    iconType : string
+    iconType: string
 }
 
 interface TabsProps {
-    tabsList : TabItem[]
+    tabsList: TabItem[]
 }
 
 function Tabs({ tabsList }: TabsProps) {
@@ -80,25 +80,7 @@ function Tabs({ tabsList }: TabsProps) {
     }
 
     return (
-        <div className=' h-9 flex items-center justify-around rounded-xl p-[3px] w-full' style={{ background: `${getTabBackgroundColor()}` }} >
-            {
-                tabsList.map(e => {
-                    return <button
-                        className='flex justify-center items-center gap-4 flex-1 rounded-lg font-bold h-full text-sm'
-                        style={{
-                            backgroundColor: getBackgroundColor(e.name),
-                            color: getTextColor(e.name),
-                            fontWeight: '500',
-                        }}
-                        key={e.name}
-                        onClick={() => { setCurrentTab(e.name) }}
-                    >
-                        {getIconType(e.iconType)}
-                        {e.name}
-                    </button>
-                })
-            }
-        </div>
+        <h2></h2>
     )
 }
 

@@ -249,10 +249,7 @@ export function RequestManagement() {
               name: 'Approved',
               iconType: 'check',
             },
-            {
-              name: 'Rejected',
-              iconType: 'xCircle',
-            },
+            
 
           ]}
         />

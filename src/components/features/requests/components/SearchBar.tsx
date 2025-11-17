@@ -115,7 +115,7 @@ export default function SearchBar({
                                 <button
                                     key={option.value}
                                     onClick={() => handleTypeSelect(option.value)}
-                                    className={`w-full px-4 py-2 text-left text-sm  
+                                    className={`w-full px-4 py-2 text-left text-sm rounded-xl 
                                         transition-colors flex items-center justify-between group transition
                                         ${darkMode ? 'hover:bg-[#262626]' : 'hover:bg-[#ECECF0]'}
                                     `}
