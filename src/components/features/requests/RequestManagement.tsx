@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useEffectEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -23,8 +23,11 @@ import RequestsTable from './components/DataTable';
 
 
 export function RequestManagement() {
+
+
+
   const [requests, setRequests] = useState<Request[]>(mockRequests);
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeTab, setActiveTab] = useState<string>('pending');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
@@ -32,6 +35,11 @@ export function RequestManagement() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [expandedRequests, setExpandedRequests] = useState<Set<number>>(new Set());
   const [rejectNotes, setRejectNotes] = useState('');
+
+
+  useEffect(() => {
+    console.log(activeTab);
+  }, [activeTab])
 
   // variables for search bar do not remove
   const [query, setQuery] = useState("");
@@ -249,222 +257,56 @@ export function RequestManagement() {
               name: 'Approved',
               iconType: 'check',
             },
-            
+            {
+              name: 'Rejected',
+              iconType: 'xCircle',
+            },
 
           ]}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
         />
 
-        {/* tabs browser */}
-        <TabsList className="w-full">
-          <TabsTrigger value="overview" className="flex items-center space-x-2 flex-1">
-            <FileText className="h-4 w-4" />
-            <span>Overview ({requests.filter(r => r.status !== 'completed' && r.status !== 'rejected').length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="pending" className="flex items-center space-x-2 flex-1">
-            <Clock className="h-4 w-4" />
-            <span>Pending ({pendingCount})</span>
-          </TabsTrigger>
-          <TabsTrigger value="approved" className="flex items-center space-x-2 flex-1">
-            <Check className="h-4 w-4" />
-            <span>Approved ({approvedCount})</span>
-          </TabsTrigger>
-          <TabsTrigger value="inactive" className="flex items-center space-x-2 flex-1">
-            <CheckCircle className="h-4 w-4" />
-            <span>Inactive ({completedCount + rejectedCount})</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
+        {/* search bar */}
+        <SearchBar
+          searchQuery={searchTerm}
+          setSearchQuery={setSearchTerm}
+          selectedType={typeFilter}
+          setSelectedType={setTypeFilter}
+          typesOptions={requestTypeOptions}
+        />
 
 
-          <SearchBar
-            searchQuery={searchTerm}
-            setSearchQuery={setSearchTerm}
-            selectedType={typeFilter}
-            setSelectedType={setTypeFilter}
-            typesOptions={requestTypeOptions}
-          />
 
+        {/** dinamic data table */}
+        <div className="space-y-6 border-[2px] p-5 rounded-lg">
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Search by request #, requester, department, or item..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="loan">Loan</SelectItem>
-                    <SelectItem value="purchase">Purchase</SelectItem>
-                    <SelectItem value="purchase-on-site">Purchase On Site</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
+          <h2 className="flex items-center space-x-2 text-xl font-semibold text-gray-800 dark:text-gray-100">
+            <Clock className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+            <span>{activeTab} Requests ({getFilteredRequests(activeTab).length})</span>
+          </h2>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <ClipboardCheck className="h-5 w-5" />
-                <span>All Requests ({getFilteredRequests().filter(r => r.status !== 'completed').length})</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* {renderRequestsTable(getFilteredRequests().filter(r => r.status !== 'completed' && r.status !== 'rejected'))} */}
-            </CardContent>
-          </Card>
-        </TabsContent>
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden dark:bg-gray-900 dark:border-gray-800">
 
-        {/* Pending Tab */}
-        hola mundo
+            <RequestsTable
+              // Datos
+              requests={getFilteredRequests(activeTab)}
+              expandedRequests={expandedRequests}
 
-        <TabsContent value="pending" className="space-y-6">
-          {/* <Card>
-            <CardContent className="pt-6">
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Search by request #, requester, department, or item..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="loan">Loan</SelectItem>
-                    <SelectItem value="purchase">Purchase</SelectItem>
-                    <SelectItem value="purchase-on-site">Purchase On Site</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card> */}
+              calculateTotalCost={calculateTotalCost}
+              getStatusIcon={getStatusIcon}
+              getStatusBadge={getStatusBadge}
+              getTypeBadge={getTypeBadge}
+              getUrgencyBadge={getUrgencyBadge}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Clock className="h-5 w-5" />
-                <span>Pending Requests ({getFilteredRequests('pending').length})</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* {renderRequestsTable(getFilteredRequests('pending'))} */}
+              handleToggleExpand={handleToggleExpand}
+              setSelectedRequest={setSelectedRequest}
+              setApproveDialogOpen={setApproveDialogOpen}
+              setRejectDialogOpen={setRejectDialogOpen}
+            />
+          </div>
 
-              <RequestsTable
-                // Datos
-                requests={mockRequests}
-                expandedRequests={expandedRequests}
-
-                // Funciones de ayuda
-                calculateTotalCost={calculateTotalCost}
-                getStatusIcon={getStatusIcon}
-                getStatusBadge={getStatusBadge}
-                getTypeBadge={getTypeBadge}
-                getUrgencyBadge={getUrgencyBadge}
-
-                // Manejadores de eventos
-                handleToggleExpand={handleToggleExpand}
-                setSelectedRequest={setSelectedRequest}
-                setApproveDialogOpen={setApproveDialogOpen}
-                setRejectDialogOpen={setRejectDialogOpen}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Approved Tab */}
-        <TabsContent value="approved" className="space-y-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Search by request #, requester, department, or item..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="loan">Loan</SelectItem>
-                    <SelectItem value="purchase">Purchase</SelectItem>
-                    <SelectItem value="purchase-on-site">Purchase On Site</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Check className="h-5 w-5" />
-                <span>Approved Requests ({getFilteredRequests('approved').length})</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* {renderRequestsTable(getFilteredRequests('approved'))} */}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Inactive Tab */}
-        <TabsContent value="inactive" className="space-y-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Search by request #, requester, department, or item..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="loan">Loan</SelectItem>
-                    <SelectItem value="purchase">Purchase</SelectItem>
-                    <SelectItem value="purchase-on-site">Purchase On Site</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <CheckCircle className="h-5 w-5" />
-                <span>Inactive Requests ({getFilteredRequests('completed').length + getFilteredRequests('rejected').length})</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* {renderRequestsTable([...getFilteredRequests('completed'), ...getFilteredRequests('rejected')])} */}
-            </CardContent>
-          </Card>
-        </TabsContent>
+        </div>
       </Tabs>
 
       {/* Approve Dialog */}

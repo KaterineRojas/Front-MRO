@@ -4,21 +4,22 @@ import { ClipboardCheck, Check, X, Clock, Package, AlertTriangle, ChevronDown, C
 
 interface TabItem {
     name: string,
-    iconType: string
+    iconType: string,
 }
 
 interface TabsProps {
     tabsList: TabItem[]
+    activeTab: string
+    setActiveTab: (tabName : string) => void
 }
 
-function Tabs({ tabsList }: TabsProps) {
+function Tabs({ tabsList, activeTab, setActiveTab }: TabsProps) {
 
     const darkMode = useSelector((state: any) => state.ui.darkMode);
-    const [currentTab, setCurrentTab] = useState(tabsList[0].name);
 
 
     const getBackgroundColor = (tabName: string): string => {
-        const isActive = currentTab === tabName;
+        const isActive = activeTab.toLocaleLowerCase() == tabName.toLowerCase();
 
         if (isActive) {
             return '#fff';
@@ -29,7 +30,7 @@ function Tabs({ tabsList }: TabsProps) {
 
     // 2. Lógica de Texto Corregida
     const getTextColor = (tabName: string): string => {
-        const isActive = currentTab === tabName;
+        const isActive = activeTab.toLowerCase() === tabName.toLowerCase();
 
         if (isActive) {
             return '#000';
@@ -115,7 +116,7 @@ function Tabs({ tabsList }: TabsProps) {
                                 color: getTextColor(e.name),
                                 fontWeight: '500', // (Esto lo puedes pasar a 'font-medium' en la clase)
                             }}
-                            onClick={() => { setCurrentTab(e.name) }}
+                            onClick={() => { setActiveTab(e.name.toLowerCase());  }}
                         >
                             {getIconType(e.iconType)}
                             {e.name}

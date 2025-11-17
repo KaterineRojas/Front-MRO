@@ -183,12 +183,12 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    // <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <Provider store={store}>
         <BrowserRouter>
           <AppRoutes />
         </BrowserRouter>
       </Provider>
-    </ThemeProvider>
+    // </ThemeProvider>
   );
 }
