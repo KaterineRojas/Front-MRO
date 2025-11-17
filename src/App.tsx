@@ -1,4 +1,3 @@
-import React from 'react';
 import { Provider } from 'react-redux';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { store, useAppSelector } from './store';
@@ -17,6 +16,15 @@ import { OrderDetailView } from './components/features/orders/OrderDetailView';
 import { CycleCountView } from './components/features/cycle-count/CycleCountView';
 import { ReturnItemsPage } from './components/features/loans/ReturnItemsPage';
 
+// Engineer Module Imports
+import { 
+  Catalog as EngineerCatalog,
+  MyInventoryTransfer as EngineerMyInventory,
+  CompleteHistory as EngineerCompleteHistory,
+  RequestOrders as EngineerRequestOrders
+} from './components/features/enginner';
+import { EngineerModuleWrapper } from './components/features/enginner/EngineerModuleWrapper';
+
 // Wrapper components for route navigation
 function CycleCountWrapper() {
   const navigate = useNavigate();
@@ -24,7 +32,7 @@ function CycleCountWrapper() {
   return (
     <CycleCount 
       onStartCycleCount={() => navigate('/cycle-count/active')}
-      onViewCycleCount={(record) => navigate('/cycle-count/active')}
+      onViewCycleCount={(_record) => navigate('/cycle-count/active')}
     />
   );
 }
@@ -137,6 +145,10 @@ function CycleCountActiveWrapper() {
   );
 }
 
+function EngineerRequestOrdersWrapper() {
+  return <EngineerRequestOrders />;
+}
+
 function AppRoutes() {
   // Get user from Redux store
   const user = useAppSelector((state) => state.auth.user);
@@ -172,6 +184,12 @@ function AppRoutes() {
         {user && user.role === 'administrator' && (
           <Route path="users" element={<UserManagement />} />
         )}
+        
+        {/* Engineer Modules - Nuevos módulos integrados */}
+        <Route path="engineer/catalog" element={<EngineerModuleWrapper><EngineerCatalog /></EngineerModuleWrapper>} />
+        <Route path="engineer/requests" element={<EngineerModuleWrapper><EngineerRequestOrdersWrapper /></EngineerModuleWrapper>} />
+        <Route path="engineer/my-inventory" element={<EngineerModuleWrapper><EngineerMyInventory /></EngineerModuleWrapper>} />
+        <Route path="engineer/history" element={<EngineerModuleWrapper><EngineerCompleteHistory /></EngineerModuleWrapper>} />
         
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />

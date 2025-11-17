@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { 
   useAppDispatch, 
@@ -28,7 +28,9 @@ import {
   Moon,
   Calculator,
   LogOut,
-  Search
+  Search,
+  PackageCheck,
+  ScrollText
 } from 'lucide-react';
 
 export function Layout() {
@@ -91,6 +93,11 @@ export function Layout() {
     ...(['administrator', 'manager'].includes(currentUser.role) ? [{ id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests', disabled: false }] : []),
     { id: 'reports', label: 'Reports', icon: FileText, path: '/reports', disabled: false },
     ...(currentUser.role === 'administrator' ? [{ id: 'users', label: 'User Management', icon: Users, path: '/users', disabled: false }] : []),
+    // Engineer Modules - Nuevos módulos integrados
+    { id: 'engineer-catalog', label: 'Engineer Catalog', icon: Package, path: '/engineer/catalog', disabled: false },
+    { id: 'engineer-requests', label: 'Request Orders', icon: FileText, path: '/engineer/requests', disabled: false },
+    { id: 'engineer-inventory', label: 'My Engineer Inventory', icon: PackageCheck, path: '/engineer/my-inventory', disabled: false },
+    { id: 'engineer-history', label: 'Engineer Complete History', icon: ScrollText, path: '/engineer/history', disabled: false },
   ] as const;
 
   const isActivePath = (path: string) => {
