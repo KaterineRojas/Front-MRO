@@ -390,6 +390,7 @@ export const mockWarehousesV2: WarehouseV2[] = [
                   { 
                     id: 'b39', 
                     code: 'AMX02-GC-R01-L02-B01', 
+                    name: 'Bin de algo',
                     description: 'Bin de nivel medio',
                     quantity: 0,
                     createdAt: new Date('2024-02-10')
@@ -404,6 +405,7 @@ export const mockWarehousesV2: WarehouseV2[] = [
                   { 
                     id: 'b42', 
                     code: 'AMX02-GC-R01-L01-B01', 
+                    name: 'Bin de algo',
                     description: 'Bin a nivel de suelo',
                     quantity: 0,
                     createdAt: new Date('2024-02-11')
@@ -439,6 +441,7 @@ export const mockWarehousesV2: WarehouseV2[] = [
                   { 
                     id: 'b47', 
                     code: 'AMX03-GC-R01-L01-B01', 
+                    name: 'Bin de nombre de su amx',
                     description: 'Bin a nivel de suelo',
                     quantity: 0,
                     createdAt: new Date('2024-02-15')

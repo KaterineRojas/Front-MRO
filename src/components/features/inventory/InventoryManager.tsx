@@ -6,7 +6,6 @@ import { CreateKitPage } from './pages/CreateKitPage';
 import { RecordMovementModal } from './modals/RecordMovement/RecordMovementModal';
 import { ItemsTab } from './tabs/Items/ItemsTab';
 import { KitsTab } from './tabs/Kits/KitsTab';
-import { BinsTab } from './tabs/Bins/BinsTab';
 import { BinManagerTab } from './tabs/BinManager/BinManagerTab';
 import { TransactionsTab } from './tabs/transactions/TransactionsTab';
 import { LoadingOverlay } from '../../ui/loading-overlay';
@@ -30,7 +29,7 @@ import {
 export function InventoryManager() {
   const dispatch = useAppDispatch();
   const { articles, kits, error } = useAppSelector((state) => state.inventory);
-  const [viewMode, setViewMode] = useState<'items' | 'kits' | 'create-kit' | 'bins' | 'bin-manager' | 'transactions'>('items');
+  const [viewMode, setViewMode] = useState<'items' | 'kits' | 'create-kit' | 'bin-manager' | 'transactions'>('items');
   const [recordMovementOpen, setRecordMovementOpen] = useState(false);
   const [editingKit, setEditingKit] = useState<Kit | null>(null);
   const [isCreatingItem, setIsCreatingItem] = useState(false);
@@ -371,13 +370,12 @@ export function InventoryManager() {
 
         <Tabs
           value={viewMode}
-          onValueChange={(value: 'items' | 'kits' | 'create-kit' | 'bins' | 'bin-manager' | 'transactions') => setViewMode(value)}
+          onValueChange={(value: 'items' | 'kits' | 'create-kit' | 'bin-manager' | 'transactions') => setViewMode(value)}
           className="w-full"
         >
-          <TabsList className="w-full !grid !grid-cols-5 gap-1">
+          <TabsList className="w-full !grid !grid-cols-4 gap-1">
             <TabsTrigger value="items">Items</TabsTrigger>
             <TabsTrigger value="kits">Kits</TabsTrigger>
-            <TabsTrigger value="bins">Bins</TabsTrigger>
             <TabsTrigger value="bin-manager">Bin Manager</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
           </TabsList>
@@ -410,10 +408,6 @@ export function InventoryManager() {
               }}
               onDeleteKit={handleDeleteKit}
             />
-          </TabsContent>
-
-          <TabsContent value="bins" className="space-y-4">
-            <BinsTab />
           </TabsContent>
 
           <TabsContent value="bin-manager" className="space-y-4">

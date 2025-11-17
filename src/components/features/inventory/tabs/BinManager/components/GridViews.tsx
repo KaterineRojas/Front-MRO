@@ -12,7 +12,7 @@ interface ZoneGridViewProps {
 
 export function ZoneGridView({ zones, onZoneClick, onEditZone, onDeleteZone }: ZoneGridViewProps) {
   return (
-    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-md p-6">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md p-6">
       <div className="mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-600">
         <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Warehouse className="w-6 h-6" />
@@ -51,7 +51,7 @@ interface RackGridViewProps {
 
 export function RackGridView({ racks, onRackClick, onEditRack, onDeleteRack }: RackGridViewProps) {
   return (
-    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-md p-6">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md p-6">
       <div className="mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-600">
         <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Grid3x3 className="w-6 h-6" />
@@ -90,7 +90,7 @@ interface LevelGridViewProps {
 
 export function LevelGridView({ levels, onLevelClick, onEditLevel, onDeleteLevel }: LevelGridViewProps) {
   return (
-    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-md p-6">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md p-6">
       <div className="mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-600">
         <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Layers className="w-6 h-6" />
@@ -130,7 +130,7 @@ interface BinGridViewProps {
 
 export function BinGridView({ bins, levelName, onBinClick, onEditBin, onDeleteBin }: BinGridViewProps) {
   return (
-    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-md p-6">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md p-6">
       <div className="mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-600">
         <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Box className="w-6 h-6" />

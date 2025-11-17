@@ -60,21 +60,9 @@ export function BinModal({ isOpen, onClose, onSave, bin, generatedCode, location
 
   const codePrefix = bin ? getCodeParts(bin.code).prefix : '';
 
-  // Filter racks based on selected zone
-  const filteredRacks = selectedZoneId 
-    ? availableRacks.filter(r => {
-        const selectedZone = availableZones.find(z => z.id === selectedZoneId);
-        return selectedZone ? r.code.startsWith(selectedZone.code + '-') : false;
-      })
-    : availableRacks;
-
-  // Filter levels based on selected rack
-  const filteredLevels = selectedRackId
-    ? availableLevels.filter(l => {
-        const selectedRack = filteredRacks.find(r => r.id === selectedRackId);
-        return selectedRack ? l.code.startsWith(selectedRack.code + '-') : false;
-      })
-    : availableLevels;
+  // No filtrar - mostrar todos los racks y levels disponibles
+  const filteredRacks = availableRacks;
+  const filteredLevels = availableLevels;
 
   useEffect(() => {
     if (bin) {
@@ -150,25 +138,25 @@ export function BinModal({ isOpen, onClose, onSave, bin, generatedCode, location
                     </SelectContent>
                   </Select>
                   <Select value={selectedRackId} onValueChange={setSelectedRackId}>
-                    <SelectTrigger className="w-auto min-w-[80px] dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600">
+                    <SelectTrigger className="w-auto min-w-[100px] dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600">
                       <SelectValue placeholder="Rack" />
                     </SelectTrigger>
                     <SelectContent>
                       {filteredRacks.map((rack) => (
                         <SelectItem key={rack.id} value={rack.id}>
-                          {rack.code.split('-').pop()}
+                          {rack.code}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <Select value={selectedLevelId} onValueChange={setSelectedLevelId}>
-                    <SelectTrigger className="w-auto min-w-[80px] dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600">
+                    <SelectTrigger className="w-auto min-w-[120px] dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600">
                       <SelectValue placeholder="Level" />
                     </SelectTrigger>
                     <SelectContent>
                       {filteredLevels.map((level) => (
                         <SelectItem key={level.id} value={level.id}>
-                          {level.code.split('-').pop()}
+                          {level.code}
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -400,201 +400,236 @@ const BIN_PURPOSE_MAP: Record<string, number> = {
 
 /**
  * Obtiene todos los bins con cantidad
+ * @deprecated Temporalmente desactivado - pendiente migración a nueva lógica de bins
  */
 export async function fetchBinsFromApi(): Promise<Bin[]> {
-  try {
-    const response = await fetch(`${API_URL}/Bins/with-quantity?isActive=true`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
+  console.warn('⚠️ fetchBinsFromApi temporalmente desactivado - pendiente migración a nueva lógica');
+  return [];
+  
+  // CÓDIGO ORIGINAL COMENTADO (PENDIENTE MIGRACIÓN)
+  // try {
+  //   const response = await fetch(`${API_URL}/Bins/with-quantity?isActive=true`, {
+  //     method: 'GET',
+  //     headers: { 'Content-Type': 'application/json' },
+  //   });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch bins: ${response.status} ${response.statusText}`);
-    }
+  //   if (!response.ok) {
+  //     throw new Error(`Failed to fetch bins: ${response.status} ${response.statusText}`);
+  //   }
 
-    const data: BinResponse[] = await response.json();
-    return data.map(transformBin);
-  } catch (error) {
-    console.error('Error fetching all bins:', error);
-    throw error;
-  }
+  //   const data: BinResponse[] = await response.json();
+  //   return data.map(transformBin);
+  // } catch (error) {
+  //   console.error('Error fetching all bins:', error);
+  //   throw error;
+  // }
 }
 
 /**
  * Obtiene bins disponibles para crear items (GoodCondition)
+ * @deprecated Temporalmente desactivado - pendiente migración a nueva lógica de bins
  */
 export async function getNewBins(): Promise<Bin[]> {
-  try {
-    const response = await fetch(`${API_URL}/Bins?isActive=true`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
+  console.warn('⚠️ getNewBins temporalmente desactivado - pendiente migración a nueva lógica');
+  return [];
+  
+  // CÓDIGO ORIGINAL COMENTADO (PENDIENTE MIGRACIÓN)
+  // try {
+  //   const response = await fetch(`${API_URL}/Bins?isActive=true`, {
+  //     method: 'GET',
+  //     headers: { 'Content-Type': 'application/json' },
+  //   });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch new bins: ${response.status} ${response.statusText}`);
-    }
+  //   if (!response.ok) {
+  //     throw new Error(`Failed to fetch new bins: ${response.status} ${response.statusText}`);
+  //   }
 
-    const data: BinResponse[] = await response.json();
+  //   const data: BinResponse[] = await response.json();
 
-    return data
-      .filter(bin => bin.binPurposeDisplay === 'GoodCondition')
-      .map(transformBin);
-  } catch (error) {
-    console.error('Error fetching new bins:', error);
-    throw error;
-  }
+  //   return data
+  //     .filter(bin => bin.binPurposeDisplay === 'GoodCondition')
+  //     .map(transformBin);
+  // } catch (error) {
+  //   console.error('Error fetching new bins:', error);
+  //   throw error;
+  // }
 }
 
 /**
  * Obtiene un bin por ID
+ * @deprecated Temporalmente desactivado - pendiente migración a nueva lógica de bins
  */
-async function fetchBinByIdApi(id: number): Promise<Bin> {
-  try {
-    const response = await fetch(`${API_URL}/Bins/${id}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
+async function fetchBinByIdApi(_id: number): Promise<Bin> {
+  console.warn('⚠️ fetchBinByIdApi temporalmente desactivado - pendiente migración a nueva lógica');
+  throw new Error('Function temporarily disabled');
+  
+  // CÓDIGO ORIGINAL COMENTADO (PENDIENTE MIGRACIÓN)
+  // try {
+  //   const response = await fetch(`${API_URL}/Bins/${id}`, {
+  //     method: 'GET',
+  //     headers: { 'Content-Type': 'application/json' },
+  //   });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch bin: ${response.status}`);
-    }
+  //   if (!response.ok) {
+  //     throw new Error(`Failed to fetch bin: ${response.status}`);
+  //   }
 
-    const bin = await response.json();
-    return transformBin(bin);
-  } catch (error) {
-    console.error('Error fetching bin by ID:', error);
-    throw error;
-  }
+  //   const bin = await response.json();
+  //   return transformBin(bin);
+  // } catch (error) {
+  //   console.error('Error fetching bin by ID:', error);
+  //   throw error;
+  // }
 }
 
 /**
  * Crea un nuevo bin
+ * @deprecated Temporalmente desactivado - pendiente migración a nueva lógica de bins
  */
-export async function createBinApi(binData: {
+export async function createBinApi(_binData: {
   binCode: string;
   type: string;
   description: string;
 }): Promise<Bin> {
-  try {
-    const normalizedType = binData.type.toLowerCase();
-    const binPurpose = BIN_PURPOSE_MAP[normalizedType] ?? BIN_PURPOSE_MAP[binData.type] ?? 0;
+  console.warn('⚠️ createBinApi temporalmente desactivado - pendiente migración a nueva lógica');
+  throw new Error('Function temporarily disabled');
+  
+  // CÓDIGO ORIGINAL COMENTADO (PENDIENTE MIGRACIÓN)
+  // try {
+  //   const normalizedType = binData.type.toLowerCase();
+  //   const binPurpose = BIN_PURPOSE_MAP[normalizedType] ?? BIN_PURPOSE_MAP[binData.type] ?? 0;
 
-    const payload = {
-      binCode: binData.binCode,
-      description: binData.description || '',
-      binPurpose: binPurpose
-    };
+  //   const payload = {
+  //     binCode: binData.binCode,
+  //     description: binData.description || '',
+  //     binPurpose: binPurpose
+  //   };
 
-    console.log('CREATE BIN PAYLOAD:', payload);
+  //   console.log('CREATE BIN PAYLOAD:', payload);
 
-    const response = await fetch(`${API_URL}/Bins`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+  //   const response = await fetch(`${API_URL}/Bins`, {
+  //     method: 'POST',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify(payload),
+  //   });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to create bin: ${response.status} - ${errorText}`);
-    }
+  //   if (!response.ok) {
+  //     const errorText = await response.text();
+  //     throw new Error(`Failed to create bin: ${response.status} - ${errorText}`);
+  //   }
 
-    const createdBin = await response.json();
-    return transformBin(createdBin);
-  } catch (error) {
-    console.error('Error creating bin:', error);
-    throw error;
-  }
+  //   const createdBin = await response.json();
+  //   return transformBin(createdBin);
+  // } catch (error) {
+  //   console.error('Error creating bin:', error);
+  //   throw error;
+  // }
 }
 
 /**
  * Actualiza un bin existente
+ * @deprecated Temporalmente desactivado - pendiente migración a nueva lógica de bins
  */
-export async function updateBinApi(id: number, binData: {
+export async function updateBinApi(_id: number, _binData: {
   binCode: string;
   type: string;
   description: string;
 }): Promise<Bin> {
-  try {
-    const binPurpose = BIN_PURPOSE_MAP[binData.type] ?? 0;
+  console.warn('⚠️ updateBinApi temporalmente desactivado - pendiente migración a nueva lógica');
+  throw new Error('Function temporarily disabled');
+  
+  // CÓDIGO ORIGINAL COMENTADO (PENDIENTE MIGRACIÓN)
+  // try {
+  //   const binPurpose = BIN_PURPOSE_MAP[binData.type] ?? 0;
 
-    const payload = {
-      binCode: binData.binCode,
-      description: binData.description || '',
-      binPurpose: binPurpose
-    };
+  //   const payload = {
+  //     binCode: binData.binCode,
+  //     description: binData.description || '',
+  //     binPurpose: binPurpose
+  //   };
 
-    console.log('UPDATE BIN PAYLOAD:', payload);
+  //   console.log('UPDATE BIN PAYLOAD:', payload);
 
-    const response = await fetch(`${API_URL}/Bins/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+  //   const response = await fetch(`${API_URL}/Bins/${id}`, {
+  //     method: 'PUT',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify(payload),
+  //   });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to update bin: ${response.status} - ${errorText}`);
-    }
+  //   if (!response.ok) {
+  //     const errorText = await response.text();
+  //     throw new Error(`Failed to update bin: ${response.status} - ${errorText}`);
+  //   }
 
-    const contentType = response.headers.get('content-type');
-    const hasContent = contentType?.includes('application/json');
+  //   const contentType = response.headers.get('content-type');
+  //   const hasContent = contentType?.includes('application/json');
 
-    if (!hasContent || response.status === 204) {
-      return await fetchBinByIdApi(id);
-    }
+  //   if (!hasContent || response.status === 204) {
+  //     return await fetchBinByIdApi(id);
+  //   }
 
-    const updatedBin = await response.json();
-    return transformBin(updatedBin);
-  } catch (error) {
-    console.error('Error updating bin:', error);
-    throw error;
-  }
+  //   const updatedBin = await response.json();
+  //   return transformBin(updatedBin);
+  // } catch (error) {
+  //   console.error('Error updating bin:', error);
+  //   throw error;
+  // }
 }
 
 /**
  * Elimina un bin
+ * @deprecated Temporalmente desactivado - pendiente migración a nueva lógica de bins
  */
-export async function deleteBinApi(id: number): Promise<void> {
-  try {
-    const response = await fetch(`${API_URL}/Bins/${id}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-    });
+export async function deleteBinApi(_id: number): Promise<void> {
+  console.warn('⚠️ deleteBinApi temporalmente desactivado - pendiente migración a nueva lógica');
+  throw new Error('Function temporarily disabled');
+  
+  // CÓDIGO ORIGINAL COMENTADO (PENDIENTE MIGRACIÓN)
+  // try {
+  //   const response = await fetch(`${API_URL}/Bins/${id}`, {
+  //     method: 'DELETE',
+  //     headers: { 'Content-Type': 'application/json' },
+  //   });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to delete bin: ${response.status} - ${errorText}`);
-    }
-  } catch (error) {
-    console.error('Error deleting bin:', error);
-    throw error;
-  }
+  //   if (!response.ok) {
+  //     const errorText = await response.text();
+  //     throw new Error(`Failed to delete bin: ${response.status} - ${errorText}`);
+  //   }
+  // } catch (error) {
+  //   console.error('Error deleting bin:', error);
+  //   throw error;
+  // }
 }
 
 /**
  * Obtiene tipos de bins disponibles
+ * @deprecated Temporalmente desactivado - pendiente migración a nueva lógica de bins
  */
 export async function getBinTypes(): Promise<{ value: string; label: string }[]> {
-  try {
-    const response = await fetch(`${API_URL}/Bins/types`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
+  console.warn('⚠️ getBinTypes temporalmente desactivado - pendiente migración a nueva lógica');
+  return [];
+  
+  // CÓDIGO ORIGINAL COMENTADO (PENDIENTE MIGRACIÓN)
+  // try {
+  //   const response = await fetch(`${API_URL}/Bins/types`, {
+  //     method: 'GET',
+  //     headers: { 'Content-Type': 'application/json' },
+  //   });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch bin types: ${response.status}`);
-    }
+  //   if (!response.ok) {
+  //     throw new Error(`Failed to fetch bin types: ${response.status}`);
+  //   }
 
-    const data: string[] = await response.json();
+  //   const data: string[] = await response.json();
 
-    return data.map(binType => ({
-      value: binType,
-      label: binType,
-    }));
-  } catch (error) {
-    console.error('Error fetching bin types:', error);
-    throw error;
-  }
+  //   return data.map(binType => ({
+  //     value: binType,
+  //     label: binType,
+  //   }));
+  // } catch (error) {
+  //   console.error('Error fetching bin types:', error);
+  //   throw error;
+  // }
 }
 
 // ============================================================================
