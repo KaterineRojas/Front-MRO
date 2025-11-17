@@ -245,7 +245,7 @@ export function RequestManagement() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <div className="space-y-6 flex flex-col gap-2">
 
         <TabsGroup
           tabsList={[
@@ -307,7 +307,7 @@ export function RequestManagement() {
           </div>
 
         </div>
-      </Tabs>
+      </div>
 
       {/* Approve Dialog */}
       <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>

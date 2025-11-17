@@ -57,20 +57,20 @@ export default function RequestsTable({
     <div className="w-full overflow-auto rounded-md border">
       <table className="w-full caption-bottom text-sm">
         <thead className="[&_tr]:border-b">
-          <tr className="border-b transition-colors">
+          <tr className="border-b transition-colors bg-[#0A0A0A]">
             <th className="h-12 w-12 px-4 text-left align-middle font-medium"></th>
-            <th className="h-12 px-6 text-center align-middle font-medium">Request #</th>
-            <th className="h-12 px-6 text-center align-middle font-medium">Status</th>
-            <th className="h-12 px-6 text-center align-middle font-medium">Type</th>
-            <th className="h-12 px-6 text-center align-middle font-medium">Requested By</th>
-            <th className="h-12 px-6 text-center align-middle font-medium">Department</th>
-            <th className="h-12 px-6 text-center align-middle font-medium">Project</th>
-            <th className="h-12 px-6 text-center align-middle font-medium">Urgency</th>
-            <th className="h-12 px-6 text-center align-middle font-medium">Request Date</th>
-            <th className="h-12 px-6 text-center align-middle font-medium">Actions</th>
+            <th className="h-12 px-8 align-middle font-medium">Request #</th>
+            <th className="h-12 px-8 align-middle font-medium">Status</th>
+            <th className="h-12 px-8 align-middle font-medium">Type</th>
+            <th className="h-12 px-8 align-middle font-medium">Requested By</th>
+            <th className="h-12 px-8 align-middle font-medium">Department</th>
+            <th className="h-12 px-8 align-middle font-medium">Project</th>
+            <th className="h-12 px-8 align-middle font-medium">Urgency</th>
+            <th className="h-12 px-8 align-middle font-medium">Request Date</th>
+            <th className="h-12 px-8 align-middle font-medium">Actions</th>
           </tr>
         </thead>
-        <tbody className="[&_tr:last-child]:border-0">
+        <tbody className="[&_tr:last-child]:border-0 bg-[#0A0A0A]">
           {requests.map((request) => {
             const totalCost = calculateTotalCost(request);
             return (
@@ -78,7 +78,7 @@ export default function RequestsTable({
                 {/* Esta es la <TableRow> */}
                 <tr className="border-b transition-colors hover:bg-[#F5F5F7] dark:hover:bg-gray-400/10">
                   {/* Esta es la <TableCell> */}
-                  <td className="p-0 align-middle text-center">
+                  <td className="p-3 align-middle text-center">
                     {/* Este es el <Button variant="ghost"> */}
                     <button
                       onClick={() => handleToggleExpand(request.id)}
@@ -92,7 +92,7 @@ export default function RequestsTable({
                       />
                     </button>
                   </td>
-                  <td className="p-0 align-middle font-mono ">
+                  <td className="px-2 align-middle font-mono ">
                     <div>
                       <p>{request.requestNumber}</p>
                       {(request.type === 'purchase' || request.type === 'purchase-on-site') && totalCost > 0 && (
@@ -102,29 +102,29 @@ export default function RequestsTable({
                       )}
                     </div>
                   </td>
-                  <td className="p-1 align-middle">
+                  <td className="px-4 align-middle">
                     <div className="flex items-center space-x-2 ">
                       {getStatusIcon(request.status)}
                       {getStatusBadge(request.status)} {/* (Asumiendo que esta función ya devuelve un <span> con clases) */}
                     </div>
                   </td>
-                  <td className="p-1 align-middle ">{getTypeBadge(request.type)}</td>
-                  <td className="p-1 align-middle">
+                  <td className="px-4 align-middle ">{getTypeBadge(request.type)}</td>
+                  <td className="px-4 align-middle">
                     <div>
                       <p>{request.requestedBy}</p>
                       <p className="text-xs text-gray-500">{request.requestedByEmail}</p>
                     </div>
                   </td>
-                  <td className="p-1 align-middle">{request.department}</td>
-                  <td className="p-1 align-middle">
+                  <td className="px-4 align-middle">{request.department}</td>
+                  <td className="px-4 align-middle">
                     {request.project ? (
                       <p className="text-sm">{request.project}</p>
                     ) : (
                       <p className="text-xs text-gray-500">-</p>
                     )}
                   </td>
-                  <td className="p-1 align-middle">{getUrgencyBadge(request.urgency)}</td>
-                  <td className="p-1 align-middle">
+                  <td className="px-4 align-middle">{getUrgencyBadge(request.urgency)}</td>
+                  <td className="px-0 align-middle">
                     <div>
                       <p className="text-sm">{request.requestDate}</p>
                       {request.requiredDate && (
@@ -134,7 +134,7 @@ export default function RequestsTable({
                       )}
                     </div>
                   </td>
-                  <td className="p-1 align-middle">
+                  <td className="px-4 align-middle">
                     {request.status === 'pending' ? (
                       <div className="flex space-x-2">
                         {/* Este es el <Button variant="outline"> */}
@@ -222,12 +222,13 @@ export default function RequestsTable({
                             Items ({request.items.length})
                           </h5>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          <div className="grid grid-cols-3 gap-3">
                             {request.items.map(item => (
                               <div
                                 key={item.id}
-                                // 👇 NOTA: Se quitó 'w-auto'. La grid maneja el ancho.
                                 className="flex items-center p-3 bg-white dark:bg-gray-800/30 border dark:border-gray-700 rounded-lg shadow-sm"
+                      //           className="flex items-center p-3 bg-white dark:bg-gray-800/30 border dark:border-gray-700 rounded-lg shadow-sm
+                      //  justify-self-center md:justify-self-stretch"
                               >
 
                                 {/* Imagen */}

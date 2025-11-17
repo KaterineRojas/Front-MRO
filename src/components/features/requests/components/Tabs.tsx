@@ -82,14 +82,7 @@ function Tabs({ tabsList, activeTab, setActiveTab }: TabsProps) {
 
     return (
         // 1. Contenedor Padre
-        //    - Móvil (default): 'flex justify-center' para centrar el 'inline-flex'
-        //    - Desktop: 'md:justify-start' para que el contenido (que será 100%) se alinee normal
-        <div className="w-full flex justify-center md:justify-start">
-
-            {/* 2. Contenedor de Tabs
-            - Móvil (default): 'inline-flex' (se encoje), 'max-w-full' (límite), 'overflow-x-auto' (scroll)
-            - Desktop ('md:'): 'md:flex' (anula 'inline-flex'), 'md:w-full' (anula 'max-w-full' y se estira)
-        */}
+        <div className="w-full flex justify-center items-center md:justify-end m-0">
             <div
                 className={`
                 inline-flex max-w-full overflow-x-auto h-9 items-center rounded-xl p-[3px] 
@@ -103,9 +96,6 @@ function Tabs({ tabsList, activeTab, setActiveTab }: TabsProps) {
                         return <button
                             key={e.name}
 
-                            // 3. Botones
-                            //    - Móvil (default): 'flex-shrink-0 px-4' (no se encoje, padding fijo)
-                            //    - Desktop ('md:'): 'md:flex-1' (crece), 'md:px-0' (sin padding)
                             className={`
                             flex justify-center items-center gap-2 rounded-lg font-medium h-full text-sm
                             flex-shrink-0 px-4
@@ -114,7 +104,7 @@ function Tabs({ tabsList, activeTab, setActiveTab }: TabsProps) {
                             style={{
                                 backgroundColor: getBackgroundColor(e.name),
                                 color: getTextColor(e.name),
-                                fontWeight: '500', // (Esto lo puedes pasar a 'font-medium' en la clase)
+                                fontWeight: '500',
                             }}
                             onClick={() => { setActiveTab(e.name.toLowerCase());  }}
                         >
