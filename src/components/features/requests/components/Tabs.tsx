@@ -80,7 +80,50 @@ function Tabs({ tabsList }: TabsProps) {
     }
 
     return (
-        <h2></h2>
+        // 1. Contenedor Padre
+        //    - Móvil (default): 'flex justify-center' para centrar el 'inline-flex'
+        //    - Desktop: 'md:justify-start' para que el contenido (que será 100%) se alinee normal
+        <div className="w-full flex justify-center md:justify-start">
+
+            {/* 2. Contenedor de Tabs
+            - Móvil (default): 'inline-flex' (se encoje), 'max-w-full' (límite), 'overflow-x-auto' (scroll)
+            - Desktop ('md:'): 'md:flex' (anula 'inline-flex'), 'md:w-full' (anula 'max-w-full' y se estira)
+        */}
+            <div
+                className={`
+                inline-flex max-w-full overflow-x-auto h-9 items-center rounded-xl p-[3px] 
+                [&::-webkit-scrollbar]:hidden
+                md:flex md:w-full
+            `}
+                style={{ background: `${getTabBackgroundColor()}` }}
+            >
+                {
+                    tabsList.map(e => {
+                        return <button
+                            key={e.name}
+
+                            // 3. Botones
+                            //    - Móvil (default): 'flex-shrink-0 px-4' (no se encoje, padding fijo)
+                            //    - Desktop ('md:'): 'md:flex-1' (crece), 'md:px-0' (sin padding)
+                            className={`
+                            flex justify-center items-center gap-2 rounded-lg font-medium h-full text-sm
+                            flex-shrink-0 px-4
+                            md:flex-1 md:flex-shrink-1 md:px-0
+                        `}
+                            style={{
+                                backgroundColor: getBackgroundColor(e.name),
+                                color: getTextColor(e.name),
+                                fontWeight: '500', // (Esto lo puedes pasar a 'font-medium' en la clase)
+                            }}
+                            onClick={() => { setCurrentTab(e.name) }}
+                        >
+                            {getIconType(e.iconType)}
+                            {e.name}
+                        </button>
+                    })
+                }
+            </div>
+        </div>
     )
 }
 
