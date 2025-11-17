@@ -16,6 +16,7 @@ import { LoanDetailView } from './components/features/loans/LoanDetailView';
 import { OrderDetailView } from './components/features/orders/OrderDetailView';
 import { CycleCountView } from './components/features/cycle-count/CycleCountView';
 import { ReturnItemsPage } from './components/features/loans/ReturnItemsPage';
+import { ManageRequests } from './components/features/manage-requests/ManageRequests';
 
 // Wrapper components for route navigation
 function CycleCountWrapper() {
@@ -162,6 +163,9 @@ function AppRoutes() {
         {/* Purchase Orders Routes */}
         <Route path="orders" element={<PurchaseOrdersWrapper />} />
         <Route path="orders/detail" element={<OrderDetailWrapper />} />
+
+        {/* Manage Requests Route */}
+        <Route path="manage-requests" element={<ManageRequests />} />
         
         {/* Request Management (Admin/Manager only) */}
         {user && ['administrator', 'manager'].includes(user.role) && (

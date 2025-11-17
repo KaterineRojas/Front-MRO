@@ -88,6 +88,7 @@ export function Layout() {
     { id: 'orders', label: 'Purchase Request', icon: ShoppingCart, path: '/orders', disabled: false },
     { id: 'cyclecount', label: 'Cycle Count', icon: Calculator, path: '/cycle-count', disabled: false },
     { id: 'quickfind', label: 'Quick Find', icon: Search, path: '/quick-find', disabled: false },
+    { id: 'managerequests', label: 'Manage Requests', icon: Package, path: '/manage-requests', disabled: false },
     ...(['administrator', 'manager'].includes(currentUser.role) ? [{ id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests', disabled: false }] : []),
     { id: 'reports', label: 'Reports', icon: FileText, path: '/reports', disabled: false },
     ...(currentUser.role === 'administrator' ? [{ id: 'users', label: 'User Management', icon: Users, path: '/users', disabled: false }] : []),
