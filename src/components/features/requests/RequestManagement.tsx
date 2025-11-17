@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useEffectEvent } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -16,6 +16,7 @@ import CardRequest from './components/Card'
 import TabsGroup from './components/Tabs'
 import SearchBar, { SelectOption } from './components/SearchBar'
 import RequestsTable from './components/DataTable';
+import RequestModal from './components/ApproveRequestDialog';
 
 
 
@@ -35,15 +36,7 @@ export function RequestManagement() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [expandedRequests, setExpandedRequests] = useState<Set<number>>(new Set());
   const [rejectNotes, setRejectNotes] = useState('');
-
-
-  useEffect(() => {
-    console.log(activeTab);
-  }, [activeTab])
-
-  // variables for search bar do not remove
-  const [query, setQuery] = useState("");
-  const [type, setType] = useState("all"); // 
+  const [modalType, setModalType] = useState('approve')
 
   const requestTypeOptions: SelectOption[] = [
     { value: "all", label: "All Types" },
@@ -97,6 +90,11 @@ export function RequestManagement() {
       request.id === selectedRequest.id ? updatedRequest : request
     ));
 
+    setApproveDialogOpen(false);
+    setSelectedRequest(null);
+  };
+
+  const handleCancelApprove = () => {
     setApproveDialogOpen(false);
     setSelectedRequest(null);
   };
@@ -309,8 +307,19 @@ export function RequestManagement() {
         </div>
       </div>
 
+
+
+      <RequestModal
+        open={approveDialogOpen}
+        request={selectedRequest}
+        onConfirm={handleApprove}
+        onCancel={handleCancelApprove}
+        getTypeBadge={getTypeBadge}
+        variant='reject'
+      />
+
       {/* Approve Dialog */}
-      <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+      {/* <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Approve Request</DialogTitle>
@@ -403,7 +412,7 @@ export function RequestManagement() {
             </div>
           )}
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
 
       {/* Reject Dialog */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>

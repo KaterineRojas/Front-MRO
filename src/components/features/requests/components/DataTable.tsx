@@ -225,55 +225,55 @@ export default function RequestsTable({
                           <div className="grid grid-cols-3 gap-3">
                             {request.items.map(item => (
                               <div
-        key={item.id}
-        className="flex items-center p-3 bg-white dark:bg-gray-800/30 border dark:border-gray-700 rounded-lg shadow-sm
+                                key={item.id}
+                                className="flex items-center p-3 bg-white dark:bg-gray-800/30 border dark:border-gray-700 rounded-lg shadow-sm
                    justify-self-center md:justify-self-stretch" // <-- Mantuve esta corrección de la que hablamos
-    >
+                              >
 
-        {/* Imagen */}
-        <img
-            src={item.imageUrl || 'https://via.placeholder.com/150'}
-            alt={item.articleDescription}
-            className="h-20 w-20 object-cover rounded-md mr-4"
-        />
+                                {/* Imagen */}
+                                <img
+                                  src={item.imageUrl || 'https://via.placeholder.com/150'}
+                                  alt={item.articleDescription}
+                                  className="h-20 w-20 object-cover rounded-md mr-4"
+                                />
 
-        {/* Detalles del Item (CON BADGES CORREGIDOS) */}
-        <div className="flex-grow">
-            <span className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                {item.articleCode}
-            </span>
-            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {item.articleDescription}
-            </p>
+                                {/* Detalles del Item (CON BADGES CORREGIDOS) */}
+                                <div className="flex-grow">
+                                  <span className="block text-sm font-medium text-gray-500 dark:text-gray-400">
+                                    {item.articleCode}
+                                  </span>
+                                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                    {item.articleDescription}
+                                  </p>
 
-            {/* --- ESTA ES LA PARTE CORREGIDA --- */}
-            {/* Contenedor Flex para los badges */}
-            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                  {/* --- ESTA ES LA PARTE CORREGIDA --- */}
+                                  {/* Contenedor Flex para los badges */}
+                                  <div className="flex flex-wrap items-center gap-2 mt-1">
 
-                {/* 1. Etiqueta de cantidad (la que tenías) */}
-                <span className="text-xs font-medium text-blue-700 bg-blue-100 dark:text-blue-200 dark:bg-blue-800/50 px-2 py-0.5 rounded-full">
-                    {item.quantity} {item.unit}
-                </span>
+                                    {/* 1. Etiqueta de cantidad (la que tenías) */}
+                                    <span className="text-xs font-medium text-blue-700 bg-blue-100 dark:text-blue-200 dark:bg-blue-800/50 px-2 py-0.5 rounded-full">
+                                      {item.quantity} {item.unit}
+                                    </span>
 
-                {/* 2. Badge de Precio por Unidad (NUEVO) */}
-                {item.estimatedCost && (
-                    <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full dark:bg-green-800 dark:text-green-100">
-                        ${item.estimatedCost.toFixed(2)} each
-                    </span>
-                )}
+                                    {/* 2. Badge de Precio por Unidad (NUEVO) */}
+                                    {item.estimatedCost && (
+                                      <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full dark:bg-green-800 dark:text-green-100">
+                                        ${item.estimatedCost.toFixed(2)} each
+                                      </span>
+                                    )}
 
-                {/* 3. Badge de Costo Total (NUEVO) */}
-                {item.estimatedCost && (
-                    <span className="text-xs font-semibold bg-gray-800 text-white px-2 py-0.5 rounded-full dark:bg-gray-200 dark:text-gray-900">
-                        Total: ${(item.estimatedCost * item.quantity).toFixed(2)}
-                    </span>
-                )}
-            </div>
-            {/* --- FIN DE LA PARTE CORREGIDA --- */}
+                                    {/* 3. Badge de Costo Total (NUEVO) */}
+                                    {item.estimatedCost && (
+                                      <span className="text-xs font-semibold bg-gray-800 text-white px-2 py-0.5 rounded-full dark:bg-gray-200 dark:text-gray-900">
+                                        Total: ${(item.estimatedCost * item.quantity).toFixed(2)}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {/* --- FIN DE LA PARTE CORREGIDA --- */}
 
-        </div>
+                                </div>
 
-    </div>
+                              </div>
                             ))}
                           </div>
 
