@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Plus, Warehouse } from 'lucide-react';
+import { Plus, Warehouse, Grid3x3, Table2 } from 'lucide-react';
 import { mockWarehousesV2 } from '../../data/mockDataV2';
 import { WarehouseV2, ZoneV2, RackV2, LevelV2, BinV2 } from '../../types/warehouse-v2';
 import { BinModal } from './modals/BinModal';
 import { ZoneModal } from './modals/ZoneModal';
 import { RackModal } from './modals/RackModal';
 import { LevelModal } from './modals/LevelModal';
-import { ZoneGridView, RackGridView, LevelGridView, BinGridView } from './components/GridViews';
+import { BinHierarchyView } from './components/BinHierarchyView';
+import { BinTableView } from './components/BinTableView';
 import { Button } from '../../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import {
@@ -22,6 +23,7 @@ import {
 import { toast } from 'sonner';
 
 type ViewLevel = 'warehouse' | 'zone' | 'rack' | 'level' | 'bin';
+type ViewMode = 'grid' | 'table';
 
 export function BinManagerTab() {
   const [warehouses, setWarehouses] = useState(mockWarehousesV2);
@@ -29,6 +31,15 @@ export function BinManagerTab() {
   const [selectedZone, setSelectedZone] = useState<ZoneV2 | null>(null);
   const [selectedRack, setSelectedRack] = useState<RackV2 | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<LevelV2 | null>(null);
+  
+  // View mode state
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  
+  // Table filters
+  const [filterWarehouse, setFilterWarehouse] = useState<string>('all');
+  const [filterZone, setFilterZone] = useState<string>('all');
+  const [filterRack, setFilterRack] = useState<string>('all');
+  const [filterLevel, setFilterLevel] = useState<string>('all');
   
   // Modals state
   const [isBinModalOpen, setIsBinModalOpen] = useState(false);
@@ -50,6 +61,12 @@ export function BinManagerTab() {
     setSelectedZone(zone || null);
     setSelectedRack(rack || null);
     setSelectedLevel(level || null);
+    
+    // Sync table filters with navigation
+    setFilterWarehouse(warehouse.id);
+    setFilterZone(zone?.id || 'all');
+    setFilterRack(rack?.id || 'all');
+    setFilterLevel(level?.id || 'all');
   };
 
   const getCurrentViewLevel = (): ViewLevel => {
@@ -123,6 +140,109 @@ export function BinManagerTab() {
     const existingBins = selectedLevel.bins.length;
     const nextBinNumber = String(existingBins + 1).padStart(2, '0');
     return `${selectedWarehouse.code}-${selectedZone.code}-${selectedRack.code}-${selectedLevel.code}-B${nextBinNumber}`;
+  };
+
+  // Helper functions to get all available items for modals
+  const getAllZones = (): ZoneV2[] => {
+    const warehouse = selectedWarehouse || warehouses[0];
+    if (!warehouse) return [];
+    return warehouse.zones;
+  };
+
+  const getAllRacks = (): RackV2[] => {
+    const warehouse = selectedWarehouse || warehouses[0];
+    if (!warehouse) return [];
+    return warehouse.zones.flatMap(zone => zone.racks);
+  };
+
+  const getAllLevels = (): LevelV2[] => {
+    const warehouse = selectedWarehouse || warehouses[0];
+    if (!warehouse) return [];
+    return warehouse.zones.flatMap(zone => 
+      zone.racks.flatMap(rack => rack.levels)
+    );
+  };
+
+  const findZoneIdForRack = (rack: RackV2): string | undefined => {
+    const warehouse = selectedWarehouse || warehouses[0];
+    if (!warehouse) return undefined;
+    for (const zone of warehouse.zones) {
+      if (zone.racks.some(r => r.id === rack.id)) {
+        return zone.id;
+      }
+    }
+    return undefined;
+  };
+
+  const findZoneIdForLevel = (level: LevelV2): string | undefined => {
+    const warehouse = selectedWarehouse || warehouses[0];
+    if (!warehouse) return undefined;
+    for (const zone of warehouse.zones) {
+      for (const rack of zone.racks) {
+        if (rack.levels.some(l => l.id === level.id)) {
+          return zone.id;
+        }
+      }
+    }
+    return undefined;
+  };
+
+  const findRackIdForLevel = (level: LevelV2): string | undefined => {
+    const warehouse = selectedWarehouse || warehouses[0];
+    if (!warehouse) return undefined;
+    for (const zone of warehouse.zones) {
+      for (const rack of zone.racks) {
+        if (rack.levels.some(l => l.id === level.id)) {
+          return rack.id;
+        }
+      }
+    }
+    return undefined;
+  };
+
+  const findZoneIdForBin = (bin: BinV2): string | undefined => {
+    const warehouse = selectedWarehouse || warehouses[0];
+    if (!warehouse) return undefined;
+    for (const zone of warehouse.zones) {
+      for (const rack of zone.racks) {
+        for (const level of rack.levels) {
+          if (level.bins.some(b => b.id === bin.id)) {
+            return zone.id;
+          }
+        }
+      }
+    }
+    return undefined;
+  };
+
+  const findRackIdForBin = (bin: BinV2): string | undefined => {
+    const warehouse = selectedWarehouse || warehouses[0];
+    if (!warehouse) return undefined;
+    for (const zone of warehouse.zones) {
+      for (const rack of zone.racks) {
+        for (const level of rack.levels) {
+          if (level.bins.some(b => b.id === bin.id)) {
+            return rack.id;
+          }
+        }
+      }
+    }
+    return undefined;
+  };
+
+  const findLevelIdForBin = (bin: BinV2): string | undefined => {
+    const warehouse = selectedWarehouse || warehouses[0];
+    if (!warehouse) return undefined;
+    for (const zone of warehouse.zones) {
+      for (const rack of zone.racks) {
+        for (const level of rack.levels) {
+          if (level.bins.some(b => b.id === bin.id)) {
+            return level.id;
+          }
+        }
+      }
+    }
+    return undefined;
   };
 
   // Save handlers
@@ -264,8 +384,11 @@ export function BinManagerTab() {
       } else {
         const newBin: BinV2 = {
           id: `b${Date.now()}`,
-          code: binData.code || generateBinCode(),
+          code: binData.code || '',
+          name: binData.name || '',
           description: binData.description || '',
+          itemName: binData.itemName || null,
+          quantity: binData.quantity || 0,
           createdAt: new Date(),
         };
         newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex].bins.push(newBin);
@@ -287,10 +410,6 @@ export function BinManagerTab() {
   };
 
   const handleDeleteZone = (zone: ZoneV2) => {
-    if (zone.racks.length > 0) {
-      toast.error('Cannot delete zone with existing racks');
-      return;
-    }
     setDeletingItem(zone);
     setDeletingType('zone');
   };
@@ -301,10 +420,6 @@ export function BinManagerTab() {
   };
 
   const handleDeleteRack = (rack: RackV2) => {
-    if (rack.levels.length > 0) {
-      toast.error('Cannot delete rack with existing levels');
-      return;
-    }
     setDeletingItem(rack);
     setDeletingType('rack');
   };
@@ -315,10 +430,6 @@ export function BinManagerTab() {
   };
 
   const handleDeleteLevel = (level: LevelV2) => {
-    if (level.bins.length > 0) {
-      toast.error('Cannot delete level with existing bins');
-      return;
-    }
     setDeletingItem(level);
     setDeletingType('level');
   };
@@ -383,52 +494,61 @@ export function BinManagerTab() {
     return parts;
   };
 
-  const renderGridView = () => {
-    const level = getCurrentViewLevel();
+  // Filter change handlers that sync with navigation
+  const handleFilterWarehouseChange = (warehouseId: string) => {
+    setFilterWarehouse(warehouseId);
+    if (warehouseId !== 'all') {
+      const warehouse = warehouses.find(wh => wh.id === warehouseId);
+      if (warehouse) {
+        handleNavigate(warehouse);
+      }
+    } else {
+      setSelectedWarehouse(null);
+      setSelectedZone(null);
+      setSelectedRack(null);
+      setSelectedLevel(null);
+    }
+  };
 
-    switch (level) {
-      case 'zone':
-        return selectedWarehouse ? (
-          <ZoneGridView 
-            zones={selectedWarehouse.zones} 
-            onZoneClick={handleZoneClick}
-            onEditZone={handleEditZone}
-            onDeleteZone={handleDeleteZone}
-          />
-        ) : null;
+  const handleFilterZoneChange = (zoneId: string) => {
+    setFilterZone(zoneId);
+    if (selectedWarehouse) {
+      if (zoneId !== 'all') {
+        const zone = selectedWarehouse.zones.find(z => z.id === zoneId);
+        if (zone) {
+          handleNavigate(selectedWarehouse, zone);
+        }
+      } else {
+        handleNavigate(selectedWarehouse);
+      }
+    }
+  };
 
-      case 'rack':
-        return selectedZone ? (
-          <RackGridView 
-            racks={selectedZone.racks} 
-            onRackClick={handleRackClick}
-            onEditRack={handleEditRack}
-            onDeleteRack={handleDeleteRack}
-          />
-        ) : null;
+  const handleFilterRackChange = (rackId: string) => {
+    setFilterRack(rackId);
+    if (selectedWarehouse && selectedZone) {
+      if (rackId !== 'all') {
+        const rack = selectedZone.racks.find(r => r.id === rackId);
+        if (rack) {
+          handleNavigate(selectedWarehouse, selectedZone, rack);
+        }
+      } else {
+        handleNavigate(selectedWarehouse, selectedZone);
+      }
+    }
+  };
 
-      case 'level':
-        return selectedRack ? (
-          <LevelGridView 
-            levels={selectedRack.levels} 
-            onLevelClick={handleLevelClick}
-            onEditLevel={handleEditLevel}
-            onDeleteLevel={handleDeleteLevel}
-          />
-        ) : null;
-
-      case 'bin':
-        return selectedLevel ? (
-          <BinGridView 
-            bins={selectedLevel.bins}
-            levelName={selectedLevel.name}
-            onEditBin={handleEditBin}
-            onDeleteBin={handleDeleteBin}
-          />
-        ) : null;
-
-      default:
-        return null;
+  const handleFilterLevelChange = (levelId: string) => {
+    setFilterLevel(levelId);
+    if (selectedWarehouse && selectedZone && selectedRack) {
+      if (levelId !== 'all') {
+        const level = selectedRack.levels.find(l => l.id === levelId);
+        if (level) {
+          handleNavigate(selectedWarehouse, selectedZone, selectedRack, level);
+        }
+      } else {
+        handleNavigate(selectedWarehouse, selectedZone, selectedRack);
+      }
     }
   };
 
@@ -525,11 +645,11 @@ export function BinManagerTab() {
       
       <CardContent className="space-y-6 p-6">
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 py-2 bg-muted/50 rounded-lg">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
           {/* Location Breadcrumb */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Location:</span>
-            <div className="flex items-center gap-1 flex-wrap px-2 py-1 bg-primary/10 rounded border">
+            <div className="flex items-center gap-1 flex-wrap px-2 py-1 bg-white dark:bg-gray-900 rounded border dark:border-gray-700">
               {getLocationPath().length > 0 ? (
                 getLocationPath().map((part, index) => (
                   <div key={index} className="flex items-center gap-1">
@@ -550,16 +670,74 @@ export function BinManagerTab() {
             </div>
           </div>
           
-          {/* Add Button */}
-          <Button onClick={handleAddClick} size="sm" className="shrink-0">
-            <Plus className="w-4 h-4 mr-2" />
-            {getAddButtonText()}
-          </Button>
+          {/* View Toggle and Add Button */}
+          <div className="flex items-center gap-2">
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-1 border rounded-md p-1">
+              <Button
+                size="sm"
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('grid')}
+                className="h-8"
+              >
+                <Grid3x3 className="w-4 h-4 mr-1" />
+                Grid
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === 'table' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('table')}
+                className="h-8"
+              >
+                <Table2 className="w-4 h-4 mr-1" />
+                Table
+              </Button>
+            </div>
+            
+            {/* Add Button */}
+            <Button onClick={handleAddClick} size="sm" className="shrink-0">
+              <Plus className="w-4 h-4 mr-2" />
+              {getAddButtonText()}
+            </Button>
+          </div>
         </div>
 
-        {/* Grid View */}
+        {/* Content View */}
         <div className="px-2">
-          {renderGridView()}
+          {viewMode === 'grid' ? (
+            <BinHierarchyView
+              currentViewLevel={getCurrentViewLevel()}
+              selectedWarehouse={selectedWarehouse}
+              selectedZone={selectedZone}
+              selectedRack={selectedRack}
+              selectedLevel={selectedLevel}
+              onZoneClick={handleZoneClick}
+              onRackClick={handleRackClick}
+              onLevelClick={handleLevelClick}
+              onEditZone={handleEditZone}
+              onDeleteZone={handleDeleteZone}
+              onEditRack={handleEditRack}
+              onDeleteRack={handleDeleteRack}
+              onEditLevel={handleEditLevel}
+              onDeleteLevel={handleDeleteLevel}
+              onEditBin={handleEditBin}
+              onDeleteBin={handleDeleteBin}
+            />
+          ) : (
+            <BinTableView
+              warehouses={warehouses}
+              filterWarehouse={filterWarehouse}
+              filterZone={filterZone}
+              filterRack={filterRack}
+              filterLevel={filterLevel}
+              onFilterWarehouseChange={handleFilterWarehouseChange}
+              onFilterZoneChange={handleFilterZoneChange}
+              onFilterRackChange={handleFilterRackChange}
+              onFilterLevelChange={handleFilterLevelChange}
+              onEditBin={handleEditBin}
+              onDeleteBin={handleDeleteBin}
+            />
+          )}
         </div>
       </CardContent>
 
@@ -573,6 +751,7 @@ export function BinManagerTab() {
         onSave={handleSaveZone}
         zone={editingZone}
         generatedCode={generateZoneCode()}
+        warehouseCode={selectedWarehouse?.code}
       />
 
       <RackModal
@@ -584,6 +763,9 @@ export function BinManagerTab() {
         onSave={handleSaveRack}
         rack={editingRack}
         generatedCode={generateRackCode()}
+        locationPath={selectedWarehouse && selectedZone ? `${selectedWarehouse.code} → ${selectedZone.code}` : undefined}
+        availableZones={getAllZones()}
+        currentZoneId={editingRack ? findZoneIdForRack(editingRack) : selectedZone?.id}
       />
 
       <LevelModal
@@ -595,6 +777,11 @@ export function BinManagerTab() {
         onSave={handleSaveLevel}
         level={editingLevel}
         generatedCode={generateLevelCode()}
+        locationPath={selectedWarehouse && selectedZone && selectedRack ? `${selectedWarehouse.code} → ${selectedZone.code} → ${selectedRack.code}` : undefined}
+        availableZones={getAllZones()}
+        availableRacks={getAllRacks()}
+        currentZoneId={editingLevel ? findZoneIdForLevel(editingLevel) : selectedZone?.id}
+        currentRackId={editingLevel ? findRackIdForLevel(editingLevel) : selectedRack?.id}
       />
 
       <BinModal
@@ -606,6 +793,13 @@ export function BinManagerTab() {
         onSave={handleSaveBin}
         bin={editingBin}
         generatedCode={generateBinCode()}
+        locationPath={selectedWarehouse && selectedZone && selectedRack && selectedLevel ? `${selectedWarehouse.code} → ${selectedZone.code} → ${selectedRack.code} → ${selectedLevel.code}` : undefined}
+        availableZones={getAllZones()}
+        availableRacks={getAllRacks()}
+        availableLevels={getAllLevels()}
+        currentZoneId={editingBin ? findZoneIdForBin(editingBin) : selectedZone?.id}
+        currentRackId={editingBin ? findRackIdForBin(editingBin) : selectedRack?.id}
+        currentLevelId={editingBin ? findLevelIdForBin(editingBin) : selectedLevel?.id}
       />
 
       {/* Delete Confirmation */}
@@ -617,22 +811,70 @@ export function BinManagerTab() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {deletingType}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this {deletingType}? 
-              {deletingType !== 'bin' && (
-                <span className="block mt-2">
-                  Only empty {deletingType}s can be deleted.
-                </span>
-              )}
-              {deletingType === 'bin' && (
-                <span className="block mt-2">
-                  This action cannot be undone.
-                </span>
-              )}
+              {(() => {
+                if (!deletingItem) return null;
+                
+                let canDelete = true;
+                let message = `Are you sure you want to delete this ${deletingType}?`;
+                
+                if (deletingType === 'zone') {
+                  const zone = deletingItem as ZoneV2;
+                  if (zone.racks.length > 0) {
+                    canDelete = false;
+                    message = `Cannot delete this zone because it contains ${zone.racks.length} rack${zone.racks.length > 1 ? 's' : ''}.`;
+                  }
+                } else if (deletingType === 'rack') {
+                  const rack = deletingItem as RackV2;
+                  if (rack.levels.length > 0) {
+                    canDelete = false;
+                    message = `Cannot delete this rack because it contains ${rack.levels.length} level${rack.levels.length > 1 ? 's' : ''}.`;
+                  }
+                } else if (deletingType === 'level') {
+                  const level = deletingItem as LevelV2;
+                  if (level.bins.length > 0) {
+                    canDelete = false;
+                    message = `Cannot delete this level because it contains ${level.bins.length} bin${level.bins.length > 1 ? 's' : ''}.`;
+                  }
+                } else if (deletingType === 'bin') {
+                  const bin = deletingItem as BinV2;
+                  if (bin.quantity > 0) {
+                    canDelete = false;
+                    message = `Cannot delete this bin because it contains ${bin.quantity} item${bin.quantity > 1 ? 's' : ''}. The quantity must be zero.`;
+                  }
+                }
+                
+                return (
+                  <>
+                    <span>{message}</span>
+                    {canDelete && (
+                      <span className="block mt-2 text-sm text-muted-foreground">
+                        This action cannot be undone.
+                      </span>
+                    )}
+                    {!canDelete && (
+                      <span className="block mt-2 text-sm font-medium text-orange-600 dark:text-orange-400">
+                        Please remove all content before deleting.
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              disabled={(() => {
+                if (!deletingItem) return true;
+                if (deletingType === 'zone') return (deletingItem as ZoneV2).racks.length > 0;
+                if (deletingType === 'rack') return (deletingItem as RackV2).levels.length > 0;
+                if (deletingType === 'level') return (deletingItem as LevelV2).bins.length > 0;
+                if (deletingType === 'bin') return (deletingItem as BinV2).quantity > 0;
+                return false;
+              })()}
+              className="bg-destructive hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

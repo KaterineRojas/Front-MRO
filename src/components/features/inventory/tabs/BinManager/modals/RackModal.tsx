@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
-import { RackV2 } from '../../../types/warehouse-v2';
+import { RackV2, ZoneV2 } from '../../../types/warehouse-v2';
 import { Button } from '../../../../ui/button';
 import { Input } from '../../../../ui/input';
 import { Label } from '../../../../ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../../ui/select';
 import {
   Dialog,
   DialogContent,
@@ -18,27 +25,51 @@ interface RackModalProps {
   onSave: (rackData: Partial<RackV2>) => void;
   rack: RackV2 | null;
   generatedCode: string;
+  locationPath?: string;
+  availableZones?: ZoneV2[];
+  currentZoneId?: string;
 }
 
-export function RackModal({ isOpen, onClose, onSave, rack, generatedCode }: RackModalProps) {
+export function RackModal({ isOpen, onClose, onSave, rack, generatedCode, locationPath, availableZones = [], currentZoneId }: RackModalProps) {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
+  const [selectedZoneId, setSelectedZoneId] = useState<string>('');
+
+  // Extract rack code from full code (last segment after last dash)
+  const getCodeParts = (fullCode: string) => {
+    const parts = fullCode.split('-');
+    if (parts.length > 1) {
+      const rackCode = parts[parts.length - 1];
+      const prefix = parts.slice(0, -1).join('-');
+      return { prefix, rackCode };
+    }
+    return { prefix: '', rackCode: fullCode };
+  };
 
   useEffect(() => {
     if (rack) {
-      setCode(rack.code);
+      const { rackCode } = getCodeParts(rack.code);
+      setCode(rackCode);
       setName(rack.name);
+      setSelectedZoneId(currentZoneId || '');
     } else {
-      setCode(generatedCode);
+      setCode('');
       setName('');
+      setSelectedZoneId(currentZoneId || '');
     }
-  }, [rack, generatedCode, isOpen]);
+  }, [rack, generatedCode, isOpen, currentZoneId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Reconstruct full code with selected zone
+    const selectedZone = availableZones.find(z => z.id === selectedZoneId);
+    const fullCode = rack && selectedZone ? `${selectedZone.code}-${code}` : code;
+    
     onSave({
-      code,
+      code: fullCode,
       name,
+      zoneId: selectedZoneId || undefined,
     });
   };
 
@@ -53,18 +84,56 @@ export function RackModal({ isOpen, onClose, onSave, rack, generatedCode }: Rack
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="code" className="dark:text-gray-200">Rack Code</Label>
-              <Input
-                id="code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="R-01"
-                required
-                className="dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:placeholder:text-gray-400"
-              />
+          {/* Location Label */}
+          {locationPath && (
+            <div className="mb-4 p-3 bg-pink-50 dark:bg-pink-950 border border-pink-200 dark:border-pink-800 rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-pink-900 dark:text-pink-100">Location:</span>
+                <span className="text-sm font-bold text-pink-700 dark:text-pink-300">{locationPath}</span>
+              </div>
             </div>
+          )}
+
+          <div className="space-y-4 py-4">
+            {rack && availableZones.length > 0 ? (
+              <div className="space-y-2">
+                <Label htmlFor="code" className="dark:text-gray-200">Rack Code</Label>
+                <div className="flex items-center gap-2">
+                  <Select value={selectedZoneId} onValueChange={setSelectedZoneId}>
+                    <SelectTrigger className="w-auto min-w-[80px] dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600">
+                      <SelectValue placeholder="Zone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableZones.map((zone) => (
+                        <SelectItem key={zone.id} value={zone.id}>
+                          {zone.code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    id="code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="R-01"
+                    required
+                    className="flex-1 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:placeholder:text-gray-400"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="code" className="dark:text-gray-200">Rack Code</Label>
+                <Input
+                  id="code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="R-01"
+                  required
+                  className="dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:placeholder:text-gray-400"
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="name" className="dark:text-gray-200">Rack Name</Label>

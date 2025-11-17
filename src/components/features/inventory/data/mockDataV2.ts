@@ -23,26 +23,34 @@ export const mockWarehousesV2: WarehouseV2[] = [
                 bins: [
                   { 
                     id: 'b1', 
-                    code: 'AMX01-GC-R01-L04-B01', 
+                    code: 'GC-R01-L04-B01',
+                    name: 'Bin GC-R01-L04-B01', 
                     description: 'Bin de almacenamiento alto',
+                    quantity: 0,
                     createdAt: new Date('2024-01-15')
                   },
                   { 
                     id: 'b2', 
-                    code: 'AMX01-GC-R01-L04-B02', 
+                    code: 'GC-R01-L04-B02',
+                    name: 'Bin GC-R01-L04-B02', 
                     description: 'Bin de almacenamiento alto',
+                    quantity: 0,
                     createdAt: new Date('2024-01-15')
                   },
                   { 
                     id: 'b3', 
-                    code: 'AMX01-GC-R01-L04-B03', 
+                    code: 'GC-R01-L04-B03',
+                    name: 'Bin GC-R01-L04-B03', 
                     description: 'Bin de almacenamiento alto',
+                    quantity: 0,
                     createdAt: new Date('2024-01-15')
                   },
                   { 
                     id: 'b4', 
-                    code: 'AMX01-GC-R01-L04-B04', 
+                    code: 'GC-R01-L04-B04',
+                    name: 'Bin GC-R01-L04-B04', 
                     description: 'Bin de almacenamiento alto',
+                    quantity: 0,
                     createdAt: new Date('2024-01-15')
                   },
                 ],
@@ -54,26 +62,34 @@ export const mockWarehousesV2: WarehouseV2[] = [
                 bins: [
                   { 
                     id: 'b5', 
-                    code: 'AMX01-GC-R01-L03-B01', 
+                    code: 'GC-R01-L03-B01',
+                    name: 'Bin GC-R01-L03-B01', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-01-16')
                   },
                   { 
                     id: 'b6', 
-                    code: 'AMX01-GC-R01-L03-B02', 
+                    code: 'GC-R01-L03-B02',
+                    name: 'Bin GC-R01-L03-B02', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-01-16')
                   },
                   { 
                     id: 'b7', 
-                    code: 'AMX01-GC-R01-L03-B03', 
+                    code: 'GC-R01-L03-B03',
+                    name: 'Bin GC-R01-L03-B03', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-01-16')
                   },
                   { 
                     id: 'b8', 
-                    code: 'AMX01-GC-R01-L03-B04', 
+                    code: 'GC-R01-L03-B04',
+                    name: 'Bin GC-R01-L03-B04', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-01-16')
                   },
                 ],
@@ -85,26 +101,34 @@ export const mockWarehousesV2: WarehouseV2[] = [
                 bins: [
                   { 
                     id: 'b9', 
-                    code: 'AMX01-GC-R01-L02-B01', 
+                    code: 'GC-R01-L02-B01',
+                    name: 'Bin GC-R01-L02-B01', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-01-17')
                   },
                   { 
                     id: 'b10', 
-                    code: 'AMX01-GC-R01-L02-B02', 
+                    code: 'GC-R01-L02-B02',
+                    name: 'Bin GC-R01-L02-B02', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-01-17')
                   },
                   { 
                     id: 'b11', 
-                    code: 'AMX01-GC-R01-L02-B03', 
+                    code: 'GC-R01-L02-B03',
+                    name: 'Bin GC-R01-L02-B03', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-01-17')
                   },
                   { 
                     id: 'b12', 
-                    code: 'AMX01-GC-R01-L02-B04', 
+                    code: 'GC-R01-L02-B04',
+                    name: 'Bin GC-R01-L02-B04', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-01-17')
                   },
                 ],
@@ -116,38 +140,50 @@ export const mockWarehousesV2: WarehouseV2[] = [
                 bins: [
                   { 
                     id: 'b13', 
-                    code: 'AMX01-GC-R01-L01-B01', 
+                    code: 'GC-R01-L01-B01',
+                    name: 'Bin GC-R01-L01-B01', 
                     description: 'Bin a nivel de suelo',
+                    quantity: 0,
                     createdAt: new Date('2024-01-18')
                   },
                   { 
                     id: 'b14', 
-                    code: 'AMX01-GC-R01-L01-B02', 
+                    code: 'GC-R01-L01-B02',
+                    name: 'Bin GC-R01-L01-B02', 
                     description: 'Bin a nivel de suelo',
+                    quantity: 0,
                     createdAt: new Date('2024-01-18')
                   },
                   { 
                     id: 'b15', 
-                    code: 'AMX01-GC-R01-L01-B03', 
+                    code: 'GC-R01-L01-B03',
+                    name: 'Bin GC-R01-L01-B03', 
                     description: 'Bin a nivel de suelo',
+                    quantity: 0,
                     createdAt: new Date('2024-01-18')
                   },
                   { 
                     id: 'b16', 
-                    code: 'AMX01-GC-R01-L01-B04', 
+                    code: 'GC-R01-L01-B04',
+                    name: 'Bin GC-R01-L01-B04', 
                     description: 'Bin a nivel de suelo',
+                    quantity: 0,
                     createdAt: new Date('2024-01-18')
                   },
                   { 
                     id: 'b17', 
-                    code: 'AMX01-GC-R01-L01-B05', 
+                    code: 'GC-R01-L01-B05',
+                    name: 'Bin GC-R01-L01-B05', 
                     description: 'Bin a nivel de suelo',
+                    quantity: 0,
                     createdAt: new Date('2024-01-18')
                   },
                   { 
                     id: 'b18', 
-                    code: 'AMX01-GC-R01-L01-B06', 
+                    code: 'GC-R01-L01-B06',
+                    name: 'Bin GC-R01-L01-B06', 
                     description: 'Bin a nivel de suelo',
+                    quantity: 0,
                     createdAt: new Date('2024-01-18')
                   },
                 ],
@@ -166,20 +202,26 @@ export const mockWarehousesV2: WarehouseV2[] = [
                 bins: [
                   { 
                     id: 'b19', 
-                    code: 'AMX01-GC-R02-L03-B01', 
+                    code: 'GC-R02-L03-B01',
+                    name: 'Bin GC-R02-L03-B01', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-01-20')
                   },
                   { 
                     id: 'b20', 
-                    code: 'AMX01-GC-R02-L03-B02', 
+                    code: 'GC-R02-L03-B02',
+                    name: 'Bin GC-R02-L03-B02', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-01-20')
                   },
                   { 
                     id: 'b21', 
-                    code: 'AMX01-GC-R02-L03-B03', 
+                    code: 'GC-R02-L03-B03',
+                    name: 'Bin GC-R02-L03-B03', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-01-20')
                   },
                 ],
@@ -191,14 +233,18 @@ export const mockWarehousesV2: WarehouseV2[] = [
                 bins: [
                   { 
                     id: 'b23', 
-                    code: 'AMX01-GC-R02-L02-B01', 
+                    code: 'GC-R02-L02-B01',
+                    name: 'Bin GC-R02-L02-B01', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-01-21')
                   },
                   { 
                     id: 'b24', 
-                    code: 'AMX01-GC-R02-L02-B02', 
+                    code: 'GC-R02-L02-B02',
+                    name: 'Bin GC-R02-L02-B02', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-01-21')
                   },
                 ],
@@ -210,14 +256,18 @@ export const mockWarehousesV2: WarehouseV2[] = [
                 bins: [
                   { 
                     id: 'b27', 
-                    code: 'AMX01-GC-R02-L01-B01', 
+                    code: 'GC-R02-L01-B01',
+                    name: 'Bin GC-R02-L01-B01', 
                     description: 'Bin a nivel de suelo',
+                    quantity: 0,
                     createdAt: new Date('2024-01-22')
                   },
                   { 
                     id: 'b28', 
-                    code: 'AMX01-GC-R02-L01-B02', 
+                    code: 'GC-R02-L01-B02',
+                    name: 'Bin GC-R02-L01-B02', 
                     description: 'Bin a nivel de suelo',
+                    quantity: 0,
                     createdAt: new Date('2024-01-22')
                   },
                 ],
@@ -243,14 +293,18 @@ export const mockWarehousesV2: WarehouseV2[] = [
                 bins: [
                   { 
                     id: 'b31', 
-                    code: 'AMX01-DMG-R01-L02-B01', 
+                    code: 'DMG-R01-L02-B01',
+                    name: 'Bin DMG-R01-L02-B01', 
                     description: 'Bin para productos dañados',
+                    quantity: 0,
                     createdAt: new Date('2024-02-01')
                   },
                   { 
                     id: 'b32', 
-                    code: 'AMX01-DMG-R01-L02-B02', 
+                    code: 'DMG-R01-L02-B02',
+                    name: 'Bin DMG-R01-L02-B02', 
                     description: 'Bin para productos dañados',
+                    quantity: 0,
                     createdAt: new Date('2024-02-01')
                   },
                 ],
@@ -262,8 +316,10 @@ export const mockWarehousesV2: WarehouseV2[] = [
                 bins: [
                   { 
                     id: 'b34', 
-                    code: 'AMX01-DMG-R01-L01-B01', 
+                    code: 'DMG-R01-L01-B01',
+                    name: 'Bin DMG-R01-L01-B01', 
                     description: 'Bin para productos dañados',
+                    quantity: 0,
                     createdAt: new Date('2024-02-02')
                   },
                 ],
@@ -289,14 +345,18 @@ export const mockWarehousesV2: WarehouseV2[] = [
                 bins: [
                   { 
                     id: 'b37', 
-                    code: 'AMX01-QTN-R01-L01-B01', 
+                    code: 'QTN-R01-L01-B01',
+                    name: 'Bin QTN-R01-L01-B01', 
                     description: 'Bin de cuarentena',
+                    quantity: 0,
                     createdAt: new Date('2024-02-05')
                   },
                   { 
                     id: 'b38', 
-                    code: 'AMX01-QTN-R01-L01-B02', 
+                    code: 'QTN-R01-L01-B02',
+                    name: 'Bin QTN-R01-L01-B02', 
                     description: 'Bin de cuarentena',
+                    quantity: 0,
                     createdAt: new Date('2024-02-05')
                   },
                 ],
@@ -331,6 +391,7 @@ export const mockWarehousesV2: WarehouseV2[] = [
                     id: 'b39', 
                     code: 'AMX02-GC-R01-L02-B01', 
                     description: 'Bin de nivel medio',
+                    quantity: 0,
                     createdAt: new Date('2024-02-10')
                   },
                 ],
@@ -344,6 +405,7 @@ export const mockWarehousesV2: WarehouseV2[] = [
                     id: 'b42', 
                     code: 'AMX02-GC-R01-L01-B01', 
                     description: 'Bin a nivel de suelo',
+                    quantity: 0,
                     createdAt: new Date('2024-02-11')
                   },
                 ],
@@ -378,6 +440,7 @@ export const mockWarehousesV2: WarehouseV2[] = [
                     id: 'b47', 
                     code: 'AMX03-GC-R01-L01-B01', 
                     description: 'Bin a nivel de suelo',
+                    quantity: 0,
                     createdAt: new Date('2024-02-15')
                   },
                 ],

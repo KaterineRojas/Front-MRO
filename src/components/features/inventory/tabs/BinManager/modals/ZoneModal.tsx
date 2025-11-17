@@ -18,9 +18,10 @@ interface ZoneModalProps {
   onSave: (zoneData: Partial<ZoneV2>) => void;
   zone: ZoneV2 | null;
   generatedCode: string;
+  warehouseCode?: string;
 }
 
-export function ZoneModal({ isOpen, onClose, onSave, zone, generatedCode }: ZoneModalProps) {
+export function ZoneModal({ isOpen, onClose, onSave, zone, generatedCode, warehouseCode }: ZoneModalProps) {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
 
@@ -53,6 +54,16 @@ export function ZoneModal({ isOpen, onClose, onSave, zone, generatedCode }: Zone
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
+          {/* Location Label */}
+          {warehouseCode && (
+            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">Location:</span>
+                <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{warehouseCode}</span>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="code" className="dark:text-gray-200">Zone Code</Label>
