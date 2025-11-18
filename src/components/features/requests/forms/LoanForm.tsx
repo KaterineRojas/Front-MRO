@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Textarea } from '../../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Badge } from '../../ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Input } from '../../../ui/input';
+import { Label } from '../../../ui/label';
+import { Textarea } from '../../../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Badge } from '../../../ui/badge';
 import { ArrowLeft, Plus, Minus, X, Calendar, Package } from 'lucide-react';
-import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
+import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import  { toast } from 'sonner';
-import type { CartItem, User } from '../../types';
-import { getWarehouses, getCatalogItemsByWarehouse, getProjects, type Warehouse, type CatalogItem, type Project } from '../../services';
+import type { CartItem } from '../../enginner/types';
+import type { User } from '../../enginner/types';
+import { getWarehouses, getCatalogItemsByWarehouse, getProjects, type Warehouse, type CatalogItem, type Project } from '../../enginner/services';
 
 interface LoanFormProps {
   cartItems: CartItem[];

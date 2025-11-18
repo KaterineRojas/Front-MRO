@@ -1,0 +1,382 @@
+// Simulate API delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Types
+export interface Transfer {
+  id: string;
+  type: 'outgoing' | 'incoming';
+  fromUser?: string;
+  toUser?: string;
+  fromUserId?: string;
+  toUserId?: string;
+  items: TransferItem[];
+  notes: string;
+  requestDate: string;
+  status: 'pending-manager' | 'pending-engineer' | 'approved' | 'rejected';
+  transferPhoto?: string;
+}
+
+export interface TransferItem {
+  itemId: string;
+  itemName: string;
+  code?: string;
+  quantity: number;
+  image: string;
+  description?: string;
+  warehouse?: string;
+  warehouseCode?: string;
+}
+
+export interface InventoryItem {
+  id: string;
+  itemId: string;
+  name: string;
+  description: string;
+  image: string;
+  project: string;
+  projectCode: string;
+  quantity: number;
+  sku?: string;
+  warehouse?: string;
+  warehouseCode?: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  department: string;
+  avatar: string;
+}
+
+// Mock Data
+const mockUsers: User[] = [
+  { id: '2', name: 'Ana Martínez', department: 'Development', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana' },
+  { id: '3', name: 'Luis González', department: 'Design', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Luis' },
+  { id: '4', name: 'María Rodriguez', department: 'Marketing', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria' },
+  { id: '5', name: 'Juan Pérez', department: 'Engineering', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Juan' }
+];
+
+const mockInventoryItems: InventoryItem[] = [
+  {
+    id: 'inv-1',
+    itemId: 'hammer-001',
+    name: 'Hammer',
+    description: 'Professional grade hammer',
+    image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400',
+    project: 'Proyecto Amazonas',
+    projectCode: 'AMZ-2024',
+    quantity: 4,
+    sku: 'HAM-001',
+    warehouse: 'Amax',
+    warehouseCode: 'AMAX'
+  },
+  {
+    id: 'inv-2',
+    itemId: 'hammer-001',
+    name: 'Hammer',
+    description: 'Professional grade hammer',
+    image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400',
+    project: 'Proyecto Innova',
+    projectCode: 'INN-2024',
+    quantity: 6,
+    sku: 'HAM-001',
+    warehouse: 'Best',
+    warehouseCode: 'BEST'
+  },
+  {
+    id: 'inv-3',
+    itemId: 'keyboard-001',
+    name: 'Mechanical Keyboard RGB',
+    description: 'Gaming keyboard with RGB lighting',
+    image: 'https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?w=400',
+    project: 'Proyecto Web',
+    projectCode: 'WEB-2024',
+    quantity: 2,
+    sku: 'MECH-KB-001',
+    warehouse: 'Central',
+    warehouseCode: 'CENT'
+  },
+  {
+    id: 'inv-4',
+    itemId: 'monitor-001',
+    name: 'Samsung 27" Monitor',
+    description: 'Full HD display',
+    image: 'https://images.unsplash.com/photo-1758598497364-544a0cdbc950?w=400',
+    project: 'Proyecto Web',
+    projectCode: 'WEB-2024',
+    quantity: 1,
+    sku: 'SAM-003',
+    warehouse: 'Amax',
+    warehouseCode: 'AMAX'
+  },
+  {
+    id: 'inv-5',
+    itemId: 'drill-001',
+    name: 'Power Drill',
+    description: 'Cordless drill with battery',
+    image: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400',
+    project: 'Proyecto Construcción',
+    projectCode: 'CONS-2024',
+    quantity: 3,
+    sku: 'DRL-001',
+    warehouse: 'Best',
+    warehouseCode: 'BEST'
+  }
+];
+
+const mockTransfers: Transfer[] = [
+  {
+    id: 'TR003',
+    type: 'outgoing',
+    toUser: 'Luis González',
+    toUserId: '3',
+    items: [
+      {
+        itemId: '1',
+        itemName: 'Mechanical Keyboard RGB',
+        code: 'MECH-KB-001',
+        quantity: 1,
+        image: 'https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?w=100',
+        description: 'Gaming keyboard',
+        warehouse: 'Central',
+        warehouseCode: 'CENT'
+      }
+    ],
+    notes: 'Transferring for their project',
+    requestDate: '2024-01-17',
+    status: 'pending-manager',
+    transferPhoto: 'https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?w=400'
+  },
+  {
+    id: 'TR001',
+    type: 'incoming',
+    fromUser: 'Juan Pérez',
+    fromUserId: '5',
+    items: [
+      {
+        itemId: '3',
+        itemName: 'Samsung 27" Monitor',
+        code: 'SAM-003',
+        quantity: 1,
+        image: 'https://images.unsplash.com/photo-1758598497364-544a0cdbc950?w=100',
+        description: 'Full HD display',
+        warehouse: 'Amax',
+        warehouseCode: 'AMAX'
+      }
+    ],
+    notes: 'Additional monitor for development project',
+    requestDate: '2024-01-16',
+    status: 'pending-engineer',
+    transferPhoto: 'https://images.unsplash.com/photo-1758598497364-544a0cdbc950?w=400'
+  },
+  {
+    id: 'TR004',
+    type: 'outgoing',
+    toUser: 'Ana Martínez',
+    toUserId: '2',
+    items: [
+      {
+        itemId: '1',
+        itemName: 'Hammer',
+        code: 'IT-HT-NC-2025001',
+        quantity: 2,
+        image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=100',
+        description: 'Professional grade hammer',
+        warehouse: 'Amax',
+        warehouseCode: 'AMAX'
+      },
+      {
+        itemId: '1',
+        itemName: 'Hammer',
+        code: 'IT-HT-NC-2025001',
+        quantity: 3,
+        image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=100',
+        description: 'Professional grade hammer',
+        warehouse: 'Best',
+        warehouseCode: 'BEST'
+      },
+      {
+        itemId: '2',
+        itemName: 'Power Drill',
+        code: 'DRL-001',
+        quantity: 1,
+        image: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=100',
+        description: 'Cordless drill',
+        warehouse: 'Central',
+        warehouseCode: 'CENT'
+      }
+    ],
+    notes: 'Multiple items from different warehouses for construction project',
+    requestDate: '2024-01-18',
+    status: 'pending-engineer',
+    transferPhoto: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400'
+  },
+  {
+    id: 'TR005',
+    type: 'incoming',
+    fromUser: 'María Rodriguez',
+    fromUserId: '4',
+    items: [
+      {
+        itemId: '4',
+        itemName: 'Screwdriver Set',
+        code: 'HT-NC-002',
+        quantity: 1,
+        image: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=100',
+        description: '5-piece Phillips set',
+        warehouse: 'Best',
+        warehouseCode: 'BEST'
+      },
+      {
+        itemId: '5',
+        itemName: 'Safety Goggles',
+        code: 'SG-002',
+        quantity: 5,
+        image: 'https://images.unsplash.com/photo-1577760258779-e787a1733016?w=100',
+        description: 'Clear protective safety goggles',
+        warehouse: 'Best',
+        warehouseCode: 'BEST'
+      },
+      {
+        itemId: '6',
+        itemName: 'Webcam 1080p',
+        code: 'WEB-001',
+        quantity: 1,
+        image: 'https://images.unsplash.com/photo-1614624532983-4ce03382d63d?w=100',
+        description: 'High definition webcam',
+        warehouse: 'Central',
+        warehouseCode: 'CENT'
+      }
+    ],
+    notes: 'Safety equipment and webcam from different warehouses',
+    requestDate: '2024-01-15',
+    status: 'approved',
+    transferPhoto: 'https://images.unsplash.com/photo-1577760258779-e787a1733016?w=400'
+  }
+];
+
+// API Simulation Functions
+
+/**
+ * Get all transfers
+ */
+export async function getTransfers(): Promise<Transfer[]> {
+  await delay(300);
+  return [...mockTransfers];
+}
+
+/**
+ * Get available users for transfer
+ */
+export async function getAvailableUsers(): Promise<User[]> {
+  await delay(200);
+  return [...mockUsers];
+}
+
+/**
+ * Get inventory items available for transfer
+ */
+export async function getInventoryItems(): Promise<InventoryItem[]> {
+  await delay(400);
+  return [...mockInventoryItems];
+}
+
+/**
+ * Create a new transfer
+ */
+export async function createTransfer(data: {
+  targetEngineerId: string;
+  items: { id: string; quantity: number }[];
+  photo: string;
+  notes?: string;
+}): Promise<{ success: boolean; transferId: string }> {
+  await delay(500);
+  
+  // Simulate validation
+  if (!data.targetEngineerId) {
+    throw new Error('Target engineer is required');
+  }
+  
+  if (!data.photo) {
+    throw new Error('Transfer photo is required');
+  }
+  
+  if (data.items.length === 0) {
+    throw new Error('At least one item must be selected');
+  }
+
+  // Generate new transfer ID
+  const newId = `TR${String(mockTransfers.length + 1).padStart(3, '0')}`;
+  
+  return {
+    success: true,
+    transferId: newId
+  };
+}
+
+/**
+ * Accept an incoming transfer
+ */
+export async function acceptTransfer(
+  transferId: string, 
+  projectId: string
+): Promise<{ success: boolean; message: string }> {
+  await delay(400);
+  
+  const transfer = mockTransfers.find(t => t.id === transferId);
+  
+  if (!transfer) {
+    throw new Error('Transfer not found');
+  }
+  
+  if (transfer.type !== 'incoming') {
+    throw new Error('Only incoming transfers can be accepted');
+  }
+  
+  if (!projectId) {
+    throw new Error('Project assignment is required');
+  }
+
+  return {
+    success: true,
+    message: 'Transfer accepted successfully'
+  };
+}
+
+/**
+ * Reject an incoming transfer
+ */
+export async function rejectTransfer(transferId: string): Promise<{ success: boolean }> {
+  await delay(300);
+  
+  const transfer = mockTransfers.find(t => t.id === transferId);
+  
+  if (!transfer) {
+    throw new Error('Transfer not found');
+  }
+
+  return {
+    success: true
+  };
+}
+
+/**
+ * Cancel an outgoing transfer
+ */
+export async function cancelTransfer(transferId: string): Promise<{ success: boolean }> {
+  await delay(300);
+  
+  const transfer = mockTransfers.find(t => t.id === transferId);
+  
+  if (!transfer) {
+    throw new Error('Transfer not found');
+  }
+  
+  if (transfer.type !== 'outgoing') {
+    throw new Error('Only outgoing transfers can be cancelled');
+  }
+
+  return {
+    success: true
+  };
+}

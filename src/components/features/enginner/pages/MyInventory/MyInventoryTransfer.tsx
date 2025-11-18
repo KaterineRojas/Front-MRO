@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
 import { 
   Package, Search, ChevronDown, ChevronRight, Box, ArrowRightLeft, Camera, Upload, X, AlertCircle, History
 } from 'lucide-react';
-import { ImageWithFallback } from '../../../../../figma/ImageWithFallback';
+import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
 import { CompleteHistory } from './CompleteHistory';
 

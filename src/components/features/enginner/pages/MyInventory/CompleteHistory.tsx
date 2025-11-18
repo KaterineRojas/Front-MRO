@@ -18,11 +18,11 @@ import {
   ChevronRight,
   ShoppingCart
 } from 'lucide-react';
-import { ImageWithFallback } from '../../../../../figma/ImageWithFallback';
+import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
-import { useAppSelector } from '../../../store/hooks';
-import { selectCurrentUser } from '../../../store/selectors';
-import { getCompleteHistory, getWarehouses, type HistoryRecord, type Warehouse } from '../../../services';
+import { useAppSelector } from '../../store/hooks';
+import { selectCurrentUser } from '../../store/selectors';
+import { getCompleteHistory, getWarehouses, type HistoryRecord, type Warehouse } from '../../services';
 
 export function CompleteHistory() {
   const currentUser = useAppSelector(selectCurrentUser);

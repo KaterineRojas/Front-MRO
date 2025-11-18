@@ -1,8 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
-import { Badge } from '../../ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
+import { Badge } from '../../../ui/badge';
 import { AlertTriangle, CheckCircle, Clock, Package } from 'lucide-react';
-import { useAppSelector } from '../../store/hooks';
-import { selectNotifications } from '../../store/selectors';
+import { useAppSelector } from '../store/hooks';
+import { selectNotifications } from '../store/selectors';
 
 export function Dashboard() {
   const notifications = useAppSelector(selectNotifications);

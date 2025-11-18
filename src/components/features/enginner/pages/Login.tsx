@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch } from '../../store/hooks';
-import { login } from '../../store/slices/userSlice';
-import { loginUser } from '../../services/authService';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
-import { Alert, AlertDescription } from '../../ui/alert';
+import { useAppDispatch } from '../store/hooks';
+import { login } from '../store/slices/userSlice';
+import { Lock, User } from 'lucide-react';
+import { Button } from '../../../ui/button';
+import { Input } from '../../../ui/input';
+import { Label } from '../../../ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../ui/card';
+import { Alert, AlertDescription } from '../../../ui/alert';
 import { Package, AlertCircle } from 'lucide-react';
 
 export function Login() {
