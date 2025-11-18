@@ -1,16 +1,6 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
+import { useState } from 'react';
 import { Badge } from '../../ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../ui/dialog';
-import { Textarea } from '../../ui/textarea';
-import { Label } from '../../ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
-import { ClipboardCheck, Check, X, Clock, Package, AlertTriangle, ChevronDown, ChevronRight, FileText, CheckCircle, XCircle } from 'lucide-react';
-import { ImageWithFallback } from '../../figma/ImageWithFallback';
+import { Check, X, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
 import { mockRequests, type Request } from './data/mockRequest'
 import CardRequest from './components/Card'
 import TabsGroup from './components/Tabs'
@@ -19,21 +9,13 @@ import RequestsTable from './components/DataTable';
 import RequestModal from './components/ApproveRequestDialog';
 
 
-
-
-
-
 export function RequestManagement() {
-
-
 
   const [requests, setRequests] = useState<Request[]>(mockRequests);
   const [activeTab, setActiveTab] = useState<string>('pending');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
-  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [expandedRequests, setExpandedRequests] = useState<Set<number>>(new Set());
   const [rejectNotes, setRejectNotes] = useState('');
   const [modalType, setModalType] = useState('approve')
@@ -91,12 +73,10 @@ export function RequestManagement() {
       request.id === selectedRequest.id ? updatedRequest : request
     ));
 
-    setApproveDialogOpen(false);
     setSelectedRequest(null);
   };
 
   const handleCancelApprove = () => {
-    setApproveDialogOpen(false);
     setSelectedRequest(null);
   };
 
@@ -115,7 +95,6 @@ export function RequestManagement() {
       request.id === selectedRequest.id ? updatedRequest : request
     ));
 
-    setRejectDialogOpen(false);
     setSelectedRequest(null);
     setRejectNotes('');
   };
@@ -182,12 +161,6 @@ export function RequestManagement() {
     }, 0);
   };
 
-
-
-
-
-
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -239,13 +212,10 @@ export function RequestManagement() {
           description='Rejected'
           mainColor='red'
         />
-
-
       </div>
 
       {/* Tabs */}
       <div className="space-y-6 flex flex-col gap-2">
-
         <TabsGroup
           tabsList={[
             {
@@ -274,8 +244,6 @@ export function RequestManagement() {
           setSelectedType={setTypeFilter}
           typesOptions={requestTypeOptions}
         />
-
-
 
         {/** dinamic data table */}
         <div className="space-y-6 border-[2px] p-5 rounded-lg">
@@ -308,8 +276,7 @@ export function RequestManagement() {
         </div>
       </div>
 
-
-
+      {/* Modal */}
       <RequestModal
         show={showModal}
         request={selectedRequest}
@@ -319,225 +286,6 @@ export function RequestManagement() {
         variant={modalType === 'approve' ? 'approve' : 'reject'}
       />
 
-
-
-
-
-
-
-
-
-
-
-
-      {/* Approve Dialog */}
-      <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Approve Request</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to approve this request?
-            </DialogDescription>
-          </DialogHeader>
-          {selectedRequest && (
-            <div className="space-y-4">
-              <div className="rounded-md border p-4 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Request Number</Label>
-                    <p className="text-sm text-muted-foreground">{selectedRequest.requestNumber}</p>
-                  </div>
-                  <div>
-                    <Label>Type</Label>
-                    {getTypeBadge(selectedRequest.type)}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Requested By</Label>
-                    <p className="text-sm">{selectedRequest.requestedBy}</p>
-                    <p className="text-xs text-muted-foreground">{selectedRequest.requestedByEmail}</p>
-                  </div>
-                  <div>
-                    <Label>Department</Label>
-                    <p className="text-sm text-muted-foreground">{selectedRequest.department}</p>
-                  </div>
-                </div>
-                {selectedRequest.project && (
-                  <div>
-                    <Label>Project</Label>
-                    <p className="text-sm text-muted-foreground">{selectedRequest.project}</p>
-                  </div>
-                )}
-                <div>
-                  <Label>Reason</Label>
-                  <p className="text-sm text-muted-foreground">{selectedRequest.reason}</p>
-                </div>
-                <div>
-                  <Label>Items ({selectedRequest.items.length})</Label>
-                  <div className="space-y-2 mt-2">
-                    {selectedRequest.items.map((item) => (
-                      <div key={item.id} className="flex items-start space-x-3 p-2 border rounded">
-                        <ImageWithFallback
-                          src={item.imageUrl || ''}
-                          alt={item.articleDescription}
-                          className="w-16 h-16 object-cover rounded"
-                        />
-                        <div className="flex-1">
-                          <p className="font-mono text-sm">{item.articleCode}</p>
-                          <p className="text-sm">{item.articleDescription}</p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {item.quantity} {item.unit}
-                            </Badge>
-                            {item.estimatedCost && (
-                              <Badge variant="outline" className="text-xs text-green-600 border-green-600">
-                                ${(item.estimatedCost * item.quantity).toFixed(2)}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setApproveDialogOpen(false);
-                    setSelectedRequest(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleApprove}
-                >
-                  Approve Request
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-
-
-
-
-
-
-
-
-
-
-
-
-      {/* Reject Dialog */}
-      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Reject Request</DialogTitle>
-            <DialogDescription>
-              Please provide a reason for rejecting this request.
-            </DialogDescription>
-          </DialogHeader>
-          {selectedRequest && (
-            <div className="space-y-4">
-              <div className="rounded-md border p-4 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Request Number</Label>
-                    <p className="text-sm text-muted-foreground">{selectedRequest.requestNumber}</p>
-                  </div>
-                  <div>
-                    <Label>Type</Label>
-                    {getTypeBadge(selectedRequest.type)}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Requested By</Label>
-                    <p className="text-sm">{selectedRequest.requestedBy}</p>
-                    <p className="text-xs text-muted-foreground">{selectedRequest.requestedByEmail}</p>
-                  </div>
-                  <div>
-                    <Label>Department</Label>
-                    <p className="text-sm text-muted-foreground">{selectedRequest.department}</p>
-                  </div>
-                </div>
-                <div>
-                  <Label>Items ({selectedRequest.items.length})</Label>
-                  <div className="space-y-2 mt-2">
-                    {selectedRequest.items.map((item) => (
-                      <div key={item.id} className="flex items-start space-x-3 p-2 border rounded">
-                        <ImageWithFallback
-                          src={item.imageUrl || ''}
-                          alt={item.articleDescription}
-                          className="w-16 h-16 object-cover rounded"
-                        />
-                        <div className="flex-1">
-                          <p className="font-mono text-sm">{item.articleCode}</p>
-                          <p className="text-sm">{item.articleDescription}</p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {item.quantity} {item.unit}
-                            </Badge>
-                            {item.estimatedCost && (
-                              <Badge variant="outline" className="text-xs text-green-600 border-green-600">
-                                ${(item.estimatedCost * item.quantity).toFixed(2)}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="rejectNotes">Rejection Reason *</Label>
-                <Textarea
-                  id="rejectNotes"
-                  value={rejectNotes}
-                  onChange={(e) => setRejectNotes(e.target.value)}
-                  placeholder="Explain why this request is being rejected..."
-                  rows={3}
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setRejectDialogOpen(false);
-                    setSelectedRequest(null);
-                    setRejectNotes('');
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={handleReject}
-                  disabled={!rejectNotes.trim()}
-                >
-                  Reject Request
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
