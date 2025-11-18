@@ -178,7 +178,7 @@ export function BinTableView({
           <TableHeader>
             <TableRow>
               <TableHead>Bin Code</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>Name</TableHead>
               <TableHead>Item</TableHead>
               <TableHead>Quantity</TableHead>
               <TableHead>Warehouse</TableHead>

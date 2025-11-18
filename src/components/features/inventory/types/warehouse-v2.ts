@@ -2,7 +2,7 @@ export interface BinV2 {
   id: string;
   code: string;
   name: string;
-  description: string;
+  allowDifferentItems: boolean,
   itemId?: string | null;
   itemName?: string | null;
   quantity: number;
