@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { User } from '../../types';
+import type { User } from '../../types/index';
 import { USE_AUTH_TOKENS } from '../../constants';
 import { getUserData, isAuthenticated } from '../../services/authService';
 

@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Card, CardContent } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
-import { Input } from '../../ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
+import { Card, CardContent } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Badge } from '../../../ui/badge';
+import { Input } from '../../../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { 
   Download, 
   Search, 
@@ -18,11 +18,11 @@ import {
   ChevronRight,
   ShoppingCart
 } from 'lucide-react';
-import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
+import { ImageWithFallback } from '../../../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
-import { useAppSelector } from '../../store/hooks';
-import { selectCurrentUser } from '../../store/selectors';
-import { getCompleteHistory, getWarehouses, type HistoryRecord, type Warehouse } from '../../services';
+import { useAppSelector } from '../../../store/hooks';
+import { selectCurrentUser } from '../../../store/selectors';
+import { getCompleteHistory, getWarehouses, type HistoryRecord, type Warehouse } from '../../../services';
 
 export function CompleteHistory() {
   const currentUser = useAppSelector(selectCurrentUser);
@@ -183,8 +183,8 @@ export function CompleteHistory() {
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col gap-3">
-            <div className="relative flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by ID, project, warehouse, items..."
@@ -193,43 +193,41 @@ export function CompleteHistory() {
                 className="pl-10"
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Warehouses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Warehouses</SelectItem>
-                  {warehouses.map((wh) => (
-                    <SelectItem key={wh.id} value={wh.id}>
-                      {wh.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="purchase">Purchase</SelectItem>
-                  <SelectItem value="purchase-on-site">Self Purchase</SelectItem>
-                  <SelectItem value="transfer">Transfer</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                  <SelectItem value="transferred">Transferred</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Warehouses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Warehouses</SelectItem>
+                {warehouses.map((wh) => (
+                  <SelectItem key={wh.id} value={wh.id}>
+                    {wh.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="purchase">Purchase</SelectItem>
+                <SelectItem value="purchase-on-site">Self Purchase</SelectItem>
+                <SelectItem value="transfer">Transfer</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="transferred">Transferred</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

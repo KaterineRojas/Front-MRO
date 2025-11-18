@@ -1,3 +1,6 @@
+/**
+ * gestiona todo lo relacionado con el estado de autenticación del usuario
+ */
 import { USE_AUTH_TOKENS, TOKEN_STORAGE_TYPE, TOKEN_KEY, USER_KEY } from '../constants';
 
 export interface LoginCredentials {

@@ -1,5 +1,6 @@
-// Simula las llamadas al backend para Request Orders (Borrow, Purchase)
+// services/requestService.ts
 import { apiCall } from './errorHandler';
+import { API_BASE_URL } from './api';
 
 export interface RequestItem {
   id: number;
@@ -42,209 +43,6 @@ export interface PurchaseRequest {
   warehouseName: string;
 }
 
-// Datos mock para Borrow Requests
-const mockBorrowRequests: BorrowRequest[] = [
-  {
-    requestId: "BT-2025001",
-    department: "Systems",
-    returnDate: "2025-02-15",
-    project: "Amazonas",
-    notes: "Need for weekend project setup",
-    status: "pending",
-    createdAt: "2025-01-10",
-    warehouseId: 'wh-1',
-    warehouseName: 'Amax',
-    items: [
-      {
-        id: 1,
-        imageUrl: "https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=400",
-        sku: "HT-NC-001",
-        name: "Adjustable Wrench 10\"",
-        description: "Heavy duty wrench",
-        quantity: 2
-      },
-      {
-        id: 2,
-        imageUrl: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400",
-        sku: "HT-NC-002",
-        name: "Screwdriver Set",
-        description: "5-piece Phillips set",
-        quantity: 1
-      },
-      {
-        id: 3,
-        imageUrl: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400",
-        sku: "HT-NC-003",
-        name: "Hammer 16oz",
-        description: "Claw hammer",
-        quantity: 1
-      }
-    ]
-  },
-  {
-    requestId: "BT-2025002",
-    department: "Development",
-    returnDate: "2025-01-25",
-    project: "Web Platform",
-    notes: "Testing equipment for QA",
-    status: "approved",
-    createdAt: "2025-01-08",
-    warehouseId: 'wh-2',
-    warehouseName: 'Best',
-    items: [
-      {
-        id: 4,
-        imageUrl: "https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?w=400",
-        sku: "MECH-KB-001",
-        name: "Mechanical Keyboard RGB",
-        description: "Gaming keyboard with RGB lighting",
-        quantity: 1
-      },
-      {
-        id: 5,
-        imageUrl: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400",
-        sku: "GM-002",
-        name: "Gaming Mouse",
-        description: "Ergonomic gaming mouse",
-        quantity: 1
-      }
-    ]
-  },
-  {
-    requestId: "BT-2025003",
-    department: "Engineering",
-    returnDate: "2025-02-20",
-    project: "Construction Site",
-    notes: "Required for site inspection",
-    status: "pending",
-    createdAt: "2025-01-12",
-    warehouseId: 'wh-3',
-    warehouseName: 'Central',
-    items: [
-      {
-        id: 6,
-        imageUrl: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400",
-        sku: "DRL-001",
-        name: "Power Drill",
-        description: "Cordless drill with battery",
-        quantity: 1
-      },
-      {
-        id: 7,
-        imageUrl: "https://images.unsplash.com/photo-1577760258779-e787a1733016?w=400",
-        sku: "SG-002",
-        name: "Safety Goggles",
-        description: "Clear protective safety goggles",
-        quantity: 3
-      }
-    ]
-  }
-];
-
-// Datos mock para Purchase Requests
-const mockPurchaseRequests: PurchaseRequest[] = [
-  {
-    requestId: "PC-2025001",
-    department: "IT",
-    project: "Infrastructure Upgrade",
-    notes: "Urgent hardware needed for server room",
-    status: "pending",
-    priority: "urgent",
-    selfPurchase: false,
-    totalCost: 2500,
-    createdAt: "2025-01-11",
-    warehouseId: 'wh-1',
-    warehouseName: 'Amax',
-    items: [
-      {
-        id: 8,
-        imageUrl: "https://images.unsplash.com/photo-1758598497364-544a0cdbc950?w=400",
-        sku: "SAM-003",
-        name: "Samsung 27\" Monitor",
-        description: "Full HD display",
-        quantity: 2,
-        estimatedCost: 300,
-        productUrl: "https://example.com/monitor"
-      },
-      {
-        id: 9,
-        imageUrl: "https://images.unsplash.com/photo-1733913106110-3f9832a788a0?w=400",
-        sku: "HDMI-004",
-        name: "HDMI 2.0 Cable",
-        description: "High speed HDMI cable 6ft",
-        quantity: 5,
-        estimatedCost: 15,
-        productUrl: "https://example.com/hdmi"
-      }
-    ]
-  },
-  {
-    requestId: "PC-2025002",
-    department: "Design",
-    project: "Creative Studio",
-    notes: "New equipment for design team",
-    status: "approved",
-    priority: "medium",
-    selfPurchase: false,
-    totalCost: 1800,
-    createdAt: "2025-01-09",
-    warehouseId: 'wh-2',
-    warehouseName: 'Best',
-    items: [
-      {
-        id: 10,
-        imageUrl: "https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?w=400",
-        sku: "MECH-KB-001",
-        name: "Mechanical Keyboard RGB",
-        description: "Gaming keyboard with RGB lighting",
-        quantity: 3,
-        estimatedCost: 120,
-        productUrl: "https://example.com/keyboard"
-      }
-    ]
-  },
-  {
-    requestId: "PC-2025003",
-    department: "Engineering",
-    project: "Construction Tools",
-    notes: "Will purchase locally for immediate use",
-    status: "pending",
-    priority: "urgent",
-    selfPurchase: true,
-    totalCost: 450,
-    createdAt: "2025-01-13",
-    warehouseId: 'wh-3',
-    warehouseName: 'Central',
-    items: [
-      {
-        id: 11,
-        imageUrl: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400",
-        sku: "DRL-001",
-        name: "Power Drill",
-        description: "Cordless drill with battery",
-        quantity: 2,
-        estimatedCost: 150,
-        productUrl: "https://example.com/drill"
-      },
-      {
-        id: 12,
-        imageUrl: "https://images.unsplash.com/photo-1577760258779-e787a1733016?w=400",
-        sku: "SG-002",
-        name: "Safety Goggles",
-        description: "Clear protective safety goggles",
-        quantity: 10,
-        estimatedCost: 15,
-        productUrl: "https://example.com/goggles"
-      }
-    ]
-  }
-];
-
-// Simula delay de red
-const simulateNetworkDelay = (ms: number = 500) => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-};
-
 // ==================== BORROW REQUESTS ====================
 
 /**
@@ -252,8 +50,18 @@ const simulateNetworkDelay = (ms: number = 500) => {
  */
 export const getBorrowRequests = async (): Promise<BorrowRequest[]> => {
   return apiCall(async () => {
-    await simulateNetworkDelay();
-    return [...mockBorrowRequests];
+    const response = await fetch(`${API_BASE_URL}/borrow-requests`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   });
 };
 
@@ -262,9 +70,22 @@ export const getBorrowRequests = async (): Promise<BorrowRequest[]> => {
  */
 export const getBorrowRequestById = async (requestId: string): Promise<BorrowRequest | null> => {
   return apiCall(async () => {
-    await simulateNetworkDelay();
-    const request = mockBorrowRequests.find(req => req.requestId === requestId);
-    return request || null;
+    const response = await fetch(`${API_BASE_URL}/borrow-requests/${requestId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   });
 };
 
@@ -275,17 +96,20 @@ export const createBorrowRequest = async (
   request: Omit<BorrowRequest, 'requestId' | 'status' | 'createdAt'>
 ): Promise<BorrowRequest> => {
   return apiCall(async () => {
-    await simulateNetworkDelay();
-    
-    const newRequest: BorrowRequest = {
-      ...request,
-      requestId: `BT-${Date.now()}`,
-      status: 'pending',
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-    
-    mockBorrowRequests.push(newRequest);
-    return newRequest;
+    const response = await fetch(`${API_BASE_URL}/borrow-requests`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   });
 };
 
@@ -297,13 +121,24 @@ export const updateBorrowRequestStatus = async (
   status: BorrowRequest['status']
 ): Promise<BorrowRequest | null> => {
   return apiCall(async () => {
-    await simulateNetworkDelay();
-    
-    const index = mockBorrowRequests.findIndex(req => req.requestId === requestId);
-    if (index === -1) return null;
-    
-    mockBorrowRequests[index].status = status;
-    return mockBorrowRequests[index];
+    const response = await fetch(`${API_BASE_URL}/borrow-requests/${requestId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   });
 };
 
@@ -312,20 +147,23 @@ export const updateBorrowRequestStatus = async (
  */
 export const deleteBorrowRequest = async (requestId: string): Promise<{ success: boolean; message: string }> => {
   return apiCall(async () => {
-    await simulateNetworkDelay();
-    
-    const index = mockBorrowRequests.findIndex(req => req.requestId === requestId);
-    if (index === -1) {
-      return { success: false, message: 'Request not found' };
+    const response = await fetch(`${API_BASE_URL}/borrow-requests/${requestId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to delete request' }));
+      return { 
+        success: false, 
+        message: errorData.message || 'Failed to delete request' 
+      };
     }
-    
-    // Solo permitir eliminar si está en estado pending
-    if (mockBorrowRequests[index].status !== 'pending') {
-      return { success: false, message: 'Only pending requests can be deleted' };
-    }
-    
-    mockBorrowRequests.splice(index, 1);
-    return { success: true, message: 'Request deleted successfully' };
+
+    const data = await response.json().catch(() => ({ success: true, message: 'Request deleted successfully' }));
+    return data;
   });
 };
 
@@ -336,8 +174,18 @@ export const deleteBorrowRequest = async (requestId: string): Promise<{ success:
  */
 export const getPurchaseRequests = async (): Promise<PurchaseRequest[]> => {
   return apiCall(async () => {
-    await simulateNetworkDelay();
-    return [...mockPurchaseRequests];
+    const response = await fetch(`${API_BASE_URL}/purchase-requests`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   });
 };
 
@@ -346,9 +194,22 @@ export const getPurchaseRequests = async (): Promise<PurchaseRequest[]> => {
  */
 export const getPurchaseRequestById = async (requestId: string): Promise<PurchaseRequest | null> => {
   return apiCall(async () => {
-    await simulateNetworkDelay();
-    const request = mockPurchaseRequests.find(req => req.requestId === requestId);
-    return request || null;
+    const response = await fetch(`${API_BASE_URL}/purchase-requests/${requestId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   });
 };
 
@@ -359,17 +220,20 @@ export const createPurchaseRequest = async (
   request: Omit<PurchaseRequest, 'requestId' | 'status' | 'createdAt'>
 ): Promise<PurchaseRequest> => {
   return apiCall(async () => {
-    await simulateNetworkDelay();
-    
-    const newRequest: PurchaseRequest = {
-      ...request,
-      requestId: `PC-${Date.now()}`,
-      status: 'pending',
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-    
-    mockPurchaseRequests.push(newRequest);
-    return newRequest;
+    const response = await fetch(`${API_BASE_URL}/purchase-requests`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   });
 };
 
@@ -381,13 +245,24 @@ export const updatePurchaseRequestStatus = async (
   status: PurchaseRequest['status']
 ): Promise<PurchaseRequest | null> => {
   return apiCall(async () => {
-    await simulateNetworkDelay();
-    
-    const index = mockPurchaseRequests.findIndex(req => req.requestId === requestId);
-    if (index === -1) return null;
-    
-    mockPurchaseRequests[index].status = status;
-    return mockPurchaseRequests[index];
+    const response = await fetch(`${API_BASE_URL}/purchase-requests/${requestId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   });
 };
 
@@ -396,37 +271,51 @@ export const updatePurchaseRequestStatus = async (
  */
 export const deletePurchaseRequest = async (requestId: string): Promise<{ success: boolean; message: string }> => {
   return apiCall(async () => {
-    await simulateNetworkDelay();
-    
-    const index = mockPurchaseRequests.findIndex(req => req.requestId === requestId);
-    if (index === -1) {
-      return { success: false, message: 'Request not found' };
+    const response = await fetch(`${API_BASE_URL}/purchase-requests/${requestId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to delete request' }));
+      return { 
+        success: false, 
+        message: errorData.message || 'Failed to delete request' 
+      };
     }
-    
-    // Solo permitir eliminar si está en estado pending
-    if (mockPurchaseRequests[index].status !== 'pending') {
-      return { success: false, message: 'Only pending requests can be deleted' };
-    }
-    
-    mockPurchaseRequests.splice(index, 1);
-    return { success: true, message: 'Request deleted successfully' };
+
+    const data = await response.json().catch(() => ({ success: true, message: 'Request deleted successfully' }));
+    return data;
   });
 };
 
 /**
- * PUT - Actualiza la prioridad de una solicitud de compra (auto-purchase)
+ * PUT - Actualiza la prioridad de una solicitud de compra
  */
 export const updatePurchaseRequestPriority = async (
   requestId: string,
   priority: PurchaseRequest['priority']
 ): Promise<PurchaseRequest | null> => {
   return apiCall(async () => {
-    await simulateNetworkDelay();
-    
-    const index = mockPurchaseRequests.findIndex(req => req.requestId === requestId);
-    if (index === -1) return null;
-    
-    mockPurchaseRequests[index].priority = priority;
-    return mockPurchaseRequests[index];
+    const response = await fetch(`${API_BASE_URL}/purchase-requests/${requestId}/priority`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ priority }),
+    });
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   });
 };
