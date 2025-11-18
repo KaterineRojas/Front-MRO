@@ -37,6 +37,7 @@ export function RequestManagement() {
   const [expandedRequests, setExpandedRequests] = useState<Set<number>>(new Set());
   const [rejectNotes, setRejectNotes] = useState('');
   const [modalType, setModalType] = useState('approve')
+  const [showModal, setShowModal] = useState(false)
 
   const requestTypeOptions: SelectOption[] = [
     { value: "all", label: "All Types" },
@@ -81,7 +82,7 @@ export function RequestManagement() {
     const updatedRequest: Request = {
       ...selectedRequest,
       status: 'approved',
-      reviewedBy: 'Current User',
+      reviewedBy: 'insert current user here',
       reviewDate: new Date().toISOString().split('T')[0],
       reviewNotes: 'Approved'
     };
@@ -299,8 +300,8 @@ export function RequestManagement() {
 
               handleToggleExpand={handleToggleExpand}
               setSelectedRequest={setSelectedRequest}
-              setApproveDialogOpen={setApproveDialogOpen}
-              setRejectDialogOpen={setRejectDialogOpen}
+              setShowModal={setShowModal}
+              setModalType={setModalType}
             />
           </div>
 
@@ -310,16 +311,27 @@ export function RequestManagement() {
 
 
       <RequestModal
-        open={approveDialogOpen}
+        show={showModal}
         request={selectedRequest}
-        onConfirm={handleApprove}
+        onConfirm={modalType === 'approve' ? handleApprove : handleReject}
         onCancel={handleCancelApprove}
         getTypeBadge={getTypeBadge}
-        variant='reject'
+        variant={modalType === 'approve' ? 'approve' : 'reject'}
       />
 
+
+
+
+
+
+
+
+
+
+
+
       {/* Approve Dialog */}
-      {/* <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+      <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Approve Request</DialogTitle>
@@ -412,7 +424,19 @@ export function RequestManagement() {
             </div>
           )}
         </DialogContent>
-      </Dialog> */}
+      </Dialog>
+
+
+
+
+
+
+
+
+
+
+
+
 
       {/* Reject Dialog */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>

@@ -20,8 +20,8 @@ interface RequestsTableProps {
   getUrgencyBadge: (urgency: Request['urgency']) => React.ReactNode;
   handleToggleExpand: (id: number) => void;
   setSelectedRequest: (request: Request) => void;
-  setApproveDialogOpen: (open: boolean) => void;
-  setRejectDialogOpen: (open: boolean) => void;
+  setShowModal: (open: boolean) => void;
+  setModalType: (value: string) => void;
 }
 
 // --- Componente Modularizado (Puro HTML/Tailwind) ---
@@ -36,8 +36,8 @@ export default function RequestsTable({
   getUrgencyBadge,
   handleToggleExpand,
   setSelectedRequest,
-  setApproveDialogOpen,
-  setRejectDialogOpen,
+  setShowModal,
+  setModalType
 }: RequestsTableProps) {
 
 
@@ -140,8 +140,9 @@ export default function RequestsTable({
                         {/* Este es el <Button variant="outline"> */}
                         <button
                           onClick={() => {
+                            setModalType('approve')
                             setSelectedRequest(request);
-                            setApproveDialogOpen(true);
+                            setShowModal(true);
                           }}
                           className={`inline-flex items-center justify-center rounded-md text-sm 
                             font-medium h-10 px-4 py-2 border border-gray-300 
@@ -155,8 +156,9 @@ export default function RequestsTable({
                         </button>
                         <button
                           onClick={() => {
+                            setModalType('reject')
                             setSelectedRequest(request);
-                            setRejectDialogOpen(true);
+                            setShowModal(true)
                           }}
                           className={`inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 
                             py-2 border border-gray-300

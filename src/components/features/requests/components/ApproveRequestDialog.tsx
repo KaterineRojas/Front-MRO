@@ -4,16 +4,16 @@ import { X } from 'lucide-react'; // 2. Corregido: El ícono se llama 'X'
 
 // 3. Interface actualizada
 interface RequestActionDialogProps {
-    open: boolean;
+    show: boolean;
     variant: 'approve' | 'reject'; // <-- Prop para la variante
     request: Request | null;
     onCancel: () => void;
-    onConfirm: (reason?: string) => void; // <-- 'onApprove' se vuelve 'onConfirm'
+    onConfirm: () => void; // <-- 'onApprove' se vuelve 'onConfirm'
     getTypeBadge: (type: Request['type']) => React.ReactNode;
 }
 
 export default function RequestModal({
-    open,
+    show,
     variant, // <-- Nueva prop
     request,
     onCancel,
@@ -41,17 +41,13 @@ export default function RequestModal({
 
     // Limpia el 'reason' cuando el modal se cierra
     useEffect(() => {
-        if (!open) {
+        if (!show) {
             setReason("");
         }
-    }, [open]);
+    }, [show]);
 
-    // Manejador que envía la 'reason' solo si es 'reject'
-    const handleConfirm = () => {
-        onConfirm(isReject ? reason : undefined);
-    };
 
-    if (!open || !request) {
+    if (!show || !request) {
         return null;
     }
 
@@ -157,7 +153,7 @@ export default function RequestModal({
                                 id="rejectionReason"
                                 rows={3}
                                 className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 
-                                shadow-sm p-2 bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 
+                                shadow-sm bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 
                                 focus:ring-2 focus:ring-blue-500 p-2 max-h-[100px]"
                                 placeholder="Explain why this request is being rejected..."
                                 value={reason}
@@ -182,7 +178,7 @@ export default function RequestModal({
                                 ${confirmButtonClass}
                                 ${isConfirmDisabled ? 'opacity-50 cursor-not-allowed' : ''}
                             `}
-                            onClick={handleConfirm}
+                            onClick={onConfirm}
                             disabled={isConfirmDisabled}
                         >
                             {confirmText} {/* <-- Dinámico */}
