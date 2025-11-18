@@ -1,7 +1,8 @@
 import { createSelector } from '@reduxjs/toolkit';
 // Use the main app store instead of local store
 import type { RootState } from '../../../../store';
-import type { CartItem, Notification, InventoryItem } from '../types';
+import type { CartItem, InventoryItem } from '../types/index';
+import type { Notification } from '../../../../store/slices/notificationsSlice';
 
 // Cart selectors - using engineerCart from main store
 export const selectCartItems = (state: RootState): CartItem[] => state.engineerCart.items;

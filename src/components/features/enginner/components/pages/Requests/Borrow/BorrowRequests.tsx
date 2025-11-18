@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
-import { Input } from '../../ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
+import { Card, CardContent } from '../../../../ui/card';
+import { Button } from '../../../../ui/button';
+import { Badge } from '../../../../ui/badge';
+import { Input } from '../../../../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../../ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../ui/table';
 import { Package, Plus, ChevronDown, ChevronRight, Trash2, Calendar } from 'lucide-react';
-import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
-import { LoanForm } from '../forms/LoanForm';
+import { ImageWithFallback } from '../../../../../../figma/ImageWithFallback';
+import { LoanForm } from '../../../forms/LoanForm';
 import { toast } from 'sonner';
-import { useAppSelector, useAppDispatch } from '../../store/hooks';
-import { clearCart } from '../../store/slices/cartSlice';
-import { selectCartItems, selectCurrentUser } from '../../store/selectors';
-import { getBorrowRequests, getWarehouses, getStatuses, deleteBorrowRequest, type BorrowRequest, type Warehouse, type Status } from '../../services';
-import { ConfirmModal, useConfirmModal } from '../../ui/confirm-modal';
-import { handleError, setupConnectionListener } from '../../services/errorHandler';
-import type { AppError } from '../../services/errorHandler';
+import { useAppSelector, useAppDispatch } from '../../../../store/hooks';
+import { clearCart } from '../../../../store/slices/cartSlice';
+import { selectCartItems, selectCurrentUser } from '../../../../store/selectors';
+import { getBorrowRequests, getWarehouses, getStatuses, deleteBorrowRequest, type BorrowRequest, type Warehouse, type Status } from '../../../../services';
+import { ConfirmModal, useConfirmModal } from '../../../../ui/confirm-modal';
+import { handleError, setupConnectionListener } from '../../../../services/errorHandler';
+import type { AppError } from '../../../../services/errorHandler';
 
 export function BorrowRequests() {
   const dispatch = useAppDispatch();
@@ -251,6 +251,16 @@ export function BorrowRequests() {
   };
 
   if (showBorrowForm) {
+    if (!currentUser) {
+      return (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <p className="text-muted-foreground">Please log in to create a borrow request.</p>
+          </CardContent>
+        </Card>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -270,11 +280,11 @@ export function BorrowRequests() {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Engineer</p>
-                  <p className="font-medium">{currentUser?.name || 'N/A'}</p>
+                  <p className="font-medium">{currentUser.name || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Department</p>
-                  <p className="font-medium">{currentUser?.department || 'N/A'}</p>
+                  <p className="font-medium">{currentUser.department || 'N/A'}</p>
                 </div>
               </div>
             </CardContent>
@@ -308,16 +318,14 @@ export function BorrowRequests() {
       {/* Search and Filter Bar */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by ID, project, warehouse, items..."
-                value={borrowSearchTerm}
-                onChange={(e) => setBorrowSearchTerm(e.target.value)}
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Input
+              placeholder="Search by ID, project, warehouse, items..."
+              value={borrowSearchTerm}
+              onChange={(e) => setBorrowSearchTerm(e.target.value)}
+            />
             <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger>
                 <SelectValue placeholder="All Warehouses" />
               </SelectTrigger>
               <SelectContent>
@@ -330,7 +338,7 @@ export function BorrowRequests() {
               </SelectContent>
             </Select>
             <Select value={borrowStatusFilter} onValueChange={setBorrowStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger>
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
@@ -497,7 +505,7 @@ export function BorrowRequests() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={(e) => {
+                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                   e.stopPropagation();
                                   handleReturnAll(request.requestId);
                                 }}
@@ -509,7 +517,7 @@ export function BorrowRequests() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={(e) => {
+                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                   e.stopPropagation();
                                   handleCancelBorrowRequest(request.requestId);
                                 }}

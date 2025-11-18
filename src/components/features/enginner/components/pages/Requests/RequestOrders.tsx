@@ -1,9 +1,9 @@
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../ui/tabs';
-import { ScrollArea } from '../../ui/scroll-area';
-import { BorrowRequests } from './BorrowRequests';
-import { PurchaseRequests } from './PurchaseRequests';
-import { TransferRequests } from './TransferRequests';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../ui/tabs';
+import { ScrollArea } from '../../../ui/scroll-area';
+import { BorrowRequests } from './Borrow/BorrowRequests';
+import { PurchaseRequests } from './Purchase/PurchaseRequests';
+import { TransferRequests } from '../TransferRequests/TransferRequests';
 
 export function RequestOrders() {
   return (

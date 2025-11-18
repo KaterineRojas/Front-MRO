@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
+import { Card, CardContent } from '../../../../ui/card';
+import { Button } from '../../../../ui/button';
+import { Badge } from '../../../../ui/badge';
+import { Input } from '../../../../ui/input';
+import { Label } from '../../../../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../../ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../ui/table';
 import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle } from 'lucide-react';
-import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
-import { PurchaseForm } from '../forms/PurchaseForm';
+import { ImageWithFallback } from '../../../../../../figma/ImageWithFallback';
+import { PurchaseForm } from '../../../forms/PurchaseForm';
 import { toast } from 'sonner';
-import { useAppSelector } from '../../store/hooks';
-import { selectCurrentUser } from '../../store/selectors';
-import { getPurchaseRequests, getWarehouses, type PurchaseRequest, type Warehouse } from '../../services';
+import { useAppSelector } from '../../../../store/hooks';
+import { selectCurrentUser } from '../../../../store/selectors';
+import { getPurchaseRequests, getWarehouses, type PurchaseRequest, type Warehouse } from '../../../../services';
 
 export function PurchaseRequests() {
   const navigate = useNavigate();
@@ -179,6 +179,20 @@ export function PurchaseRequests() {
   };
 
   if (showPurchaseForm) {
+    if (!currentUser) {
+      return (
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="p-12 text-center">
+              <p className="text-muted-foreground">User information not available</p>
+              <Button variant="outline" onClick={() => setShowPurchaseForm(false)} className="mt-4">
+                ← Back to Requests
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
     return (
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -190,11 +204,11 @@ export function PurchaseRequests() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Engineer</p>
-                  <p className="font-medium">{currentUser?.name || 'N/A'}</p>
+                  <p className="font-medium">{currentUser.name || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Department</p>
-                  <p className="font-medium">{currentUser?.department || 'N/A'}</p>
+                  <p className="font-medium">{currentUser.department || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Request Type</p>
@@ -230,16 +244,14 @@ export function PurchaseRequests() {
       {/* Search and Filter Bar */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by ID, project, warehouse, items..."
-                value={purchaseSearchTerm}
-                onChange={(e) => setPurchaseSearchTerm(e.target.value)}
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Input
+              placeholder="Search by ID, project, warehouse, items..."
+              value={purchaseSearchTerm}
+              onChange={(e) => setPurchaseSearchTerm(e.target.value)}
+            />
             <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger>
                 <SelectValue placeholder="All Warehouses" />
               </SelectTrigger>
               <SelectContent>
@@ -252,7 +264,7 @@ export function PurchaseRequests() {
               </SelectContent>
             </Select>
             <Select value={purchaseStatusFilter} onValueChange={setPurchaseStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger>
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
