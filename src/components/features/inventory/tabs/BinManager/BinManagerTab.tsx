@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Warehouse, Grid3x3, Table2 } from 'lucide-react';
 import { mockWarehousesV2 } from '../../data/mockDataV2';
 import { WarehouseV2, ZoneV2, RackV2, LevelV2, BinV2 } from '../../types/warehouse-v2';
@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from '../../../ui/alert-dialog';
 import { toast } from 'sonner';
+import { fetchWarehousesFromApi } from '../../services/inventoryApi';
 
 type ViewLevel = 'warehouse' | 'zone' | 'rack' | 'level' | 'bin';
 type ViewMode = 'grid' | 'table';
@@ -31,6 +32,7 @@ export function BinManagerTab() {
   const [selectedZone, setSelectedZone] = useState<ZoneV2 | null>(null);
   const [selectedRack, setSelectedRack] = useState<RackV2 | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<LevelV2 | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   // View mode state
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -55,6 +57,31 @@ export function BinManagerTab() {
   
   const [deletingItem, setDeletingItem] = useState<ZoneV2 | RackV2 | LevelV2 | BinV2 | null>(null);
   const [deletingType, setDeletingType] = useState<'zone' | 'rack' | 'level' | 'bin' | null>(null);
+
+  // Load warehouses from API on mount
+  useEffect(() => {
+    const loadWarehouses = async () => {
+      setIsLoading(true);
+      try {
+        const data = await fetchWarehousesFromApi();
+        console.log('📦 Warehouses data received:', data);
+        
+        if (data && data.length > 0) {
+          setWarehouses(data);
+          setSelectedWarehouse(data[0]);
+          toast.success('Warehouses loaded from backend');
+        }
+      } catch (error) {
+        console.error('❌ Error loading warehouses:', error);
+        toast.error('Failed to load warehouses from backend, using mock data');
+        // Keep using mock data on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadWarehouses();
+  }, []);
 
   const handleNavigate = (warehouse: WarehouseV2, zone?: ZoneV2, rack?: RackV2, level?: LevelV2) => {
     setSelectedWarehouse(warehouse);
@@ -201,43 +228,74 @@ export function BinManagerTab() {
   };
 
   const findZoneIdForBin = (bin: BinV2): string | undefined => {
-    const warehouse = selectedWarehouse || warehouses[0];
-    if (!warehouse) return undefined;
-    for (const zone of warehouse.zones) {
-      for (const rack of zone.racks) {
-        for (const level of rack.levels) {
-          if (level.bins.some(b => b.id === bin.id)) {
-            return zone.id;
+    console.log('🔍 Searching for zone of bin:', bin.code, 'in', warehouses.length, 'warehouses');
+    
+    // Buscar en TODOS los warehouses, no solo el seleccionado
+    for (const warehouse of warehouses) {
+      for (const zone of warehouse.zones) {
+        for (const rack of zone.racks) {
+          for (const level of rack.levels) {
+            if (level.bins.some(b => b.id === bin.id)) {
+              console.log(`✅ Found zone for bin ${bin.code}:`, zone.code, zone.id);
+              return zone.id;
+            }
           }
         }
       }
     }
+    console.log(`⚠️ Zone not found for bin ${bin.code} (ID: ${bin.id})`);
     return undefined;
   };
 
   const findRackIdForBin = (bin: BinV2): string | undefined => {
-    const warehouse = selectedWarehouse || warehouses[0];
-    if (!warehouse) return undefined;
-    for (const zone of warehouse.zones) {
-      for (const rack of zone.racks) {
-        for (const level of rack.levels) {
-          if (level.bins.some(b => b.id === bin.id)) {
-            return rack.id;
+    console.log('🔍 Searching for rack of bin:', bin.code);
+    
+    // Buscar en TODOS los warehouses
+    for (const warehouse of warehouses) {
+      for (const zone of warehouse.zones) {
+        for (const rack of zone.racks) {
+          for (const level of rack.levels) {
+            if (level.bins.some(b => b.id === bin.id)) {
+              console.log(`✅ Found rack for bin ${bin.code}:`, rack.code, rack.id);
+              return rack.id;
+            }
           }
         }
       }
     }
+    console.log(`⚠️ Rack not found for bin ${bin.code} (ID: ${bin.id})`);
     return undefined;
   };
 
   const findLevelIdForBin = (bin: BinV2): string | undefined => {
-    const warehouse = selectedWarehouse || warehouses[0];
-    if (!warehouse) return undefined;
-    for (const zone of warehouse.zones) {
-      for (const rack of zone.racks) {
-        for (const level of rack.levels) {
-          if (level.bins.some(b => b.id === bin.id)) {
-            return level.id;
+    console.log('🔍 Searching for level of bin:', bin.code);
+    
+    // Buscar en TODOS los warehouses
+    for (const warehouse of warehouses) {
+      for (const zone of warehouse.zones) {
+        for (const rack of zone.racks) {
+          for (const level of rack.levels) {
+            if (level.bins.some(b => b.id === bin.id)) {
+              console.log(`✅ Found level for bin ${bin.code}:`, level.code, level.id);
+              return level.id;
+            }
+          }
+        }
+      }
+    }
+    console.log(`⚠️ Level not found for bin ${bin.code} (ID: ${bin.id})`);
+    return undefined;
+  };
+
+  // Obtener el path completo de ubicación para un bin
+  const getFullLocationPath = (bin: BinV2): string | undefined => {
+    for (const warehouse of warehouses) {
+      for (const zone of warehouse.zones) {
+        for (const rack of zone.racks) {
+          for (const level of rack.levels) {
+            if (level.bins.some(b => b.id === bin.id)) {
+              return `${warehouse.code} → ${zone.code} → ${rack.code} → ${level.code}`;
+            }
           }
         }
       }
@@ -386,7 +444,8 @@ export function BinManagerTab() {
           id: `b${Date.now()}`,
           code: binData.code || '',
           name: binData.name || '',
-          description: binData.description || '',
+          allowDifferentItems: binData.allowDifferentItems || false,
+          itemId: null,
           itemName: binData.itemName || null,
           quantity: binData.quantity || 0,
           createdAt: new Date(),
@@ -793,13 +852,10 @@ export function BinManagerTab() {
         onSave={handleSaveBin}
         bin={editingBin}
         generatedCode={generateBinCode()}
-        locationPath={selectedWarehouse && selectedZone && selectedRack && selectedLevel ? `${selectedWarehouse.code} → ${selectedZone.code} → ${selectedRack.code} → ${selectedLevel.code}` : undefined}
-        availableZones={getAllZones()}
-        availableRacks={getAllRacks()}
-        availableLevels={getAllLevels()}
-        currentZoneId={editingBin ? findZoneIdForBin(editingBin) : selectedZone?.id}
-        currentRackId={editingBin ? findRackIdForBin(editingBin) : selectedRack?.id}
-        currentLevelId={editingBin ? findLevelIdForBin(editingBin) : selectedLevel?.id}
+        locationPath={editingBin ? getFullLocationPath(editingBin) : (selectedWarehouse && selectedZone && selectedRack && selectedLevel ? `${selectedWarehouse.code} → ${selectedZone.code} → ${selectedRack.code} → ${selectedLevel.code}` : undefined)}
+        currentZoneId={!editingBin ? selectedZone?.id : undefined}
+        currentRackId={!editingBin ? selectedRack?.id : undefined}
+        currentLevelId={!editingBin ? selectedLevel?.id : undefined}
       />
 
       {/* Delete Confirmation */}

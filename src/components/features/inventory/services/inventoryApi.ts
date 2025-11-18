@@ -1,6 +1,6 @@
-import type { Article, InventoryItemResponse, Kit, Bin, BinResponse, Transaction } from '../types';
+import type { Article, InventoryItemResponse, Kit, Bin, Transaction } from '../types';
 import type { PurchaseRequest, DamagedRequest, StockCorrectionRequest, WarehouseTransferRequest } from '../modals/RecordMovement/types';
-import { CATEGORIES } from '../constants';
+import type { WarehouseV2 } from '../types/warehouse-v2';
 import { API_URL } from "../../../../url";
 
 // ============================================================================
@@ -36,22 +36,6 @@ function mapCategory(apiCategory?: string): Article['category'] {
 }
 
 /**
- * Mapea el BinPurpose del backend al tipo de la UI
- */
-function mapBinType(apiType: BinResponse['binPurposeDisplay']): Bin['type'] {
-  switch (apiType) {
-    case 'GoodCondition': return 'good-condition';
-    case 'OnRevision': return 'on-revision';
-    case 'Scrap': return 'scrap';
-    case 'Hold': return 'Hold';
-    case 'Packing': return 'Packing';
-    case 'Reception': return 'Reception';
-    case 'NotApplicable':
-    default: return 'good-condition';
-  }
-}
-
-/**
  * Transforma InventoryItemResponse a Article
  */
 export function transformInventoryItem(apiItem: InventoryItemResponse): Article {
@@ -64,33 +48,21 @@ export function transformInventoryItem(apiItem: InventoryItemResponse): Article 
     category: mapCategory(apiItem.category),
     consumable: apiItem.consumable,
     minStock: apiItem.minStock || 0,
+    status: true,
     bins: apiItem.bins?.map(bin => ({
       inventoryId: bin.inventoryId,
       binId: bin.binId,
       binCode: bin.binCode,
-      binPurpose: bin.binPurpose as 'good-condition' | 'on-revision' | 'scrap' | 'Hold' | 'Packing' | 'Reception',
       quantity: bin.quantity
     })) || [],
     quantityAvailable: apiItem.quantityAvailable ?? 0,
     quantityOnLoan: apiItem.quantityOnLoan ?? 0,
     quantityReserved: apiItem.quantityReserved ?? 0,
     totalPhysical: apiItem.totalPhysical ?? 0,
+    currentStock: apiItem.totalPhysical ?? 0,
     unit: 'units',
     cost: 0,
     createdAt: new Date().toISOString().split('T')[0]
-  };
-}
-
-/**
- * Transforma BinResponse a Bin
- */
-function transformBin(apiBin: BinResponse): Bin {
-  return {
-    id: apiBin.id,
-    binCode: apiBin.binCode,
-    description: apiBin.description,
-    type: mapBinType(apiBin.binPurposeDisplay),
-    totalQuantity: apiBin.totalQuantity
   };
 }
 
@@ -376,54 +348,7 @@ export async function createPurchaseApi(purchaseData: PurchaseRequest): Promise<
   }
 }
 
-// ============================================================================
-// BINS API
-// ============================================================================
 
-/**
- * Mapeo de tipos de bin a binPurpose (número)
- */
-const BIN_PURPOSE_MAP: Record<string, number> = {
-  'GoodCondition': 0,
-  'OnRevision': 1,
-  'Scrap': 2,
-  'Hold': 3,
-  'Packing': 4,
-  'Reception': 5,
-  'good-condition': 0,
-  'on-revision': 1,
-  'scrap': 2,
-  'hold': 3,
-  'packing': 4,
-  'reception': 5
-};
-
-/**
- * Obtiene todos los bins con cantidad
- * @deprecated Temporalmente desactivado - pendiente migración a nueva lógica de bins
- */
-export async function fetchBinsFromApi(): Promise<Bin[]> {
-  console.warn('⚠️ fetchBinsFromApi temporalmente desactivado - pendiente migración a nueva lógica');
-  return [];
-  
-  // CÓDIGO ORIGINAL COMENTADO (PENDIENTE MIGRACIÓN)
-  // try {
-  //   const response = await fetch(`${API_URL}/Bins/with-quantity?isActive=true`, {
-  //     method: 'GET',
-  //     headers: { 'Content-Type': 'application/json' },
-  //   });
-
-  //   if (!response.ok) {
-  //     throw new Error(`Failed to fetch bins: ${response.status} ${response.statusText}`);
-  //   }
-
-  //   const data: BinResponse[] = await response.json();
-  //   return data.map(transformBin);
-  // } catch (error) {
-  //   console.error('Error fetching all bins:', error);
-  //   throw error;
-  // }
-}
 
 /**
  * Obtiene bins disponibles para crear items (GoodCondition)
@@ -432,54 +357,221 @@ export async function fetchBinsFromApi(): Promise<Bin[]> {
 export async function getNewBins(): Promise<Bin[]> {
   console.warn('⚠️ getNewBins temporalmente desactivado - pendiente migración a nueva lógica');
   return [];
-  
-  // CÓDIGO ORIGINAL COMENTADO (PENDIENTE MIGRACIÓN)
-  // try {
-  //   const response = await fetch(`${API_URL}/Bins?isActive=true`, {
-  //     method: 'GET',
-  //     headers: { 'Content-Type': 'application/json' },
-  //   });
-
-  //   if (!response.ok) {
-  //     throw new Error(`Failed to fetch new bins: ${response.status} ${response.statusText}`);
-  //   }
-
-  //   const data: BinResponse[] = await response.json();
-
-  //   return data
-  //     .filter(bin => bin.binPurposeDisplay === 'GoodCondition')
-  //     .map(transformBin);
-  // } catch (error) {
-  //   console.error('Error fetching new bins:', error);
-  //   throw error;
-  // }
 }
 
 /**
- * Obtiene un bin por ID
- * @deprecated Temporalmente desactivado - pendiente migración a nueva lógica de bins
+ * Obtiene todos los bins desde el API
+ * @deprecated Usar fetchWarehousesFromApi() en su lugar para obtener la estructura completa
  */
-async function fetchBinByIdApi(_id: number): Promise<Bin> {
-  console.warn('⚠️ fetchBinByIdApi temporalmente desactivado - pendiente migración a nueva lógica');
-  throw new Error('Function temporarily disabled');
-  
-  // CÓDIGO ORIGINAL COMENTADO (PENDIENTE MIGRACIÓN)
-  // try {
-  //   const response = await fetch(`${API_URL}/Bins/${id}`, {
-  //     method: 'GET',
-  //     headers: { 'Content-Type': 'application/json' },
-  //   });
+export async function fetchBinsFromApi(): Promise<Bin[]> {
+  try {
+    const response = await fetch(`${API_URL}/Bin/with-quantity?isActive=true`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-  //   if (!response.ok) {
-  //     throw new Error(`Failed to fetch bin: ${response.status}`);
-  //   }
+    if (!response.ok) {
+      throw new Error(`Failed to fetch bins: ${response.status} ${response.statusText}`);
+    }
 
-  //   const bin = await response.json();
-  //   return transformBin(bin);
-  // } catch (error) {
-  //   console.error('Error fetching bin by ID:', error);
-  //   throw error;
-  // }
+    interface ApiBinFlat {
+      id: number;
+      code: string;
+      name: string;
+      fullCode: string;
+      allowDifferentItems: boolean;
+    }
+
+    const data: ApiBinFlat[] = await response.json();
+    
+    return data.map(bin => ({
+      id: bin.id,
+      binCode: bin.code,
+      description: bin.name,
+      type: null,
+      totalQuantity: 0
+    }));
+  } catch (error) {
+    console.error('Error fetching bins:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene la estructura completa de warehouses con zones, racks, levels y bins
+ */
+export async function fetchWarehousesFromApi(): Promise<WarehouseV2[]> {
+  try {
+    console.log('🔄 Fetching warehouses from API...');
+    const response = await fetch(`${API_URL}/Bin/with-quantity?isActive=true`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch warehouses: ${response.status} ${response.statusText}`);
+    }
+
+    // El API devuelve un array plano de bins con referencias a warehouse, zone, rack, level
+    interface ApiBinFlat {
+      id: number;
+      levelId: number;
+      code: string;
+      name: string;
+      fullCode: string;
+      capacity: number;
+      allowDifferentItems: boolean;
+      isActive: boolean;
+      createdAt: string;
+      updatedAt: string;
+      itemId?: number | null;
+      itemName?: string | null;
+      quantity?: number;
+      level: {
+        id: number;
+        rackId: number;
+        code: string;
+        name: string;
+        isActive: boolean;
+        createdAt: string;
+        updatedAt: string;
+        rack: null;
+      } | null;
+      rack: {
+        id: number;
+        zoneId: number;
+        code: string;
+        name: string;
+        isActive: boolean;
+        createdAt: string;
+        updatedAt: string;
+        zone: null;
+      } | null;
+      zone: {
+        id: number;
+        warehouseId: number;
+        code: string;
+        name: string;
+        isActive: boolean;
+        createdAt: string;
+        updatedAt: string;
+        warehouse: null;
+      } | null;
+      warehouse: {
+        id: number;
+        code: string;
+        name: string;
+        isActive: boolean;
+        createdAt: string;
+        updatedAt: string;
+      } | null;
+    }
+
+    const responseText = await response.text();
+    console.log('🔍 Raw API Response (first 500 chars):', responseText.substring(0, 500));
+    
+    let flatBins: ApiBinFlat[];
+    try {
+      flatBins = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ Error parsing JSON:', parseError);
+      throw new Error('Invalid JSON response from API');
+    }
+    
+    console.log('📊 Datos recibidos del API:', {
+      totalItems: flatBins.length,
+      firstItem: flatBins[0],
+      firstItemKeys: flatBins[0] ? Object.keys(flatBins[0]) : [],
+      hasItemName: flatBins[0] ? 'itemName' in flatBins[0] : false,
+      hasQuantity: flatBins[0] ? 'quantity' in flatBins[0] : false,
+      itemNameValue: flatBins[0]?.itemName,
+      quantityValue: flatBins[0]?.quantity
+    });
+    
+    // Construir la jerarquía anidada
+    const warehousesMap = new Map<number, WarehouseV2>();
+    
+    flatBins.forEach(bin => {
+      // Validar que el bin tenga todas las referencias necesarias
+      if (!bin.warehouse || !bin.zone || !bin.rack || !bin.level) {
+        console.warn('⚠️ Bin sin referencias completas, omitiendo:', {
+          binId: bin.id,
+          binCode: bin.code,
+          hasWarehouse: !!bin.warehouse,
+          hasZone: !!bin.zone,
+          hasRack: !!bin.rack,
+          hasLevel: !!bin.level
+        });
+        return;
+      }
+      
+      // Obtener o crear warehouse
+      if (!warehousesMap.has(bin.warehouse.id)) {
+        warehousesMap.set(bin.warehouse.id, {
+          id: bin.warehouse.id.toString(),
+          code: bin.warehouse.code,
+          name: bin.warehouse.name,
+          zones: []
+        });
+      }
+      const warehouse = warehousesMap.get(bin.warehouse.id)!;
+      
+      // Obtener o crear zone
+      let zone = warehouse.zones.find(z => z.id === bin.zone!.id.toString());
+      if (!zone) {
+        zone = {
+          id: bin.zone!.id.toString(),
+          code: bin.zone!.code,
+          name: bin.zone!.name,
+          racks: []
+        };
+        warehouse.zones.push(zone);
+      }
+      
+      // Obtener o crear rack
+      let rack = zone.racks.find(r => r.id === bin.rack!.id.toString());
+      if (!rack) {
+        rack = {
+          id: bin.rack!.id.toString(),
+          code: bin.rack!.code,
+          name: bin.rack!.name,
+          levels: []
+        };
+        zone.racks.push(rack);
+      }
+      
+      // Obtener o crear level
+      let level = rack.levels.find(l => l.id === bin.level!.id.toString());
+      if (!level) {
+        level = {
+          id: bin.level!.id.toString(),
+          code: bin.level!.code,
+          name: bin.level!.name,
+          bins: []
+        };
+        rack.levels.push(level);
+      }
+      
+      // Agregar bin al level
+      level.bins.push({
+        id: bin.id.toString(),
+        code: bin.code,
+        name: bin.name,
+        allowDifferentItems: bin.allowDifferentItems,
+        itemId: bin.itemId ? bin.itemId.toString() : null,
+        itemName: bin.itemName || null,
+        quantity: bin.quantity || 0,
+        createdAt: new Date(bin.createdAt)
+      });
+    });
+    
+    const warehouses = Array.from(warehousesMap.values());
+    console.log('✅ Warehouses fetched and structured:', warehouses.length);
+    return warehouses;
+  } catch (error) {
+    console.error('❌ Error fetching warehouses:', error);
+    throw error;
+  }
 }
 
 /**
@@ -758,7 +850,6 @@ export async function createStockCorrectionApi(correctionData: StockCorrectionRe
 export async function getValidDestinationBins(itemId: number, fromBinId: number): Promise<{
   binId: number;
   binCode: string;
-  binPurpose: string;
   description: string;
 }[]> {
   try {

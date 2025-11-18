@@ -23,12 +23,12 @@ const colorClasses = {
     editIcon: 'text-blue-900 dark:text-blue-100',
   },
   pink: {
-    card: 'bg-amber-50 dark:bg-amber-950 border-amber-500 dark:border-amber-600 text-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900 hover:border-amber-600 dark:hover:border-amber-500 shadow-md hover:shadow-xl',
-    icon: 'text-amber-600 dark:text-amber-400',
-    text: 'text-blue-900 dark:text-blue-100',
-    textLight: 'text-blue-700 dark:text-blue-300',
-    editBtn: 'bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800',
-    editIcon: 'text-blue-900 dark:text-blue-100',
+    card: '!bg-white dark:!bg-gray-900 border-fuchsia-500 dark:border-gray-700 text-fuchsia-900 dark:text-gray-100 hover:!bg-rose-50 dark:hover:!bg-gray-800 hover:!border-fuchsia-600 dark:hover:!border-gray-600 shadow-md hover:!shadow-xl',
+    icon: 'text-purple-600 dark:text-purple-300',
+    text: 'text-fuchsia-900 dark:text-gray-100',
+    textLight: 'text-rose-700 dark:text-gray-300',
+    editBtn: 'bg-fuchsia-200 dark:bg-gray-800 hover:bg-fuchsia-300 dark:hover:bg-gray-700',
+    editIcon: 'text-fuchsia-900 dark:text-gray-100',
   },
   yellow: {
     card: 'bg-orange-50 dark:bg-orange-950 border-orange-500 dark:border-orange-600 text-orange-900 dark:text-orange-100 hover:bg-orange-100 dark:hover:bg-orange-900 hover:border-orange-600 dark:hover:border-orange-500 shadow-md hover:shadow-xl',
