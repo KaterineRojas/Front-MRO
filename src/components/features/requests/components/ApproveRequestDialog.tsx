@@ -1,31 +1,28 @@
-import React, { useState, useEffect } from 'react'; // 1. Importamos hooks
+import React, { useState, useEffect } from 'react'; 
 import { type Request } from '../data/mockRequest.ts';
-import { X } from 'lucide-react'; // 2. Corregido: El ícono se llama 'X'
+import { X } from 'lucide-react'; 
 
-// 3. Interface actualizada
 interface RequestActionDialogProps {
     show: boolean;
-    variant: 'approve' | 'reject'; // <-- Prop para la variante
+    variant: 'approve' | 'reject';
     request: Request | null;
     onCancel: () => void;
-    onConfirm: () => void; // <-- 'onApprove' se vuelve 'onConfirm'
+    onConfirm: () => void; 
     getTypeBadge: (type: Request['type']) => React.ReactNode;
 }
 
 export default function RequestModal({
     show,
-    variant, // <-- Nueva prop
+    variant, 
     request,
     onCancel,
-    onConfirm, // <-- Prop actualizada
+    onConfirm,
     getTypeBadge,
 }: RequestActionDialogProps) {
 
-    // 4. Lógica de estado para el 'textarea'
     const [reason, setReason] = useState("");
     const isReject = variant === 'reject';
 
-    // 5. Lógica condicional para títulos y botones
     const title = isReject ? "Reject Request" : "Approve Request";
     const description = isReject
         ? "Please provide a reason for rejecting this request."
@@ -39,7 +36,6 @@ export default function RequestModal({
 
     const isConfirmDisabled = isReject && reason.trim() === "";
 
-    // Limpia el 'reason' cuando el modal se cierra
     useEffect(() => {
         if (!show) {
             setReason("");
@@ -63,12 +59,12 @@ export default function RequestModal({
                 {/* Cabecera (Actualizada con títulos dinámicos) */}
                 <div className="mb-4">
                     <h2 className="text-xl text-center md:text-left font-semibold text-gray-900 dark:text-gray-100">
-                        {title} {/* <-- Dinámico */}
+                        {title} 
                     </h2>
                     <p className="text-sm text-center md:text-left text-gray-500 dark:text-gray-400">
-                        {description} {/* <-- Dinámico */}
+                        {description} 
                     </p>
-                    {/* 6. Corregido: <XIcon> es <X> */}
+                    
                     <X className='h-6 w-6 absolute right-0 top-0 m-4 text-gray-400 hover:text-red-500 hover:rotate-90 transition duration-300'
                         onClick={onCancel}
                     />
@@ -78,7 +74,6 @@ export default function RequestModal({
                 <div className="space-y-4">
                     <div className="rounded-md border border-gray-200 dark:border-gray-700 p-4 space-y-4">
 
-                        {/* (TODA LA INFORMACIÓN DEL REQUEST SIGUE IGUAL) */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-500 mb-1">Request Number</label>
@@ -115,7 +110,7 @@ export default function RequestModal({
                             <label className="block text-sm font-medium text-gray-500 mb-1">
                                 Items ({request.items.length})
                             </label>
-                            <div className="mt-2 grid gap-4 grid-cols-1 md:grid-cols-2">
+                            <div className="mt-2 grid gap-4 grid-cols-1 md:grid-cols-2 max-h-[200px] overflow-auto">
                                 {request.items.map((item) => (
                                     <div key={item.id} className="flex items-start space-x-3 p-2 border border-gray-200 dark:border-gray-700 rounded">
                                         <img
@@ -143,7 +138,6 @@ export default function RequestModal({
                         </div>
                     </div>
 
-                    {/* 7. CAMPO DE TEXTO CONDICIONAL (NUEVO) */}
                     {isReject && (
                         <div>
                             <label htmlFor="rejectionReason" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -162,7 +156,6 @@ export default function RequestModal({
                         </div>
                     )}
 
-                    {/* 8. Botones (Actualizados) */}
                     <div className="flex justify-end space-x-2">
                         <button
                             type="button"
@@ -173,7 +166,6 @@ export default function RequestModal({
                         </button>
                         <button
                             type="button"
-                            // Clases dinámicas y estado 'disabled'
                             className={`rounded-md text-sm font-medium h-9 px-4 py-2 transition-colors
                                 ${confirmButtonClass}
                                 ${isConfirmDisabled ? 'opacity-50 cursor-not-allowed' : ''}
@@ -181,7 +173,7 @@ export default function RequestModal({
                             onClick={onConfirm}
                             disabled={isConfirmDisabled}
                         >
-                            {confirmText} {/* <-- Dinámico */}
+                            {confirmText} 
                         </button>
                     </div>
                 </div>

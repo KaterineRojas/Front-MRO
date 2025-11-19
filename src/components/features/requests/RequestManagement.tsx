@@ -1,6 +1,6 @@
-import { useState } from 'react';
+  import { useState, useEffect } from 'react';
 import { Badge } from '../../ui/badge';
-import { Check, X, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Check, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { mockRequests, type Request } from './data/mockRequest'
 import CardRequest from './components/Card'
 import TabsGroup from './components/Tabs'
@@ -20,6 +20,29 @@ export function RequestManagement() {
   const [rejectNotes, setRejectNotes] = useState('');
   const [modalType, setModalType] = useState('approve')
   const [showModal, setShowModal] = useState(false)
+
+  const [requests2, setRequests2] = useState<Request[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        // Hacemos el fetch al puerto 3001
+        const response = await fetch('http://localhost:3001/requests');
+        
+        if (!response.ok) throw new Error('Error fetching data');
+        
+        const data = await response.json();
+        setRequests(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRequests();
+  }, []);
 
   const requestTypeOptions: SelectOption[] = [
     { value: "all", label: "All Types" },
@@ -119,7 +142,7 @@ export function RequestManagement() {
       case 'approved':
         return <Check className="h-4 w-4 text-green-600" />;
       case 'rejected':
-        return <X className="h-4 w-4 text-red-600" />;
+        return <XCircle className="h-4 w-4 text-red-600" />;
       case 'completed':
         return <CheckCircle className="h-4 w-4 text-blue-600" />;
     }
