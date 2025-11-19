@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../../../../ui/card';
 import { Button } from '../../../../ui/button';
 import { Badge } from '../../../../ui/badge';
@@ -11,42 +10,54 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle } from 'lucide-react';
 import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
 import { PurchaseForm } from '../../forms/PurchaseForm';
-import { toast } from 'sonner';
+//import { toast } from 'sonner';
 import { useAppSelector } from '../../../../../store';
 import { selectCurrentUser } from '../../../../../store';
-import { getPurchaseRequests, getWarehouses, type PurchaseRequest, type Warehouse } from '../../../enginner/services';
-
+import { getWarehouses, type Warehouse } from '../../../enginner/services';
+import { usePurchaseRequests } from './usePurchaseRequests';
+import { formatDate, getStatusColor, getStatusText, getPriorityColor, getPriorityText } from './purchaseUtils';
+import type { PurchaseRequest } from '../../services/purchaseService';
 
 export function PurchaseRequests() {
-  const navigate = useNavigate();
   const currentUser = useAppSelector(selectCurrentUser);
-
   const [showPurchaseForm, setShowPurchaseForm] = useState(false);
-  const [purchaseRequests, setPurchaseRequests] = useState<PurchaseRequest[]>([]);
-  const [filteredPurchaseRequests, setFilteredPurchaseRequests] = useState<PurchaseRequest[]>([]);
-  const [purchaseSearchTerm, setPurchaseSearchTerm] = useState('');
-  const [purchaseStatusFilter, setPurchaseStatusFilter] = useState<string>('all');
-  const [warehouseFilter, setWarehouseFilter] = useState<string>('all');
-  const [expandedPurchaseRows, setExpandedPurchaseRows] = useState<Set<string>>(new Set());
-  const [confirmPurchaseOpen, setConfirmPurchaseOpen] = useState(false);
-  const [purchaseToConfirm, setPurchaseToConfirm] = useState<PurchaseRequest | null>(null);
-  const [purchaseEditedQuantities, setPurchaseEditedQuantities] = useState<{ [key: string]: number }>({});
   const [isMobile, setIsMobile] = useState(false);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
 
-  // Load data
+  // Dialog states
+  const [confirmPurchaseOpen, setConfirmPurchaseOpen] = useState(false);
+  const [purchaseToConfirm, setPurchaseToConfirm] = useState<PurchaseRequest | null>(null);
+  const [purchaseEditedQuantities, setPurchaseEditedQuantities] = useState<{ [key: string]: number }>({});
+
+  // Use purchase requests hook
+  const {
+    filteredPurchaseRequests,
+    isLoading,
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    setStatusFilter,
+    warehouseFilter,
+    setWarehouseFilter,
+    expandedRows,
+    toggleRow,
+    handleCancel,
+    handleConfirmBought,
+    canCancelRequest,
+    canConfirmBought,
+    getStatusCount
+  } = usePurchaseRequests();
+
+  // Load warehouses
   useEffect(() => {
-    const loadData = async () => {
-      const [requestsData, whData] = await Promise.all([
-        getPurchaseRequests(),
-        getWarehouses()
-      ]);
-      setPurchaseRequests(requestsData);
-      setWarehouses(whData);
+    const loadWarehouses = async () => {
+      const data = await getWarehouses();
+      setWarehouses(data);
     };
-    loadData();
+    loadWarehouses();
   }, []);
 
+  // Check mobile
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -56,72 +67,10 @@ export function PurchaseRequests() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Filter purchase requests
-  useEffect(() => {
-    let filtered = purchaseRequests;
-
-    if (purchaseSearchTerm) {
-      filtered = filtered.filter(request => {
-        const searchLower = purchaseSearchTerm.toLowerCase();
-        return (
-          request.requestId.toLowerCase().includes(searchLower) ||
-          request.project.toLowerCase().includes(searchLower) ||
-          request.department.toLowerCase().includes(searchLower) ||
-          request.warehouseName.toLowerCase().includes(searchLower) ||
-          request.items.some(item => 
-            item.name.toLowerCase().includes(searchLower)
-          )
-        );
-      });
-    }
-
-    if (purchaseStatusFilter !== 'all') {
-      filtered = filtered.filter(request => request.status === purchaseStatusFilter);
-    }
-
-    if (warehouseFilter !== 'all') {
-      filtered = filtered.filter(request => request.warehouseId === warehouseFilter);
-    }
-
-    setFilteredPurchaseRequests(filtered);
-  }, [purchaseRequests, purchaseSearchTerm, purchaseStatusFilter, warehouseFilter]);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-      case 'approved': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'rejected': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'pending': return 'Pending';
-      case 'approved': return 'Approved';
-      case 'rejected': return 'Rejected';
-      default: return status;
-    }
-  };
-
-  const getPriorityColor = (priority?: string) => {
-    switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-      case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-    }
-  };
-
   const handleCancelPurchaseRequest = (requestId: string) => {
     if (window.confirm('Are you sure you want to cancel this request?')) {
-      setPurchaseRequests(prev => prev.filter(req => req.requestId !== requestId));
-      toast.success('Request cancelled successfully');
+      handleCancel(requestId);
     }
-  };
-
-  const canCancelPurchaseRequest = (request: PurchaseRequest) => {
-    return request.status === 'pending';
   };
 
   const handleAlreadyBought = (request: PurchaseRequest) => {
@@ -144,41 +93,15 @@ export function PurchaseRequests() {
     }));
   };
 
-  const confirmAlreadyBought = () => {
+  const confirmAlreadyBought = async () => {
     if (!purchaseToConfirm) return;
     
-    setPurchaseRequests(prev => prev.filter(req => req.requestId !== purchaseToConfirm.requestId));
-    
+    await handleConfirmBought(purchaseToConfirm.requestId, purchaseEditedQuantities);
     setConfirmPurchaseOpen(false);
     setPurchaseToConfirm(null);
-    toast.success('Purchase confirmed! Item now appears in Borrow module as pending return');
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
-  const getPurchaseStatusCount = (status: string) => {
-    if (status === 'all') return purchaseRequests.length;
-    return purchaseRequests.filter(req => req.status === status).length;
-  };
-
-  const togglePurchaseRow = (requestId: string) => {
-    setExpandedPurchaseRows(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(requestId)) {
-        newSet.delete(requestId);
-      } else {
-        newSet.add(requestId);
-      }
-      return newSet;
-    });
-  };
-
+  // Show purchase form
   if (showPurchaseForm) {
     if (!currentUser) {
       return (
@@ -194,13 +117,13 @@ export function PurchaseRequests() {
         </div>
       );
     }
+
     return (
       <div className="space-y-6">
+ {/** 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <Button variant="outline" onClick={() => setShowPurchaseForm(false)}>
-            ← Back to Requests
-          </Button>
-          <Card className="flex-1 md:ml-4">
+
+         <Card className="flex-1 md:ml-4">
             <CardContent className="p-4">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div>
@@ -218,7 +141,9 @@ export function PurchaseRequests() {
               </div>
             </CardContent>
           </Card>
+     
         </div>
+             */}
         <PurchaseForm
           currentUser={currentUser}
           onBack={() => setShowPurchaseForm(false)}
@@ -227,6 +152,7 @@ export function PurchaseRequests() {
     );
   }
 
+  // Main purchase requests list view
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -248,8 +174,8 @@ export function PurchaseRequests() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <Input
               placeholder="Search by ID, project, warehouse, items..."
-              value={purchaseSearchTerm}
-              onChange={(e) => setPurchaseSearchTerm(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
             <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
               <SelectTrigger>
@@ -264,15 +190,15 @@ export function PurchaseRequests() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={purchaseStatusFilter} onValueChange={setPurchaseStatusFilter}>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status ({getPurchaseStatusCount('all')})</SelectItem>
-                <SelectItem value="pending">Pending ({getPurchaseStatusCount('pending')})</SelectItem>
-                <SelectItem value="approved">Approved ({getPurchaseStatusCount('approved')})</SelectItem>
-                <SelectItem value="rejected">Rejected ({getPurchaseStatusCount('rejected')})</SelectItem>
+                <SelectItem value="all">All Status ({getStatusCount('all')})</SelectItem>
+                <SelectItem value="pending">Pending ({getStatusCount('pending')})</SelectItem>
+                <SelectItem value="approved">Approved ({getStatusCount('approved')})</SelectItem>
+                <SelectItem value="rejected">Rejected ({getStatusCount('rejected')})</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -280,13 +206,19 @@ export function PurchaseRequests() {
       </Card>
 
       {/* Request List - Mobile Card View or Desktop Table */}
-      {filteredPurchaseRequests.length === 0 ? (
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <p className="text-muted-foreground">Loading purchase requests...</p>
+          </CardContent>
+        </Card>
+      ) : filteredPurchaseRequests.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
             <Package className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
             <h3>No purchase requests found</h3>
             <p className="text-sm text-muted-foreground">
-              {purchaseSearchTerm || purchaseStatusFilter !== 'all' || warehouseFilter !== 'all'
+              {searchTerm || statusFilter !== 'all' || warehouseFilter !== 'all'
                 ? 'Try adjusting your search or filters' 
                 : 'When you make purchase requests, they will appear here'}
             </p>
@@ -301,13 +233,13 @@ export function PurchaseRequests() {
                 <div className="space-y-3">
                   <div 
                     className="flex justify-between items-start cursor-pointer"
-                    onClick={() => togglePurchaseRow(request.requestId)}
+                    onClick={() => toggleRow(request.requestId)}
                   >
                     <div className="flex-1">
                       <h3 className="flex items-center gap-2">
                         <Package className="h-4 w-4" />
                         Purchase #{request.requestId}
-                        {expandedPurchaseRows.has(request.requestId) ? (
+                        {expandedRows.has(request.requestId) ? (
                           <ChevronDown className="h-4 w-4 text-muted-foreground" />
                         ) : (
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -317,7 +249,7 @@ export function PurchaseRequests() {
                         <Badge variant="outline">{request.warehouseName}</Badge>
                         {request.priority && (
                           <Badge className={getPriorityColor(request.priority)} variant="secondary">
-                            {request.priority.charAt(0).toUpperCase() + request.priority.slice(1)}
+                            {getPriorityText(request.priority)}
                           </Badge>
                         )}
                         <Badge className={getStatusColor(request.status)} variant="secondary">
@@ -326,7 +258,7 @@ export function PurchaseRequests() {
                       </div>
                     </div>
                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                      {request.status === 'approved' && request.selfPurchase && (
+                      {canConfirmBought(request) && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -335,7 +267,7 @@ export function PurchaseRequests() {
                           <CheckCircle className="h-4 w-4" />
                         </Button>
                       )}
-                      {canCancelPurchaseRequest(request) && (
+                      {canCancelRequest(request) && (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -353,7 +285,7 @@ export function PurchaseRequests() {
                     {request.totalCost && <p>Cost: ${request.totalCost}</p>}
                   </div>
 
-                  {expandedPurchaseRows.has(request.requestId) && (
+                  {expandedRows.has(request.requestId) && (
                     <div>
                       <h4 className="text-sm mb-2">Items:</h4>
                       <div className="space-y-2">
@@ -403,9 +335,9 @@ export function PurchaseRequests() {
                 <TableBody>
                   {filteredPurchaseRequests.map((request) => (
                     <React.Fragment key={request.requestId}>
-                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => togglePurchaseRow(request.requestId)}>
+                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => toggleRow(request.requestId)}>
                         <TableCell>
-                          {expandedPurchaseRows.has(request.requestId) ? (
+                          {expandedRows.has(request.requestId) ? (
                             <ChevronDown className="h-4 w-4 text-muted-foreground" />
                           ) : (
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -426,7 +358,7 @@ export function PurchaseRequests() {
                           <div className="flex gap-1 flex-wrap">
                             {request.priority && (
                               <Badge className={getPriorityColor(request.priority)} variant="secondary">
-                                {request.priority.charAt(0).toUpperCase() + request.priority.slice(1)}
+                                {getPriorityText(request.priority)}
                               </Badge>
                             )}
                             <Badge className={getStatusColor(request.status)} variant="secondary">
@@ -436,11 +368,11 @@ export function PurchaseRequests() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-2">
-                            {request.status === 'approved' && request.selfPurchase && (
+                            {canConfirmBought(request) && (
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={(e:any) => {
+                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                   e.stopPropagation();
                                   handleAlreadyBought(request);
                                 }}
@@ -449,11 +381,11 @@ export function PurchaseRequests() {
                                 Bought
                               </Button>
                             )}
-                            {canCancelPurchaseRequest(request) && (
+                            {canCancelRequest(request) && (
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={(e:any) => {
+                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                   e.stopPropagation();
                                   handleCancelPurchaseRequest(request.requestId);
                                 }}
@@ -464,7 +396,7 @@ export function PurchaseRequests() {
                           </div>
                         </TableCell>
                       </TableRow>
-                      {expandedPurchaseRows.has(request.requestId) && (
+                      {expandedRows.has(request.requestId) && (
                         <TableRow>
                           <TableCell colSpan={7} className="bg-muted/20 p-0">
                             <div className="p-4">
@@ -576,3 +508,6 @@ export function PurchaseRequests() {
     </div>
   );
 }
+
+// Default export para compatibilidad con diferentes tipos de import
+export default PurchaseRequests;

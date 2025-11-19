@@ -264,6 +264,8 @@ export function BorrowRequests() {
 
     return (
       <div className="space-y-6">
+
+             {/*
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <Button variant="outline" onClick={() => setShowBorrowForm(false)}>
             ← Back to Requests
@@ -291,6 +293,7 @@ export function BorrowRequests() {
             </CardContent>
           </Card>
         </div>
+        */}
         <LoanForm
           cartItems={cartItems}
           clearCart={handleClearCart}

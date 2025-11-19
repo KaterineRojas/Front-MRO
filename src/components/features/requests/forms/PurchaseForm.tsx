@@ -13,6 +13,7 @@ import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
 import type { User } from '../../enginner/types';
 import { getWarehouses, getProjects, type Warehouse, type Project } from '../../enginner/services';
+import { getExistingItems, getDepartments, type ExistingItem, type Department } from '../services/purchaseService';
 
 interface PurchaseFormProps {
   currentUser: User;
@@ -22,46 +23,25 @@ interface PurchaseFormProps {
 interface PurchaseItem {
   name: string;
   isExisting: boolean;
-  partNumber: string;
   quantity: number;
-  estimatedCost: number;
+  estimatedCost: number; 
   justification: string;
   link: string;
 }
-
+ 
 interface PurchaseFormData {
   items: PurchaseItem[];
   department: string;
   project: string;
-  priority: 'low' | 'medium' | 'urgent';
-  selfPurchase: boolean;
+  priority: string;
+  selfPurchase: boolean; 
   warehouseId: string;
 }
 
-const departments = [
-  'Engineering',
-  'Development',
-  'Design',
-  'Marketing',
-  'Sales',
-  'Administration'
-];
-
-const mockExistingItems = [
-  { id: '1', name: 'Mechanical Keyboard RGB', image: 'https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZWNoYW5pY2FsJTIwa2V5Ym9hcmQlMjBnYW1pbmd8ZW58MXx8fHwxNzU5Nzc2MzM4fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral' },
-  { id: '2', name: 'Proyector Epson PowerLite', image: 'https://images.unsplash.com/photo-1625961332600-f6eac385c6ba?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9qZWN0b3IlMjBvZmZpY2UlMjBlcXVpcG1lbnR8ZW58MXx8fHwxNzU5MTc4ODkzfDA&ixlib=rb-4.1.0&q=80&w=1080' },
-  { id: '3', name: 'Monitor Samsung 27"', image: 'https://images.unsplash.com/photo-1758598497364-544a0cdbc950?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb21wdXRlciUyMG1vbml0b3IlMjBkaXNwbGF5fGVufDF8fHx8MTc1OTA1ODE5Nnww&ixlib=rb-4.1.0&q=80&w=1080' },
-  { id: '4', name: 'Cable HDMI 2.0', image: 'https://images.unsplash.com/photo-1625738323142-01e6d7906e0a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZG1pJTIwY2FibGV8ZW58MXx8fHwxNzU5MDgxODM0fDA&ixlib=rb-4.1.0&q=80&w=1080' },
-  { id: '5', name: 'Teclado mecánico', image: 'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxrZXlib2FyZCUyMG1lY2hhbmljYWx8ZW58MXx8fHwxNzU5MDgxODM0fDA&ixlib=rb-4.1.0&q=80&w=1080' },
-  { id: '6', name: 'Mouse inalámbrico', image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3VzZSUyMHdpcmVsZXNzfGVufDF8fHx8MTc1OTA4MTgzNHww&ixlib=rb-4.1.0&q=80&w=1080' },
-  { id: '7', name: 'Webcam HD', image: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3ZWJjYW18ZW58MXx8fHwxNzU5MDgxODM0fDA&ixlib=rb-4.1.0&q=80&w=1080' },
-  { id: '8', name: 'Auriculares con micrófono', image: 'https://images.unsplash.com/photo-1545127398-14699f92334b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZWFkcGhvbmVzJTIwbWljcm9waG9uZXxlbnwxfHx8fDE3NTkwODE4MzR8MA&ixlib=rb-4.1.0&q=80&w=1080' }
-];
-
 export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
   const [formData, setFormData] = useState<PurchaseFormData>({
-    items: [{ name: '', isExisting: false, partNumber: '', quantity: 1, estimatedCost: 0, justification: '', link: '' }],
-    department: currentUser.department,
+    items: [{ name: '', isExisting: false, quantity: 1, estimatedCost: 0, justification: '', link: '' }],
+    department: currentUser.department || '',
     project: '',
     priority: 'medium',
     selfPurchase: false,
@@ -69,31 +49,38 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
   });
 
   const [itemSearches, setItemSearches] = useState<{ [key: number]: string }>({});
-  const [filteredItems, setFilteredItems] = useState<{ [key: number]: typeof mockExistingItems }>({});
+  const [filteredItems, setFilteredItems] = useState<{ [key: number]: ExistingItem[] }>({});
   const [dropdownOpen, setDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [existingItems, setExistingItems] = useState<ExistingItem[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
 
-  // Load warehouses and projects
+  // Load warehouses, projects, existing items and departments
   useEffect(() => {
-    const loadWarehouses = async () => {
-      const data = await getWarehouses();
-      setWarehouses(data);
-      if (data.length > 0 && !formData.warehouseId) {
-        setFormData(prev => ({ ...prev, warehouseId: data[0].id }));
-      }
-    };
-    const loadProjects = async () => {
+    const loadData = async () => {
       try {
-        const data = await getProjects();
-        setProjects(data);
+        const [whData, projData, itemsData, deptsData] = await Promise.all([
+          getWarehouses(),
+          getProjects(),
+          getExistingItems(),
+          getDepartments()
+        ]);
+        
+        setWarehouses(whData);
+        setProjects(projData);
+        setExistingItems(itemsData);
+        setDepartments(deptsData);
+        
+        if (whData.length > 0 && !formData.warehouseId) {
+          setFormData(prev => ({ ...prev, warehouseId: whData[0].id }));
+        }
       } catch (error) {
-        toast.error('Failed to load projects');
+        toast.error('Failed to load form data');
       }
     };
-    loadWarehouses();
-    loadProjects();
+    loadData();
   }, []);
 
   // Close dropdown when clicking outside
@@ -115,17 +102,17 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
   const handleItemSearch = (index: number, value: string) => {
     setItemSearches(prev => ({ ...prev, [index]: value }));
     if (value.length >= 2) {
-      const filtered = mockExistingItems.filter(item =>
+      const filtered = existingItems.filter(item =>
         item.name.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredItems(prev => ({ ...prev, [index]: filtered }));
     } else {
-      setFilteredItems(prev => ({ ...prev, [index]: mockExistingItems }));
+      setFilteredItems(prev => ({ ...prev, [index]: existingItems }));
     }
     setDropdownOpen(prev => ({ ...prev, [index]: true }));
   };
 
-  const selectExistingItem = (index: number, item: typeof mockExistingItems[0]) => {
+  const selectExistingItem = (index: number, item: ExistingItem) => {
     updateItem(index, 'name', item.name);
     setItemSearches(prev => ({ ...prev, [index]: item.name }));
     setDropdownOpen(prev => ({ ...prev, [index]: false }));
@@ -134,25 +121,20 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
   const toggleDropdown = (index: number) => {
     const currentItem = formData.items[index];
     if (currentItem.name && currentItem.isExisting) {
-      // Si ya hay un item seleccionado, toggle el dropdown
       setDropdownOpen(prev => ({ ...prev, [index]: !prev[index] }));
     } else {
-      // Si no hay item seleccionado, abrir dropdown
       setDropdownOpen(prev => ({ ...prev, [index]: true }));
     }
   };
-
-
 
   const addNewItem = () => {
     const newIndex = formData.items.length;
     setFormData(prev => ({
       ...prev,
-      items: [...prev.items, { name: '', isExisting: false, partNumber: '', quantity: 1, estimatedCost: 0, justification: '', link: '' }]
+      items: [...prev.items, { name: '', isExisting: false, quantity: 1, estimatedCost: 0, justification: '', link: '' }]
     }));
-    // Initialize search state for new item
     setItemSearches(prev => ({ ...prev, [newIndex]: '' }));
-    setFilteredItems(prev => ({ ...prev, [newIndex]: mockExistingItems }));
+    setFilteredItems(prev => ({ ...prev, [newIndex]: existingItems }));
     setDropdownOpen(prev => ({ ...prev, [newIndex]: false }));
   };
 
@@ -162,7 +144,6 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
         ...prev,
         items: prev.items.filter((_, i) => i !== index)
       }));
-      // Clean up search states
       setItemSearches(prev => {
         const newSearches = { ...prev };
         delete newSearches[index];
@@ -186,7 +167,7 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
   };
 
   const validateUrl = (url: string) => {
-    if (!url) return true; // Optional field
+    if (!url) return true;
     try {
       new URL(url);
       return true;
@@ -202,13 +183,11 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate project selection
     if (!formData.project) {
       toast.error('Please select a project');
       return;
     }
     
-    // Validate URLs
     for (const item of formData.items) {
       if (item.link && !validateUrl(item.link)) {
         toast.error(`Invalid URL for item: ${item.name}`);
@@ -216,12 +195,11 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
       }
     }
 
-    // Show submission alert
     toast.success('Purchase requests will be marked as "Pending review" and will be evaluated by the purchasing department. You will be notified of the status by email.');
     
     setTimeout(() => {
       toast.success('Purchase request submitted successfully');
-      onBack();
+      if (onBack) onBack();
     }, 2000);
   };
 
@@ -254,13 +232,15 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
 
   return (
     <div className="space-y-6">
+      {/* Header estilo Kits: Botón a la izquierda, título a su lado */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Requests
         </Button>
         <div>
-          <h1>Purchase Form</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold">Purchase Form</h1>
+          <p className="text-sm text-muted-foreground">
             Request the acquisition of new items
           </p>
         </div>
@@ -269,20 +249,230 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader>
+            <CardTitle>Items to Purchase</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {formData.items.map((item, index) => {
+              const selectedExistingItem = item.isExisting ? existingItems.find(ei => ei.name === item.name) : null;
+              
+              return (
+              <div key={index} className="p-4 border rounded-lg space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-semibold">Item {index + 1}</h4>
+                  {formData.items.length > 1 && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => removeItem(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <Label>Item Type</Label>
+                    <RadioGroup 
+                      value={item.isExisting ? 'existing' : 'new'} 
+                      onValueChange={(value: string) => {
+                        const isExisting = value === 'existing';
+                        updateItem(index, 'isExisting', isExisting);
+                        updateItem(index, 'name', '');
+                        setItemSearches(prev => ({ ...prev, [index]: '' }));
+                        setDropdownOpen(prev => ({ ...prev, [index]: false }));
+                      }}
+                      className="flex gap-4 mt-2"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="existing" id={`existing-${index}`} />
+                        <Label htmlFor={`existing-${index}`}>Existing Item</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="new" id={`new-${index}`} />
+                        <Label htmlFor={`new-${index}`}>New Item</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {selectedExistingItem && (
+                    <div className="md:col-span-2 flex justify-center">
+                      <ImageWithFallback
+                        src={selectedExistingItem.image}
+                        alt={selectedExistingItem.name}
+                        className="w-32 h-32 object-cover rounded"
+                      />
+                    </div>
+                  )}
+
+                  <div className="md:col-span-2">
+                    <Label>Item Name</Label>
+                    {item.isExisting ? (
+                      <div className="space-y-2 relative" ref={(el) => { if (el) dropdownRefs.current[index] = el; }}>
+                        <Input
+                          placeholder={item.name ? "Click to change selection..." : "Type to search existing items..."}
+                          value={itemSearches[index] || ''}
+                          onChange={(e) => handleItemSearch(index, e.target.value)}
+                          onClick={() => toggleDropdown(index)}
+                          readOnly={!!item.name}
+                          className={item.name ? "cursor-pointer" : ""}
+                        />
+                        {dropdownOpen[index] && (
+                          <div className="absolute z-10 w-full border rounded-md bg-background shadow-lg max-h-40 overflow-y-auto">
+                            {(filteredItems[index] || existingItems).length === 0 ? (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">
+                                No items found matching "{itemSearches[index]}"
+                              </div>
+                            ) : (
+                              (filteredItems[index] || existingItems).map((existingItem) => (
+                                <button
+                                  key={existingItem.id}
+                                  type="button"
+                                  className={`w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center gap-2 ${
+                                    item.name === existingItem.name ? 'bg-accent' : ''
+                                  }`}
+                                  onClick={() => selectExistingItem(index, existingItem)}
+                                >
+                                  <ImageWithFallback
+                                    src={existingItem.image}
+                                    alt={existingItem.name}
+                                    className="w-8 h-8 object-cover rounded"
+                                  />
+                                  <span>{existingItem.name}</span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Input
+                        placeholder="Enter new item name..."
+                        value={item.name}
+                        onChange={(e) => updateItem(index, 'name', e.target.value)}
+                        required
+                      />
+                    )}
+                  </div>
+
+                  {/* Quantity: Permitir borrar y escribir directamente */}
+                  <div>
+                    <Label>Quantity</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={item.quantity === 0 ? '' : item.quantity}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          updateItem(index, 'quantity', 0);
+                        } else {
+                          const numValue = parseInt(value);
+                          if (!isNaN(numValue) && numValue >= 1) {
+                            updateItem(index, 'quantity', numValue);
+                          }
+                        }
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value === '' || item.quantity === 0) {
+                          updateItem(index, 'quantity', 1);
+                        }
+                      }}
+                      placeholder="Enter quantity"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Estimated Cost (per unit)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={item.estimatedCost === 0 ? '' : item.estimatedCost}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          updateItem(index, 'estimatedCost', 0);
+                        } else {
+                          updateItem(index, 'estimatedCost', parseFloat(value) || 0);
+                        }
+                      }}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Total Cost</Label>
+                    <Input
+                      value={`$${(item.estimatedCost * item.quantity).toFixed(2)}`}
+                      disabled
+                      className="bg-muted"
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Reference Link (optional)</Label>
+                    <Input
+                      type="url"
+                      placeholder="https://example.com/product"
+                      value={item.link}
+                      onChange={(e) => updateItem(index, 'link', e.target.value)}
+                    />
+                    {item.link && !validateUrl(item.link) && (
+                      <p className="text-sm text-red-600 mt-1">
+                        Invalid URL format
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <Label>Justification</Label>
+                    <Textarea
+                      placeholder="Explain why you need this item..."
+                      value={item.justification}
+                      onChange={(e) => updateItem(index, 'justification', e.target.value)}
+                      required
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+            })}
+            
+            <Button type="button" variant="outline" onClick={addNewItem}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Another Item
+            </Button>
+
+            <div className="p-4 bg-muted rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">Estimated Total Cost:</span>
+                <span className="text-xl font-bold">${getTotalCost().toFixed(2)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Request Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Department</Label>
-                <Select value={formData.department} onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
+                <Select value={formData.department} onValueChange={(value: string) => setFormData(prev => ({ ...prev, department: value }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((dept) => (
-                      <SelectItem key={dept} value={dept}>
-                        {dept}
+                      <SelectItem key={dept.id} value={dept.name}>
+                        {dept.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -373,201 +563,6 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Items to Purchase</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {formData.items.map((item, index) => {
-              const selectedExistingItem = item.isExisting ? mockExistingItems.find(ei => ei.name === item.name) : null;
-              
-              return (
-              <div key={index} className="p-4 border rounded-lg space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4>Item {index + 1}</h4>
-                  {formData.items.length > 1 && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => removeItem(index)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <Label>Item Type</Label>
-                    <RadioGroup 
-                      value={item.isExisting ? 'existing' : 'new'} 
-                      onValueChange={(value) => {
-                        const isExisting = value === 'existing';
-                        updateItem(index, 'isExisting', isExisting);
-                        updateItem(index, 'name', '');
-                        setItemSearches(prev => ({ ...prev, [index]: '' }));
-                        setDropdownOpen(prev => ({ ...prev, [index]: false }));
-                      }}
-                      className="flex gap-4 mt-2"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="existing" id={`existing-${index}`} />
-                        <Label htmlFor={`existing-${index}`}>Existing Item</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="new" id={`new-${index}`} />
-                        <Label htmlFor={`new-${index}`}>New Item</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  {selectedExistingItem && (
-                    <div className="md:col-span-2 flex justify-center">
-                      <ImageWithFallback
-                        src={selectedExistingItem.image}
-                        alt={selectedExistingItem.name}
-                        className="w-32 h-32 object-cover rounded"
-                      />
-                    </div>
-                  )}
-
-                  <div className="md:col-span-2">
-                    <Label>Item Name</Label>
-                    {item.isExisting ? (
-                      <div className="space-y-2 relative" ref={(el) => { if (el) dropdownRefs.current[index] = el; }}>
-                        <Input
-                          placeholder={item.name ? "Click to change selection..." : "Type to search existing items..."}
-                          value={itemSearches[index] || ''}
-                          onChange={(e) => handleItemSearch(index, e.target.value)}
-                          onClick={() => toggleDropdown(index)}
-                          readOnly={!!item.name}
-                          className={item.name ? "cursor-pointer" : ""}
-                        />
-                        {dropdownOpen[index] && (
-                          <div className="absolute z-10 w-full border rounded-md bg-background shadow-lg max-h-40 overflow-y-auto">
-                            {(filteredItems[index] || mockExistingItems).length === 0 ? (
-                              <div className="px-3 py-2 text-sm text-muted-foreground">
-                                No items found matching "{itemSearches[index]}"
-                              </div>
-                            ) : (
-                              (filteredItems[index] || mockExistingItems).map((existingItem) => (
-                                <button
-                                  key={existingItem.id}
-                                  type="button"
-                                  className={`w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center gap-2 ${
-                                    item.name === existingItem.name ? 'bg-accent' : ''
-                                  }`}
-                                  onClick={() => selectExistingItem(index, existingItem)}
-                                >
-                                  <ImageWithFallback
-                                    src={existingItem.image}
-                                    alt={existingItem.name}
-                                    className="w-8 h-8 object-cover rounded"
-                                  />
-                                  <span>{existingItem.name}</span>
-                                </button>
-                              ))
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <Input
-                        placeholder="Enter new item name..."
-                        value={item.name}
-                        onChange={(e) => updateItem(index, 'name', e.target.value)}
-                        required
-                      />
-                    )}
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <Label>Part Number</Label>
-                    <Input
-                      placeholder="Enter part number..."
-                      value={item.partNumber}
-                      onChange={(e) => updateItem(index, 'partNumber', e.target.value)}
-                      disabled={item.isExisting}
-                      required={!item.isExisting}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Quantity</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Estimated Cost (per unit)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={item.estimatedCost}
-                      onChange={(e) => updateItem(index, 'estimatedCost', parseFloat(e.target.value) || 0)}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Total Cost</Label>
-                    <Input
-                      value={`${(item.estimatedCost * item.quantity).toFixed(2)}`}
-                      disabled
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Reference Link (optional)</Label>
-                    <Input
-                      type="url"
-                      placeholder="https://example.com/product"
-                      value={item.link}
-                      onChange={(e) => updateItem(index, 'link', e.target.value)}
-                    />
-                    {item.link && !validateUrl(item.link) && (
-                      <p className="text-sm text-red-600 mt-1">
-                        Invalid URL format
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <Label>Justification</Label>
-                    <Textarea
-                      placeholder="Explain why you need this item..."
-                      value={item.justification}
-                      onChange={(e) => updateItem(index, 'justification', e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-            })}
-            
-            <Button type="button" variant="outline" onClick={addNewItem}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Another Item
-            </Button>
-
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="flex justify-between items-center">
-                <span>Estimated Total Cost:</span>
-                <span className="text-lg">${getTotalCost().toFixed(2)}</span>
-              </div>
             </div>
           </CardContent>
         </Card>

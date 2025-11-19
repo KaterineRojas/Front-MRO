@@ -226,9 +226,11 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+                <Button variant="ghost" size="sm" onClick={onBack}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Requests
+                </Button>
+
         <div>
           <h1>Borrow Form</h1>
           <p className="text-muted-foreground">
@@ -477,6 +479,6 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
           </Button>
         </div>
       </form>
-    </div>
+    </div> 
   );
 }

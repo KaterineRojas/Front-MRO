@@ -1,6 +1,6 @@
 // Simula las llamadas al backend para Request Orders (Borrow, Purchase)
-import { apiCall } from './errorHandler';
-import { API_BASE_URL } from './api';
+import { apiCall } from '../../enginner/services/errorHandler';
+import { API_BASE_URL } from '../../enginner/services/api';
 
 export interface RequestItem {
   id: number;
