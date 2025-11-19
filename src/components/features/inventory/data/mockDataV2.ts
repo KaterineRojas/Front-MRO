@@ -450,7 +450,7 @@ export const mockWarehousesV2: WarehouseV2[] = [
               },
             ],
           },
-        ],
+        ], 
       },
     ],
   },
