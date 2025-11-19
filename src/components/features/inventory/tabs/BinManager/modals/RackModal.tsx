@@ -35,6 +35,17 @@ export function RackModal({ isOpen, onClose, onSave, rack, generatedCode, locati
   const [name, setName] = useState('');
   const [selectedZoneId, setSelectedZoneId] = useState<string>('');
 
+  // Sanitize code: only alphanumeric and uppercase
+  const handleCodeChange = (value: string) => {
+    const sanitized = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    setCode(sanitized);
+  };
+
+  // Handler para cambio de zona
+  const handleZoneChange = (zoneId: string) => {
+    setSelectedZoneId(zoneId === 'none' ? '' : zoneId);
+  };
+
   // Extract rack code from full code (last segment after last dash)
   const getCodeParts = (fullCode: string) => {
     const parts = fullCode.split('-');
@@ -51,11 +62,11 @@ export function RackModal({ isOpen, onClose, onSave, rack, generatedCode, locati
       const { rackCode } = getCodeParts(rack.code);
       setCode(rackCode);
       setName(rack.name);
-      setSelectedZoneId(currentZoneId || '');
+      setSelectedZoneId(currentZoneId || 'none');
     } else {
       setCode('');
       setName('');
-      setSelectedZoneId(currentZoneId || '');
+      setSelectedZoneId(currentZoneId || 'none');
     }
   }, [rack, generatedCode, isOpen, currentZoneId]);
 
@@ -63,13 +74,13 @@ export function RackModal({ isOpen, onClose, onSave, rack, generatedCode, locati
     e.preventDefault();
     
     // Reconstruct full code with selected zone
-    const selectedZone = availableZones.find(z => z.id === selectedZoneId);
+    const effectiveZoneId = selectedZoneId === 'none' ? undefined : selectedZoneId;
+    const selectedZone = availableZones.find(z => z.id === effectiveZoneId);
     const fullCode = rack && selectedZone ? `${selectedZone.code}-${code}` : code;
     
     onSave({
       code: fullCode,
       name,
-      zoneId: selectedZoneId || undefined,
     });
   };
 
@@ -99,7 +110,7 @@ export function RackModal({ isOpen, onClose, onSave, rack, generatedCode, locati
               <div className="space-y-2">
                 <Label htmlFor="code" className="dark:text-gray-200">Rack Code</Label>
                 <div className="flex items-center gap-2">
-                  <Select value={selectedZoneId} onValueChange={setSelectedZoneId}>
+                  <Select value={selectedZoneId} onValueChange={handleZoneChange}>
                     <SelectTrigger className="w-auto min-w-[80px] dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600">
                       <SelectValue placeholder="Zone" />
                     </SelectTrigger>
@@ -114,8 +125,8 @@ export function RackModal({ isOpen, onClose, onSave, rack, generatedCode, locati
                   <Input
                     id="code"
                     value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="R-01"
+                    onChange={(e) => handleCodeChange(e.target.value)}
+                    placeholder="R01"
                     required
                     className="flex-1 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:placeholder:text-gray-400"
                   />
@@ -127,8 +138,8 @@ export function RackModal({ isOpen, onClose, onSave, rack, generatedCode, locati
                 <Input
                   id="code"
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="R-01"
+                  onChange={(e) => handleCodeChange(e.target.value)}
+                  placeholder="R01"
                   required
                   className="dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:placeholder:text-gray-400"
                 />

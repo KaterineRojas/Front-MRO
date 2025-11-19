@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from '../../../ui/alert-dialog';
 import { toast } from 'sonner';
-import { fetchWarehousesFromApi } from '../../services/inventoryApi';
+import { fetchWarehousesFromApi, createZoneApi, createRackApi, createLevelApi, createBinApi } from '../../services/inventoryApi';
 
 type ViewLevel = 'warehouse' | 'zone' | 'rack' | 'level' | 'bin';
 type ViewMode = 'grid' | 'table';
@@ -228,62 +228,50 @@ export function BinManagerTab() {
   };
 
   const findZoneIdForBin = (bin: BinV2): string | undefined => {
-    console.log('🔍 Searching for zone of bin:', bin.code, 'in', warehouses.length, 'warehouses');
-    
     // Buscar en TODOS los warehouses, no solo el seleccionado
     for (const warehouse of warehouses) {
       for (const zone of warehouse.zones) {
         for (const rack of zone.racks) {
           for (const level of rack.levels) {
             if (level.bins.some(b => b.id === bin.id)) {
-              console.log(`✅ Found zone for bin ${bin.code}:`, zone.code, zone.id);
               return zone.id;
             }
           }
         }
       }
     }
-    console.log(`⚠️ Zone not found for bin ${bin.code} (ID: ${bin.id})`);
     return undefined;
   };
 
   const findRackIdForBin = (bin: BinV2): string | undefined => {
-    console.log('🔍 Searching for rack of bin:', bin.code);
-    
     // Buscar en TODOS los warehouses
     for (const warehouse of warehouses) {
       for (const zone of warehouse.zones) {
         for (const rack of zone.racks) {
           for (const level of rack.levels) {
             if (level.bins.some(b => b.id === bin.id)) {
-              console.log(`✅ Found rack for bin ${bin.code}:`, rack.code, rack.id);
               return rack.id;
             }
           }
         }
       }
     }
-    console.log(`⚠️ Rack not found for bin ${bin.code} (ID: ${bin.id})`);
     return undefined;
   };
 
   const findLevelIdForBin = (bin: BinV2): string | undefined => {
-    console.log('🔍 Searching for level of bin:', bin.code);
-    
     // Buscar en TODOS los warehouses
     for (const warehouse of warehouses) {
       for (const zone of warehouse.zones) {
         for (const rack of zone.racks) {
           for (const level of rack.levels) {
             if (level.bins.some(b => b.id === bin.id)) {
-              console.log(`✅ Found level for bin ${bin.code}:`, level.code, level.id);
               return level.id;
             }
           }
         }
       }
     }
-    console.log(`⚠️ Level not found for bin ${bin.code} (ID: ${bin.id})`);
     return undefined;
   };
 
@@ -304,162 +292,267 @@ export function BinManagerTab() {
   };
 
   // Save handlers
-  const handleSaveZone = (zoneData: Partial<ZoneV2>) => {
+  const handleSaveZone = async (zoneData: Partial<ZoneV2>) => {
     if (!selectedWarehouse) {
       toast.error('Please select a warehouse first');
       return;
     }
 
-    const newWarehouses = [...warehouses];
-    const warehouseIndex = newWarehouses.findIndex(wh => wh.id === selectedWarehouse.id);
-    
-    if (warehouseIndex !== -1) {
+    try {
       if (editingZone) {
-        const zoneIndex = newWarehouses[warehouseIndex].zones.findIndex(z => z.id === editingZone.id);
-        if (zoneIndex !== -1) {
-          newWarehouses[warehouseIndex].zones[zoneIndex] = { ...newWarehouses[warehouseIndex].zones[zoneIndex], ...zoneData };
+        // Modo edición - actualizar localmente (TODO: implementar PUT API)
+        const newWarehouses = [...warehouses];
+        const warehouseIndex = newWarehouses.findIndex(wh => wh.id === selectedWarehouse.id);
+        
+        if (warehouseIndex !== -1) {
+          const zoneIndex = newWarehouses[warehouseIndex].zones.findIndex(z => z.id === editingZone.id);
+          if (zoneIndex !== -1) {
+            newWarehouses[warehouseIndex].zones[zoneIndex] = { ...newWarehouses[warehouseIndex].zones[zoneIndex], ...zoneData };
+          }
         }
+
+        setWarehouses(newWarehouses);
+        setSelectedWarehouse(newWarehouses[warehouseIndex]);
+        toast.success('Zone updated successfully');
       } else {
-        const newZone: ZoneV2 = {
-          id: `z${Date.now()}`,
+        // Modo creación - llamar al API
+        const createdZone = await createZoneApi({
+          warehouseId: parseInt(selectedWarehouse.id),
           code: zoneData.code || generateZoneCode(),
           name: zoneData.name || '',
-          racks: [],
-        };
-        newWarehouses[warehouseIndex].zones.push(newZone);
+        });
+
+        // Recargar warehouses desde el API
+        const updatedWarehouses = await fetchWarehousesFromApi();
+        setWarehouses(updatedWarehouses);
+        
+        // Mantener la selección del warehouse actual
+        const updatedWarehouse = updatedWarehouses.find(wh => wh.id === selectedWarehouse.id);
+        if (updatedWarehouse) {
+          setSelectedWarehouse(updatedWarehouse);
+        }
+
+        toast.success('Zone created successfully');
       }
+
+      setIsZoneModalOpen(false);
+      setEditingZone(null);
+    } catch (error) {
+      console.log('🔴 CAUGHT ERROR:', error);
+      const message = error instanceof Error ? error.message : 'Failed to save zone';
+      console.log('🔴 ERROR MESSAGE:', message);
+      toast.error(message, { duration: 5000 });
+      console.log('🔴 TOAST CALLED');
+      alert('ERROR: ' + message); // Temporal para debug
     }
-
-    setWarehouses(newWarehouses);
-    setSelectedWarehouse(newWarehouses[warehouseIndex]);
-
-    setIsZoneModalOpen(false);
-    setEditingZone(null);
-    toast.success(editingZone ? 'Zone updated successfully' : 'Zone created successfully');
   };
 
-  const handleSaveRack = (rackData: Partial<RackV2>) => {
+  const handleSaveRack = async (rackData: Partial<RackV2>) => {
     if (!selectedWarehouse || !selectedZone) {
       toast.error('Please select a zone first');
       return;
     }
 
-    const newWarehouses = [...warehouses];
-    const warehouseIndex = newWarehouses.findIndex(wh => wh.id === selectedWarehouse.id);
-    const zoneIndex = newWarehouses[warehouseIndex].zones.findIndex(z => z.id === selectedZone.id);
-    
-    if (warehouseIndex !== -1 && zoneIndex !== -1) {
+    try {
       if (editingRack) {
-        const rackIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks.findIndex(r => r.id === editingRack.id);
-        if (rackIndex !== -1) {
-          newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex] = { 
-            ...newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex], 
-            ...rackData 
-          };
+        // Modo edición - actualizar localmente (TODO: implementar PUT API)
+        const newWarehouses = [...warehouses];
+        const warehouseIndex = newWarehouses.findIndex(wh => wh.id === selectedWarehouse.id);
+        const zoneIndex = newWarehouses[warehouseIndex].zones.findIndex(z => z.id === selectedZone.id);
+        
+        if (warehouseIndex !== -1 && zoneIndex !== -1) {
+          const rackIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks.findIndex(r => r.id === editingRack.id);
+          if (rackIndex !== -1) {
+            newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex] = { 
+              ...newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex], 
+              ...rackData 
+            };
+          }
         }
+
+        setWarehouses(newWarehouses);
+        setSelectedWarehouse(newWarehouses[warehouseIndex]);
+        setSelectedZone(newWarehouses[warehouseIndex].zones[zoneIndex]);
+        toast.success('Rack updated successfully');
       } else {
-        const newRack: RackV2 = {
-          id: `r${Date.now()}`,
+        // Modo creación - llamar al API
+        const createdRack = await createRackApi({
+          zoneId: parseInt(selectedZone.id),
           code: rackData.code || generateRackCode(),
           name: rackData.name || '',
-          levels: [],
-        };
-        newWarehouses[warehouseIndex].zones[zoneIndex].racks.push(newRack);
+        });
+
+        // Recargar warehouses desde el API
+        const updatedWarehouses = await fetchWarehousesFromApi();
+        setWarehouses(updatedWarehouses);
+        
+        // Mantener la selección actual
+        const updatedWarehouse = updatedWarehouses.find(wh => wh.id === selectedWarehouse.id);
+        if (updatedWarehouse) {
+          setSelectedWarehouse(updatedWarehouse);
+          const updatedZone = updatedWarehouse.zones.find(z => z.id === selectedZone.id);
+          if (updatedZone) {
+            setSelectedZone(updatedZone);
+          }
+        }
+
+        toast.success('Rack created successfully');
       }
+
+      setIsRackModalOpen(false);
+      setEditingRack(null);
+    } catch (error) {
+      console.log('🔴 CAUGHT ERROR:', error);
+      const message = error instanceof Error ? error.message : 'Failed to save rack';
+      console.log('🔴 ERROR MESSAGE:', message);
+      toast.error(message, { duration: 5000 });
+      console.log('🔴 TOAST CALLED');
+      alert('ERROR: ' + message); // Temporal para debug
     }
-
-    setWarehouses(newWarehouses);
-    setSelectedWarehouse(newWarehouses[warehouseIndex]);
-    setSelectedZone(newWarehouses[warehouseIndex].zones[zoneIndex]);
-
-    setIsRackModalOpen(false);
-    setEditingRack(null);
-    toast.success(editingRack ? 'Rack updated successfully' : 'Rack created successfully');
   };
 
-  const handleSaveLevel = (levelData: Partial<LevelV2>) => {
+  const handleSaveLevel = async (levelData: Partial<LevelV2>) => {
     if (!selectedWarehouse || !selectedZone || !selectedRack) {
       toast.error('Please select a rack first');
       return;
     }
 
-    const newWarehouses = [...warehouses];
-    const warehouseIndex = newWarehouses.findIndex(wh => wh.id === selectedWarehouse.id);
-    const zoneIndex = newWarehouses[warehouseIndex].zones.findIndex(z => z.id === selectedZone.id);
-    const rackIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks.findIndex(r => r.id === selectedRack.id);
-    
-    if (warehouseIndex !== -1 && zoneIndex !== -1 && rackIndex !== -1) {
+    try {
       if (editingLevel) {
-        const levelIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels.findIndex(l => l.id === editingLevel.id);
-        if (levelIndex !== -1) {
-          newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex] = { 
-            ...newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex], 
-            ...levelData 
-          };
+        // Modo edición - actualizar localmente (TODO: implementar PUT API)
+        const newWarehouses = [...warehouses];
+        const warehouseIndex = newWarehouses.findIndex(wh => wh.id === selectedWarehouse.id);
+        const zoneIndex = newWarehouses[warehouseIndex].zones.findIndex(z => z.id === selectedZone.id);
+        const rackIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks.findIndex(r => r.id === selectedRack.id);
+        
+        if (warehouseIndex !== -1 && zoneIndex !== -1 && rackIndex !== -1) {
+          const levelIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels.findIndex(l => l.id === editingLevel.id);
+          if (levelIndex !== -1) {
+            newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex] = { 
+              ...newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex], 
+              ...levelData 
+            };
+          }
         }
+
+        setWarehouses(newWarehouses);
+        setSelectedWarehouse(newWarehouses[warehouseIndex]);
+        setSelectedZone(newWarehouses[warehouseIndex].zones[zoneIndex]);
+        setSelectedRack(newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex]);
+        toast.success('Level updated successfully');
       } else {
-        const newLevel: LevelV2 = {
-          id: `l${Date.now()}`,
+        // Modo creación - llamar al API
+        const createdLevel = await createLevelApi({
+          rackId: parseInt(selectedRack.id),
           code: levelData.code || generateLevelCode(),
           name: levelData.name || '',
-          bins: [],
-        };
-        newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels.push(newLevel);
+        });
+
+        // Recargar warehouses desde el API
+        const updatedWarehouses = await fetchWarehousesFromApi();
+        setWarehouses(updatedWarehouses);
+        
+        // Mantener la selección actual
+        const updatedWarehouse = updatedWarehouses.find(wh => wh.id === selectedWarehouse.id);
+        if (updatedWarehouse) {
+          setSelectedWarehouse(updatedWarehouse);
+          const updatedZone = updatedWarehouse.zones.find(z => z.id === selectedZone.id);
+          if (updatedZone) {
+            setSelectedZone(updatedZone);
+            const updatedRack = updatedZone.racks.find(r => r.id === selectedRack.id);
+            if (updatedRack) {
+              setSelectedRack(updatedRack);
+            }
+          }
+        }
+
+        toast.success('Level created successfully');
       }
+
+      setIsLevelModalOpen(false);
+      setEditingLevel(null);
+    } catch (error) {
+      console.log('🔴 CAUGHT ERROR:', error);
+      const message = error instanceof Error ? error.message : 'Failed to save level';
+      console.log('🔴 ERROR MESSAGE:', message);
+      toast.error(message, { duration: 5000 });
+      console.log('🔴 TOAST CALLED');
+      alert('ERROR: ' + message); // Temporal para debug
     }
-
-    setWarehouses(newWarehouses);
-    setSelectedWarehouse(newWarehouses[warehouseIndex]);
-    setSelectedZone(newWarehouses[warehouseIndex].zones[zoneIndex]);
-    setSelectedRack(newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex]);
-
-    setIsLevelModalOpen(false);
-    setEditingLevel(null);
-    toast.success(editingLevel ? 'Level updated successfully' : 'Level created successfully');
   };
 
-  const handleSaveBin = (binData: Partial<BinV2>) => {
+  const handleSaveBin = async (binData: Partial<BinV2>) => {
     if (!selectedWarehouse || !selectedZone || !selectedRack || !selectedLevel) {
       toast.error('Please select a level first');
       return;
     }
 
-    const newWarehouses = [...warehouses];
-    const warehouseIndex = newWarehouses.findIndex(wh => wh.id === selectedWarehouse.id);
-    const zoneIndex = newWarehouses[warehouseIndex].zones.findIndex(z => z.id === selectedZone.id);
-    const rackIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks.findIndex(r => r.id === selectedRack.id);
-    const levelIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels.findIndex(l => l.id === selectedLevel.id);
-    
-    if (warehouseIndex !== -1 && zoneIndex !== -1 && rackIndex !== -1 && levelIndex !== -1) {
+    try {
       if (editingBin) {
-        const binIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex].bins.findIndex(b => b.id === editingBin.id);
-        if (binIndex !== -1) {
-          newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex].bins[binIndex] = { 
-            ...newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex].bins[binIndex], 
-            ...binData 
-          };
+        // Modo edición - actualizar localmente (TODO: implementar PUT API)
+        const newWarehouses = [...warehouses];
+        const warehouseIndex = newWarehouses.findIndex(wh => wh.id === selectedWarehouse.id);
+        const zoneIndex = newWarehouses[warehouseIndex].zones.findIndex(z => z.id === selectedZone.id);
+        const rackIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks.findIndex(r => r.id === selectedRack.id);
+        const levelIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels.findIndex(l => l.id === selectedLevel.id);
+        
+        if (warehouseIndex !== -1 && zoneIndex !== -1 && rackIndex !== -1 && levelIndex !== -1) {
+          const binIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex].bins.findIndex(b => b.id === editingBin.id);
+          if (binIndex !== -1) {
+            newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex].bins[binIndex] = { 
+              ...newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex].bins[binIndex], 
+              ...binData 
+            };
+          }
         }
+
+        setWarehouses(newWarehouses);
+        setSelectedLevel(newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex]);
+        toast.success('Bin updated successfully');
       } else {
-        const newBin: BinV2 = {
-          id: `b${Date.now()}`,
+        // Modo creación - llamar al API
+        const createdBin = await createBinApi({
+          levelId: parseInt(selectedLevel.id),
           code: binData.code || '',
           name: binData.name || '',
           allowDifferentItems: binData.allowDifferentItems || false,
-          itemId: null,
-          itemName: binData.itemName || null,
-          quantity: binData.quantity || 0,
-          createdAt: new Date(),
-        };
-        newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex].bins.push(newBin);
+        });
+
+        // Recargar warehouses desde el API
+        const updatedWarehouses = await fetchWarehousesFromApi();
+        setWarehouses(updatedWarehouses);
+        
+        // Mantener la selección actual
+        const updatedWarehouse = updatedWarehouses.find(wh => wh.id === selectedWarehouse.id);
+        if (updatedWarehouse) {
+          setSelectedWarehouse(updatedWarehouse);
+          const updatedZone = updatedWarehouse.zones.find(z => z.id === selectedZone.id);
+          if (updatedZone) {
+            setSelectedZone(updatedZone);
+            const updatedRack = updatedZone.racks.find(r => r.id === selectedRack.id);
+            if (updatedRack) {
+              setSelectedRack(updatedRack);
+              const updatedLevel = updatedRack.levels.find(l => l.id === selectedLevel.id);
+              if (updatedLevel) {
+                setSelectedLevel(updatedLevel);
+              }
+            }
+          }
+        }
+
+        toast.success('Bin created successfully');
       }
+
+      setIsBinModalOpen(false);
+      setEditingBin(null);
+    } catch (error) {
+      console.log('🔴 CAUGHT ERROR:', error);
+      const message = error instanceof Error ? error.message : 'Failed to save bin';
+      console.log('🔴 ERROR MESSAGE:', message);
+      toast.error(message, { duration: 5000 });
+      console.log('🔴 TOAST CALLED');
+      alert('ERROR: ' + message); // Temporal para debug
     }
-
-    setWarehouses(newWarehouses);
-    setSelectedLevel(newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex]);
-
-    setIsBinModalOpen(false);
-    setEditingBin(null);
-    toast.success(editingBin ? 'Bin updated successfully' : 'Bin created successfully');
   };
 
   // Edit and delete handlers for GridViews
@@ -687,20 +780,21 @@ export function BinManagerTab() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center text-2xl font-bold">
-              <Warehouse className="h-6 w-6 mr-2" />
-              Bin Manager
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Warehouse Physical Structure Management
-            </p>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center text-2xl font-bold">
+                <Warehouse className="h-6 w-6 mr-2" />
+                Bin Manager
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Warehouse Physical Structure Management
+              </p>
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
       
       <CardContent className="space-y-6 p-6">
         {/* Toolbar */}
@@ -853,9 +947,12 @@ export function BinManagerTab() {
         bin={editingBin}
         generatedCode={generateBinCode()}
         locationPath={editingBin ? getFullLocationPath(editingBin) : (selectedWarehouse && selectedZone && selectedRack && selectedLevel ? `${selectedWarehouse.code} → ${selectedZone.code} → ${selectedRack.code} → ${selectedLevel.code}` : undefined)}
-        currentZoneId={!editingBin ? selectedZone?.id : undefined}
-        currentRackId={!editingBin ? selectedRack?.id : undefined}
-        currentLevelId={!editingBin ? selectedLevel?.id : undefined}
+        availableZones={getAllZones()}
+        availableRacks={getAllRacks()}
+        availableLevels={getAllLevels()}
+        currentZoneId={editingBin ? findZoneIdForBin(editingBin) : selectedZone?.id}
+        currentRackId={editingBin ? findRackIdForBin(editingBin) : selectedRack?.id}
+        currentLevelId={editingBin ? findLevelIdForBin(editingBin) : selectedLevel?.id}
       />
 
       {/* Delete Confirmation */}
@@ -937,5 +1034,6 @@ export function BinManagerTab() {
         </AlertDialogContent>
       </AlertDialog>
     </Card>
+    </>
   );
 }

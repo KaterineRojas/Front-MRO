@@ -38,6 +38,24 @@ export function LevelModal({ isOpen, onClose, onSave, level, generatedCode, loca
   const [selectedZoneId, setSelectedZoneId] = useState<string>('');
   const [selectedRackId, setSelectedRackId] = useState<string>('');
 
+  // Sanitize code: only alphanumeric and uppercase
+  const handleCodeChange = (value: string) => {
+    const sanitized = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    setCode(sanitized);
+  };
+
+  // Handler para cambio de zona - resetea rack
+  const handleZoneChange = (zoneId: string) => {
+    setSelectedZoneId(zoneId === 'none' ? '' : zoneId);
+    // Resetear rack cuando cambia la zona
+    setSelectedRackId('none');
+  };
+
+  // Handler para cambio de rack
+  const handleRackChange = (rackId: string) => {
+    setSelectedRackId(rackId === 'none' ? '' : rackId);
+  };
+
   // Extract level code from full code (last segment)
   const getCodeParts = (fullCode: string) => {
     const parts = fullCode.split('-');
@@ -51,10 +69,7 @@ export function LevelModal({ isOpen, onClose, onSave, level, generatedCode, loca
 
   // Filter racks based on selected zone
   const filteredRacks = selectedZoneId 
-    ? availableRacks.filter(r => {
-        const selectedZone = availableZones.find(z => z.id === selectedZoneId);
-        return selectedZone ? r.code.startsWith(selectedZone.code + '-') : false;
-      })
+    ? availableZones.find(z => z.id === selectedZoneId)?.racks || []
     : availableRacks;
 
   useEffect(() => {
@@ -62,13 +77,13 @@ export function LevelModal({ isOpen, onClose, onSave, level, generatedCode, loca
       const { levelCode } = getCodeParts(level.code);
       setCode(levelCode);
       setName(level.name);
-      setSelectedZoneId(currentZoneId || '');
-      setSelectedRackId(currentRackId || '');
+      setSelectedZoneId(currentZoneId || 'none');
+      setSelectedRackId(currentRackId || 'none');
     } else {
       setCode('');
       setName('');
-      setSelectedZoneId(currentZoneId || '');
-      setSelectedRackId(currentRackId || '');
+      setSelectedZoneId(currentZoneId || 'none');
+      setSelectedRackId(currentRackId || 'none');
     }
   }, [level, generatedCode, isOpen, currentZoneId, currentRackId]);
 
@@ -76,13 +91,13 @@ export function LevelModal({ isOpen, onClose, onSave, level, generatedCode, loca
     e.preventDefault();
     
     // Reconstruct full code with selected rack
-    const selectedRack = filteredRacks.find(r => r.id === selectedRackId);
+    const effectiveRackId = selectedRackId === 'none' ? undefined : selectedRackId;
+    const selectedRack = filteredRacks.find(r => r.id === effectiveRackId);
     const fullCode = level && selectedRack ? `${selectedRack.code}-${code}` : code;
     
     onSave({
       code: fullCode,
       name,
-      rackId: selectedRackId || undefined,
     });
   };
 
@@ -112,7 +127,7 @@ export function LevelModal({ isOpen, onClose, onSave, level, generatedCode, loca
               <div className="space-y-2">
                 <Label htmlFor="code" className="dark:text-gray-200">Level Code</Label>
                 <div className="flex items-center gap-2">
-                  <Select value={selectedZoneId} onValueChange={setSelectedZoneId}>
+                  <Select value={selectedZoneId} onValueChange={handleZoneChange}>
                     <SelectTrigger className="w-auto min-w-[80px] dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600">
                       <SelectValue placeholder="Zone" />
                     </SelectTrigger>
@@ -124,7 +139,7 @@ export function LevelModal({ isOpen, onClose, onSave, level, generatedCode, loca
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={selectedRackId} onValueChange={setSelectedRackId}>
+                  <Select value={selectedRackId} onValueChange={handleRackChange} disabled={!selectedZoneId || selectedZoneId === 'none'}>
                     <SelectTrigger className="w-auto min-w-[80px] dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600">
                       <SelectValue placeholder="Rack" />
                     </SelectTrigger>
@@ -139,8 +154,8 @@ export function LevelModal({ isOpen, onClose, onSave, level, generatedCode, loca
                   <Input
                     id="code"
                     value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="L-01"
+                    onChange={(e) => handleCodeChange(e.target.value)}
+                    placeholder="L01"
                     required
                     className="flex-1 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:placeholder:text-gray-400"
                   />
@@ -152,8 +167,8 @@ export function LevelModal({ isOpen, onClose, onSave, level, generatedCode, loca
                 <Input
                   id="code"
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="L-01"
+                  onChange={(e) => handleCodeChange(e.target.value)}
+                  placeholder="L01"
                   required
                   className="dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:placeholder:text-gray-400"
                 />

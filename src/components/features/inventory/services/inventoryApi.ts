@@ -403,7 +403,7 @@ export async function fetchBinsFromApi(): Promise<Bin[]> {
 export async function fetchWarehousesFromApi(): Promise<WarehouseV2[]> {
   try {
     console.log('🔄 Fetching warehouses from API...');
-    const response = await fetch(`${API_URL}/Bin/with-quantity?isActive=true`, {
+    const response = await fetch(`${API_URL}/Bin/with-quantity`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -412,161 +412,77 @@ export async function fetchWarehousesFromApi(): Promise<WarehouseV2[]> {
       throw new Error(`Failed to fetch warehouses: ${response.status} ${response.statusText}`);
     }
 
-    // El API devuelve un array plano de bins con referencias a warehouse, zone, rack, level
-    interface ApiBinFlat {
+    interface ApiWarehouse {
       id: number;
-      levelId: number;
       code: string;
       name: string;
-      fullCode: string;
-      capacity: number;
-      allowDifferentItems: boolean;
-      isActive: boolean;
-      createdAt: string;
-      updatedAt: string;
-      itemId?: number | null;
-      itemName?: string | null;
-      quantity?: number;
-      level: {
-        id: number;
-        rackId: number;
-        code: string;
-        name: string;
-        isActive: boolean;
-        createdAt: string;
-        updatedAt: string;
-        rack: null;
-      } | null;
-      rack: {
-        id: number;
-        zoneId: number;
-        code: string;
-        name: string;
-        isActive: boolean;
-        createdAt: string;
-        updatedAt: string;
-        zone: null;
-      } | null;
-      zone: {
-        id: number;
-        warehouseId: number;
-        code: string;
-        name: string;
-        isActive: boolean;
-        createdAt: string;
-        updatedAt: string;
-        warehouse: null;
-      } | null;
-      warehouse: {
+      zones: Array<{
         id: number;
         code: string;
         name: string;
-        isActive: boolean;
-        createdAt: string;
-        updatedAt: string;
-      } | null;
+        racks: Array<{
+          id: number;
+          code: string;
+          name: string;
+          levels: Array<{
+            id: number;
+            code: string;
+            name: string;
+            bins: Array<{
+              id: number;
+              code: string;
+              name: string;
+              quantity: number;
+              allowDifferentItems: boolean;
+              createdAt: string;
+              itemName: string | null;
+            }>;
+          }>;
+        }>;
+      }>;
     }
 
-    const responseText = await response.text();
-    console.log('🔍 Raw API Response (first 500 chars):', responseText.substring(0, 500));
+    const apiWarehouses: ApiWarehouse[] = await response.json();
     
-    let flatBins: ApiBinFlat[];
-    try {
-      flatBins = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('❌ Error parsing JSON:', parseError);
-      throw new Error('Invalid JSON response from API');
-    }
-    
-    console.log('📊 Datos recibidos del API:', {
-      totalItems: flatBins.length,
-      firstItem: flatBins[0],
-      firstItemKeys: flatBins[0] ? Object.keys(flatBins[0]) : [],
-      hasItemName: flatBins[0] ? 'itemName' in flatBins[0] : false,
-      hasQuantity: flatBins[0] ? 'quantity' in flatBins[0] : false,
-      itemNameValue: flatBins[0]?.itemName,
-      quantityValue: flatBins[0]?.quantity
+    console.log('📊 Warehouses recibidos:', {
+      total: apiWarehouses.length,
+      firstWarehouse: apiWarehouses[0]?.code,
+      sampleBin: apiWarehouses[0]?.zones[0]?.racks[0]?.levels[0]?.bins[0]
     });
+   
+    // Transformar a WarehouseV2 (convertir IDs a strings)
+    console.log('🔄 Iniciando transformación...');
+    const warehouses: WarehouseV2[] = apiWarehouses.map(warehouse => ({
+      id: warehouse.id.toString(),
+      code: warehouse.code,
+      name: warehouse.name,
+      zones: warehouse.zones.map(zone => ({
+        id: zone.id.toString(),
+        code: zone.code,
+        name: zone.name,
+        racks: zone.racks.map(rack => ({
+          id: rack.id.toString(),
+          code: rack.code,
+          name: rack.name,
+          levels: rack.levels.map(level => ({
+            id: level.id.toString(),
+            code: level.code,
+            name: level.name,
+            bins: level.bins.map(bin => ({
+              id: bin.id.toString(),
+              code: bin.code,
+              name: bin.name,
+              allowDifferentItems: bin.allowDifferentItems,
+              itemName: bin.itemName,
+              quantity: bin.quantity,
+              createdAt: new Date(bin.createdAt)
+            }))
+          }))
+        }))
+      }))
+    }));
     
-    // Construir la jerarquía anidada
-    const warehousesMap = new Map<number, WarehouseV2>();
-    
-    flatBins.forEach(bin => {
-      // Validar que el bin tenga todas las referencias necesarias
-      if (!bin.warehouse || !bin.zone || !bin.rack || !bin.level) {
-        console.warn('⚠️ Bin sin referencias completas, omitiendo:', {
-          binId: bin.id,
-          binCode: bin.code,
-          hasWarehouse: !!bin.warehouse,
-          hasZone: !!bin.zone,
-          hasRack: !!bin.rack,
-          hasLevel: !!bin.level
-        });
-        return;
-      }
-      
-      // Obtener o crear warehouse
-      if (!warehousesMap.has(bin.warehouse.id)) {
-        warehousesMap.set(bin.warehouse.id, {
-          id: bin.warehouse.id.toString(),
-          code: bin.warehouse.code,
-          name: bin.warehouse.name,
-          zones: []
-        });
-      }
-      const warehouse = warehousesMap.get(bin.warehouse.id)!;
-      
-      // Obtener o crear zone
-      let zone = warehouse.zones.find(z => z.id === bin.zone!.id.toString());
-      if (!zone) {
-        zone = {
-          id: bin.zone!.id.toString(),
-          code: bin.zone!.code,
-          name: bin.zone!.name,
-          racks: []
-        };
-        warehouse.zones.push(zone);
-      }
-      
-      // Obtener o crear rack
-      let rack = zone.racks.find(r => r.id === bin.rack!.id.toString());
-      if (!rack) {
-        rack = {
-          id: bin.rack!.id.toString(),
-          code: bin.rack!.code,
-          name: bin.rack!.name,
-          levels: []
-        };
-        zone.racks.push(rack);
-      }
-      
-      // Obtener o crear level
-      let level = rack.levels.find(l => l.id === bin.level!.id.toString());
-      if (!level) {
-        level = {
-          id: bin.level!.id.toString(),
-          code: bin.level!.code,
-          name: bin.level!.name,
-          bins: []
-        };
-        rack.levels.push(level);
-      }
-      
-      // Agregar bin al level
-      level.bins.push({
-        id: bin.id.toString(),
-        code: bin.code,
-        name: bin.name,
-        allowDifferentItems: bin.allowDifferentItems,
-        itemId: bin.itemId ? bin.itemId.toString() : null,
-        itemName: bin.itemName || null,
-        quantity: bin.quantity || 0,
-        createdAt: new Date(bin.createdAt)
-      });
-    });
-    
-    const warehouses = Array.from(warehousesMap.values());
-    console.log('✅ Warehouses fetched and structured:', warehouses.length);
+    console.log('✅ Warehouses transformados:', warehouses.length);
     return warehouses;
   } catch (error) {
     console.error('❌ Error fetching warehouses:', error);
@@ -575,10 +491,146 @@ export async function fetchWarehousesFromApi(): Promise<WarehouseV2[]> {
 }
 
 /**
+ * Crea una nueva zona
+ */
+export async function createZoneApi(data: {
+  warehouseId: number;
+  code: string;
+  name: string;
+}) {
+  try {
+    const response = await fetch(`${API_URL}/Zones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `Failed to create zone: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        // Si no es JSON, intentar leer como texto
+        const errorText = await response.text().catch(() => '');
+        if (errorText) errorMessage = errorText;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Crea un nuevo rack
+ */
+export async function createRackApi(data: {
+  zoneId: number;
+  code: string;
+  name: string;
+}) {
+  try {
+    const response = await fetch(`${API_URL}/Racks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `Failed to create rack: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        // Si no es JSON, intentar leer como texto
+        const errorText = await response.text().catch(() => '');
+        if (errorText) errorMessage = errorText;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Crea un nuevo nivel
+ */
+export async function createLevelApi(data: {
+  rackId: number;
+  code: string;
+  name: string;
+}) {
+  try {
+    const response = await fetch(`${API_URL}/Levels`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `Failed to create level: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        // Si no es JSON, intentar leer como texto
+        const errorText = await response.text().catch(() => '');
+        if (errorText) errorMessage = errorText;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
  * Crea un nuevo bin
+ */
+export async function createBinApi(data: {
+  levelId: number;
+  code: string;
+  name: string;
+  allowDifferentItems: boolean;
+}) {
+  try {
+    const response = await fetch(`${API_URL}/Bin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `Failed to create bin: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        // Si no es JSON, intentar leer como texto
+        const errorText = await response.text().catch(() => '');
+        if (errorText) errorMessage = errorText;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
  * @deprecated Temporalmente desactivado - pendiente migración a nueva lógica de bins
  */
-export async function createBinApi(_binData: {
+export async function createBinApiOld(_binData: {
   binCode: string;
   type: string;
   description: string;

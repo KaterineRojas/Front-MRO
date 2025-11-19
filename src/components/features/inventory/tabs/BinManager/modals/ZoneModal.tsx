@@ -25,6 +25,12 @@ export function ZoneModal({ isOpen, onClose, onSave, zone, generatedCode, wareho
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
 
+  // Sanitize code: only alphanumeric and uppercase
+  const handleCodeChange = (value: string) => {
+    const sanitized = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    setCode(sanitized);
+  };
+
   useEffect(() => {
     if (zone) {
       setCode(zone.code);
@@ -70,7 +76,7 @@ export function ZoneModal({ isOpen, onClose, onSave, zone, generatedCode, wareho
               <Input
                 id="code"
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
+                onChange={(e) => handleCodeChange(e.target.value)}
                 placeholder="Z-01"
                 required
                 className="dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:placeholder:text-gray-400"
