@@ -20,7 +20,7 @@ import {
   createTransfer,
   type InventoryItem,
   type User
-} from '../services/transferService'; 
+} from './transferService'; 
 
 interface TransferFormProps {
   onBack: () => void;

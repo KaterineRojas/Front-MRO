@@ -245,4 +245,4 @@ export async function searchCatalogItems(query: string): Promise<CatalogItem[]> 
       item.sku.toLowerCase().includes(queryLower) ||
       item.description.toLowerCase().includes(queryLower)
   );
-}
+} 

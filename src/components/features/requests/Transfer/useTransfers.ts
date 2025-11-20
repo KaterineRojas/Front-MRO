@@ -6,7 +6,7 @@ import {
   acceptTransfer,
   rejectTransfer,
   type Transfer
-} from '../../services/transferService';
+} from './transferService';
  
 
 interface UseTransfersReturn {

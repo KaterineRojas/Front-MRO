@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '../../../../ui/card';
-import { Button } from '../../../../ui/button';
-import { Badge } from '../../../../ui/badge';
-import { Input } from '../../../../ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../../ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../ui/table';
-import { Label } from '../../../../ui/label';
+import { Card, CardContent } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Badge } from '../../../ui/badge';
+import { Input } from '../../../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
+import { Label } from '../../../ui/label';
 import { 
   Package, ArrowLeftRight, ChevronDown, ChevronRight, Trash2, CheckCircle, X
 } from 'lucide-react';
-import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
-import { Avatar, AvatarFallback, AvatarImage } from '../../../ui/avatar';
+import { ImageWithFallback } from '../../../figma/ImageWithFallback';
+import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { toast } from 'sonner';
-import { getProjects, type Project } from '../../../enginner/services';
+import { getProjects, type Project } from '../../enginner/services';
 import { useTransfers } from './useTransfers';
-import { TransferForm } from '../../forms/TransferForm';
+import { TransferForm } from './TransferForm';
 import { formatDate, getStatusColor, getStatusText } from './transferUtils';
-import { getAvailableUsers, type Transfer, type User } from '../../services/transferService';
+import { getAvailableUsers, type Transfer, type User } from './transferService';
 
 export function TransferRequests() {
   const [showTransferMode, setShowTransferMode] = useState(false);
@@ -137,16 +137,14 @@ export function TransferRequests() {
       {/* Search and Filter Bar */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by user, items, notes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Input
+              placeholder="Search by user, items, notes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger>
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
@@ -156,7 +154,7 @@ export function TransferRequests() {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger>
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>

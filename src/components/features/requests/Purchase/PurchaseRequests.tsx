@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '../../../../ui/card';
-import { Button } from '../../../../ui/button';
-import { Badge } from '../../../../ui/badge';
-import { Input } from '../../../../ui/input';
-import { Label } from '../../../../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../../ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../ui/table';
+import { Card, CardContent } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Badge } from '../../../ui/badge';
+import { Input } from '../../../ui/input';
+import { Label } from '../../../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle } from 'lucide-react';
-import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
-import { PurchaseForm } from '../../forms/PurchaseForm';
+import { ImageWithFallback } from '../../../figma/ImageWithFallback';
+import { PurchaseForm } from './PurchaseForm';
 //import { toast } from 'sonner';
-import { useAppSelector } from '../../../../../store';
-import { selectCurrentUser } from '../../../../../store';
-import { getWarehouses, type Warehouse } from '../../../enginner/services';
+import { useAppSelector } from '../../../../store';
+import { selectCurrentUser } from '../../../../store';
+import { getWarehouses, type Warehouse } from '../../enginner/services';
 import { usePurchaseRequests } from './usePurchaseRequests';
 import { formatDate, getStatusColor, getStatusText, getPriorityColor, getPriorityText } from './purchaseUtils';
-import type { PurchaseRequest } from '../../services/purchaseService';
+import type { PurchaseRequest } from './purchaseService';
 
 export function PurchaseRequests() {
   const currentUser = useAppSelector(selectCurrentUser);

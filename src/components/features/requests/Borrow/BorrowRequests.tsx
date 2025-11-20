@@ -1,256 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '../../../enginner/ui/card';
-import { Button } from '../../../enginner/ui/button';
-import { Badge } from '../../../enginner/ui/badge';
-import { Input } from '../../../enginner/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../enginner/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../enginner/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../enginner/ui/table';
-import { Package, Plus, ChevronDown, ChevronRight, Trash2, Calendar } from 'lucide-react';
-import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
-import { LoanForm } from '../../forms/LoanForm';
+/**
+ * BorrowRequests.tsx
+ * Componente de presentación para Borrow Requests
+ * Siguiendo principios SOLID: UI separada de lógica
+ */
 
-import { toast } from 'sonner';
-import { useAppSelector, useAppDispatch } from '../../../enginner/store/hooks';
-import { clearCart } from '../../../enginner/store/slices/cartSlice';
-import { selectCartItems, selectCurrentUser } from '../../../enginner/store/selectors';
-import { getBorrowRequests, getWarehouses, getStatuses, deleteBorrowRequest, type BorrowRequest, type Warehouse, type Status } from '../../../enginner/services';
-import { ConfirmModal, useConfirmModal } from '../../../../ui/confirm-modal';
-import { handleError, setupConnectionListener } from '../../../enginner/services/errorHandler';
-import type { AppError } from '../../../enginner/services/errorHandler';
+import React from 'react';
+import { Card, CardContent } from '../../enginner/ui/card';
+import { Button } from '../../enginner/ui/button';
+import { Badge } from '../../enginner/ui/badge';
+import { Input } from '../../enginner/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../enginner/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../enginner/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../enginner/ui/table';
+import { Package, Plus, ChevronDown, ChevronRight, Trash2, Calendar } from 'lucide-react';
+import { ImageWithFallback } from '../../../figma/ImageWithFallback';
+import { LoanForm } from './LoanForm';
+import { ConfirmModal } from '../../../ui/confirm-modal';
+import type { User } from '../../enginner/types';
+
+import { useBorrowRequests } from './useBorrowRequests';
+import { getStatusColor, getStatusText, formatDate, hasActiveFilters } from './borrowUtils';
 
 export function BorrowRequests() {
-  const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const cartItems = useAppSelector(selectCartItems);
-  const currentUser = useAppSelector(selectCurrentUser);
+  const {
+    // State
+    showBorrowForm,
+    filteredBorrowRequests,
+    borrowSearchTerm,
+    borrowStatusFilter,
+    warehouseFilter,
+    expandedBorrowRows,
+    returnDialogOpen,
+    isMobile,
+    warehouses,
+    modalState,
+    cartItems,
+    currentUser,
 
-  const [showBorrowForm, setShowBorrowForm] = useState(false);
-  const [borrowRequests, setBorrowRequests] = useState<BorrowRequest[]>([]);
-  const [filteredBorrowRequests, setFilteredBorrowRequests] = useState<BorrowRequest[]>([]);
-  const [borrowSearchTerm, setBorrowSearchTerm] = useState('');
-  const [borrowStatusFilter, setBorrowStatusFilter] = useState<string>('all');
-  const [warehouseFilter, setWarehouseFilter] = useState<string>('all');
-  const [expandedBorrowRows, setExpandedBorrowRows] = useState<Set<string>>(new Set());
-  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
-  const [requestToReturn, setRequestToReturn] = useState<string>('');
-  const [isMobile, setIsMobile] = useState(false);
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [statuses, setStatuses] = useState<Status[]>([]);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const { modalState, showConfirm, hideModal, setModalOpen } = useConfirmModal();
-  const [requestToDelete, setRequestToDelete] = useState<string | null>(null);
+    // Setters
+    setShowBorrowForm,
+    setBorrowSearchTerm,
+    setBorrowStatusFilter,
+    setWarehouseFilter,
+    setReturnDialogOpen,
+    setModalOpen,
 
-  // Setup connection listener
-  useEffect(() => {
-    const cleanup = setupConnectionListener(
-      () => {
-        setIsOnline(true);
-        toast.success('Internet connection restored');
-      },
-      () => {
-        setIsOnline(false);
-        showConfirm({
-          title: 'No Internet Connection',
-          description: 'Please check your network connection. The app will retry automatically when connection is restored.',
-          type: 'network',
-          confirmText: 'OK',
-          showCancel: false
-        });
-      }
-    );
-    return cleanup;
-  }, []);
+    // Handlers
+    handleClearCart,
+    handleCancelBorrowRequest,
+    handleReturnAll,
+    confirmReturnAll,
+    toggleBorrowRow,
+    getBorrowStatusCount,
 
-  // Load warehouses and statuses
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [whData, statusData, requestsData] = await Promise.all([
-          getWarehouses(),
-          getStatuses(),
-          getBorrowRequests()
-        ]);
-        setWarehouses(whData);
-        setStatuses(statusData);
-        setBorrowRequests(requestsData);
-      } catch (error: any) {
-        const appError = handleError(error);
-        showConfirm({
-          title: appError.type === 'NETWORK_ERROR' ? 'Connection Error' : 'Error Loading Data',
-          description: appError.message,
-          type: appError.type === 'NETWORK_ERROR' ? 'network' : 'error',
-          confirmText: 'Retry',
-          cancelText: 'Cancel',
-          retryable: appError.retryable,
-          onConfirm: () => {
-            hideModal();
-            loadData();
-          }
-        });
-      }
-    };
-    loadData();
-  }, []);
+    // Utilities
+    canCancelBorrowRequest,
+    canReturnAll
+  } = useBorrowRequests();
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  const handleClearCart = () => {
-    dispatch(clearCart());
-  };
-
-  // Filter borrow requests
-  useEffect(() => {
-    let filtered = borrowRequests;
-
-    if (borrowSearchTerm) {
-      filtered = filtered.filter(request => {
-        const searchLower = borrowSearchTerm.toLowerCase();
-        return (
-          request.requestId.toLowerCase().includes(searchLower) ||
-          request.project.toLowerCase().includes(searchLower) ||
-          request.department.toLowerCase().includes(searchLower) ||
-          request.warehouseName.toLowerCase().includes(searchLower) ||
-          request.items.some(item =>
-            item.name.toLowerCase().includes(searchLower) ||
-            (item.sku && item.sku.toLowerCase().includes(searchLower))
-          )
-        );
-      });
-    }
-
-    if (borrowStatusFilter !== 'all') {
-      filtered = filtered.filter(request => request.status === borrowStatusFilter);
-    }
-
-    if (warehouseFilter !== 'all') {
-      filtered = filtered.filter(request => request.warehouseId === warehouseFilter);
-    }
-
-    setFilteredBorrowRequests(filtered);
-  }, [borrowRequests, borrowSearchTerm, borrowStatusFilter, warehouseFilter]);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-      case 'approved': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'rejected': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'completed': return 'Active';
-      case 'pending': return 'Pending';
-      case 'approved': return 'Approved';
-      case 'rejected': return 'Rejected';
-      default: return status;
-    }
-  };
-
-  const handleCancelBorrowRequest = (requestId: string) => {
-    setRequestToDelete(requestId);
-    showConfirm({
-      title: 'Cancel Borrow Request',
-      description: 'Are you sure you want to cancel this borrow request? This action cannot be undone.',
-      type: 'warning',
-      confirmText: 'Yes, Cancel Request',
-      cancelText: 'Keep Request',
-      onConfirm: async () => {
-        try {
-          const result = await deleteBorrowRequest(requestId);
-          if (result.success) {
-            setBorrowRequests(prev => prev.filter(req => req.requestId !== requestId));
-            toast.success('Request cancelled successfully');
-            hideModal();
-          } else {
-            showConfirm({
-              title: 'Cannot Cancel Request',
-              description: result.message,
-              type: 'error',
-              confirmText: 'OK',
-              showCancel: false
-            });
-          }
-        } catch (error: any) {
-          const appError = handleError(error);
-          showConfirm({
-            title: 'Error Cancelling Request',
-            description: appError.message,
-            type: appError.type === 'NETWORK_ERROR' ? 'network' : 'error',
-            confirmText: 'Retry',
-            cancelText: 'Close',
-            retryable: appError.retryable,
-            onConfirm: () => {
-              hideModal();
-              handleCancelBorrowRequest(requestId);
-            }
-          });
-        } finally {
-          setRequestToDelete(null);
-        }
-      }
-    });
-  };
-
-  const canCancelBorrowRequest = (request: BorrowRequest) => {
-    return request.status === 'pending';
-  };
-
-  const handleReturnAll = (requestId: string) => {
-    setRequestToReturn(requestId);
-    setReturnDialogOpen(true);
-  };
-
-  const confirmReturnAll = () => {
-    const request = borrowRequests.find(r => r.requestId === requestToReturn);
-    if (request) {
-      setBorrowRequests(prev => prev.filter(r => r.requestId !== requestToReturn));
-      toast.success('All items returned successfully');
-    }
-    setReturnDialogOpen(false);
-    setRequestToReturn('');
-  };
-
-  const canReturnAll = (request: BorrowRequest) => {
-    return request.status === 'completed' || request.status === 'approved';
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
-  const getBorrowStatusCount = (status: string) => {
-    if (status === 'all') return borrowRequests.length;
-    return borrowRequests.filter(req => req.status === status).length;
-  };
-
-  const toggleBorrowRow = (requestId: string) => {
-    setExpandedBorrowRows(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(requestId)) {
-        newSet.delete(requestId);
-      } else {
-        newSet.add(requestId);
-      }
-      return newSet;
-    });
-  };
-
+  // Render Borrow Form
   if (showBorrowForm) {
     if (!currentUser) {
       return (
@@ -262,50 +70,29 @@ export function BorrowRequests() {
       );
     }
 
-    return (
-      <div className="space-y-6">
+    // Asegurar que currentUser tenga todas las propiedades necesarias
+    const userForForm: User = {
+      id: currentUser.id || '',
+      name: currentUser.name || '',
+      email: currentUser.email || '',
+      department: currentUser.department || '',
+      role: (currentUser as any).role || 'user'
+    };
 
-             {/*
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <Button variant="outline" onClick={() => setShowBorrowForm(false)}>
-            ← Back to Requests
-          </Button>
-          <Card className="flex-1 md:ml-4">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Cart Items</p>
-                  <p className="font-medium">{cartItems.length} items</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Total Quantity</p>
-                  <p className="font-medium">{cartItems.reduce((sum, item) => sum + item.quantity, 0)}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Engineer</p>
-                  <p className="font-medium">{currentUser.name || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Department</p>
-                  <p className="font-medium">{currentUser.department || 'N/A'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        */}
-        <LoanForm
-          cartItems={cartItems}
-          clearCart={handleClearCart}
-          currentUser={currentUser}
-          onBack={() => setShowBorrowForm(false)}
-        />
-      </div>
+    return (
+      <LoanForm
+        cartItems={cartItems}
+        clearCart={handleClearCart}
+        currentUser={userForForm}
+        onBack={() => setShowBorrowForm(false)}
+      />
     );
   }
 
+  // Main UI
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1>Borrow Requests</h1>
@@ -357,14 +144,14 @@ export function BorrowRequests() {
         </CardContent>
       </Card>
 
-      {/* Request List - Mobile Card View or Desktop Table */}
+      {/* Empty State */}
       {filteredBorrowRequests.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
             <Package className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
             <h3>No borrow requests found</h3>
             <p className="text-sm text-muted-foreground">
-              {borrowSearchTerm || borrowStatusFilter !== 'all' || warehouseFilter !== 'all'
+              {hasActiveFilters(borrowSearchTerm, borrowStatusFilter, warehouseFilter)
                 ? 'Try adjusting your search or filters'
                 : 'When you make borrow requests, they will appear here'}
             </p>

@@ -5,7 +5,7 @@ import {
   deletePurchaseRequest,
   confirmPurchaseBought,
   type PurchaseRequest
-} from '../../services/purchaseService';
+} from './purchaseService';
  
 interface UsePurchaseRequestsReturn {
   purchaseRequests: PurchaseRequest[];

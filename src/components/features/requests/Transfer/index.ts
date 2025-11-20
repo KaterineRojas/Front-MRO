@@ -7,7 +7,7 @@
 
 // Main Components
 export { TransferRequests } from './TransferRequests';
-export { TransferForm } from '../../forms/TransferForm';
+export { TransferForm } from './TransferForm';
 
 // Custom Hooks
 export { useTransfers } from './useTransfers';
@@ -21,7 +21,7 @@ export {
   acceptTransfer,
   rejectTransfer,
   cancelTransfer
-} from '../../services/transferService';
+} from './transferService';
 
 // Types
 export type {
@@ -29,7 +29,7 @@ export type {
   TransferItem,
   InventoryItem,
   User
-} from '../../services/transferService';
+} from './transferService';
 
 // Utilities
 export {

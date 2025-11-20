@@ -11,7 +11,15 @@ import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import  { toast } from 'sonner';
 import type { CartItem } from '../../enginner/types';
 import type { User } from '../../enginner/types';
-import { getWarehouses, getCatalogItemsByWarehouse, getProjects, type Warehouse, type CatalogItem, type Project } from '../../enginner/services';
+
+import { 
+  getWarehouses, 
+  getCatalogItemsByWarehouse, 
+  getProjects,
+  type Warehouse, 
+  type CatalogItem, 
+  type Project 
+} from '../services/sharedServices';
 
 interface LoanFormProps {
   cartItems: CartItem[];
@@ -45,7 +53,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
       itemName: item.item.name,
       quantity: item.quantity
     })),
-    department: currentUser.department,
+    department: currentUser.department || '',
     project: '',
     returnDate: '',
     notes: '',
@@ -214,7 +222,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
     // Simulate submission
     toast.success('Borrow request submitted successfully');
     clearCart();
-    onBack();
+    if (onBack) onBack();
   };
 
   const getMinDate = () => {
@@ -226,14 +234,14 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" onClick={onBack}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Requests
-                </Button>
+        <Button variant="ghost" size="sm" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Requests
+        </Button>
 
         <div>
-          <h1>Borrow Form</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold">Borrow Form</h1>
+          <p className="text-sm text-muted-foreground">
             {cartItemsCount > 0 ? 'Complete the details of your borrow request' : 'Create a new borrow request'}
           </p>
         </div>
@@ -306,7 +314,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                     onChange={(e) => setFormData(prev => ({ ...prev, returnDate: e.target.value }))}
                     required
                   />
-                  <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
             </div>
@@ -337,6 +345,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                 placeholder="Additional information about the borrow request..."
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                rows={3}
               />
             </div>
           </CardContent>
@@ -442,7 +451,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                         </Button>
                       </div>
                     </div>
-                    <div className="flex items-end">
+                    <div className="flex items-end gap-2">
                       {item.itemId && !validateStock(item.itemId, item.quantity) && (
                         <Badge variant="destructive">Insufficient stock</Badge>
                       )}

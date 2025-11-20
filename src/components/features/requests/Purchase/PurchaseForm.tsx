@@ -13,7 +13,7 @@ import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
 import type { User } from '../../enginner/types';
 import { getWarehouses, getProjects, type Warehouse, type Project } from '../../enginner/services';
-import { getExistingItems, getDepartments, type ExistingItem, type Department } from '../services/purchaseService';
+import { getExistingItems, getDepartments, type ExistingItem, type Department } from './purchaseService';
 
 interface PurchaseFormProps {
   currentUser: User;

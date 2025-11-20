@@ -13,7 +13,7 @@ export interface RequestItem {
   productUrl?: string;
   warehouseId?: string;
   warehouseName?: string;
-}
+} 
 
 export interface BorrowRequest {
   requestId: string;

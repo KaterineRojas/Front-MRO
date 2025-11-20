@@ -21,13 +21,13 @@ export {
   deletePurchaseRequest,
   updatePurchaseRequestPriority,
   confirmPurchaseBought
-} from '../../services/purchaseService';
+} from './purchaseService';
 
 // Types
 export type {
   PurchaseRequest,
   PurchaseItem
-} from '../../services/purchaseService';
+} from './purchaseService';
 
 // Utilities
 export {

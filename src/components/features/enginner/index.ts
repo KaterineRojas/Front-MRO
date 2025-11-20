@@ -2,9 +2,9 @@
 // This file re-exports all engineer components for easy integration
 
 export { Catalog } from './pages/Catalog/Catalog';
-export { BorrowRequests } from '../requests/tabs/Borrow/BorrowRequests';
-export { PurchaseRequests } from '../requests/tabs/Purchase/PurchaseRequests';
-export { TransferRequests } from '../requests/tabs/TransferRequests/TransferRequests';
+export { BorrowRequests } from '../requests/Borrow/BorrowRequests';
+export { PurchaseRequests } from '../requests/Purchase/PurchaseRequests';
+export { TransferRequests } from '../requests/Transfer/TransferRequests';
 export { MyInventoryTransfer } from './pages/MyInventory/MyInventoryTransfer';
 export { CompleteHistory } from './pages/MyInventory/CompleteHistory';
 export { RequestOrders } from '../requests/RequestOrders';
