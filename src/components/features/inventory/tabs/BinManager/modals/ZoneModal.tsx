@@ -77,7 +77,7 @@ export function ZoneModal({ isOpen, onClose, onSave, zone, generatedCode, wareho
                 id="code"
                 value={code}
                 onChange={(e) => handleCodeChange(e.target.value)}
-                placeholder="Z-01"
+                placeholder="Z01"
                 required
                 className="dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:placeholder:text-gray-400"
               />

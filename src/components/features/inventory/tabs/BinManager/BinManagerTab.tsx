@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from '../../../ui/alert-dialog';
 import { toast } from 'sonner';
-import { fetchWarehousesFromApi, createZoneApi, createRackApi, createLevelApi, createBinApi } from '../../services/inventoryApi';
+import { fetchWarehousesFromApi } from '../../services/inventoryApi';
 
 type ViewLevel = 'warehouse' | 'zone' | 'rack' | 'level' | 'bin';
 type ViewMode = 'grid' | 'table';
@@ -142,21 +142,21 @@ export function BinManagerTab() {
 
   // Code generators
   const generateZoneCode = () => {
-    if (!selectedWarehouse) return 'Z-01';
+    if (!selectedWarehouse) return 'Z01';
     const existingZones = selectedWarehouse.zones.length;
-    return `Z-${String(existingZones + 1).padStart(2, '0')}`;
+    return `Z${String(existingZones + 1).padStart(2, '0')}`;
   };
 
   const generateRackCode = () => {
-    if (!selectedZone) return 'R-01';
+    if (!selectedZone) return 'R01';
     const existingRacks = selectedZone.racks.length;
-    return `R-${String(existingRacks + 1).padStart(2, '0')}`;
+    return `R${String(existingRacks + 1).padStart(2, '0')}`;
   };
 
   const generateLevelCode = () => {
-    if (!selectedRack) return 'L-01';
+    if (!selectedRack) return 'L01';
     const existingLevels = selectedRack.levels.length;
-    return `L-${String(existingLevels + 1).padStart(2, '0')}`;
+    return `L${String(existingLevels + 1).padStart(2, '0')}`;
   };
 
   const generateBinCode = () => {
@@ -316,11 +316,6 @@ export function BinManagerTab() {
         toast.success('Zone updated successfully');
       } else {
         // Modo creación - llamar al API
-        const createdZone = await createZoneApi({
-          warehouseId: parseInt(selectedWarehouse.id),
-          code: zoneData.code || generateZoneCode(),
-          name: zoneData.name || '',
-        });
 
         // Recargar warehouses desde el API
         const updatedWarehouses = await fetchWarehousesFromApi();
@@ -376,11 +371,6 @@ export function BinManagerTab() {
         toast.success('Rack updated successfully');
       } else {
         // Modo creación - llamar al API
-        const createdRack = await createRackApi({
-          zoneId: parseInt(selectedZone.id),
-          code: rackData.code || generateRackCode(),
-          name: rackData.name || '',
-        });
 
         // Recargar warehouses desde el API
         const updatedWarehouses = await fetchWarehousesFromApi();
@@ -442,11 +432,6 @@ export function BinManagerTab() {
         toast.success('Level updated successfully');
       } else {
         // Modo creación - llamar al API
-        const createdLevel = await createLevelApi({
-          rackId: parseInt(selectedRack.id),
-          code: levelData.code || generateLevelCode(),
-          name: levelData.name || '',
-        });
 
         // Recargar warehouses desde el API
         const updatedWarehouses = await fetchWarehousesFromApi();
@@ -511,12 +496,6 @@ export function BinManagerTab() {
         toast.success('Bin updated successfully');
       } else {
         // Modo creación - llamar al API
-        const createdBin = await createBinApi({
-          levelId: parseInt(selectedLevel.id),
-          code: binData.code || '',
-          name: binData.name || '',
-          allowDifferentItems: binData.allowDifferentItems || false,
-        });
 
         // Recargar warehouses desde el API
         const updatedWarehouses = await fetchWarehousesFromApi();
