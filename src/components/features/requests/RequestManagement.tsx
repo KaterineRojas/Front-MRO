@@ -11,7 +11,7 @@ import RequestModal from './components/ApproveRequestDialog';
 
 export function RequestManagement() {
 
-  const [requests, setRequests] = useState<Request[]>(mockRequests);
+  const [requests, setRequests] = useState<Request[]>([]);
   const [activeTab, setActiveTab] = useState<string>('pending');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -20,12 +20,11 @@ export function RequestManagement() {
   const [rejectNotes, setRejectNotes] = useState('');
   const [modalType, setModalType] = useState('approve')
   const [showModal, setShowModal] = useState(false)
-
-  const [requests2, setRequests2] = useState<Request[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const fetchRequests = async () => {
+      setLoading(true)
       try {
         // Hacemos el fetch al puerto 3001
         const response = await fetch('http://localhost:3001/requests');
@@ -36,8 +35,8 @@ export function RequestManagement() {
         setRequests(data);
       } catch (error) {
         console.error(error);
-      } finally {
-        setLoading(false);
+      }finally{
+        setLoading(false)
       }
     };
 
@@ -46,7 +45,7 @@ export function RequestManagement() {
 
   const requestTypeOptions: SelectOption[] = [
     { value: "all", label: "All Types" },
-    { value: "loan", label: "Loan" },
+    { value: "transfer-on-site", label: "Transfer on Site" },
     { value: "purchase", label: "Purchase" },
     { value: "purchase-on-site", label: "Purchase on Site" },
   ];
@@ -109,7 +108,7 @@ export function RequestManagement() {
     const updatedRequest: Request = {
       ...selectedRequest,
       status: 'rejected',
-      reviewedBy: 'Current User',
+      reviewedBy: 'Insert current user here',
       reviewDate: new Date().toISOString().split('T')[0],
       reviewNotes: rejectNotes
     };
@@ -125,7 +124,7 @@ export function RequestManagement() {
   const getStatusBadge = (status: Request['status']) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="outline" className="text-orange-600 border-orange-600">Pending</Badge>;
+        return <Badge variant="outline" className="text-[#F0B100] border-[#F0B100]">Pending</Badge>;
       case 'approved':
         return <Badge variant="outline" className="text-green-600 border-green-600">Approved</Badge>;
       case 'rejected':
@@ -138,7 +137,7 @@ export function RequestManagement() {
   const getStatusIcon = (status: Request['status']) => {
     switch (status) {
       case 'pending':
-        return <Clock className="h-4 w-4 text-orange-600" />;
+        return <Clock className="h-4 w-4 text-[#F0B100]" />;
       case 'approved':
         return <Check className="h-4 w-4 text-green-600" />;
       case 'rejected':
@@ -151,20 +150,38 @@ export function RequestManagement() {
   const getUrgencyBadge = (urgency: Request['urgency']) => {
     switch (urgency) {
       case 'low':
-        return <Badge variant="outline" className="text-gray-600 border-gray-600">Low</Badge>;
+        return (
+          <Badge variant="outline" className="text-emerald-600 border-emerald-600 dark:text-emerald-400 dark:border-emerald-800">
+            Low
+          </Badge>
+        );
       case 'medium':
-        return <Badge variant="outline" className="text-blue-600 border-blue-600">Medium</Badge>;
+        return (
+          <Badge variant="outline" className="text-amber-600 border-amber-600">
+            Medium
+          </Badge>
+        );
       case 'high':
-        return <Badge variant="outline" className="text-orange-600 border-orange-600">High</Badge>;
+        return (
+          <Badge variant="outline" className="text-red-600 border-red-600 dark:border-red-800 font-bold">
+            High
+          </Badge>
+        );
       case 'urgent':
-        return <Badge variant="destructive">Urgent</Badge>;
+        // Para 'urgent', a veces es mejor mantener el estilo sólido (destructive)
+        // para que grite "¡MÍRAME!", o usar un borde rojo muy fuerte.
+        return (
+          <Badge variant="outline" className="text-white border-red-600 bg-red-600 dark:bg-red-900 dark:text-white dark:border-red-800 font-bold">
+            Urgent
+          </Badge>
+        );
     }
-  };
+};
 
   const getTypeBadge = (type: Request['type']) => {
     switch (type) {
-      case 'loan':
-        return <Badge variant="default">Loan</Badge>;
+      case 'transfer-on-site':
+        return <Badge variant="default">Transfer on Site</Badge>;
       case 'purchase':
         return <Badge variant="outline" className="text-purple-600 border-purple-600">Purchase</Badge>;
       case 'purchase-on-site':
@@ -272,7 +289,9 @@ export function RequestManagement() {
         <div className="space-y-6 border-[2px] p-5 rounded-lg">
 
           <h2 className="flex items-center space-x-2 text-xl font-semibold text-gray-800 dark:text-gray-100">
-            <Clock className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+            {/* <Check />
+            <XCircle /> */}
+            {/* <Clock className="h-5 w-5 text-gray-500 dark:text-gray-400" /> */}
             <span>{activeTab[0].toUpperCase() + activeTab.slice(1)} Requests ({getFilteredRequests(activeTab).length})</span>
           </h2>
 
@@ -293,6 +312,8 @@ export function RequestManagement() {
               setSelectedRequest={setSelectedRequest}
               setShowModal={setShowModal}
               setModalType={setModalType}
+
+              loading={loading}
             />
           </div>
 

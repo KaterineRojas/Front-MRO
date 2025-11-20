@@ -12,7 +12,7 @@ export interface RequestItem {
 
 export interface Request {
     id: number;
-    type: 'loan' | 'purchase' | 'purchase-on-site';
+    type: 'purchase' | 'purchase-on-site' | 'transfer-on-site';
     requestNumber: string;
     requestedBy: string;
     requestedByEmail: string;
@@ -34,7 +34,7 @@ export interface Request {
 export const mockRequests: Request[] = [
     {
         id: 1,
-        type: 'loan',
+        type: 'transfer-on-site',
         requestNumber: 'REQ-2025-001',
         requestedBy: 'Mike Chen',
         requestedByEmail: 'mike.chen@company.com',
@@ -130,7 +130,7 @@ export const mockRequests: Request[] = [
     },
     {
         id: 4,
-        type: 'loan',
+        type: 'transfer-on-site',
         requestNumber: 'REQ-2025-004',
         requestedBy: 'Linda Martinez',
         requestedByEmail: 'linda.martinez@company.com',
@@ -203,7 +203,7 @@ export const mockRequests: Request[] = [
     },
     {
         id: 6,
-        type: 'loan',
+        type: 'transfer-on-site',
         requestNumber: 'REQ-2025-006',
         requestedBy: 'Sarah Kim',
         requestedByEmail: 'sarah.kim@company.com',

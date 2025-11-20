@@ -2,7 +2,7 @@
     "requests": [
         {
             "id": 1,
-            "type": "loan",
+            "type": "transfer-on-site",
             "requestNumber": "REQ-2025-001",
             "requestedBy": "Mike Chen",
             "requestedByEmail": "mike.chen@company.com",
@@ -98,7 +98,7 @@
         },
         {
             "id": 4,
-            "type": "loan",
+            "type": "transfer-on-site",
             "requestNumber": "REQ-2025-004",
             "requestedBy": "Linda Martinez",
             "requestedByEmail": "linda.martinez@company.com",
@@ -171,7 +171,7 @@
         },
         {
             "id": 6,
-            "type": "loan",
+            "type": "transfer-on-site",
             "requestNumber": "REQ-2025-006",
             "requestedBy": "Sarah Kim",
             "requestedByEmail": "sarah.kim@company.com",
@@ -293,7 +293,7 @@
         },
         {
             "id": 8,
-            "type": "loan",
+            "type": "transfer-on-site",
             "requestNumber": "REQ-2025-008",
             "requestedBy": "Sarah Connor",
             "requestedByEmail": "sarah.connor@company.com",
@@ -489,7 +489,7 @@
         },
         {
             "id": 12,
-            "type": "loan",
+            "type": "transfer-on-site",
             "requestNumber": "REQ-2025-012",
             "requestedBy": "Tony Stark",
             "requestedByEmail": "tony.stark@company.com",
@@ -727,12 +727,12 @@
         },
         {
             "id": 17,
-            "type": "loan",
+            "type": "transfer-on-site",
             "requestNumber": "REQ-2025-017",
             "requestedBy": "Bruce Wayne",
             "requestedByEmail": "bruce.wayne@company.com",
             "department": "Executive",
-            "reason": "Office chair replacement (Temporary loan)",
+            "reason": "Office chair replacement (Temporary transfer-on-site)",
             "urgency": "medium",
             "requestDate": "2025-01-30",
             "requiredDate": "2025-02-10",

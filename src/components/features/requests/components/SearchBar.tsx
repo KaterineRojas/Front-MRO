@@ -61,9 +61,9 @@ export default function SearchBar({
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 border rounded-xl">
-            <div className="flex gap-4 items-center">
+            <div className="flex gap-4 items-center flex-col md:flex-row">
                 {/* Search Input */}
-                <div className="flex-1 rounded-xl"
+                <div className="flex-1 rounded-xl w-[-webkit-fill-available]"
                     style={{
                         background: `${darkMode ? '#121212' : '#F3F3F5'}`,
                     }}
@@ -73,17 +73,20 @@ export default function SearchBar({
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder={placeholder}
-                        className={`w-full px-4 py-1 rounded-lg  placeholder-gray-400 
+                        className={`px-4 py-1 rounded-lg  placeholder-gray-400  w-full
                             transition-all ${darkMode ? 'bg-[#121212]' : 'bg-[#F3F3F5]'}
                         `}
+                        style={{
+                            // width: '-webkit-fill-available'
+                        }}
                     />
                 </div>
 
                 {/* Dropdown */}
-                <div className="relative" ref={dropdownRef}>
+                <div className="relative w-[-webkit-fill-available]" ref={dropdownRef}>
                     <button
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className={`min-w-[200px]  px-4 py-2 bg-gray-50 rounded-lg text-gray-700 flex items-center justify-between 
+                        className={` min-w-[200px] w-full  px-4 py-2 bg-gray-50 rounded-lg text-gray-700 flex items-center justify-between 
                         hover:bg-gray-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm
                             ${darkMode ? 'text-white' : 'text-black'}
                         `}

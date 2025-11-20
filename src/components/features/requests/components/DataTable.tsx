@@ -22,6 +22,7 @@ interface RequestsTableProps {
   setSelectedRequest: (request: Request) => void;
   setShowModal: (open: boolean) => void;
   setModalType: (value: string) => void;
+  loading: boolean;
 }
 
 // --- Componente Modularizado (Puro HTML/Tailwind) ---
@@ -37,24 +38,38 @@ export default function RequestsTable({
   handleToggleExpand,
   setSelectedRequest,
   setShowModal,
-  setModalType
+  setModalType,
+  loading,
 }: RequestsTableProps) {
 
 
   const darkMode = useSelector((state: any) => state.ui.darkMode);
 
-  if (requests.length === 0) {
-    return (
-      <div className="rounded-md border p-8 text-center text-gray-500">
-        No requests found.
-      </div>
-    );
-  }
+
+  // {
+  //   loading && (
+  //     <div className="flex justify-center items-center py-10">
+  //       <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+  //     </div>
+  //   )
+  // }
+
+
+  // if (requests.length === 0) {
+  //   return (
+  //     <div className="rounded-md border p-8 text-center text-gray-500">
+  //       No requests found.
+  //     </div>
+  //   );
+  // }
 
   return (
 
+
+
     // <div className="rounded-md border"> (Este era el wrapper de <Table>)
     <div className="w-full overflow-auto rounded-md border">
+
       <table className="w-full caption-bottom text-sm">
         <thead className="[&_tr]:border-b">
           <tr className="border-b transition-colors bg-white dark:bg-[#0A0A0A]">
@@ -71,6 +86,7 @@ export default function RequestsTable({
           </tr>
         </thead>
         <tbody className="[&_tr:last-child]:border-0 bg-white dark:bg-[#0A0A0A]">
+
           {requests.map((request) => {
             const totalCost = calculateTotalCost(request);
             return (
@@ -95,7 +111,7 @@ export default function RequestsTable({
                   <td className="px-2 align-middle font-mono ">
                     <div>
                       <p>{request.requestNumber}</p>
-                      {(request.type === 'purchase' || request.type === 'purchase-on-site') && totalCost > 0 && (
+                      {(request.type === 'purchase' || request.type === 'purchase-on-site' || request.type === 'transfer-on-site') && totalCost > 0 && (
                         <p className="text-xs text-green-600 font-mono">
                           ${totalCost.toFixed(2)}
                         </p>
@@ -279,7 +295,6 @@ export default function RequestsTable({
                             ))}
                           </div>
 
-
                         </div>
 
                       </div>
@@ -291,6 +306,20 @@ export default function RequestsTable({
           })}
         </tbody>
       </table>
+
+      {requests.length === 0 && !loading &&
+        <div className='p-8 text-red-500 text-center flex justify-center items-center bg-white dark:bg-[#0A0A0A]'>
+          <h3>Not found</h3>
+        </div>
+      }
+
+      {
+        loading && (
+          <div className="flex justify-center items-center py-10 bg-white dark:bg-[#0A0A0A]">
+            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )
+      }
     </div>
 
 
