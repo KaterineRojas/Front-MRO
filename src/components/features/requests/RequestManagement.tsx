@@ -26,7 +26,6 @@ export function RequestManagement() {
     const fetchRequests = async () => {
       setLoading(true)
       try {
-        // Hacemos el fetch al puerto 3001
         const response = await fetch('http://localhost:3001/requests');
         
         if (!response.ok) throw new Error('Error fetching data');

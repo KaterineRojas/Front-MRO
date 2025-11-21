@@ -83,7 +83,7 @@ export default function SearchBar({
                 </div>
 
                 {/* Dropdown */}
-                <div className="relative w-[-webkit-fill-available]" ref={dropdownRef}>
+                <div className="relative w-full md:w-auto" ref={dropdownRef}>
                     <button
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         className={` min-w-[200px] w-full  px-4 py-2 bg-gray-50 rounded-lg text-gray-700 flex items-center justify-between 

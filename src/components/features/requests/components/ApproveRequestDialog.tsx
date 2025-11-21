@@ -83,7 +83,7 @@ export default function RequestModal({
                                 <label className="block text-sm font-medium text-gray-500 mb-1">Type</label>
                                 {getTypeBadge(request.type)}
                             </div>
-                            <div>
+                            <div className='overflow-x-auto'>
                                 <label className="block text-sm font-medium text-gray-500 mb-1">Requested By</label>
                                 <p className="text-sm text-gray-900 dark:text-gray-100">{request.requestedBy}</p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">{request.requestedByEmail}</p>
@@ -95,12 +95,13 @@ export default function RequestModal({
                         </div>
                         {request.project && !isReject && (
                             <div>
-                                <label className="block text-sm font-medium text-gray-500 mb-1">Project</label>
-                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.project}</p>
+                                <label className="block text-sm font-medium text-gray-500 mb-1 fixed">Project</label>
+                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.project}
+                                </p>
                             </div>
                         )}
                         {!isReject &&
-                            <div>
+                            <div className='max-h-[150px] overflow-auto'>
                                 <label className="block text-sm font-medium text-gray-500 mb-1">Reason</label>
                                 <p className="text-sm text-gray-700 dark:text-gray-300">{request.reason}</p>
                             </div>
