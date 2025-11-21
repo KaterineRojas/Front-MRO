@@ -5,13 +5,13 @@
  */
 
 import React from 'react';
-import { Card, CardContent } from '../../enginner/ui/card';
-import { Button } from '../../enginner/ui/button';
-import { Badge } from '../../enginner/ui/badge';
-import { Input } from '../../enginner/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../enginner/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../enginner/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../enginner/ui/table';
+import { Card, CardContent } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Badge } from '../../../ui/badge';
+import { Input } from '../../../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Package, Plus, ChevronDown, ChevronRight, Trash2, Calendar } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { LoanForm } from './LoanForm';
