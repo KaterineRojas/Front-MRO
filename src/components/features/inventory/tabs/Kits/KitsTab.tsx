@@ -81,7 +81,7 @@ export function KitsTab({
   }));
 
   return (
-    <div className="bg-white dark:bg-[#0A0A0A] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-[#0A0A0A] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
 
       <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 
@@ -106,11 +106,9 @@ export function KitsTab({
 
       <div className="p-6 space-y-6">
 
-        {/* --- TOOLBAR SUPERIOR (Buscador + Filtros + Botón Crear) --- */}
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-white dark:bg-[#0A0A0A] p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
 
-          {/* ZONA 1: Buscador (Más ancho para protagonismo) */}
-          <div className="w-full lg:w-96">
+          <div className="w-full">
             <SearchBar
               value={searchTerm}
               onChange={setSearchTerm}
@@ -119,12 +117,11 @@ export function KitsTab({
             />
           </div>
 
-          {/* ZONA 2: Filtros y Acciones */}
           <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3">
 
             <FilterSelect
               value={String(categoryFilter || '')}
-              onChange={(val) => setCategoryFilter(val ? Number(val) : null)}
+              onChange={(val) => setCategoryFilter(val)}
               options={categoryOptions}
               placeholder="All Categories"
               isLoading={loadingCategories}
@@ -138,18 +135,7 @@ export function KitsTab({
               placeholder="Filter by Stock"
               icon={<Filter className="h-4 w-4" />}
             />
-
-            {/* Separador vertical (solo visible en desktop) */}
-            <div className="hidden sm:block w-px bg-gray-200 dark:bg-gray-700 mx-1 h-10 self-center"></div>
-
-            {/* Botón de Crear Nuevo Kit (Aprovechando que ya estás ahí) */}
-            <button
-              onClick={onCreateKit}
-              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 focus:ring-4 focus:ring-gray-300 dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-200 focus:outline-none transition-colors shadow-sm whitespace-nowrap"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Kit
-            </button>
+            
           </div>
         </div>
 
