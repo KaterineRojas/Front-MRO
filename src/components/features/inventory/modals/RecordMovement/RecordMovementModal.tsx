@@ -399,13 +399,13 @@ export function RecordMovementModal({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-1">
+          {/* <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="transaction">Transaction</TabsTrigger>
-            {/* <TabsTrigger value="help">
+            <TabsTrigger value="help">
               <BookOpen className="h-4 w-4 mr-2" />
               Help
-            </TabsTrigger> */}
-          </TabsList>
+            </TabsTrigger>
+          </TabsList> */}
 
           <TabsContent value="transaction" className="space-y-4 mt-4">
             {/* Entity Type Selector (Item or Kit) */}

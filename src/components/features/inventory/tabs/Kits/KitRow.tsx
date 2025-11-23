@@ -28,7 +28,8 @@ import {
   CopyPlus,
   Archive,
   UserCheck,
-  Lock
+  Lock,
+  MoreHorizontal
 } from 'lucide-react';
 import {
   Select,
@@ -37,12 +38,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../../ui/select';
+
 import { Input } from '../../../../ui/input';
 import { Label } from '../../../../ui/label';
 import type { KitRowProps } from './types';
 import { getAvailableBins, checkKitOccupation, type Bin } from '../../services/binsService';
 import { getKitCurrentBin, createPhysicalKit, deleteKit as deleteKitService, dismantleKit } from '../../services/kitService';
 import { DismantleKitModal } from '../../modals/DismantleKitModal';
+import { ActionButton } from '../../components/ActionButton'
 
 export function KitRow({
   kit,
@@ -223,6 +226,13 @@ export function KitRow({
     }
   };
 
+  // Ejemplo de lógica en tu tabla
+  const getAvailableBadge = (required: number, available: number) => {
+    if (required >= available) return <Badge variant="critical">{available}</Badge>;
+    if (required < available) return <Badge variant="success">{available}</Badge>;
+  };
+
+
   return (
     <React.Fragment>
       <TableRow>
@@ -249,88 +259,58 @@ export function KitRow({
           <p className="text-sm line-clamp-2">{kit.description || '-'}</p>
         </TableCell>
         <TableCell className="text-center">
-          <Badge variant="outline">{kit.items.length} items</Badge>
+          <Badge variant="info">{kit.items.length} items</Badge>
         </TableCell>
         {/* Stock Total */}
         <TableCell className="text-center">
-          <Badge variant="secondary" className="font-semibold">{kit.quantity}</Badge>
+          <Badge variant="neutral" className="font-semibold">{kit.quantity}</Badge>
         </TableCell>
 
         <TableCell className="text-center">
-          <span className="font-semibold">{kit.quantityAvailable}</span>
+          {getAvailableBadge(kit.items.length, kit.quantityAvailable)}
         </TableCell>
-        {/*  y botones alineados */}
-        <TableCell className="text-center">
-          <div className="flex justify-center items-center space-x-2">
-            <div className="flex space-x-1">
-              <Button
-                variant="outline"
-                size="sm"
-                title="Kit Assembly"
-                onClick={handleExpandAndFocusAssembly}
-              >
-                <PackagePlus className="h-4 w-4 mr-1" />
-                Assemble
-              </Button>
 
-              <Button
-                variant="outline"
-                size="sm"
-                title="Use as template or Duplicate kit"
-                onClick={handleUseKit}
-              >
-                <CopyPlus className="h-4 w-4 mr-1" />
-                Clone
-              </Button>
-            </div>
 
-            <div className="w-[120px]"> {/* ← Ancho fijo para mantener alineación */}
-              {kit.quantityAvailable > 0 ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  title="Dismantle Kit"
-                  onClick={handleOpenDismantleModal}
-                  className="w-full"
-                >
-                  <PackageMinus className="h-4 w-4 mr-1" />
-                  To disarm
-                </Button>
-              ) : kit.quantity === 0 ? (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      title="Delete kit"
-                      className="w-full"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete kit
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Kit</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete "{kit.name}"? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDeleteKit}
-                        className="bg-destructive hover:bg-destructive/90"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              ) : null}
-            </div>
+
+        <TableCell className="text-center py-3"> {/* Un poco de padding vertical ayuda al aire */}
+          <div className="flex justify-center items-center gap-2">
+
+            <ActionButton
+              icon="assemble"
+              label="Assemble"
+              variant="primarySolid"
+              onClick={handleExpandAndFocusAssembly}
+            />
+
+            <div className="h-5 w-px bg-gray-200 mx-1"></div>
+
+            <ActionButton
+              icon="duplicate"
+              variant="cyan"
+              title="Duplicate / Template"
+              onClick={handleUseKit}
+            />
+
+            <ActionButton
+              icon="dismantle"
+              variant="warning"
+              disabled={kit.quantity === 0}
+              title={kit.quantity > 0 ? "Dismantle Kit" : "No stock to dismantle"}
+              onClick={handleOpenDismantleModal}
+            />
+
+            <ActionButton
+              icon="delete"
+              variant="danger"
+              disabled={kit.quantity > 0}
+              title={kit.quantity > 0 ? "Cannot delete: Stock exists" : "Delete Kit"}
+              onClick={() => handleDeleteKit}
+            />
+
           </div>
         </TableCell>
+
+
       </TableRow>
 
       {/* SECCIÓN EXPANDIDA */}
