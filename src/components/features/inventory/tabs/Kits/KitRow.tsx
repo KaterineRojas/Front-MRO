@@ -29,7 +29,8 @@ import {
   Archive,
   UserCheck,
   Lock,
-  MoreHorizontal
+  MoreHorizontal,
+  PackageOpen
 } from 'lucide-react';
 import {
   Select,
@@ -331,15 +332,16 @@ export function KitRow({
           <TableCell colSpan={8} className="bg-muted/30 p-0">
             <div className="p-6 bg-gray-50/50 dark:bg-black/20 border-t border-gray-100 dark:border-gray-800">
 
+              <h4 className="flex items-center text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                <PackageOpen className="h-4 w-4 mr-2 text-indigo-600" />
+                Kit Contents
+              </h4>
+
               {/* CONTENEDOR FLEX PRINCIPAL */}
               <div className="flex flex-col lg:flex-row gap-6 items-start">
 
                 {/* 1. SECCIÓN PRINCIPAL: LA TABLA (Ocupa el espacio restante) */}
                 <div className="flex-1 min-w-0 space-y-3 w-full">
-                  <h4 className="flex items-center text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    <Package className="h-4 w-4 mr-2 text-indigo-600" />
-                    Kit Contents
-                  </h4>
 
                   <KitItemsTable
                     items={kit.items}
@@ -359,14 +361,18 @@ export function KitRow({
 
               </div>
             </div>
+
+
+
+
+
+
+
+
+
+
+
             <div className="p-4 space-y-4">
-
-
-
-
-
-
-
 
               {/* Kit Assembly Section */}
               <div className="p-4 border rounded-lg bg-card">
