@@ -36,7 +36,7 @@ const badgeVariants = cva(
 
         // Gris: Para cantidades neutras (ej: "x1"), SKUs secundarios o Tags
         neutral:
-          "border-transparent bg-gray-800 text-gray-300 dark:bg-white dark:text-black",
+          "border-transparent bg-gray-800 text-white dark:bg-white dark:text-black",
       },
     },
     defaultVariants: {

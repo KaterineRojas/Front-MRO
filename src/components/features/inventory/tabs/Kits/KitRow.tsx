@@ -46,6 +46,8 @@ import { getAvailableBins, checkKitOccupation, type Bin } from '../../services/b
 import { getKitCurrentBin, createPhysicalKit, deleteKit as deleteKitService, dismantleKit } from '../../services/kitService';
 import { DismantleKitModal } from '../../modals/DismantleKitModal';
 import { ActionButton } from '../../components/ActionButton'
+import { KitItemsTable } from '../../components/KitItemsTable'
+import { KitStatusCard } from '../../components/KitStatusCard';
 
 export function KitRow({
   kit,
@@ -272,7 +274,7 @@ export function KitRow({
 
 
 
-        <TableCell className="text-center py-3"> {/* Un poco de padding vertical ayuda al aire */}
+        <TableCell className="text-center py-3">
           <div className="flex justify-center items-center gap-2">
 
             <ActionButton
@@ -313,334 +315,252 @@ export function KitRow({
 
       </TableRow>
 
+
+
+
+
+
+
+
       {/* SECCIÓN EXPANDIDA */}
       {isExpanded && (
+
+
+
         <TableRow>
           <TableCell colSpan={8} className="bg-muted/30 p-0">
-            <div className="p-4 space-y-4">
-              {/* Items Table */}
-              <div>
-                <h4 className="flex items-center mb-3 font-semibold">
-                  <Package className="h-4 w-4 mr-2" />
-                  Items in this kit
-                </h4>
-                <div className="rounded-md border bg-card overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-20">Image</TableHead>
-                        <TableHead>SKU</TableHead>
-                        <TableHead>Name & Description</TableHead>
-                        <TableHead className="text-center">Qty/Kit</TableHead>
-                        <TableHead className="text-center bg-primary/5">
-                          <div className="flex flex-col items-center">
-                            <span>Estimated Qty</span>
-                            <span className="text-xs text-muted-foreground">({assemblyQuantity} kits)</span>
-                          </div>
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {kit.items.map((item, index) => {
-                        const article = articles.find((a) => a.sku === item.articleSku);
-                        const estimatedQty = item.quantity * assemblyQuantity;
+            <div className="p-6 bg-gray-50/50 dark:bg-black/20 border-t border-gray-100 dark:border-gray-800">
 
-                        return (
-                          <TableRow key={index}>
-                            <TableCell>
-                              {article?.imageUrl || item.imageUrl ? (
-                                <img
-                                  src={article?.imageUrl || item.imageUrl}
-                                  alt={item.articleName}
-                                  className="w-12 h-12 object-cover rounded"
-                                />
-                              ) : (
-                                <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                                  <Package className="h-6 w-6 text-muted-foreground" />
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell className="font-mono text-sm">{item.articleSku}</TableCell>
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">{item.articleName}</p>
-                                {item.articleDescription && (
-                                  <p className="text-sm text-muted-foreground">{item.articleDescription}</p>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge variant="outline">x{item.quantity}</Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge variant="secondary" className="font-semibold">
-                                {estimatedQty}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+              {/* CONTENEDOR FLEX PRINCIPAL */}
+              <div className="flex flex-col lg:flex-row gap-6 items-start">
+
+                {/* 1. SECCIÓN PRINCIPAL: LA TABLA (Ocupa el espacio restante) */}
+                <div className="flex-1 min-w-0 space-y-3 w-full">
+                  <h4 className="flex items-center text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    <Package className="h-4 w-4 mr-2 text-indigo-600" />
+                    Kit Contents
+                  </h4>
+
+                  <KitItemsTable
+                    items={kit.items}
+                    articles={articles}
+                  // assemblyQuantity={1} 
+                  />
                 </div>
+
+                {/* 2. BARRA LATERAL: LA TARJETA DE ESTADO (Ancho fijo en desktop) */}
+                <div className="w-full lg:w-80 shrink-0">
+                  <KitStatusCard
+                    kit={kit}
+                    assemblyBinCode={assemblyBinCode}
+                    loading={loadingAvailableBins}
+                  />
+                </div>
+
               </div>
-
-              {/* BIN Info y Kit Assembly */}
-              <div id={`kit-assembly-${kit.id}`} className="grid grid-cols-2 gap-4">
-                {/* BIN Information & Stock Breakdown */}
-                <div className="p-4 border rounded-lg bg-card">
-                  <h4 className="flex items-center mb-3 font-semibold text-sm">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    BIN Location & Stock
-                  </h4>
-                  {loadingAvailableBins ? (
-                    <div className="flex items-center justify-center p-4">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
-                      <span className="text-sm text-muted-foreground">Loading BIN info...</span>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {/* BIN Code */}
-                      <div className="flex justify-between items-center pb-2 border-b">
-                        <span className="text-sm text-muted-foreground">BIN Code:</span>
-                        <span className="font-mono font-medium">
-                          {assemblyBinCode || kit.binCode || <span className="text-muted-foreground">No BIN Assigned</span>}
-                        </span>
-                      </div>
-
-                      {/* Total Stock */}
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-semibold">Total Stock:</span>
-                        <Badge variant="secondary" className="font-bold text-base">{kit.quantity}</Badge>
-                      </div>
+            </div>
+            <div className="p-4 space-y-4">
 
 
-                      <div className="space-y-2 pl-2 border-l-2 border-muted">
-                        {/* Available */}
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-muted-foreground flex items-center">
-                            <Archive className="h-3 w-3 mr-1" />
-                            Available:
-                          </span>
-                          <span className="text-xs font-semibold">{kit.quantityAvailable}</span>
-                        </div>
-
-                        {/* On Loan */}
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-muted-foreground flex items-center">
-                            <UserCheck className="h-3 w-3 mr-1" />
-                            On Loan:
-                          </span>
-                          <span className="text-xs font-semibold">{kit.quantityLoan}</span>
-                        </div>
-
-                        {/* Reserved */}
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-muted-foreground flex items-center">
-                            <Lock className="h-3 w-3 mr-1" />
-                            Reserved:
-                          </span>
-                          <span className="text-xs font-semibold">{kit.quantityReserved}</span>
-                        </div>
-                      </div>
-
-                      {/* Created Date */}
-                      <div className="flex justify-between items-center text-xs text-muted-foreground pt-2 border-t">
-                        <span>Created:</span>
-                        <span>{kit.createdAt}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
 
 
-                {/* Kit Assembly Section */}
-                <div className="p-4 border rounded-lg bg-card">
-                  <h4 className="flex items-center mb-3 font-semibold text-sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Kit Assembly
-                  </h4>
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="assembly-qty" className="text-sm">Quantity to Build</Label>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setAssemblyQuantity(Math.max(1, assemblyQuantity - 1))}
-                          disabled={assemblyQuantity <= 1}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
 
-                        <Input
-                          id="assembly-qty"
-                          type="number"
-                          min="1"
-                          max="999"
-                          value={assemblyQuantity}
-                          onChange={(e) => setAssemblyQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="flex-1 text-center font-semibold"
-                          placeholder="Qty"
-                        />
 
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setAssemblyQuantity(assemblyQuantity + 1)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
 
-                        <AlertDialog open={confirmAssemblyOpen} onOpenChange={setConfirmAssemblyOpen}>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="default"
-                              title="Build kits"
-                              disabled={assemblyQuantity < 1 || loadingAvailableBins}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              Kit Building
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="max-w-2xl">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Confirm Kit Assembly</AlertDialogTitle>
-                              <AlertDialogDescription asChild>
-                                <div className="space-y-4">
-                                  <p>
-                                    Build <strong>{assemblyQuantity}</strong> kit(s) of "{kit.name}"
-                                  </p>
 
-                                  {!assemblyBinCode && (
-                                    <div className="space-y-2">
-                                      <Label htmlFor="modal-bin">Select BIN Location *</Label>
-                                      {loadingAvailableBins ? (
-                                        <div className="flex items-center justify-center p-4 border rounded-md">
-                                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
-                                          <span className="text-sm text-muted-foreground">Loading bins...</span>
-                                        </div>
-                                      ) : availableBins.length > 0 ? (
-                                        <>
-                                          <Select
-                                            value={modalBinId > 0 ? modalBinId.toString() : ''}
-                                            onValueChange={handleModalBinChange}
-                                          >
-                                            <SelectTrigger id="modal-bin">
-                                              <SelectValue placeholder="Select a BIN location" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              {availableBins.map((bin) => (
-                                                <SelectItem key={bin.id} value={bin.id.toString()}>
-                                                  <div className="flex flex-col">
-                                                    <span className="font-mono">{bin.binCode}</span>
-                                                    {bin.description && (
-                                                      <span className="text-xs text-muted-foreground">{bin.description}</span>
-                                                    )}
-                                                  </div>
-                                                </SelectItem>
-                                              ))}
-                                            </SelectContent>
-                                          </Select>
-                                          <p className="text-xs text-muted-foreground">
-                                            Select where the assembled kits will be stored
-                                          </p>
-                                        </>
-                                      ) : (
-                                        <div className="p-3 border border-destructive rounded-md bg-destructive/10">
-                                          <p className="text-destructive text-sm flex items-center">
-                                            <AlertCircle className="h-4 w-4 mr-2" />
-                                            No bins available
-                                          </p>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
+              {/* Kit Assembly Section */}
+              <div className="p-4 border rounded-lg bg-card">
+                <h4 className="flex items-center mb-3 font-semibold text-sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Kit Assembly
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="assembly-qty" className="text-sm">Quantity to Build</Label>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setAssemblyQuantity(Math.max(1, assemblyQuantity - 1))}
+                        disabled={assemblyQuantity <= 1}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
 
-                                  {(assemblyBinCode || modalBinCode) && (
-                                    <div className="p-3 border rounded-md bg-muted/50">
-                                      <p className="text-sm flex items-center">
-                                        <MapPin className="h-4 w-4 mr-2" />
-                                        <span className="text-muted-foreground">BIN Location:</span>
-                                        <span className="ml-2 font-mono font-semibold">
-                                          {modalBinCode || assemblyBinCode}
-                                        </span>
-                                      </p>
-                                    </div>
-                                  )}
+                      <Input
+                        id="assembly-qty"
+                        type="number"
+                        min="1"
+                        max="999"
+                        value={assemblyQuantity}
+                        onChange={(e) => setAssemblyQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="flex-1 text-center font-semibold"
+                        placeholder="Qty"
+                      />
 
-                                  <div>
-                                    <p className="font-semibold mb-2">Items that will be consumed:</p>
-                                    <div className="border rounded-md max-h-48 overflow-y-auto">
-                                      <Table>
-                                        <TableHeader>
-                                          <TableRow>
-                                            <TableHead>Item</TableHead>
-                                            <TableHead className="text-center">Required Qty</TableHead>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setAssemblyQuantity(assemblyQuantity + 1)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+
+                      <AlertDialog open={confirmAssemblyOpen} onOpenChange={setConfirmAssemblyOpen}>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="default"
+                            title="Build kits"
+                            disabled={assemblyQuantity < 1 || loadingAvailableBins}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            Kit Building
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="max-w-2xl">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirm Kit Assembly</AlertDialogTitle>
+                            <AlertDialogDescription asChild>
+                              <div className="space-y-4">
+                                <p>
+                                  Build <strong>{assemblyQuantity}</strong> kit(s) of "{kit.name}"
+                                </p>
+
+                                {!assemblyBinCode && (
+                                  <div className="space-y-2">
+                                    <Label htmlFor="modal-bin">Select BIN Location *</Label>
+                                    {loadingAvailableBins ? (
+                                      <div className="flex items-center justify-center p-4 border rounded-md">
+                                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
+                                        <span className="text-sm text-muted-foreground">Loading bins...</span>
+                                      </div>
+                                    ) : availableBins.length > 0 ? (
+                                      <>
+                                        <Select
+                                          value={modalBinId > 0 ? modalBinId.toString() : ''}
+                                          onValueChange={handleModalBinChange}
+                                        >
+                                          <SelectTrigger id="modal-bin">
+                                            <SelectValue placeholder="Select a BIN location" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {availableBins.map((bin) => (
+                                              <SelectItem key={bin.id} value={bin.id.toString()}>
+                                                <div className="flex flex-col">
+                                                  <span className="font-mono">{bin.binCode}</span>
+                                                  {bin.description && (
+                                                    <span className="text-xs text-muted-foreground">{bin.description}</span>
+                                                  )}
+                                                </div>
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-muted-foreground">
+                                          Select where the assembled kits will be stored
+                                        </p>
+                                      </>
+                                    ) : (
+                                      <div className="p-3 border border-destructive rounded-md bg-destructive/10">
+                                        <p className="text-destructive text-sm flex items-center">
+                                          <AlertCircle className="h-4 w-4 mr-2" />
+                                          No bins available
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {(assemblyBinCode || modalBinCode) && (
+                                  <div className="p-3 border rounded-md bg-muted/50">
+                                    <p className="text-sm flex items-center">
+                                      <MapPin className="h-4 w-4 mr-2" />
+                                      <span className="text-muted-foreground">BIN Location:</span>
+                                      <span className="ml-2 font-mono font-semibold">
+                                        {modalBinCode || assemblyBinCode}
+                                      </span>
+                                    </p>
+                                  </div>
+                                )}
+
+                                <div>
+                                  <p className="font-semibold mb-2">Items that will be consumed:</p>
+                                  <div className="border rounded-md max-h-48 overflow-y-auto">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>Item</TableHead>
+                                          <TableHead className="text-center">Required Qty</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {kit.items.map((item, idx) => (
+                                          <TableRow key={idx}>
+                                            <TableCell className="font-medium">{item.articleName}</TableCell>
+                                            <TableCell className="text-center">
+                                              <Badge variant="outline">{item.quantity * assemblyQuantity}</Badge>
+                                            </TableCell>
                                           </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                          {kit.items.map((item, idx) => (
-                                            <TableRow key={idx}>
-                                              <TableCell className="font-medium">{item.articleName}</TableCell>
-                                              <TableCell className="text-center">
-                                                <Badge variant="outline">{item.quantity * assemblyQuantity}</Badge>
-                                              </TableCell>
-                                            </TableRow>
-                                          ))}
-                                        </TableBody>
-                                      </Table>
-                                    </div>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
                                   </div>
                                 </div>
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel disabled={isBuilding}>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={handleConfirmAssembly}
-                                disabled={isBuilding || loadingAvailableBins || (!assemblyBinCode && modalBinId === 0)}
-                              >
-                                {isBuilding ? (
-                                  <>
-                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                    Building...
-                                  </>
-                                ) : (
-                                  'Confirm Build'
-                                )}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+                              </div>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel disabled={isBuilding}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleConfirmAssembly}
+                              disabled={isBuilding || loadingAvailableBins || (!assemblyBinCode && modalBinId === 0)}
+                            >
+                              {isBuilding ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  Building...
+                                </>
+                              ) : (
+                                'Confirm Build'
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
-
-                    <div className="p-2 bg-muted rounded text-xs space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Kits to build:</span>
-                        <span className="font-semibold">{assemblyQuantity}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Total items needed:</span>
-                        <span className="font-semibold">
-                          {kit.items.reduce((sum, item) => sum + (item.quantity * assemblyQuantity), 0)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-muted-foreground">
-                      Click "Kit Building" to assemble kits
-                    </p>
                   </div>
+
+                  <div className="p-2 bg-muted rounded text-xs space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Kits to build:</span>
+                      <span className="font-semibold">{assemblyQuantity}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total items needed:</span>
+                      <span className="font-semibold">
+                        {kit.items.reduce((sum, item) => sum + (item.quantity * assemblyQuantity), 0)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    Click "Kit Building" to assemble kits
+                  </p>
                 </div>
               </div>
             </div>
           </TableCell>
         </TableRow>
-      )}
+      )
+      }
+
+
+
+
+
+
 
       {/*  Modal de Dismantle */}
       <DismantleKitModal
@@ -655,6 +575,6 @@ export function KitRow({
         onConfirm={handleConfirmDismantle}
         isSubmitting={isDismantling}
       />
-    </React.Fragment>
+    </React.Fragment >
   );
 }
