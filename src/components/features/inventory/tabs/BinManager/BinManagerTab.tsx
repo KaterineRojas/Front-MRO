@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from '../../../ui/alert-dialog';
 import { toast } from 'sonner';
-import { fetchWarehousesFromApi } from '../../services/inventoryApi';
+import { fetchWarehousesFromApi, createZoneApi, createRackApi, createLevelApi, createBinApi } from '../../services/inventoryApi';
 
 type ViewLevel = 'warehouse' | 'zone' | 'rack' | 'level' | 'bin';
 type ViewMode = 'grid' | 'table';
@@ -316,6 +316,11 @@ export function BinManagerTab() {
         toast.success('Zone updated successfully');
       } else {
         // Modo creación - llamar al API
+        await createZoneApi({
+          warehouseId: parseInt(selectedWarehouse.id),
+          code: zoneData.code || '',
+          name: zoneData.name || '',
+        });
 
         // Recargar warehouses desde el API
         const updatedWarehouses = await fetchWarehousesFromApi();
@@ -371,6 +376,11 @@ export function BinManagerTab() {
         toast.success('Rack updated successfully');
       } else {
         // Modo creación - llamar al API
+        await createRackApi({
+          zoneId: parseInt(selectedZone.id),
+          code: rackData.code || '',
+          name: rackData.name || '',
+        });
 
         // Recargar warehouses desde el API
         const updatedWarehouses = await fetchWarehousesFromApi();
@@ -432,6 +442,11 @@ export function BinManagerTab() {
         toast.success('Level updated successfully');
       } else {
         // Modo creación - llamar al API
+        await createLevelApi({
+          rackId: parseInt(selectedRack.id),
+          code: levelData.code || '',
+          name: levelData.name || '',
+        });
 
         // Recargar warehouses desde el API
         const updatedWarehouses = await fetchWarehousesFromApi();
@@ -496,6 +511,12 @@ export function BinManagerTab() {
         toast.success('Bin updated successfully');
       } else {
         // Modo creación - llamar al API
+        await createBinApi({
+          levelId: parseInt(selectedLevel.id),
+          code: binData.code || '',
+          name: binData.name || '',
+          allowDifferentItems: binData.allowDifferentItems || false
+        });
 
         // Recargar warehouses desde el API
         const updatedWarehouses = await fetchWarehousesFromApi();
