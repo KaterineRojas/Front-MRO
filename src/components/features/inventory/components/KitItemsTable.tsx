@@ -37,7 +37,6 @@ export const KitItemsTable: React.FC<KitItemsTableProps> = ({
                             <th className="px-4 py-3">Name & Description</th>
                             <th className="px-4 py-3 text-center">Qty / Kit</th>
 
-                            {/* Columna Dinámica de Totales */}
                             <th className={`px-4 py-3 text-center ${assemblyQuantity > 1 ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}>
                                 <div className="flex flex-col items-center">
                                     <span className={assemblyQuantity > 1 ? 'text-indigo-700 dark:text-indigo-300 font-semibold' : ''}>
@@ -106,12 +105,12 @@ export const KitItemsTable: React.FC<KitItemsTableProps> = ({
                                     {/* 5. QTY TOTAL */}
                                     <td className={`px-4 py-3 text-center ${assemblyQuantity > 1 ? 'bg-indigo-50/30 dark:bg-indigo-900/10' : ''}`}>
                                         <span className={`
-                      inline-flex items-center justify-center px-3 py-1 rounded-md text-xs font-bold shadow-sm
-                      ${assemblyQuantity > 1
+                                            inline-flex items-center justify-center px-3 py-1 rounded-md text-xs font-bold shadow-sm
+                                            ${assemblyQuantity > 1
                                                 ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
                                                 : 'bg-gray-100 text-gray-500 dark:bg-gray-900 dark:text-white'
                                             }
-                    `}>
+                                        `}>
                                             {totalQty}
                                         </span>
                                     </td>

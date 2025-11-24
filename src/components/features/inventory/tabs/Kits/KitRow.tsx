@@ -49,6 +49,7 @@ import { DismantleKitModal } from '../../modals/DismantleKitModal';
 import { ActionButton } from '../../components/ActionButton'
 import { KitItemsTable } from '../../components/KitItemsTable'
 import { KitStatusCard } from '../../components/KitStatusCard';
+import {AssembleKitModal} from '../../modals/AssembleKitModal'
 
 export function KitRow({
   kit,
@@ -74,6 +75,8 @@ export function KitRow({
   const [dismantleQuantity, setDismantleQuantity] = useState(1);
   const [dismantleNotes, setDismantleNotes] = useState('');
   const [isDismantling, setIsDismantling] = useState(false);
+  const [isAssembleModalOpen, setIsAssembleModalOpen] = useState(false);
+
 
   useEffect(() => {
     async function loadKitBinInfo() {
@@ -102,20 +105,41 @@ export function KitRow({
     loadKitBinInfo();
   }, [isExpanded, kit.id]);
 
+  // useEffect(() => {
+  //   async function loadBinsForModal() {
+  //     if (!confirmAssemblyOpen) {
+  //       setModalBinId(0);
+  //       setModalBinCode('');
+  //       return;
+  //     }
+
+  //     if (assemblyBinCode && assemblyBinId > 0) {
+  //       setModalBinId(assemblyBinId);
+  //       setModalBinCode(assemblyBinCode);
+  //       return;
+  //     }
+
+  //     if (availableBins.length === 0) {
+  //       try {
+  //         setLoadingAvailableBins(true);
+  //         const bins = await getAvailableBins(0, true);
+  //         setAvailableBins(bins);
+  //       } catch (error) {
+  //         console.error('Error loading bins for modal:', error);
+  //       } finally {
+  //         setLoadingAvailableBins(false);
+  //       }
+  //     }
+  //   }
+
+  //   loadBinsForModal();
+  // }, [confirmAssemblyOpen, assemblyBinCode, assemblyBinId, availableBins.length]);
+
   useEffect(() => {
     async function loadBinsForModal() {
-      if (!confirmAssemblyOpen) {
-        setModalBinId(0);
-        setModalBinCode('');
-        return;
-      }
+      if (!isAssembleModalOpen) return;
 
-      if (assemblyBinCode && assemblyBinId > 0) {
-        setModalBinId(assemblyBinId);
-        setModalBinCode(assemblyBinCode);
-        return;
-      }
-
+      // Si ya tiene un BIN asignado fijo, no necesitamos cargar lista (o sí, por si quiere cambiarlo)
       if (availableBins.length === 0) {
         try {
           setLoadingAvailableBins(true);
@@ -130,11 +154,52 @@ export function KitRow({
     }
 
     loadBinsForModal();
-  }, [confirmAssemblyOpen, assemblyBinCode, assemblyBinId, availableBins.length]);
+  }, [isAssembleModalOpen, availableBins.length]);
 
-  const handleConfirmAssembly = async () => {
-    if (!modalBinCode || modalBinId === 0) {
-      alert('Please select a BIN location');
+
+
+
+  // const handleConfirmAssembly = async () => {
+  //   if (!modalBinCode || modalBinId === 0) {
+  //     alert('Please select a BIN location');
+  //     return;
+  //   }
+
+  //   try {
+  //     setIsBuilding(true);
+
+  //     await createPhysicalKit({
+  //       kitId: kit.id,
+  //       binCode: modalBinCode,
+  //       binId: modalBinId,
+  //       quantity: assemblyQuantity,
+  //       notes: `Built ${assemblyQuantity} kit(s) of ${kit.name}`,
+  //     });
+
+  //     alert(`✓ Successfully built ${assemblyQuantity} kit(s) of ${kit.name} in BIN: ${modalBinCode}`);
+  //     setConfirmAssemblyOpen(false);
+  //     setAssemblyQuantity(1);
+  //     setModalBinId(0);
+  //     setModalBinCode('');
+  //     onRefreshKits();
+  //   } catch (error) {
+  //     console.error('Error building kit:', error);
+  //     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+  //     alert(`Unable to build kit\n\nReason: ${errorMessage}`);
+  //   } finally {
+  //     setIsBuilding(false);
+  //   }
+  // };
+
+  // CAMBIO: La función ahora acepta argumentos (qty, binId)
+  const handleConfirmAssembly = async (qty: number, selectedBinId?: number) => {
+    
+    // Validamos qué BIN usar: El seleccionado en el modal O el pre-asignado
+    const finalBinId = selectedBinId || assemblyBinId;
+    const finalBinCode = availableBins.find(b => b.id === finalBinId)?.binCode || assemblyBinCode;
+
+    if (!finalBinId) {
+      alert('Error: No BIN location identified.');
       return;
     }
 
@@ -143,18 +208,17 @@ export function KitRow({
 
       await createPhysicalKit({
         kitId: kit.id,
-        binCode: modalBinCode,
-        binId: modalBinId,
-        quantity: assemblyQuantity,
-        notes: `Built ${assemblyQuantity} kit(s) of ${kit.name}`,
+        binCode: finalBinCode,
+        binId: finalBinId,
+        quantity: qty, // Usamos el argumento qty
+        notes: `Built ${qty} kit(s) of ${kit.name}`,
       });
 
-      alert(`✓ Successfully built ${assemblyQuantity} kit(s) of ${kit.name} in BIN: ${modalBinCode}`);
-      setConfirmAssemblyOpen(false);
-      setAssemblyQuantity(1);
-      setModalBinId(0);
-      setModalBinCode('');
-      onRefreshKits();
+      // Feedback y Cierre
+      // alert(`✓ Successfully built...`); // Opcional, un Toast es mejor
+      setIsAssembleModalOpen(false); // Cerramos el nuevo modal
+      onRefreshKits(); // Recargamos la tabla
+      
     } catch (error) {
       console.error('Error building kit:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -282,7 +346,8 @@ export function KitRow({
               icon="assemble"
               label="Assemble"
               variant="primarySolid"
-              onClick={handleExpandAndFocusAssembly}
+              // onClick={handleExpandAndFocusAssembly}
+              onClick={() => setIsAssembleModalOpen(true)}
             />
 
             <div className="h-5 w-px bg-gray-200 mx-1"></div>
@@ -359,6 +424,7 @@ export function KitRow({
                   />
                 </div>
 
+
               </div>
             </div>
 
@@ -366,204 +432,28 @@ export function KitRow({
 
 
 
-
-
-
-
-
-
-            <div className="p-4 space-y-4">
-
-              {/* Kit Assembly Section */}
-              <div className="p-4 border rounded-lg bg-card">
-                <h4 className="flex items-center mb-3 font-semibold text-sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Kit Assembly
-                </h4>
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="assembly-qty" className="text-sm">Quantity to Build</Label>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setAssemblyQuantity(Math.max(1, assemblyQuantity - 1))}
-                        disabled={assemblyQuantity <= 1}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-
-                      <Input
-                        id="assembly-qty"
-                        type="number"
-                        min="1"
-                        max="999"
-                        value={assemblyQuantity}
-                        onChange={(e) => setAssemblyQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="flex-1 text-center font-semibold"
-                        placeholder="Qty"
-                      />
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setAssemblyQuantity(assemblyQuantity + 1)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-
-                      <AlertDialog open={confirmAssemblyOpen} onOpenChange={setConfirmAssemblyOpen}>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="default"
-                            title="Build kits"
-                            disabled={assemblyQuantity < 1 || loadingAvailableBins}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            Kit Building
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="max-w-2xl">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Confirm Kit Assembly</AlertDialogTitle>
-                            <AlertDialogDescription asChild>
-                              <div className="space-y-4">
-                                <p>
-                                  Build <strong>{assemblyQuantity}</strong> kit(s) of "{kit.name}"
-                                </p>
-
-                                {!assemblyBinCode && (
-                                  <div className="space-y-2">
-                                    <Label htmlFor="modal-bin">Select BIN Location *</Label>
-                                    {loadingAvailableBins ? (
-                                      <div className="flex items-center justify-center p-4 border rounded-md">
-                                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
-                                        <span className="text-sm text-muted-foreground">Loading bins...</span>
-                                      </div>
-                                    ) : availableBins.length > 0 ? (
-                                      <>
-                                        <Select
-                                          value={modalBinId > 0 ? modalBinId.toString() : ''}
-                                          onValueChange={handleModalBinChange}
-                                        >
-                                          <SelectTrigger id="modal-bin">
-                                            <SelectValue placeholder="Select a BIN location" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {availableBins.map((bin) => (
-                                              <SelectItem key={bin.id} value={bin.id.toString()}>
-                                                <div className="flex flex-col">
-                                                  <span className="font-mono">{bin.binCode}</span>
-                                                  {bin.description && (
-                                                    <span className="text-xs text-muted-foreground">{bin.description}</span>
-                                                  )}
-                                                </div>
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                        <p className="text-xs text-muted-foreground">
-                                          Select where the assembled kits will be stored
-                                        </p>
-                                      </>
-                                    ) : (
-                                      <div className="p-3 border border-destructive rounded-md bg-destructive/10">
-                                        <p className="text-destructive text-sm flex items-center">
-                                          <AlertCircle className="h-4 w-4 mr-2" />
-                                          No bins available
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-
-                                {(assemblyBinCode || modalBinCode) && (
-                                  <div className="p-3 border rounded-md bg-muted/50">
-                                    <p className="text-sm flex items-center">
-                                      <MapPin className="h-4 w-4 mr-2" />
-                                      <span className="text-muted-foreground">BIN Location:</span>
-                                      <span className="ml-2 font-mono font-semibold">
-                                        {modalBinCode || assemblyBinCode}
-                                      </span>
-                                    </p>
-                                  </div>
-                                )}
-
-                                <div>
-                                  <p className="font-semibold mb-2">Items that will be consumed:</p>
-                                  <div className="border rounded-md max-h-48 overflow-y-auto">
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow>
-                                          <TableHead>Item</TableHead>
-                                          <TableHead className="text-center">Required Qty</TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {kit.items.map((item, idx) => (
-                                          <TableRow key={idx}>
-                                            <TableCell className="font-medium">{item.articleName}</TableCell>
-                                            <TableCell className="text-center">
-                                              <Badge variant="outline">{item.quantity * assemblyQuantity}</Badge>
-                                            </TableCell>
-                                          </TableRow>
-                                        ))}
-                                      </TableBody>
-                                    </Table>
-                                  </div>
-                                </div>
-                              </div>
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel disabled={isBuilding}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={handleConfirmAssembly}
-                              disabled={isBuilding || loadingAvailableBins || (!assemblyBinCode && modalBinId === 0)}
-                            >
-                              {isBuilding ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                  Building...
-                                </>
-                              ) : (
-                                'Confirm Build'
-                              )}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-
-                  <div className="p-2 bg-muted rounded text-xs space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Kits to build:</span>
-                      <span className="font-semibold">{assemblyQuantity}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total items needed:</span>
-                      <span className="font-semibold">
-                        {kit.items.reduce((sum, item) => sum + (item.quantity * assemblyQuantity), 0)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground">
-                    Click "Kit Building" to assemble kits
-                  </p>
-                </div>
-              </div>
-            </div>
           </TableCell>
         </TableRow>
       )
-      }
+    }
 
 
 
+    <AssembleKitModal
+      isOpen={isAssembleModalOpen}
+      onClose={() => setIsAssembleModalOpen(false)}
+      kit={kit}
+      // Props nuevas requeridas por tu lógica de negocio
+      availableBins={availableBins}
+      loadingAvailableBins={loadingAvailableBins}
+      assemblyBinCode={assemblyBinCode} // Ojo: Pásale null si no hay BIN asignado
+      isBuilding={isBuilding} // Tu estado de carga al confirmar
+
+      onConfirm={(qty, binId) => {
+        // Aquí llamas a tu función de backend
+        handleConfirmAssembly(qty, binId);
+      }}
+    />
 
 
 
