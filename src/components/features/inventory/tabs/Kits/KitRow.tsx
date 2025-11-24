@@ -49,7 +49,8 @@ import { DismantleKitModal } from '../../modals/DismantleKitModal';
 import { ActionButton } from '../../components/ActionButton'
 import { KitItemsTable } from '../../components/KitItemsTable'
 import { KitStatusCard } from '../../components/KitStatusCard';
-import {AssembleKitModal} from '../../modals/AssembleKitModal'
+import { AssembleKitModal } from '../../modals/AssembleKitModal'
+import { DeleteKitModal } from '../../modals/DeleteKitModal'
 
 export function KitRow({
   kit,
@@ -76,7 +77,18 @@ export function KitRow({
   const [dismantleNotes, setDismantleNotes] = useState('');
   const [isDismantling, setIsDismantling] = useState(false);
   const [isAssembleModalOpen, setIsAssembleModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteStatus, setDeleteStatus] = useState<'confirm' | 'loading' | 'success' | 'error'>('confirm');
+  const [deleteMessageModal, setDeleteMessageModal] = useState('')
 
+
+  useEffect(() => {
+    console.log(kit);
+    
+  
+  
+  }, [])
+  
 
   useEffect(() => {
     async function loadKitBinInfo() {
@@ -135,26 +147,32 @@ export function KitRow({
   //   loadBinsForModal();
   // }, [confirmAssemblyOpen, assemblyBinCode, assemblyBinId, availableBins.length]);
 
-  useEffect(() => {
-    async function loadBinsForModal() {
-      if (!isAssembleModalOpen) return;
 
-      // Si ya tiene un BIN asignado fijo, no necesitamos cargar lista (o sí, por si quiere cambiarlo)
-      if (availableBins.length === 0) {
-        try {
-          setLoadingAvailableBins(true);
-          const bins = await getAvailableBins(0, true);
-          setAvailableBins(bins);
-        } catch (error) {
-          console.error('Error loading bins for modal:', error);
-        } finally {
-          setLoadingAvailableBins(false);
-        }
-      }
-    }
 
-    loadBinsForModal();
-  }, [isAssembleModalOpen, availableBins.length]);
+  // para recargar la terjeta de info BIN
+
+
+
+  // useEffect(() => {
+  //   async function loadBinsForModal() {
+  //     if (!isAssembleModalOpen) return;
+
+  //     // Si ya tiene un BIN asignado fijo, no necesitamos cargar lista (o sí, por si quiere cambiarlo)
+  //     if (availableBins.length === 0) {
+  //       try {
+  //         setLoadingAvailableBins(true);
+  //         const bins = await getAvailableBins(0, true);
+  //         setAvailableBins(bins);
+  //       } catch (error) {
+  //         console.error('Error loading bins for modal:', error);
+  //       } finally {
+  //         setLoadingAvailableBins(false);
+  //       }
+  //     }
+  //   }
+
+  //   loadBinsForModal();
+  // }, [isAssembleModalOpen, availableBins.length]);
 
 
 
@@ -193,7 +211,7 @@ export function KitRow({
 
   // CAMBIO: La función ahora acepta argumentos (qty, binId)
   const handleConfirmAssembly = async (qty: number, selectedBinId?: number) => {
-    
+
     // Validamos qué BIN usar: El seleccionado en el modal O el pre-asignado
     const finalBinId = selectedBinId || assemblyBinId;
     const finalBinCode = availableBins.find(b => b.id === finalBinId)?.binCode || assemblyBinCode;
@@ -218,7 +236,7 @@ export function KitRow({
       // alert(`✓ Successfully built...`); // Opcional, un Toast es mejor
       setIsAssembleModalOpen(false); // Cerramos el nuevo modal
       onRefreshKits(); // Recargamos la tabla
-      
+
     } catch (error) {
       console.error('Error building kit:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -299,6 +317,32 @@ export function KitRow({
     if (required < available) return <Badge variant="success">{available}</Badge>;
   };
 
+  const handleOpenDeleteModal = () => {
+    setDeleteStatus('confirm');
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      setDeleteStatus('loading');
+
+      await deleteKitService(kit.id);
+
+      setDeleteStatus('success');
+      onRefreshKits();
+    } catch (error) {
+      console.error('❌ Error deleting kit:', error);
+      setDeleteStatus('error');
+      
+      const message = error instanceof Error ? error.message : 'Unknown error occurred';
+      setDeleteMessageModal(message);
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+  };
+
 
   return (
     <React.Fragment>
@@ -372,7 +416,7 @@ export function KitRow({
               variant="danger"
               disabled={kit.quantity > 0}
               title={kit.quantity > 0 ? "Cannot delete: Stock exists" : "Delete Kit"}
-              onClick={() => handleDeleteKit}
+              onClick={handleOpenDeleteModal}
             />
 
           </div>
@@ -435,28 +479,26 @@ export function KitRow({
           </TableCell>
         </TableRow>
       )
-    }
+      }
 
 
 
-    <AssembleKitModal
-      isOpen={isAssembleModalOpen}
-      onClose={() => setIsAssembleModalOpen(false)}
-      kit={kit}
-      // Props nuevas requeridas por tu lógica de negocio
-      availableBins={availableBins}
-      loadingAvailableBins={loadingAvailableBins}
-      assemblyBinCode={assemblyBinCode} // Ojo: Pásale null si no hay BIN asignado
-      isBuilding={isBuilding} // Tu estado de carga al confirmar
+      {/* modal de assembly */}
+      <AssembleKitModal
+        isOpen={isAssembleModalOpen}
+        onClose={() => setIsAssembleModalOpen(false)}
+        kit={kit}
+        // Props nuevas requeridas por tu lógica de negocio
+        availableBins={availableBins}
+        loadingAvailableBins={loadingAvailableBins}
+        assemblyBinCode={assemblyBinCode} // Ojo: Pásale null si no hay BIN asignado
+        isBuilding={isBuilding} // Tu estado de carga al confirmar
 
-      onConfirm={(qty, binId) => {
-        // Aquí llamas a tu función de backend
-        handleConfirmAssembly(qty, binId);
-      }}
-    />
-
-
-
+        onConfirm={(qty, binId) => {
+          // Aquí llamas a tu función de backend
+          handleConfirmAssembly(qty, binId);
+        }}
+      />
 
       {/*  Modal de Dismantle */}
       <DismantleKitModal
@@ -471,6 +513,18 @@ export function KitRow({
         onConfirm={handleConfirmDismantle}
         isSubmitting={isDismantling}
       />
+
+      {/* modal de delete kit */}
+      <DeleteKitModal
+        isOpen={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        kitName={kit.name}
+        status={deleteStatus}
+        message={deleteMessageModal}
+      />
+
+
     </React.Fragment >
   );
 }
