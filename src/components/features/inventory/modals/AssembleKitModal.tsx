@@ -65,8 +65,17 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
     const handleIncrement = () => setQuantity(q => Math.min(999, q + 1));
     const handleDecrement = () => setQuantity(q => Math.max(1, q - 1));
 
+    const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (e.target === e.currentTarget && !isBuilding) {
+            onClose();
+        }
+    };
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={handleBackdropClick}
+        >
             <div className="bg-white dark:bg-[#121212] w-full max-w-2xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
 
                 {/* HEADER */}
@@ -94,7 +103,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
 
                     {/* 1. CANTIDAD */}
                     <div className="flex flex-col items-center justify-center p-6 bg-indigo-50/30 dark:bg-indigo-900/10 rounded-xl border border-dashed border-indigo-200 dark:border-indigo-800/50">
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4 uppercase tracking-wide text-xs">
+                        <label className="font-medium text-gray-600 dark:text-gray-400 mb-4 uppercase tracking-wide text-xs">
                             Quantity to Build
                         </label>
                         <div className="flex items-center gap-6">
