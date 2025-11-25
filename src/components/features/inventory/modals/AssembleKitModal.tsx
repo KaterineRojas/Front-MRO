@@ -16,14 +16,13 @@ interface KitItem {
     articleName: string;
     quantity: number;
     articleDescription?: string;
-    currentStock?: number;     
+    currentStock?: number;      
 }
 
 interface AssembleKitModalProps {
     isOpen: boolean;
     onClose: () => void;
     kit: any;
-
     availableBins: Bin[];
     loadingAvailableBins: boolean;
     assemblyBinCode?: string | null;
@@ -51,32 +50,33 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
         }
     }, [isOpen]);
 
-    if (!isOpen || !kit) return null;
-
-    const canBuildStock = kit.items.every((item: KitItem) => {
-        const currentStock = item.currentStock ?? 0;
-        const required = item.quantity * quantity;
-        return currentStock >= required;
-    });
-
-    const hasValidBin = assemblyBinCode || selectedBinId > 0;
-    const canConfirm = canBuildStock && hasValidBin && !isBuilding;
-
-    const handleIncrement = () => setQuantity(q => Math.min(999, q + 1));
-    const handleDecrement = () => setQuantity(q => Math.max(1, q - 1));
-
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget && !isBuilding) {
             onClose();
         }
     };
 
+    if (!isOpen || !kit) return null;
+
+    const canBuildStock = kit.items.every((item: KitItem) => {
+        const currentStock = item.quantity ?? 0;
+        const required = item.quantity * quantity;
+        return currentStock >= required;
+    });
+
+    const hasValidBin = assemblyBinCode || selectedBinId >= 0;
+    const canConfirm = canBuildStock && hasValidBin && !isBuilding;
+
+    const handleIncrement = () => setQuantity(q => Math.min(999, q + 1));
+    const handleDecrement = () => setQuantity(q => Math.max(1, q - 1));
+
     return (
-        <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-            onClick={handleBackdropClick}
+        <div 
+            onClick={handleBackdropClick} // <--- AQUI AÑADIMOS EL EVENTO
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 cursor-pointer" // cursor-pointer opcional para feedback visual
         >
-            <div className="bg-white dark:bg-[#121212] w-full max-w-2xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Añadimos cursor-default al hijo para que el cursor no parezca clickeable dentro del modal */}
+            <div className="bg-white dark:bg-[#121212] w-full max-w-2xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh] cursor-default">
 
                 {/* HEADER */}
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-[#0A0A0A]">
@@ -103,8 +103,8 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
 
                     {/* 1. CANTIDAD */}
                     <div className="flex flex-col items-center justify-center p-6 bg-indigo-50/30 dark:bg-indigo-900/10 rounded-xl border border-dashed border-indigo-200 dark:border-indigo-800/50">
-                        <label className="font-medium text-gray-600 dark:text-gray-400 mb-4 uppercase tracking-wide text-xs">
-                            Quantity to Build
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4 uppercase tracking-wide text-xs">
+                            Q   uantity to Build
                         </label>
                         <div className="flex items-center gap-6">
                             <button onClick={handleDecrement} disabled={quantity <= 1 || isBuilding} className="w-12 h-12 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:text-indigo-600 transition-all active:scale-95 disabled:opacity-50">
@@ -232,5 +232,3 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
         </div>
     );
 };
-
-

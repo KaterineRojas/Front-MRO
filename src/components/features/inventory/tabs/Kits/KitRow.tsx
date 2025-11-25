@@ -84,28 +84,50 @@ export function KitRow({
 
   useEffect(() => {
     console.log(kit);
-    
-  
-  
   }, [])
-  
 
+
+  // for updating BIN code showed in the BIN info card and assembly modal
   useEffect(() => {
-    async function loadKitBinInfo() {
-      if (!isExpanded) return;
+    // REGLA 0: Si todo está cerrado, no hacemos nada.
+    if (!isExpanded && !isAssembleModalOpen) return;
 
+    // REGLA 2, 3 y 4 (Verificación de Caché):
+    // Si YA tenemos un código de BIN cargado (sea porque estaba expandido o porque se abrió el modal antes),
+    // NO hacemos la petición de ocupación nuevamente. Asumimos que el dato local es válido.
+    if (assemblyBinCode) {
+      setLoadingAvailableBins(false);
+      return;
+    }
+
+    // REGLA 1: Si no tenemos dato (assemblyBinCode es vacío), hacemos la carga.
+    async function loadKitData() {
       try {
         setLoadingAvailableBins(true);
+
+        // 1. Verificamos ocupación
         const occupation = await checkKitOccupation(kit.id);
 
         if (occupation && occupation.isOccupied) {
+          // Si tiene BIN, lo guardamos y terminamos.
+          // Al guardar 'assemblyBinCode', la proxima vez que este effect corra,
+          // entrara en el 'if(assemblyBinCode)' de arriba y no pedira nada.
           setAssemblyBinId(occupation.occupiedBin.id);
           setAssemblyBinCode(occupation.occupiedBin.binCode);
         } else {
-          const bins = await getAvailableBins(0, true);
-          setAvailableBins(bins);
           setAssemblyBinId(0);
           setAssemblyBinCode('');
+
+          // Regla 2
+          // Si el modal está abierto y NO hay bin asignado, necesitamos
+          // cargar la lista de opciones para el Dropdown.
+          if (isAssembleModalOpen) {
+            // Solo si la lista esta vacia
+            if (availableBins.length === 0) {
+              const bins = await getAvailableBins(0, true);
+              setAvailableBins(bins);
+            }
+          }
         }
       } catch (error) {
         console.error('Error loading kit bin info:', error);
@@ -114,8 +136,11 @@ export function KitRow({
       }
     }
 
-    loadKitBinInfo();
-  }, [isExpanded, kit.id]);
+    loadKitData();
+
+  }, [isExpanded, isAssembleModalOpen, kit.id, assemblyBinCode]);
+
+
 
   // useEffect(() => {
   //   async function loadBinsForModal() {
@@ -146,33 +171,6 @@ export function KitRow({
 
   //   loadBinsForModal();
   // }, [confirmAssemblyOpen, assemblyBinCode, assemblyBinId, availableBins.length]);
-
-
-
-  // para recargar la terjeta de info BIN
-
-
-
-  // useEffect(() => {
-  //   async function loadBinsForModal() {
-  //     if (!isAssembleModalOpen) return;
-
-  //     // Si ya tiene un BIN asignado fijo, no necesitamos cargar lista (o sí, por si quiere cambiarlo)
-  //     if (availableBins.length === 0) {
-  //       try {
-  //         setLoadingAvailableBins(true);
-  //         const bins = await getAvailableBins(0, true);
-  //         setAvailableBins(bins);
-  //       } catch (error) {
-  //         console.error('Error loading bins for modal:', error);
-  //       } finally {
-  //         setLoadingAvailableBins(false);
-  //       }
-  //     }
-  //   }
-
-  //   loadBinsForModal();
-  // }, [isAssembleModalOpen, availableBins.length]);
 
 
 
@@ -333,7 +331,7 @@ export function KitRow({
     } catch (error) {
       console.error('❌ Error deleting kit:', error);
       setDeleteStatus('error');
-      
+
       const message = error instanceof Error ? error.message : 'Unknown error occurred';
       setDeleteMessageModal(message);
     }
@@ -488,14 +486,12 @@ export function KitRow({
         isOpen={isAssembleModalOpen}
         onClose={() => setIsAssembleModalOpen(false)}
         kit={kit}
-        // Props nuevas requeridas por tu lógica de negocio
         availableBins={availableBins}
         loadingAvailableBins={loadingAvailableBins}
-        assemblyBinCode={assemblyBinCode} // Ojo: Pásale null si no hay BIN asignado
-        isBuilding={isBuilding} // Tu estado de carga al confirmar
+        assemblyBinCode={assemblyBinCode}
+        isBuilding={isBuilding} // estado de carga al confirmar
 
         onConfirm={(qty, binId) => {
-          // Aquí llamas a tu función de backend
           handleConfirmAssembly(qty, binId);
         }}
       />
