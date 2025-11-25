@@ -23,12 +23,14 @@ import {
   getCustomersByCompany,
   getProjectsByCustomer,
   getWorkOrdersByProject,
+  getDepartments,
   type Warehouse,
   type CatalogItem,
   type Project,
   type Company,
   type Customer,
-  type WorkOrder
+  type WorkOrder,
+  type Department
 } from '../services/sharedServices';
 
 interface LoanFormProps {
@@ -51,14 +53,6 @@ interface LoanFormData {
   workOrder: string;
 }
 
-const departments = [
-  'Ingeniería',
-  'Desarrollo',
-  'Diseño',
-  'Marketing',
-  'Ventas',
-  'Administración'
-];
 
 export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanFormProps) {
   const [formData, setFormData] = useState<LoanFormData>({
@@ -85,19 +79,24 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
   const [dropdownOpen, setDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  
+
+
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
+
   // Project Details states
   const [companies, setCompanies] = useState<Company[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
-  
+
   // Loading states
   const [loadingCompanies, setLoadingCompanies] = useState(false);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [loadingWorkOrders, setLoadingWorkOrders] = useState(false);
-  
+
   // Track if data has been loaded
   const [companiesLoaded, setCompaniesLoaded] = useState(false);
 
@@ -168,7 +167,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
           }
         };
         break;
-      
+
       case ErrorType.TIMEOUT_ERROR:
         modalConfig = {
           ...modalConfig,
@@ -184,7 +183,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
           }
         };
         break;
-      
+
       case ErrorType.BACKEND_ERROR:
         modalConfig = {
           ...modalConfig,
@@ -200,7 +199,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
           }
         };
         break;
-      
+
       case ErrorType.NOT_FOUND:
         modalConfig = {
           ...modalConfig,
@@ -211,7 +210,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
           onConfirm: () => hideModal() // Just close
         };
         break;
-      
+
       case ErrorType.UNAUTHORIZED:
         modalConfig = {
           ...modalConfig,
@@ -222,7 +221,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
           onConfirm: () => hideModal() // Just close
         };
         break;
-      
+
       default:
         if (error.retryable && retryFunction) {
           modalConfig.confirmText = 'Retry';
@@ -257,11 +256,28 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
     loadInitialData();
   }, []);
 
+  const loadDepartments = async () => {
+    // Si ya cargaron o estamos offline, salimos.
+    if (departmentsLoaded || offlineMode) return;
+
+    setLoadingDepartments(true);
+    try {
+      const data = await getDepartments();
+      setDepartments(data);
+      setDepartmentsLoaded(true); // Marcamos como cargado exitosamente
+    } catch (error) {
+      // Usar el manejador de errores global que ya tienes
+      handleApiError(error as AppError, 'departments', loadDepartments);
+    } finally {
+      setLoadingDepartments(false);
+    }
+  };
+
   // Load companies function
   const loadCompanies = async () => {
     // If already loaded or currently loading, don't reload
     if (companiesLoaded || loadingCompanies) return;
-    
+
     setLoadingCompanies(true);
     try {
       const companyData = await getCompanies();
@@ -273,6 +289,8 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
       handleApiError(error, 'companies', loadCompanies);
     }
   };
+
+
 
   // Load customers when company changes
   useEffect(() => {
@@ -289,10 +307,10 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
         const customerData = await getCustomersByCompany(formData.company);
         setCustomers(customerData);
         setLoadingCustomers(false);
-        
+
         // Reset dependent fields
-        setFormData(prev => ({ 
-          ...prev, 
+        setFormData(prev => ({
+          ...prev,
           customer: '',
           project: '',
           workOrder: ''
@@ -322,10 +340,10 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
         const projectData = await getProjectsByCustomer(formData.customer);
         setProjects(projectData);
         setLoadingProjects(false);
-        
+
         // Reset dependent fields
-        setFormData(prev => ({ 
-          ...prev, 
+        setFormData(prev => ({
+          ...prev,
           project: '',
           workOrder: ''
         }));
@@ -352,10 +370,10 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
         const workOrderData = await getWorkOrdersByProject(formData.project);
         setWorkOrders(workOrderData);
         setLoadingWorkOrders(false);
-        
+
         // Reset work order selection
-        setFormData(prev => ({ 
-          ...prev, 
+        setFormData(prev => ({
+          ...prev,
           workOrder: ''
         }));
       } catch (error: any) {
@@ -628,9 +646,8 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                                       <button
                                         key={mockItem.id}
                                         type="button"
-                                        className={`w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center gap-2 ${
-                                          item.itemId === mockItem.id ? 'bg-accent' : ''
-                                        }`}
+                                        className={`w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center gap-2 ${item.itemId === mockItem.id ? 'bg-accent' : ''
+                                          }`}
                                         onClick={() => selectItem(index, mockItem)}
                                       >
                                         <ImageWithFallback
@@ -714,19 +731,44 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                 <div>
-                  <Label htmlFor="department">Department</Label>
-                  <Select 
-                    value={formData.department} 
+                  <Label htmlFor="department">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Package className="h-4 w-4" />
+                      Department *
+                      {loadingDepartments && <span className="text-xs text-muted-foreground">(Loading...)</span>}
+                    </div>
+                  </Label>
+                  <Select
+                    value={formData.department}
                     onValueChange={(value: string) => setFormData(prev => ({ ...prev, department: value }))}
+                    disabled={loadingDepartments || offlineMode}
+                    // <-- ¡CLAVE! Llama a la API al abrir el selector si aún no se ha cargado.
+                    onOpenChange={(open: boolean) => {
+                      if (open && !departmentsLoaded && !offlineMode) {
+                        loadDepartments();
+                      }
+                    }}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger id="department">
+                      <SelectValue placeholder={
+                        offlineMode ? "Offline - Cannot load departments" :
+                          loadingDepartments ? "Loading departments..." :
+                            "Select a department"
+                      } />
                     </SelectTrigger>
                     <SelectContent>
+                      {/* Si no está cargado y no está cargando, muestra la opción para cargarlo */}
+                      {!departmentsLoaded && !loadingDepartments && (
+                        <SelectItem value="_loading" disabled>
+                          Click to load departments...
+                        </SelectItem>
+                      )}
+                      {/* Renderiza los datos de la API */}
                       {departments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
+                        <SelectItem key={dept.id} value={dept.id.toString()}>
+                          {dept.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -776,11 +818,11 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                       {loadingCompanies && <span className="text-xs text-muted-foreground">(Loading...)</span>}
                     </div>
                   </Label>
-                  <Select 
-                    value={formData.company} 
+                  <Select
+                    value={formData.company}
                     onValueChange={(value: string) => setFormData(prev => ({ ...prev, company: value }))}
                     disabled={loadingCompanies || offlineMode}
-                    onOpenChange={(open) => {
+                    onOpenChange={(open: boolean) => {
                       if (open && !companiesLoaded && !offlineMode) {
                         loadCompanies();
                       }
@@ -788,9 +830,9 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                   >
                     <SelectTrigger id="company">
                       <SelectValue placeholder={
-                        offlineMode ? "Offline - Cannot load companies" : 
-                        loadingCompanies ? "Loading companies..." :
-                        "Select a company"
+                        offlineMode ? "Offline - Cannot load companies" :
+                          loadingCompanies ? "Loading companies..." :
+                            "Select a company"
                       } />
                     </SelectTrigger>
                     <SelectContent>
@@ -823,9 +865,9 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                   >
                     <SelectTrigger id="customer">
                       <SelectValue placeholder={
-                        offlineMode ? "Offline" : 
-                        formData.company ? "Select a customer" : 
-                        "Select company first"
+                        offlineMode ? "Offline" :
+                          formData.company ? "Select a customer" :
+                            "Select company first"
                       } />
                     </SelectTrigger>
                     <SelectContent>
@@ -855,9 +897,9 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                   >
                     <SelectTrigger id="project">
                       <SelectValue placeholder={
-                        offlineMode ? "Offline" : 
-                        formData.customer ? "Select a project" : 
-                        "Select customer first"
+                        offlineMode ? "Offline" :
+                          formData.customer ? "Select a project" :
+                            "Select customer first"
                       } />
                     </SelectTrigger>
                     <SelectContent>
@@ -885,9 +927,9 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                   >
                     <SelectTrigger id="workOrder">
                       <SelectValue placeholder={
-                        offlineMode ? "Offline" : 
-                        formData.project ? "Select work order" : 
-                        "Select project first"
+                        offlineMode ? "Offline" :
+                          formData.project ? "Select work order" :
+                            "Select project first"
                       } />
                     </SelectTrigger>
                     <SelectContent>
