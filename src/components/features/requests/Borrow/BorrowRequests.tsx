@@ -1,7 +1,6 @@
 /**
- * BorrowRequests.tsx
- * Componente de presentación para Borrow Requests
- * Siguiendo principios SOLID: UI separada de lógica
+ * BorrowRequests.tsx - CORRECTED VERSION
+ * Fixed Department and Notes columns alignment
  */
 
 import React from 'react';
@@ -213,7 +212,11 @@ export function BorrowRequests() {
                       Requested: {formatDate(request.createdAt || '')}
                     </p>
                     <p>Project: {request.project}</p>
+                    <p>Department: {request.department || '-'}</p>
                     <p>Return Date: {formatDate(request.returnDate)}</p>
+                    {request.notes && (
+                      <p className="text-xs italic">Notes: {request.notes}</p>
+                    )}
                   </div>
 
                   {expandedBorrowRows.has(request.requestId) && (
@@ -247,51 +250,60 @@ export function BorrowRequests() {
           ))}
         </div>
       ) : (
-        // Desktop Table View
+        // Desktop Table View - FIXED COLUMNS
         <Card>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[50px]"></TableHead>
-                    <TableHead>Request ID</TableHead>
-                    <TableHead>Warehouse</TableHead>
-                    <TableHead>Project</TableHead>
-                    <TableHead>Return Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-[50px] text-center"></TableHead>
+                    <TableHead className="text-center">Request ID</TableHead>
+                    <TableHead className="text-center">Warehouse</TableHead>
+                    <TableHead className="text-center">Project</TableHead>
+                    <TableHead className="text-center">Return Date</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-center">Department</TableHead>
+                    <TableHead className="text-center">Notes</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredBorrowRequests.map((request) => (
                     <React.Fragment key={request.requestId}>
                       <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => toggleBorrowRow(request.requestId)}>
-                        <TableCell>
+                        <TableCell className="text-center">
                           {expandedBorrowRows.has(request.requestId) ? (
-                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            <ChevronDown className="h-4 w-4 text-muted-foreground mx-auto" />
                           ) : (
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            <ChevronRight className="h-4 w-4 text-muted-foreground mx-auto" />
                           )}
                         </TableCell>
-                        <TableCell className="font-mono text-sm">#{request.requestId}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{request.warehouseName}</Badge>
+                        <TableCell className="font-mono text-sm text-center">#{request.requestId}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="mx-auto">{request.warehouseName}</Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-center">
                           <p className="text-sm">{request.project}</p>
-                          <p className="text-xs text-muted-foreground">{request.department}</p>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="text-sm text-muted-foreground text-center">
                           {formatDate(request.returnDate)}
                         </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(request.status)} variant="secondary">
+                        <TableCell className="text-center">
+                          <Badge className={`${getStatusColor(request.status)} mx-auto`} variant="secondary">
                             {getStatusText(request.status)}
                           </Badge>
                         </TableCell>
+                        <TableCell className="text-center">
+                          <p className="text-sm">{request.department || '-'}</p>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <p className="text-sm text-muted-foreground truncate max-w-[200px] mx-auto" title={request.notes}>
+                            {request.notes || '-'}
+                          </p>
+                        </TableCell>
                         <TableCell>
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-center gap-2">
                             {canReturnAll(request) && (
                               <Button
                                 size="sm"
@@ -321,41 +333,41 @@ export function BorrowRequests() {
                       </TableRow>
                       {expandedBorrowRows.has(request.requestId) && (
                         <TableRow>
-                          <TableCell colSpan={7} className="bg-muted/20 p-0">
+                          <TableCell colSpan={9} className="bg-muted/20 p-0">
                             <div className="p-4">
                               <Table>
                                 <TableHeader>
                                   <TableRow>
-                                    <TableHead className="w-[80px]">Image</TableHead>
-                                    <TableHead className="hidden md:table-cell">SKU</TableHead>
-                                    <TableHead>Name & Description</TableHead>
-                                    <TableHead className="text-right">Quantity</TableHead>
+                                    <TableHead className="w-[80px] text-center">Image</TableHead>
+                                    <TableHead className="hidden md:table-cell text-center">SKU</TableHead>
+                                    <TableHead className="text-center">Name & Description</TableHead>
+                                    <TableHead className="text-center">Quantity</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                   {request.items.map((item, index) => (
                                     <TableRow key={index}>
-                                      <TableCell>
+                                      <TableCell className="text-center">
                                         {item.imageUrl ? (
                                           <ImageWithFallback
                                             src={item.imageUrl}
                                             alt={item.name}
-                                            className="w-12 h-12 object-cover rounded"
+                                            className="w-12 h-12 object-cover rounded mx-auto"
                                           />
                                         ) : (
-                                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center mx-auto">
                                             <Package className="h-6 w-6 text-muted-foreground" />
                                           </div>
                                         )}
                                       </TableCell>
-                                      <TableCell className="font-mono text-sm hidden md:table-cell">{item.sku || '-'}</TableCell>
-                                      <TableCell>
+                                      <TableCell className="font-mono text-sm hidden md:table-cell text-center">{item.sku || '-'}</TableCell>
+                                      <TableCell className="text-center">
                                         <p className="text-sm">{item.name}</p>
                                         {item.description && (
                                           <p className="text-xs text-muted-foreground">{item.description}</p>
                                         )}
                                       </TableCell>
-                                      <TableCell className="text-right text-sm">x{item.quantity}</TableCell>
+                                      <TableCell className="text-center text-sm">x{item.quantity}</TableCell>
                                     </TableRow>
                                   ))}
                                 </TableBody>

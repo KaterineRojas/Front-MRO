@@ -6,7 +6,7 @@ import { Label } from '../../../ui/label';
 import { Textarea } from '../../../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { Badge } from '../../../ui/badge';
-import { ArrowLeft, Plus, Minus, X, Calendar, Package, Building, User, FolderOpen, Hash, WifiOff, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, X, Calendar, Package, Building, User, FolderOpen, Hash, WifiOff } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
 import type { CartItem } from '../../enginner/types';
@@ -104,7 +104,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
   const { modalState, showConfirm, hideModal, setModalOpen } = useConfirmModal();
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
 
-  // Connection listener
+  // Connection listener (Omitido por concisión, es igual al original)
   useEffect(() => {
     const handleOnline = () => {
       setOfflineMode(false);
@@ -131,7 +131,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
     };
   }, []);
 
-  // Error handler helper
+  // Error handler helper (Omitido por concisión, es igual al original)
   const handleApiError = (error: AppError, entityName: string, retryFunction?: () => void) => {
     let modalConfig: {
       title: string;
@@ -245,6 +245,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
         const warehouseData = await getWarehouses();
         setWarehouses(warehouseData);
         if (warehouseData.length > 0 && !formData.warehouseId) {
+          // Asigna el primer warehouse por defecto si no hay uno seleccionado
           setFormData(prev => ({ ...prev, warehouseId: warehouseData[0].id }));
         }
       } catch (error: any) {
@@ -256,6 +257,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
     loadInitialData();
   }, []);
 
+  // Función de carga del Department (Carga Perezosa)
   const loadDepartments = async () => {
     // Si ya cargaron o estamos offline, salimos.
     if (departmentsLoaded || offlineMode) return;
@@ -266,14 +268,13 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
       setDepartments(data);
       setDepartmentsLoaded(true); // Marcamos como cargado exitosamente
     } catch (error) {
-      // Usar el manejador de errores global que ya tienes
       handleApiError(error as AppError, 'departments', loadDepartments);
     } finally {
       setLoadingDepartments(false);
     }
   };
 
-  // Load companies function
+  // Load companies function (Carga Perezosa)
   const loadCompanies = async () => {
     // If already loaded or currently loading, don't reload
     if (companiesLoaded || loadingCompanies) return;
@@ -291,8 +292,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
   };
 
 
-
-  // Load customers when company changes
+  // Load customers when company changes (Carga en Cascada)
   useEffect(() => {
     if (!formData.company) {
       setCustomers([]);
@@ -326,7 +326,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
     loadCustomers();
   }, [formData.company]);
 
-  // Load projects when customer changes
+  // Load projects when customer changes (Carga en Cascada)
   useEffect(() => {
     if (!formData.customer) {
       setProjects([]);
@@ -357,7 +357,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
     loadProjects();
   }, [formData.customer]);
 
-  // Load work orders when project changes
+  // Load work orders when project changes (Carga en Cascada)
   useEffect(() => {
     if (!formData.project) {
       setWorkOrders([]);
@@ -394,7 +394,8 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
           setCatalogItems(items);
           // Initialize filtered items for all indexes
           const newFilteredItems: { [key: number]: CatalogItem[] } = {};
-          formData.items.forEach((_, index) => {
+          // Usamos el tamaño actual de formData.items, que puede ser 0 o 1 si se reseteó
+          formData.items.forEach((_, index) => { 
             newFilteredItems[index] = items;
           });
           setFilteredItems(newFilteredItems);
@@ -406,7 +407,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
     loadItems();
   }, [formData.warehouseId]);
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside (Omitido por concisión, es igual al original)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       Object.keys(dropdownOpen).forEach(key => {
@@ -517,11 +518,15 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
     if (!formData.workOrder) {
       toast.error('Please select a work order');
       return;
-    }
-
+        }
+      
     // Validate stock for all items
     for (const item of formData.items) {
-      if (item.itemId && !validateStock(item.itemId, item.quantity)) {
+      if (!item.itemId) {
+        toast.error('Please select all items before submitting.');
+        return;
+      }
+      if (!validateStock(item.itemId, item.quantity)) {
         toast.error(`Insufficient stock for ${item.itemName}`);
         return;
       }
@@ -581,14 +586,30 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                 </Label>
                 <Select
                   value={formData.warehouseId}
-                  onValueChange={(value: string) => {
-                    setFormData(prev => ({ ...prev, warehouseId: value }));
-                    setFormData(prev => ({
-                      ...prev,
-                      items: prev.items.map((item, index) =>
-                        index < cartItemsCount ? item : { itemId: '', itemName: '', quantity: 1 }
-                      )
-                    }));
+                  onValueChange={(newWarehouseId: string) => {
+                    
+                    // LÓGICA DE RESETEO DE ITEMS AL CAMBIAR DE WAREHOUSE
+                    if (newWarehouseId !== formData.warehouseId) {
+                      
+                      setFormData(prev => ({
+                        ...prev,
+                        warehouseId: newWarehouseId,
+                        // Vaciar la lista de ítems y dejar solo un ítem vacío para empezar de nuevo
+                        items: [{ itemId: '', itemName: '', quantity: 1 }]
+                      }));
+
+                      // Resetear los estados de búsqueda de ítems
+                      setItemSearches({});
+                      setFilteredItems({});
+                      
+                      // Notificación al usuario si había ítems antes
+                      if (formData.items.length > 0) {
+                        toast.warning('The list of items was reset because you changed the warehouse.');
+                      }
+                    } else {
+                        // Solo actualiza el ID si es necesario (aunque el Select ya lo maneja)
+                        setFormData(prev => ({ ...prev, warehouseId: newWarehouseId }));
+                    }
                   }}
                 >
                   <SelectTrigger>
@@ -718,10 +739,13 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                 );
               })}
 
-              <Button type="button" variant="outline" onClick={addNewItem}>
+              <Button type="button" variant="outline" onClick={addNewItem} disabled={!formData.warehouseId}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Item
               </Button>
+              {!formData.warehouseId && (
+                <p className="text-sm text-muted-foreground mt-2">Select a Warehouse to add items.</p>
+              )}
             </CardContent>
           </Card>
 
@@ -744,7 +768,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                     value={formData.department}
                     onValueChange={(value: string) => setFormData(prev => ({ ...prev, department: value }))}
                     disabled={loadingDepartments || offlineMode}
-                    // <-- ¡CLAVE! Llama a la API al abrir el selector si aún no se ha cargado.
+                    // Carga Perezosa
                     onOpenChange={(open: boolean) => {
                       if (open && !departmentsLoaded && !offlineMode) {
                         loadDepartments();
@@ -759,13 +783,11 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                       } />
                     </SelectTrigger>
                     <SelectContent>
-                      {/* Si no está cargado y no está cargando, muestra la opción para cargarlo */}
                       {!departmentsLoaded && !loadingDepartments && (
                         <SelectItem value="_loading" disabled>
                           Click to load departments...
                         </SelectItem>
                       )}
-                      {/* Renderiza los datos de la API */}
                       {departments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id.toString()}>
                           {dept.name}
@@ -949,7 +971,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
             <Button type="button" variant="outline" onClick={onBack}>
               Cancel
             </Button>
-            <Button type="submit" className="flex-1" disabled={offlineMode}>
+            <Button type="submit" className="flex-1" disabled={offlineMode || formData.items.some(item => !item.itemId)}>
               {offlineMode ? (
                 <>
                   <WifiOff className="mr-2 h-4 w-4" />
