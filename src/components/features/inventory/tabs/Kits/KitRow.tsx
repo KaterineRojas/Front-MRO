@@ -83,7 +83,9 @@ export function KitRow({
 
 
   useEffect(() => {
-    console.log(kit);
+    // console.log(kit);
+    // console.log(articles);
+    
   }, [])
 
 
@@ -256,18 +258,6 @@ export function KitRow({
     }
   };
 
-  const handleDeleteKit = async () => {
-    try {
-      await deleteKitService(kit.id);
-      alert(`✓ Kit "${kit.name}" deleted successfully`);
-      onRefreshKits();
-    } catch (error) {
-      console.error('❌ Error deleting kit:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`Failed to delete kit\n\nReason: ${errorMessage}`);
-    }
-  };
-
   const handleExpandAndFocusAssembly = () => {
     if (!isExpanded) {
       onToggleExpand(kit.id);
@@ -309,7 +299,6 @@ export function KitRow({
     }
   };
 
-  // Ejemplo de lógica en tu tabla
   const getAvailableBadge = (required: number, available: number) => {
     if (required >= available) return <Badge variant="critical">{available}</Badge>;
     if (required < available) return <Badge variant="success">{available}</Badge>;
@@ -355,7 +344,6 @@ export function KitRow({
           <span className="font-mono text-sm">{kit.sku}</span>
         </TableCell>
 
-
         <TableCell>
           <div className="flex items-center space-x-3">
             <div>
@@ -378,8 +366,6 @@ export function KitRow({
         <TableCell className="text-center">
           {getAvailableBadge(kit.items.length, kit.quantityAvailable)}
         </TableCell>
-
-
 
         <TableCell className="text-center py-3">
           <div className="flex justify-center items-center gap-2">
@@ -419,22 +405,11 @@ export function KitRow({
 
           </div>
         </TableCell>
-
-
       </TableRow>
-
-
-
-
-
-
 
 
       {/* SECCIÓN EXPANDIDA */}
       {isExpanded && (
-
-
-
         <TableRow>
           <TableCell colSpan={8} className="bg-muted/30 p-0">
             <div className="p-6 bg-gray-50/50 dark:bg-black/20 border-t border-gray-100 dark:border-gray-800">
@@ -453,7 +428,6 @@ export function KitRow({
                   <KitItemsTable
                     items={kit.items}
                     articles={articles}
-                  // assemblyQuantity={1} 
                   />
                 </div>
 
@@ -469,17 +443,10 @@ export function KitRow({
 
               </div>
             </div>
-
-
-
-
-
           </TableCell>
         </TableRow>
       )
       }
-
-
 
       {/* modal de assembly */}
       <AssembleKitModal

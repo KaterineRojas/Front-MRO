@@ -36,19 +36,6 @@ export const KitItemsTable: React.FC<KitItemsTableProps> = ({
                             <th className="px-4 py-3">SKU</th>
                             <th className="px-4 py-3">Name & Description</th>
                             <th className="px-4 py-3 text-center">Qty / Kit</th>
-
-                            <th className={`px-4 py-3 text-center ${assemblyQuantity > 1 ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}>
-                                <div className="flex flex-col items-center">
-                                    <span className={assemblyQuantity > 1 ? 'text-indigo-700 dark:text-indigo-300 font-semibold' : ''}>
-                                        Total Qty
-                                    </span>
-                                    {assemblyQuantity > 1 && (
-                                        <span className="text-[10px] normal-case text-indigo-500/80 dark:text-indigo-400/60 font-medium">
-                                            (for {assemblyQuantity} kits)
-                                        </span>
-                                    )}
-                                </div>
-                            </th>
                         </tr>
                     </thead>
 
@@ -57,7 +44,6 @@ export const KitItemsTable: React.FC<KitItemsTableProps> = ({
                         {items.map((item, index) => {
                             const article = articles.find((a) => a.sku === item.articleSku);
                             const imageSrc = article?.imageUrl || item.imageUrl;
-                            const totalQty = item.quantity * assemblyQuantity;
 
                             return (
                                 <tr key={`${item.articleSku}-${index}`}>
@@ -99,19 +85,6 @@ export const KitItemsTable: React.FC<KitItemsTableProps> = ({
                                     <td className="px-4 py-3 text-center">
                                         <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                                             x{item.quantity}
-                                        </span>
-                                    </td>
-
-                                    {/* 5. QTY TOTAL */}
-                                    <td className={`px-4 py-3 text-center ${assemblyQuantity > 1 ? 'bg-indigo-50/30 dark:bg-indigo-900/10' : ''}`}>
-                                        <span className={`
-                                            inline-flex items-center justify-center px-3 py-1 rounded-md text-xs font-bold shadow-sm
-                                            ${assemblyQuantity > 1
-                                                ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-                                                : 'bg-gray-100 text-gray-500 dark:bg-gray-900 dark:text-white'
-                                            }
-                                        `}>
-                                            {totalQty}
                                         </span>
                                     </td>
                                 </tr>
