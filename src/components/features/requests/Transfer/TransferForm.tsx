@@ -12,7 +12,7 @@ import {
   Package, X, Camera, Upload, ArrowLeftRight, Search, AlertCircle, ArrowLeft
 } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
-import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../../ui2/avatar';
 import { toast } from 'sonner';
 import { 
   getAvailableUsers, 

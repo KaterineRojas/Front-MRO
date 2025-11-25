@@ -17,6 +17,13 @@ export interface Status {
   color?: string;
 }
 
+export interface Department {
+  id: string | number;
+  name: string;
+  code?: string;
+  description?: string;
+}
+
 export interface CatalogItem {
   id: string;
   name: string;
@@ -169,13 +176,13 @@ const mockCatalogItems: CatalogItem[] = [
     warehouseName: 'Best'
   },
   {
-    id: 'item-6',
-    name: 'Webcam HD',
+    id: 'item-6', //
+    name: 'Webcam HD',//
     sku: 'WEB-001',
-    description: 'Full HD webcam',
-    image: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400',
-    category: 'Peripherals',
-    availableQuantity: 20,
+    description: 'Full HD webcam',//
+    image: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400',//
+    category: 'Peripherals',//
+    availableQuantity: 20,//
     totalQuantity: 25,
     warehouseId: 'wh-1',
     warehouseName: 'Amax'
@@ -207,16 +214,91 @@ const mockCatalogItems: CatalogItem[] = [
 ];
 
 // ============================================
+
+async function fetchDataWithRetry<T>(
+  endpoint: string,
+  dataMapper: (data: any) => T,
+): Promise<T> {
+  const apiFunction = async () => {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      // Si hay un error HTTP, lanzamos un AppError clasificado
+      throw await classifyFetchError(response);
+    }
+
+    const data = await response.json();
+
+    // Mapeamos los datos con la función proporcionada
+    return dataMapper(data);
+  };
+
+  try {
+    // Intentamos la llamada con retries
+    return await withRetry(apiFunction);
+  } catch (error) {
+    // Si withRetry falla (después de todos los reintentos), manejamos y lanzamos el AppError final.
+    const appError = handleError(error);
+    // Puedes dejar el console.error aquí o quitarlo si lo manejas completamente en la UI
+    console.error(`Final Error fetching from ${endpoint}:`, appError);
+    throw appError;
+  }
+}
+
+
+
+
+
+// ============================================
 // API FUNCTIONS - Shared Resources
 // ============================================
+
+
 
 /**
  * Get all warehouses
  */
 export async function getWarehouses(): Promise<Warehouse[]> {
-  await delay(200);
-  return [...mockWarehouses];
+  const endpoint = `/Warehouse`;
+  return fetchDataWithRetry(endpoint, (data: any) => {
+    // 1. Verificar si 'data' es un array. Si no, devuelve un array vacío
+    if (!Array.isArray(data)) {
+      console.error("API /Warehouse did not return an array:", data);
+      return []; // Retorna un array vacío que sí coincide con Warehouse[]
+    }
+
+    // 2. Mapear y filtrar en un solo paso (o en pasos que manejen el tipo)
+    // Utilizamos una variable intermedia para el resultado filtrado.
+    const mappedWarehouses: Warehouse[] = data
+      .map((wh: any) => {
+        // Paso 2a: Mapear el ID
+        const id = wh.idWh ? wh.idWh.toString() : '';
+
+        // Paso 2b: Si no hay un ID válido, retornamos un valor que será descartado
+        // En lugar de devolver 'null', podemos devolver 'undefined' o simplemente 
+        // dejar que el filtro se encargue de los objetos sin ID.
+        if (!id) {
+          console.warn("Warehouse object missing idWh:", wh);
+          return undefined; // Usamos undefined para el filtro
+        }
+
+        // Paso 2c: Retornar el objeto Warehouse válido
+        return {
+          id: id,
+          name: wh.name || 'Unnamed Warehouse',
+          code: wh.code || 'N/A',
+          location: wh.location || undefined,
+        } as Warehouse; // Aseguramos que el objeto retornado es Warehouse
+      })
+      // 3. Filtrar cualquier elemento que haya devuelto 'undefined' (o 'null')
+      // La clave es el type guard 'Boolean' para eliminar falsy values (undefined, null, etc.)
+      .filter((wh): wh is Warehouse => Boolean(wh));
+
+    return mappedWarehouses;
+  });
 }
+
 
 /**
  * Get warehouse by ID
@@ -261,11 +343,51 @@ export async function getCatalogItems(): Promise<CatalogItem[]> {
 }
 
 /**
+ * Get all departments from real API: /api/Department
+ */
+export async function getDepartments(): Promise<Department[]> {
+  const endpoint = `/Department`;
+  return fetchDataWithRetry(endpoint, (data: any) => {
+    return data.map((dept: any) => ({
+      id: dept.id.toString(),
+      name: dept.name,
+      code: dept.code || undefined,
+      description: dept.description || undefined
+    }));
+  });
+}
+
+
+/**
+ * Get catalog items by warehouse
+ */
+/**
  * Get catalog items by warehouse
  */
 export async function getCatalogItemsByWarehouse(warehouseId: string): Promise<CatalogItem[]> {
-  await delay(300);
-  return mockCatalogItems.filter(item => item.warehouseId === warehouseId);
+  const endpoint = `/Items/${warehouseId}`;
+  
+  return fetchDataWithRetry(endpoint, (data: any) => {
+    // Verificar si data es un array
+    if (!Array.isArray(data)) {
+      console.error("API /Items did not return an array:", data);
+      return [];
+    }
+
+    // Mapeo correcto según tu API real
+    return data.map((item: any) => ({
+      id: item.itemId ? item.itemId.toString() : '0',             
+      name: item.itemName || 'Unknown Item',                       
+      sku: item.sku || `SKU-${item.itemId || '000'}`,             
+      description: item.description || '',
+      image: item.imageUrl || '',  
+      category: item.category || 'General',
+      availableQuantity: item.quantityAvailable || 0,             
+      totalQuantity: item.quantityAvailable || 0,                  
+      warehouseId: warehouseId.toString(),
+      warehouseName: `Warehouse ${warehouseId}`                   
+    }));
+  });
 }
 
 /**
@@ -299,27 +421,16 @@ export async function searchCatalogItems(query: string): Promise<CatalogItem[]> 
  * Get all companies from real API
  */
 export async function getCompanies(): Promise<Company[]> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/Companies`);
-   
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-
-    // Normalizar los IDs a string para consistencia con el resto del código
+  return fetchDataWithRetry(`/Companies`, (data: any) => {
+    // Normalizar los IDs y establecer defaults
     return data.map((company: any) => ({
       ...company,
-      id: company.id.toString(), // Convertir ID numérico a string
+      id: company.id.toString(),
       active: company.active !== undefined ? company.active : true,
       code: company.code || '',
       description: company.description || ''
     }));
-  } catch (error) {
-    console.error('Error fetching companies from API, falling back to mock:', error);
-    // Si falla la API real, usar datos MOCK como fallback
-    return getCompanies_MOCK();
-  }
+  });
 }
 
 
@@ -327,266 +438,52 @@ export async function getCompanies(): Promise<Company[]> {
  * Get customers by company ID
  */
 export async function getCustomersByCompany(companyId: string | number): Promise<Customer[]> {
-    const apiFunction = async () => {
-        const endpoint = `${API_BASE_URL}/Companies/${companyId}/customers`;
-        const response = await fetch(endpoint);
+  const endpoint = `/Companies/${companyId}/customers`;
 
-        if (!response.ok) {
-            // Si hay un error HTTP (4xx o 5xx), lanzamos un AppError clasificado
-            throw await classifyFetchError(response);
-        }
-        const data: Array<{ id: number; name: string; code?: string }> = await response.json();
-        
-        // Mapeo de datos...
-        return data.map((customerApi) => ({
-            id: customerApi.id.toString(),
-            companyId: companyId.toString(),
-            name: customerApi.name,
-            code: customerApi.code || undefined,
-        }));
-    };
-
-    try {
-        return await withRetry(apiFunction);
-    } catch (error) {
-        // Si withRetry falla
-        const appError = handleError(error);
-        throw appError; 
-    }
+  return fetchDataWithRetry(endpoint, (data: Array<{ id: number; name: string; code?: string }>) => {
+    return data.map((customerApi) => ({
+      id: customerApi.id.toString(),
+      companyId: companyId.toString(),
+      name: customerApi.name,
+      code: customerApi.code || undefined,
+    }));
+  });
 }
 
 /**
  * Get projects by customer ID
  */
 export async function getProjectsByCustomer(customerId: string | number): Promise<Project[]> {
-  const endpoint = `${API_BASE_URL}/Customers/${customerId}/projects`;
- 
-  try {
-    const response = await fetch(endpoint);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data: Array<{ id: number; name: string; code?: string; description?: string }> = await response.json();
+  const endpoint = `/Customers/${customerId}/projects`;
+
+  return fetchDataWithRetry(endpoint, (data: Array<{ id: number; name: string; code?: string; description?: string }>) => {
     return data.map((projectApi) => ({
       id: projectApi.id.toString(),
-      customerId: customerId.toString(), 
+      customerId: customerId.toString(),
       name: projectApi.name,
       code: projectApi.code ? projectApi.code.toString() : projectApi.id.toString(),
       description: projectApi.description || undefined,
     }));
-  } catch (error) {
-    console.error(`Error fetching projects from API for Customer ${customerId}, falling back to mock:`, error);
-    return getProjectsByCustomer_MOCK(customerId.toString());
-  }
+  });
 }
 
 /**
  * Get work orders by project ID
  */
+
 export async function getWorkOrdersByProject(projectId: string | number): Promise<WorkOrder[]> {
-  const endpoint = `${API_BASE_URL}/Projects/${projectId}/workorders`;
- 
-  try {
-    const response = await fetch(endpoint);   
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data: Array<{ id: number; name: string }> = await response.json(); 
+  const endpoint = `/Projects/${projectId}/workorders`;
+
+  return fetchDataWithRetry(endpoint, (data: Array<{ id: number; name: string }>) => {
     return data.map((woApi) => ({
       id: woApi.id.toString(),
-      projectId: projectId.toString(), 
-      orderNumber: woApi.id.toString(), 
-      description: woApi.name,         
-      status: 'pending', 
-      priority: 'medium',
+      projectId: projectId.toString(),
+      orderNumber: woApi.id.toString(),
+      description: woApi.name,
+      // Manteniendo las aserciones de tipo para la seguridad
+      status: 'pending' as const,
+      priority: 'medium' as const,
     }));
-  } catch (error) {
-    console.error(`Error fetching work orders from API for Project ${projectId}, falling back to mock:`, error);
-    return getWorkOrdersByProject_MOCK(projectId.toString());
-  }
+  });
 }
 
-// ============================================
-// MOCK FUNCTIONS FOR TESTING
-// ============================================
-
-export async function getCompanies_MOCK(): Promise<Company[]> {
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  return [
-    {
-      id: '1',
-      name: 'Tech Solutions Inc',
-      code: 'TSI',
-      description: 'Technology services company',
-      active: true,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    },
-    {
-      id: '2',
-      name: 'Global Manufacturing Co',
-      code: 'GMC',
-      description: 'Manufacturing and distribution',
-      active: true,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    },
-    {
-      id: '3',
-      name: 'Innovation Labs',
-      code: 'IL',
-      description: 'Research and development',
-      active: true,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    }
-  ];
-}
-
-
-
-export async function getProjectsByCustomer_MOCK(customerId: string): Promise<Project[]> {
-  await new Promise(resolve => setTimeout(resolve, 300));
-
-  const projectsByCustomer: Record<string, Project[]> = {
-    'cust-1': [
-      {
-        id: 'proj-1',
-        customerId: 'cust-1',
-        name: 'Website Redesign',
-        code: 'WEB-2024-001',
-        description: 'Complete redesign of corporate website',
-        status: 'active',
-        budget: 50000,
-        startDate: '2024-01-01',
-        endDate: '2024-06-30',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z'
-      },
-      {
-        id: 'proj-2',
-        customerId: 'cust-1',
-        name: 'Mobile App Development',
-        code: 'MOB-2024-002',
-        description: 'Native iOS and Android apps',
-        status: 'active',
-        budget: 120000,
-        startDate: '2024-02-15',
-        createdAt: '2024-02-15T00:00:00Z',
-        updatedAt: '2024-02-15T00:00:00Z'
-      }
-    ],
-    'cust-2': [
-      {
-        id: 'proj-3',
-        customerId: 'cust-2',
-        name: 'Cloud Migration',
-        code: 'CLO-2024-001',
-        description: 'AWS cloud infrastructure setup',
-        status: 'pending',
-        budget: 80000,
-        createdAt: '2024-03-01T00:00:00Z',
-        updatedAt: '2024-03-01T00:00:00Z'
-      }
-    ],
-    'cust-3': [
-      {
-        id: 'proj-4',
-        customerId: 'cust-3',
-        name: 'Factory Automation',
-        code: 'FAC-2024-001',
-        description: 'Automated production line',
-        status: 'active',
-        budget: 250000,
-        createdAt: '2024-01-15T00:00:00Z',
-        updatedAt: '2024-01-15T00:00:00Z'
-      }
-    ]
-  };
-
-  return projectsByCustomer[customerId] || [];
-}
-
-export async function getWorkOrdersByProject_MOCK(projectId: string): Promise<WorkOrder[]> {
-  await new Promise(resolve => setTimeout(resolve, 300));
-
-  const workOrdersByProject: Record<string, WorkOrder[]> = {
-    'proj-1': [
-      {
-        id: 'wo-1',
-        projectId: 'proj-1',
-        orderNumber: 'WO-2024-0001',
-        description: 'Initial design mockups',
-        status: 'completed',
-        priority: 'high',
-        assignedDate: '2024-01-05',
-        dueDate: '2024-01-20',
-        completedDate: '2024-01-18',
-        estimatedHours: 40,
-        actualHours: 38,
-        createdAt: '2024-01-05T00:00:00Z',
-        updatedAt: '2024-01-18T00:00:00Z'
-      },
-      {
-        id: 'wo-2',
-        projectId: 'proj-1',
-        orderNumber: 'WO-2024-0002',
-        description: 'Frontend development',
-        status: 'in_progress',
-        priority: 'high',
-        assignedDate: '2024-01-21',
-        dueDate: '2024-03-15',
-        estimatedHours: 200,
-        actualHours: 120,
-        createdAt: '2024-01-21T00:00:00Z',
-        updatedAt: '2024-03-01T00:00:00Z'
-      }
-    ],
-    'proj-2': [
-      {
-        id: 'wo-4',
-        projectId: 'proj-2',
-        orderNumber: 'WO-2024-0004',
-        description: 'iOS app development',
-        status: 'pending',
-        priority: 'high',
-        dueDate: '2024-06-30',
-        estimatedHours: 320,
-        createdAt: '2024-02-15T00:00:00Z',
-        updatedAt: '2024-02-15T00:00:00Z'
-      }
-    ],
-    'proj-3': [
-      {
-        id: 'wo-6',
-        projectId: 'proj-3',
-        orderNumber: 'WO-2024-0006',
-        description: 'Infrastructure assessment',
-        status: 'pending',
-        priority: 'medium',
-        estimatedHours: 80,
-        createdAt: '2024-03-01T00:00:00Z',
-        updatedAt: '2024-03-01T00:00:00Z'
-      }
-    ],
-    'proj-4': [
-      {
-        id: 'wo-7',
-        projectId: 'proj-4',
-        orderNumber: 'WO-2024-0007',
-        description: 'Equipment procurement',
-        status: 'in_progress',
-        priority: 'urgent',
-        assignedDate: '2024-01-20',
-        dueDate: '2024-02-28',
-        estimatedHours: 40,
-        actualHours: 35,
-        createdAt: '2024-01-20T00:00:00Z',
-        updatedAt: '2024-02-15T00:00:00Z'
-      }
-    ]
-  };
-
-  return workOrdersByProject[projectId] || [];
-}

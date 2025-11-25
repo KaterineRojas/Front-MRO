@@ -11,7 +11,7 @@ import {
   Package, ArrowLeftRight, ChevronDown, ChevronRight, Trash2, CheckCircle, X
 } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
-import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../../ui2/avatar';
 import { toast } from 'sonner';
 import { getProjects, type Project } from '../../enginner/services';
 import { useTransfers } from './useTransfers';

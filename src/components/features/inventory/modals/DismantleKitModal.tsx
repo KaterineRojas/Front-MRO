@@ -6,11 +6,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '../../ui/dialog';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Textarea } from '../../ui/textarea';
+} from '../../ui2/dialog';
+import { Button } from '../../ui2/button';
+import { Input } from '../../ui2/input';
+import { Label } from '../../ui2/label';
+import { Textarea } from '../../ui2/textarea';
 import { Loader2, PackageMinus } from 'lucide-react';
 
 interface DismantleKitModalProps {
