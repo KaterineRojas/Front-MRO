@@ -58,6 +58,9 @@ export function BinHierarchyView({
           onRackClick={onRackClick}
           onEditRack={onEditRack}
           onDeleteRack={onDeleteRack}
+          showBins={true}
+          onEditBin={onEditBin}
+          onDeleteBin={onDeleteBin}
         />
       ) : null;
 

@@ -6,6 +6,7 @@ import { BinModal } from './modals/BinModal';
 import { ZoneModal } from './modals/ZoneModal';
 import { RackModal } from './modals/RackModal';
 import { LevelModal } from './modals/LevelModal';
+import { QuickBinModal } from './modals/QuickBinModal';
 import { BinHierarchyView } from './components/BinHierarchyView';
 import { BinTableView } from './components/BinTableView';
 import { Button } from '../../../ui/button';
@@ -45,6 +46,7 @@ export function BinManagerTab() {
   
   // Modals state
   const [isBinModalOpen, setIsBinModalOpen] = useState(false);
+  const [isQuickBinModalOpen, setIsQuickBinModalOpen] = useState(false);
   const [isZoneModalOpen, setIsZoneModalOpen] = useState(false);
   const [isRackModalOpen, setIsRackModalOpen] = useState(false);
   const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
@@ -137,6 +139,14 @@ export function BinManagerTab() {
       setIsBinModalOpen(true);
     } else {
       toast.error('Please select a parent location first');
+    }
+  };
+
+  const handleQuickAddBin = () => {
+    if (selectedZone) {
+      setIsQuickBinModalOpen(true);
+    } else {
+      toast.error('Please select a zone first');
     }
   };
 
@@ -555,6 +565,92 @@ export function BinManagerTab() {
     }
   };
 
+  const handleSaveQuickBin = async (binData: {
+    code: string;
+    name: string;
+    rackCode: string;
+    levelCode: string;
+    allowDifferentItems: boolean;
+  }) => {
+    if (!selectedWarehouse || !selectedZone) {
+      toast.error('Please select a zone first');
+      return;
+    }
+
+    try {
+      // Buscar o crear rack
+      let rack = selectedZone.racks.find(r => r.code.endsWith(binData.rackCode));
+      if (!rack) {
+        const fullRackCode = `${selectedZone.code}-${binData.rackCode}`;
+        await createRackApi({
+          zoneId: parseInt(selectedZone.id),
+          code: fullRackCode,
+          name: `Rack ${binData.rackCode}`,
+        });
+        // Recargar para obtener el nuevo rack
+        const updatedWarehouses = await fetchWarehousesFromApi();
+        const updatedWarehouse = updatedWarehouses.find(wh => wh.id === selectedWarehouse.id);
+        const updatedZone = updatedWarehouse?.zones.find(z => z.id === selectedZone.id);
+        rack = updatedZone?.racks.find(r => r.code === fullRackCode);
+      }
+
+      if (!rack) {
+        throw new Error('Failed to create or find rack');
+      }
+
+      // Buscar o crear level
+      let level = rack.levels.find(l => l.code.endsWith(binData.levelCode));
+      if (!level) {
+        const fullLevelCode = `${rack.code}-${binData.levelCode}`;
+        await createLevelApi({
+          rackId: parseInt(rack.id),
+          code: fullLevelCode,
+          name: `Level ${binData.levelCode}`,
+        });
+        // Recargar para obtener el nuevo level
+        const updatedWarehouses = await fetchWarehousesFromApi();
+        const updatedWarehouse = updatedWarehouses.find(wh => wh.id === selectedWarehouse.id);
+        const updatedZone = updatedWarehouse?.zones.find(z => z.id === selectedZone.id);
+        const updatedRack = updatedZone?.racks.find(r => r.id === rack!.id);
+        level = updatedRack?.levels.find(l => l.code === fullLevelCode);
+      }
+
+      if (!level) {
+        throw new Error('Failed to create or find level');
+      }
+
+      // Crear bin
+      const fullBinCode = `${level.code}-${binData.code}`;
+      await createBinApi({
+        levelId: parseInt(level.id),
+        code: fullBinCode,
+        name: binData.name,
+        allowDifferentItems: binData.allowDifferentItems,
+      });
+
+      // Recargar warehouses
+      const updatedWarehouses = await fetchWarehousesFromApi();
+      setWarehouses(updatedWarehouses);
+      
+      // Mantener selección
+      const updatedWarehouse = updatedWarehouses.find(wh => wh.id === selectedWarehouse.id);
+      if (updatedWarehouse) {
+        setSelectedWarehouse(updatedWarehouse);
+        const updatedZone = updatedWarehouse.zones.find(z => z.id === selectedZone.id);
+        if (updatedZone) {
+          setSelectedZone(updatedZone);
+        }
+      }
+
+      toast.success('Bin created successfully');
+      setIsQuickBinModalOpen(false);
+    } catch (error) {
+      console.error('Error creating quick bin:', error);
+      const message = error instanceof Error ? error.message : 'Failed to create bin';
+      toast.error(message, { duration: 5000 });
+    }
+  };
+
   // Edit and delete handlers for GridViews
   const handleEditZone = (zone: ZoneV2) => {
     setEditingZone(zone);
@@ -847,6 +943,14 @@ export function BinManagerTab() {
               </Button>
             </div>
             
+            {/* Quick Add Bin Button (only in zone view) */}
+            {getCurrentViewLevel() === 'rack' && selectedZone && (
+              <Button onClick={handleQuickAddBin} size="sm" variant="outline" className="shrink-0">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Bin
+              </Button>
+            )}
+            
             {/* Add Button */}
             <Button onClick={handleAddClick} size="sm" className="shrink-0">
               <Plus className="w-4 h-4 mr-2" />
@@ -953,6 +1057,14 @@ export function BinManagerTab() {
         currentZoneId={editingBin ? findZoneIdForBin(editingBin) : selectedZone?.id}
         currentRackId={editingBin ? findRackIdForBin(editingBin) : selectedRack?.id}
         currentLevelId={editingBin ? findLevelIdForBin(editingBin) : selectedLevel?.id}
+      />
+
+      <QuickBinModal
+        isOpen={isQuickBinModalOpen}
+        onClose={() => setIsQuickBinModalOpen(false)}
+        onSave={handleSaveQuickBin}
+        selectedZone={selectedZone!}
+        locationPath={selectedWarehouse && selectedZone ? `${selectedWarehouse.code} → ${selectedZone.code}` : undefined}
       />
 
       {/* Delete Confirmation */}
