@@ -261,33 +261,17 @@ export function KitRow({
     }
   };
 
-  const handleExpandAndFocusAssembly = () => {
-    if (!isExpanded) {
-      onToggleExpand(kit.id);
-    }
-    setTimeout(() => {
-      const assemblySection = document.getElementById(`kit-assembly-${kit.id}`);
-      if (assemblySection) {
-        assemblySection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    }, 100);
-  };
-
   const handleToggleAndScroll = () => {
-    // 1. Ejecutamos la lógica original de expandir/colapsar
     onToggleExpand(kit.id);
 
-    // 2. Si vamos a ABRIR (actualmente !isExpanded), programamos el scroll
     if (!isExpanded) {
       setTimeout(() => {
-        // Intentamos buscar el contenedor de detalles específicos
         const detailSection = document.getElementById(`kit-details-${kit.id}`);
 
         if (detailSection) {
-          // 'center' o 'start' suelen ser mejores que 'nearest' para ver el detalle completo
           detailSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-      }, 150); // Damos un poco de tiempo a la animación de apertura (ajusta según tu CSS)
+      }, 150);
     }
   };
 
@@ -354,30 +338,24 @@ export function KitRow({
 
   return (
     <React.Fragment>
-      {/* FILA PRINCIPAL 
-          Reemplazamos <TableRow> y <TableCell> por <tr> y <td> con clases de Tailwind 
-      */}
       <tr 
         className={`border-b border-gray-100 dark:border-gray-800 transition-colors ${
-          isExpanded ? 'bg-gray-50 dark:bg-gray-800/50' : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'
+          isExpanded ? 'bg-gray-50 dark:bg-gray-700/50' : 'hover:bg-[#F5F5F7] dark:hover:bg-gray-800/30'
         }`}
       >
-        {/* Celda 1: Toggle Button */}
         <td className="p-2 align-middle">
           <button 
-            className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors"
+            className="p-1.5 rounded-md hover:bg-[#E5E7EB] dark:hover:bg-white dark:hover:text-black text-gray-500 transition-colors"
             onClick={handleToggleAndScroll}
           >
-            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            <ChevronRight className={`h-4 w-4 transition duration-1500 ${isExpanded ? 'rotate-90' : ''}`}/>
           </button>
         </td>
 
-        {/* Celda 2: SKU */}
         <td className="p-2 align-middle">
           <span className="font-mono text-sm">{kit.sku}</span>
         </td>
 
-        {/* Celda 3: Name & Bin */}
         <td className="p-2 align-middle">
           <div className="flex items-center space-x-3">
             <div>
@@ -387,27 +365,22 @@ export function KitRow({
           </div>
         </td>
 
-        {/* Celda 4: Description */}
         <td className="p-2 align-middle max-w-xs">
           <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{kit.description || '-'}</p>
         </td>
 
-        {/* Celda 5: Items Count (Badge Component) */}
         <td className="p-2 align-middle text-center">
           <Badge variant="info">{kit.items.length} items</Badge>
         </td>
 
-        {/* Celda 6: Stock Total (Badge Component) */}
         <td className="p-2 align-middle text-center">
           <Badge variant="neutral" className="font-semibold">{kit.quantity}</Badge>
         </td>
 
-        {/* Celda 7: Available Badge (Helper Function) */}
         <td className="p-2 align-middle text-center">
           {getAvailableBadge(kit.items.length, kit.quantityAvailable)}
         </td>
 
-        {/* Celda 8: Actions (ActionButton Components) */}
         <td className="p-2 align-middle text-center py-3">
           <div className="flex justify-center items-center gap-2">
 
@@ -448,7 +421,7 @@ export function KitRow({
         </td>
       </tr>
 
-      {/* SECCIÓN EXPANDIDA (MODULARIZADA) */}
+      {/* SECCIÓN EXPANDIDA */}
       {isExpanded && (
         <KitExpandedDetails
           kit={kit}
