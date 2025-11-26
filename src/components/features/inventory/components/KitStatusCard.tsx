@@ -19,7 +19,7 @@ interface KitStatusProps {
         quantityReserved: number;
         createdAt?: string;
     };
-    assemblyBinCode?: string;
+    assemblyBinCode?: string | null;
     loading?: boolean;
 }
 

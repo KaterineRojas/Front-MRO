@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../../../../ui/button';
-import { Badge } from '../../../../ui/badge';
+// import { Badge } from '../../../../ui/badge';
 import { TableCell, TableRow, TableBody, TableHead, TableHeader, Table } from '../../../../ui/table';
 import {
   AlertDialog,
@@ -51,6 +51,9 @@ import { KitItemsTable } from '../../components/KitItemsTable'
 import { KitStatusCard } from '../../components/KitStatusCard';
 import { AssembleKitModal } from '../../modals/AssembleKitModal'
 import { DeleteKitModal } from '../../modals/DeleteKitModal'
+import { KitExpandedDetails } from '../../components/KitDetailsRow';
+import {Badge} from '../../components/Badge'
+import { isPending } from '@reduxjs/toolkit';
 
 export function KitRow({
   kit,
@@ -85,7 +88,7 @@ export function KitRow({
   useEffect(() => {
     // console.log(kit);
     // console.log(articles);
-    
+
   }, [])
 
 
@@ -270,6 +273,24 @@ export function KitRow({
     }, 100);
   };
 
+  const handleToggleAndScroll = () => {
+    // 1. Ejecutamos la lógica original de expandir/colapsar
+    onToggleExpand(kit.id);
+
+    // 2. Si vamos a ABRIR (actualmente !isExpanded), programamos el scroll
+    if (!isExpanded) {
+      setTimeout(() => {
+        // Intentamos buscar el contenedor de detalles específicos
+        const detailSection = document.getElementById(`kit-details-${kit.id}`);
+
+        if (detailSection) {
+          // 'center' o 'start' suelen ser mejores que 'nearest' para ver el detalle completo
+          detailSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150); // Damos un poco de tiempo a la animación de apertura (ajusta según tu CSS)
+    }
+  };
+
   const handleOpenDismantleModal = () => {
     setDismantleQuantity(1);
     setDismantleNotes('');
@@ -333,41 +354,61 @@ export function KitRow({
 
   return (
     <React.Fragment>
-      <TableRow>
-        <TableCell>
-          <Button variant="ghost" size="sm" onClick={() => onToggleExpand(kit.id)}>
+      {/* FILA PRINCIPAL 
+          Reemplazamos <TableRow> y <TableCell> por <tr> y <td> con clases de Tailwind 
+      */}
+      <tr 
+        className={`border-b border-gray-100 dark:border-gray-800 transition-colors ${
+          isExpanded ? 'bg-gray-50 dark:bg-gray-800/50' : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'
+        }`}
+      >
+        {/* Celda 1: Toggle Button */}
+        <td className="p-2 align-middle">
+          <button 
+            className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors"
+            onClick={handleToggleAndScroll}
+          >
             {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Button>
-        </TableCell>
+          </button>
+        </td>
 
-        <TableCell>
+        {/* Celda 2: SKU */}
+        <td className="p-2 align-middle">
           <span className="font-mono text-sm">{kit.sku}</span>
-        </TableCell>
+        </td>
 
-        <TableCell>
+        {/* Celda 3: Name & Bin */}
+        <td className="p-2 align-middle">
           <div className="flex items-center space-x-3">
             <div>
-              <p className="font-medium">{kit.name}</p>
-              <p className="text-xs text-muted-foreground">{kit.binCode}</p>
+              <p className="font-medium text-sm">{kit.name}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{kit.binCode}</p>
             </div>
           </div>
-        </TableCell>
-        <TableCell className="max-w-xs">
-          <p className="text-sm line-clamp-2">{kit.description || '-'}</p>
-        </TableCell>
-        <TableCell className="text-center">
+        </td>
+
+        {/* Celda 4: Description */}
+        <td className="p-2 align-middle max-w-xs">
+          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{kit.description || '-'}</p>
+        </td>
+
+        {/* Celda 5: Items Count (Badge Component) */}
+        <td className="p-2 align-middle text-center">
           <Badge variant="info">{kit.items.length} items</Badge>
-        </TableCell>
-        {/* Stock Total */}
-        <TableCell className="text-center">
+        </td>
+
+        {/* Celda 6: Stock Total (Badge Component) */}
+        <td className="p-2 align-middle text-center">
           <Badge variant="neutral" className="font-semibold">{kit.quantity}</Badge>
-        </TableCell>
+        </td>
 
-        <TableCell className="text-center">
+        {/* Celda 7: Available Badge (Helper Function) */}
+        <td className="p-2 align-middle text-center">
           {getAvailableBadge(kit.items.length, kit.quantityAvailable)}
-        </TableCell>
+        </td>
 
-        <TableCell className="text-center py-3">
+        {/* Celda 8: Actions (ActionButton Components) */}
+        <td className="p-2 align-middle text-center py-3">
           <div className="flex justify-center items-center gap-2">
 
             <ActionButton
@@ -378,7 +419,7 @@ export function KitRow({
               onClick={() => setIsAssembleModalOpen(true)}
             />
 
-            <div className="h-5 w-px bg-gray-200 mx-1"></div>
+            <div className="h-5 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
             <ActionButton
               icon="duplicate"
@@ -404,51 +445,21 @@ export function KitRow({
             />
 
           </div>
-        </TableCell>
-      </TableRow>
+        </td>
+      </tr>
 
-
-      {/* SECCIÓN EXPANDIDA */}
+      {/* SECCIÓN EXPANDIDA (MODULARIZADA) */}
       {isExpanded && (
-        <TableRow>
-          <TableCell colSpan={8} className="bg-muted/30 p-0">
-            <div className="p-6 bg-gray-50/50 dark:bg-black/20 border-t border-gray-100 dark:border-gray-800">
+        <KitExpandedDetails
+          kit={kit}
+          articles={articles}
+          assemblyBinCode={assemblyBinCode} 
+          loadingAvailableBins={loadingAvailableBins} 
+          colSpan={8} // 8 columnas en la tabla principal
+        />
+      )}
 
-              <h4 className="flex items-center text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                <PackageOpen className="h-4 w-4 mr-2 text-indigo-600" />
-                Kit Contents
-              </h4>
-
-              {/* CONTENEDOR FLEX PRINCIPAL */}
-              <div className="flex flex-col lg:flex-row gap-6 items-start">
-
-                {/* 1. SECCIÓN PRINCIPAL: LA TABLA (Ocupa el espacio restante) */}
-                <div className="flex-1 min-w-0 space-y-3 w-full">
-
-                  <KitItemsTable
-                    items={kit.items}
-                    articles={articles}
-                  />
-                </div>
-
-                {/* 2. BARRA LATERAL: LA TARJETA DE ESTADO (Ancho fijo en desktop) */}
-                <div className="w-full lg:w-80 shrink-0">
-                  <KitStatusCard
-                    kit={kit}
-                    assemblyBinCode={assemblyBinCode}
-                    loading={loadingAvailableBins}
-                  />
-                </div>
-
-
-              </div>
-            </div>
-          </TableCell>
-        </TableRow>
-      )
-      }
-
-      {/* modal de assembly */}
+      {/* MODAL DE ASSEMBLY */}
       <AssembleKitModal
         isOpen={isAssembleModalOpen}
         onClose={() => setIsAssembleModalOpen(false)}
@@ -456,14 +467,13 @@ export function KitRow({
         availableBins={availableBins}
         loadingAvailableBins={loadingAvailableBins}
         assemblyBinCode={assemblyBinCode}
-        isBuilding={isBuilding} // estado de carga al confirmar
-
+        isBuilding={isBuilding} 
         onConfirm={(qty, binId) => {
           handleConfirmAssembly(qty, binId);
         }}
       />
 
-      {/*  Modal de Dismantle */}
+      {/* MODAL DE DISMANTLE */}
       <DismantleKitModal
         open={dismantleModalOpen}
         onOpenChange={setDismantleModalOpen}
@@ -477,7 +487,7 @@ export function KitRow({
         isSubmitting={isDismantling}
       />
 
-      {/* modal de delete kit */}
+      {/* MODAL DE DELETE */}
       <DeleteKitModal
         isOpen={isDeleteModalOpen}
         onClose={handleCloseDeleteModal}
@@ -487,7 +497,6 @@ export function KitRow({
         message={deleteMessageModal}
       />
 
-
-    </React.Fragment >
+    </React.Fragment>
   );
 }
