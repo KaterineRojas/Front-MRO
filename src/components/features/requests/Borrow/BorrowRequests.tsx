@@ -1,8 +1,3 @@
-/**
- * BorrowRequests.tsx - CORRECTED VERSION
- * Fixed Department and Notes columns alignment
- */
-
 import React from 'react';
 import { Card, CardContent } from '../../../ui/card';
 import { Button } from '../../../ui/button';
@@ -121,7 +116,7 @@ export function BorrowRequests() {
               <SelectContent>
                 <SelectItem value="all">All Warehouses</SelectItem>
                 {warehouses.map((wh) => (
-                  <SelectItem key={wh.id} value={wh.id}>
+                  <SelectItem key={wh.id} value={wh.name}>
                     {wh.name}
                   </SelectItem>
                 ))}
@@ -160,18 +155,18 @@ export function BorrowRequests() {
         // Mobile Card View
         <div className="space-y-4">
           {filteredBorrowRequests.map((request) => (
-            <Card key={request.requestId}>
+            <Card key={request.requestNumber}>
               <CardContent className="p-4">
                 <div className="space-y-3">
                   <div
                     className="flex justify-between items-start cursor-pointer"
-                    onClick={() => toggleBorrowRow(request.requestId)}
+                    onClick={() => toggleBorrowRow(request.requestNumber)}
                   >
                     <div className="flex-1">
                       <h3 className="flex items-center gap-2">
                         <Package className="h-4 w-4" />
-                        Loan #{request.requestId}
-                        {expandedBorrowRows.has(request.requestId) ? (
+                        Loan #{request.requestNumber}
+                        {expandedBorrowRows.has(request.requestNumber) ? (
                           <ChevronDown className="h-4 w-4 text-muted-foreground" />
                         ) : (
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -189,7 +184,7 @@ export function BorrowRequests() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleReturnAll(request.requestId)}
+                          onClick={() => handleReturnAll(request.requestNumber)}
                         >
                           Return
                         </Button>
@@ -198,7 +193,7 @@ export function BorrowRequests() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleCancelBorrowRequest(request.requestId)}
+                          onClick={() => handleCancelBorrowRequest(request.requestNumber)}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -211,15 +206,15 @@ export function BorrowRequests() {
                       <Calendar className="h-4 w-4" />
                       Requested: {formatDate(request.createdAt || '')}
                     </p>
-                    <p>Project: {request.project}</p>
-                    <p>Department: {request.department || '-'}</p>
-                    <p>Return Date: {formatDate(request.returnDate)}</p>
+                    <p>Project: {request.projectName}</p>
+                    <p>Department: {request.departmentName || '-'}</p>
+                    <p>Return Date: {formatDate(request.expectedReturnDate)}</p>
                     {request.notes && (
                       <p className="text-xs italic">Notes: {request.notes}</p>
                     )}
                   </div>
 
-                  {expandedBorrowRows.has(request.requestId) && (
+                  {expandedBorrowRows.has(request.requestNumber) && (
                     <div>
                       <h4 className="text-sm mb-2">Items:</h4>
                       <div className="space-y-2">
@@ -238,7 +233,7 @@ export function BorrowRequests() {
                                 <p className="text-xs text-muted-foreground truncate">{item.description}</p>
                               )}
                             </div>
-                            <Badge variant="secondary">x{item.quantity}</Badge>
+                            <Badge variant="secondary">x{item.quantityRequested}</Badge>
                           </div>
                         ))}
                       </div>
@@ -270,24 +265,24 @@ export function BorrowRequests() {
                 </TableHeader>
                 <TableBody>
                   {filteredBorrowRequests.map((request) => (
-                    <React.Fragment key={request.requestId}>
-                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => toggleBorrowRow(request.requestId)}>
+                    <React.Fragment key={request.requestNumber}>
+                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => toggleBorrowRow(request.requestNumber)}>
                         <TableCell className="text-center">
-                          {expandedBorrowRows.has(request.requestId) ? (
+                          {expandedBorrowRows.has(request.requestNumber) ? (
                             <ChevronDown className="h-4 w-4 text-muted-foreground mx-auto" />
                           ) : (
                             <ChevronRight className="h-4 w-4 text-muted-foreground mx-auto" />
                           )}
                         </TableCell>
-                        <TableCell className="font-mono text-sm text-center">#{request.requestId}</TableCell>
+                        <TableCell className="font-mono text-sm text-center">#{request.requestNumber}</TableCell>
                         <TableCell className="text-center">
                           <Badge variant="outline" className="mx-auto">{request.warehouseName}</Badge>
                         </TableCell>
                         <TableCell className="text-center">
-                          <p className="text-sm">{request.project}</p>
+                          <p className="text-sm">{request.projectName}</p>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground text-center">
-                          {formatDate(request.returnDate)}
+                          {formatDate(request.expectedReturnDate)}
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge className={`${getStatusColor(request.status)} mx-auto`} variant="secondary">
@@ -295,7 +290,7 @@ export function BorrowRequests() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center">
-                          <p className="text-sm">{request.department || '-'}</p>
+                          <p className="text-sm">{request.departmentName || '-'}</p>
                         </TableCell>
                         <TableCell className="text-center">
                           <p className="text-sm text-muted-foreground truncate max-w-[200px] mx-auto" title={request.notes}>
@@ -310,7 +305,7 @@ export function BorrowRequests() {
                                 variant="outline"
                                 onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                   e.stopPropagation();
-                                  handleReturnAll(request.requestId);
+                                  handleReturnAll(request.requestNumber);
                                 }}
                               >
                                 Return
@@ -322,7 +317,7 @@ export function BorrowRequests() {
                                 variant="ghost"
                                 onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                   e.stopPropagation();
-                                  handleCancelBorrowRequest(request.requestId);
+                                  handleCancelBorrowRequest(request.requestNumber);
                                 }}
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -331,7 +326,7 @@ export function BorrowRequests() {
                           </div>
                         </TableCell>
                       </TableRow>
-                      {expandedBorrowRows.has(request.requestId) && (
+                      {expandedBorrowRows.has(request.requestNumber) && (
                         <TableRow>
                           <TableCell colSpan={9} className="bg-muted/20 p-0">
                             <div className="p-4">
@@ -367,7 +362,7 @@ export function BorrowRequests() {
                                           <p className="text-xs text-muted-foreground">{item.description}</p>
                                         )}
                                       </TableCell>
-                                      <TableCell className="text-center text-sm">x{item.quantity}</TableCell>
+                                      <TableCell className="text-center text-sm">x{item.quantityRequested}</TableCell>
                                     </TableRow>
                                   ))}
                                 </TableBody>

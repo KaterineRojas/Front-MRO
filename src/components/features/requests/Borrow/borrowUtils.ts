@@ -82,9 +82,9 @@ export function filterBorrowRequests(
   if (searchTerm) {
     const searchLower = searchTerm.toLowerCase();
     filtered = filtered.filter(request =>
-      request.requestId.toLowerCase().includes(searchLower) ||
-      request.project.toLowerCase().includes(searchLower) ||
-      request.department.toLowerCase().includes(searchLower) ||
+      request.requestNumber.toLowerCase().includes(searchLower) ||
+      request.projectName.toLowerCase().includes(searchLower) ||
+      request.departmentName.toLowerCase().includes(searchLower) ||
       request.warehouseName.toLowerCase().includes(searchLower) ||
       request.items.some(item =>
         item.name.toLowerCase().includes(searchLower) ||

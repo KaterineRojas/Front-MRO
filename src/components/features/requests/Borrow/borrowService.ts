@@ -1,38 +1,47 @@
+import { API_BASE_URL } from "../services/api";
 // Simulate API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Types
 export interface BorrowItem {
   id: number;
-  imageUrl: string;
   sku: string;
   name: string;
   description: string;
-  quantity: number;
-  warehouseId?: string;
-  warehouseName?: string;
+  imageUrl: string;
+  quantityRequested: number;
+  quantityFulfilled?: number;
 }
 
 export interface BorrowRequest {
-  requestId: string;
-  department: string;
-  project: string;
-  returnDate: string;
-  notes: string;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
-  items: BorrowItem[];
-  createdAt?: string;
+  requestNumber: string;
+  requesterName: string;
+  departmentName: string;
   warehouseId: string;
   warehouseName: string;
+  projectName: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  expectedReturnDate: string;
+  createdAt?: string;
+  totalItems?: number;
+  totalQuantity?: number;
+  notes: string;
+  items: BorrowItem[];
 }
 
-// Mock Data - Borrow Requests
+// Interface para la respuesta de la API
+interface ApiResponse {
+  data: BorrowRequest[];
+}
+
+// Mock Data - Borrow Requests (mantener como fallback)
 const mockBorrowRequests: BorrowRequest[] = [
   {
-    requestId: 'BRW001',
-    department: 'Engineering',
-    project: 'Proyecto Amazonas',
-    returnDate: '2024-02-15',
+    requestNumber: 'BRW001',
+    requesterName: 'John Smith',
+    departmentName: 'Engineering',
+    projectName: 'Proyecto Amazonas',
+    expectedReturnDate: '2024-02-15',
     notes: 'Equipment for field testing',
     status: 'completed',
     items: [
@@ -42,9 +51,7 @@ const mockBorrowRequests: BorrowRequest[] = [
         sku: 'MECH-KB-001',
         name: 'Mechanical Keyboard RGB',
         description: 'Gaming keyboard with RGB lighting',
-        quantity: 2,
-        warehouseId: 'wh-1',
-        warehouseName: 'Amax'
+        quantityRequested: 2
       },
       {
         id: 2,
@@ -52,9 +59,7 @@ const mockBorrowRequests: BorrowRequest[] = [
         sku: 'SAM-003',
         name: 'Samsung 27" Monitor',
         description: 'Full HD display',
-        quantity: 1,
-        warehouseId: 'wh-1',
-        warehouseName: 'Amax'
+        quantityRequested: 1
       }
     ],
     createdAt: '2024-01-15',
@@ -62,79 +67,11 @@ const mockBorrowRequests: BorrowRequest[] = [
     warehouseName: 'Amax'
   },
   {
-    requestId: 'BRW002',
-    department: 'Design',
-    project: 'Proyecto Web',
-    returnDate: '2024-02-20',
-    notes: 'Design workstation setup',
-    status: 'approved',
-    items: [
-      {
-        id: 3,
-        imageUrl: 'https://images.unsplash.com/photo-1625961332600-f6eac385c6ba?w=400',
-        sku: 'PROJ-EP-001',
-        name: 'Proyector Epson PowerLite',
-        description: 'HD projector for presentations',
-        quantity: 1,
-        warehouseId: 'wh-2',
-        warehouseName: 'Best'
-      }
-    ],
-    createdAt: '2024-01-14',
-    warehouseId: 'wh-2',
-    warehouseName: 'Best'
-  },
-  {
-    requestId: 'BRW003',
-    department: 'Development',
-    project: 'Proyecto Innova',
-    returnDate: '2024-02-10',
-    notes: 'Testing equipment',
-    status: 'pending',
-    items: [
-      {
-        id: 4,
-        imageUrl: 'https://images.unsplash.com/photo-1625738323142-01e6d7906e0a?w=400',
-        sku: 'HDMI-001',
-        name: 'Cable HDMI 2.0',
-        description: '4K HDMI cable 2m',
-        quantity: 5,
-        warehouseId: 'wh-3',
-        warehouseName: 'Central'
-      }
-    ],
-    createdAt: '2024-01-12',
-    warehouseId: 'wh-3',
-    warehouseName: 'Central'
-  },
-  {
-    requestId: 'BRW004',
-    department: 'Engineering',
-    project: 'Proyecto Construcción',
-    returnDate: '2024-03-01',
-    notes: 'Workshop tools needed',
-    status: 'rejected',
-    items: [
-      {
-        id: 5,
-        imageUrl: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400',
-        sku: 'DRL-001',
-        name: 'Power Drill',
-        description: 'Cordless drill with battery',
-        quantity: 2,
-        warehouseId: 'wh-2',
-        warehouseName: 'Best'
-      }
-    ],
-    createdAt: '2024-01-10',
-    warehouseId: 'wh-2',
-    warehouseName: 'Best'
-  },
-  {
-    requestId: 'BRW005',
-    department: 'Marketing',
-    project: 'Campaign 2024',
-    returnDate: '2024-02-25',
+    requestNumber: 'BRW005',
+    requesterName: 'Carol Davis',
+    departmentName: 'Marketing',
+    projectName: 'Campaign 2024',
+    expectedReturnDate: '2024-02-25',
     notes: 'Event equipment',
     status: 'completed',
     items: [
@@ -144,9 +81,7 @@ const mockBorrowRequests: BorrowRequest[] = [
         sku: 'WEB-001',
         name: 'Webcam HD',
         description: 'Full HD webcam',
-        quantity: 3,
-        warehouseId: 'wh-1',
-        warehouseName: 'Amax'
+        quantityRequested: 3
       }
     ],
     createdAt: '2024-01-08',
@@ -155,147 +90,328 @@ const mockBorrowRequests: BorrowRequest[] = [
   }
 ];
 
-// API Simulation Functions
+// API Functions
 
 /**
- * Get all borrow requests
+ * Get all borrow requests from the real API
+ * @param userId - The user ID to filter requests by (sent as requesterId)
+ * @returns Promise with array of BorrowRequest
  */
-export async function getBorrowRequests(): Promise<BorrowRequest[]> {
-  await delay(300);
-  return [...mockBorrowRequests];
+export async function getBorrowRequests(userId?: string): Promise<BorrowRequest[]> {
+  try {
+    // Console.log con el id del usuario
+    if (userId) {
+      console.log('Usuario ID:', userId);
+    }
+
+    // Construir los parámetros de la query
+    const params = new URLSearchParams();
+    
+    // Si hay un userId, lo enviamos como requesterId
+    if (userId) {
+      params.append('requesterId', userId);
+    }
+    
+    // Agregar parámetros de paginación por defecto
+    params.append('pageNumber', '1');
+    params.append('pageSize', '20');
+    
+    // Realizar la petición a la API real
+    const response = await fetch(`${API_BASE_URL}/loan-requests?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error fetching borrow requests: ${response.status}`);
+    }
+
+    // Parsear el JSON de la respuesta
+    const responseData: ApiResponse = await response.json();
+    
+    // La API devuelve los datos en la propiedad 'data'
+    if (responseData.data && Array.isArray(responseData.data)) {
+      return responseData.data;
+    }
+    
+    // Si no hay datos, devolver array vacío
+    console.warn('No data found in API response');
+    return [];
+    
+  } catch (error) {
+    console.error('Error fetching borrow requests:', error);
+    
+    // En caso de error, usar datos mock como fallback
+    console.log('Using mock data due to API error');
+    return [...mockBorrowRequests];
+  }
 }
 
 /**
  * Get borrow request by ID
+ * @param requestId - The request ID to search for
+ * @returns Promise with BorrowRequest or null
  */
 export async function getBorrowRequestById(requestId: string): Promise<BorrowRequest | null> {
-  await delay(200);
-  const request = mockBorrowRequests.find(r => r.requestId === requestId);
-  return request ? { ...request } : null;
+  try {
+    const response = await fetch(`${API_BASE_URL}/loan-requests/${requestId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error(`Error fetching borrow request: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Si la respuesta viene envuelta en 'data'
+    if (data.data) {
+      return data.data as BorrowRequest;
+    }
+    
+    return data as BorrowRequest;
+    
+  } catch (error) {
+    console.error('Error fetching borrow request by ID:', error);
+    // Fallback to mock data
+    const request = mockBorrowRequests.find(r => r.requestNumber === requestId);
+    return request ? { ...request } : null;
+  }
 }
 
 /**
  * Create a new borrow request
+ * @param request - The request data without ID, status, or createdAt
+ * @returns Promise with the created BorrowRequest
  */
 export async function createBorrowRequest(
-  request: Omit<BorrowRequest, 'requestId' | 'status' | 'createdAt'>
+  request: Omit<BorrowRequest, 'requestNumber' | 'status' | 'createdAt'>
 ): Promise<BorrowRequest> {
-  await delay(500);
-  
-  // Validate required fields
-  if (!request.department || !request.project) {
-    throw new Error('Department and project are required');
-  }
-  
-  if (!request.returnDate) {
-    throw new Error('Return date is required');
-  }
-  
-  if (request.items.length === 0) {
-    throw new Error('At least one item must be included');
-  }
+  try {
+    const response = await fetch(`${API_BASE_URL}/loan-requests`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request)
+    });
 
-  // Generate new request ID
-  const newId = `BRW${String(mockBorrowRequests.length + 1).padStart(3, '0')}`;
-  
-  const newRequest: BorrowRequest = {
-    ...request,
-    requestId: newId,
-    status: 'pending',
-    createdAt: new Date().toISOString()
-  };
-  
-  mockBorrowRequests.push(newRequest);
-  return newRequest;
+    if (!response.ok) {
+      throw new Error(`Error creating borrow request: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Si la respuesta viene envuelta en 'data'
+    if (data.data) {
+      return data.data as BorrowRequest;
+    }
+    
+    return data as BorrowRequest;
+    
+  } catch (error) {
+    console.error('Error creating borrow request:', error);
+    
+    // Fallback to mock implementation
+    console.log('Using mock implementation for create');
+    
+    // Generate new request ID
+    const newId = `BRW${String(mockBorrowRequests.length + 1).padStart(3, '0')}`;
+    
+    const newRequest: BorrowRequest = {
+      ...request,
+      requestNumber: newId,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+    
+    mockBorrowRequests.push(newRequest);
+    return newRequest;
+  }
 }
 
 /**
  * Update borrow request status
+ * @param requestId - The request ID to update
+ * @param status - The new status
+ * @returns Promise with the updated BorrowRequest or null
  */
 export async function updateBorrowRequestStatus(
   requestId: string,
   status: BorrowRequest['status']
 ): Promise<BorrowRequest | null> {
-  await delay(300);
-  
-  const requestIndex = mockBorrowRequests.findIndex(r => r.requestId === requestId);
-  
-  if (requestIndex === -1) {
-    throw new Error('Borrow request not found');
+  try {
+    const response = await fetch(`${API_BASE_URL}/loan-requests/${requestId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status })
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Borrow request not found');
+      }
+      throw new Error(`Error updating borrow request status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Si la respuesta viene envuelta en 'data'
+    if (data.data) {
+      return data.data as BorrowRequest;
+    }
+    
+    return data as BorrowRequest;
+    
+  } catch (error) {
+    console.error('Error updating borrow request status:', error);
+    
+    // Fallback to mock implementation
+    const requestIndex = mockBorrowRequests.findIndex(r => r.requestNumber === requestId);
+    
+    if (requestIndex === -1) {
+      throw new Error('Borrow request not found');
+    }
+    
+    mockBorrowRequests[requestIndex] = {
+      ...mockBorrowRequests[requestIndex],
+      status
+    };
+    
+    return { ...mockBorrowRequests[requestIndex] };
   }
-  
-  mockBorrowRequests[requestIndex] = {
-    ...mockBorrowRequests[requestIndex],
-    status
-  };
-  
-  return { ...mockBorrowRequests[requestIndex] };
 }
 
 /**
  * Delete borrow request (cancel)
+ * @param requestId - The request ID to delete
+ * @returns Promise with success status and message
  */
 export async function deleteBorrowRequest(requestId: string): Promise<{ success: boolean; message: string }> {
-  await delay(300);
-  
-  const requestIndex = mockBorrowRequests.findIndex(r => r.requestId === requestId);
-  
-  if (requestIndex === -1) {
-    return {
-      success: false,
-      message: 'Borrow request not found'
-    };
-  }
-  
-  const request = mockBorrowRequests[requestIndex];
-  
-  // Only pending requests can be deleted
-  if (request.status !== 'pending') {
-    return {
-      success: false,
-      message: 'Only pending requests can be cancelled'
-    };
-  }
+  try {
+    const response = await fetch(`${API_BASE_URL}/loan-requests/${requestId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
 
-  mockBorrowRequests.splice(requestIndex, 1);
-  
-  return {
-    success: true,
-    message: 'Request cancelled successfully'
-  };
+    if (!response.ok) {
+      if (response.status === 404) {
+        return {
+          success: false,
+          message: 'Borrow request not found'
+        };
+      }
+      throw new Error(`Error deleting borrow request: ${response.status}`);
+    }
+    
+    return {
+      success: true,
+      message: 'Request cancelled successfully'
+    };
+    
+  } catch (error) {
+    console.error('Error deleting borrow request:', error);
+    
+    // Fallback to mock implementation
+    const requestIndex = mockBorrowRequests.findIndex(r => r.requestNumber === requestId);
+    
+    if (requestIndex === -1) {
+      return {
+        success: false,
+        message: 'Borrow request not found'
+      };
+    }
+    
+    const request = mockBorrowRequests[requestIndex];
+    
+    // Only pending requests can be deleted
+    if (request.status !== 'pending') {
+      return {
+        success: false,
+        message: 'Only pending requests can be cancelled'
+      };
+    }
+
+    mockBorrowRequests.splice(requestIndex, 1);
+    
+    return {
+      success: true,
+      message: 'Request cancelled successfully'
+    };
+  }
 }
 
 /**
  * Return all items from a borrow request
+ * @param requestId - The request ID to return items for
+ * @returns Promise with success status and message
  */
 export async function returnBorrowedItems(
   requestId: string
 ): Promise<{ success: boolean; message: string }> {
-  await delay(400);
-  
-  const requestIndex = mockBorrowRequests.findIndex(r => r.requestId === requestId);
-  
-  if (requestIndex === -1) {
-    return {
-      success: false,
-      message: 'Borrow request not found'
-    };
-  }
-  
-  const request = mockBorrowRequests[requestIndex];
-  
-  if (request.status !== 'completed' && request.status !== 'approved') {
-    return {
-      success: false,
-      message: 'Only active or approved requests can be returned'
-    };
-  }
+  try {
+    const response = await fetch(`${API_BASE_URL}/loan-requests/${requestId}/return`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
 
-  // Mark as completed or remove from active requests
-  mockBorrowRequests.splice(requestIndex, 1);
-  
-  return {
-    success: true,
-    message: 'All items returned successfully'
-  };
+    if (!response.ok) {
+      if (response.status === 404) {
+        return {
+          success: false,
+          message: 'Borrow request not found'
+        };
+      }
+      throw new Error(`Error returning items: ${response.status}`);
+    }
+    
+    return {
+      success: true,
+      message: 'All items returned successfully'
+    };
+    
+  } catch (error) {
+    console.error('Error returning borrowed items:', error);
+    
+    // Fallback to mock implementation
+    const requestIndex = mockBorrowRequests.findIndex(r => r.requestNumber === requestId);
+    
+    if (requestIndex === -1) {
+      return {
+        success: false,
+        message: 'Borrow request not found'
+      };
+    }
+    
+    const request = mockBorrowRequests[requestIndex];
+    
+    if (request.status !== 'completed' && request.status !== 'approved') {
+      return {
+        success: false,
+        message: 'Only active or approved requests can be returned'
+      };
+    }
+
+    // Mark as completed or remove from active requests
+    mockBorrowRequests.splice(requestIndex, 1);
+    
+    return {
+      success: true,
+      message: 'All items returned successfully'
+    };
+  }
 }

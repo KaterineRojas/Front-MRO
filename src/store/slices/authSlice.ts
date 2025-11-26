@@ -3,11 +3,11 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 export type UserRole = 'administrator' | 'user' | 'purchasing' | 'auditor' | 'manager';
 
 interface User {
-  id: string ;
+  id: string;
   name: string;
   role: UserRole;
   email: string;
-  department?: string;
+  department: string;
 }
 
 interface AuthState {
@@ -17,10 +17,11 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: {
-    id: 1,
+    id: '1',
     name: 'John Smith',
     role: 'administrator',
-    email: 'john@company.com'
+    email: 'john@company.com',
+    department: 'Engineering'
   },
   isAuthenticated: true,
 };

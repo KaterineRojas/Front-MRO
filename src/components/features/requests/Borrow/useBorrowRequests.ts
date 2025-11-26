@@ -1,9 +1,3 @@
-/**
- * useBorrowRequests.ts
- * Custom Hook que maneja toda la lógica de Borrow Requests
- * Siguiendo principios SOLID: Separation of Concerns
- */
-
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useAppSelector, useAppDispatch } from '../../enginner/store/hooks';
@@ -86,7 +80,7 @@ export function useBorrowRequests() {
         const [whData, statusData, requestsData] = await Promise.all([
           getWarehouses(),
           getStatuses(),
-          getBorrowRequests()
+          getBorrowRequests(currentUser?.id) // Pasar el ID del usuario
         ]);
         setWarehouses(whData);
         setStatuses(statusData);
@@ -148,7 +142,7 @@ export function useBorrowRequests() {
         try {
           const result = await deleteBorrowRequest(requestId);
           if (result.success) {
-            setBorrowRequests(prev => prev.filter(req => req.requestId !== requestId));
+            setBorrowRequests(prev => prev.filter(req => req.requestNumber !== requestId));
             toast.success('Request cancelled successfully');
             hideModal();
           } else {
@@ -187,9 +181,9 @@ export function useBorrowRequests() {
   };
 
   const confirmReturnAll = () => {
-    const request = borrowRequests.find(r => r.requestId === requestToReturn);
+    const request = borrowRequests.find(r => r.requestNumber === requestToReturn);
     if (request) {
-      setBorrowRequests(prev => prev.filter(r => r.requestId !== requestToReturn));
+      setBorrowRequests(prev => prev.filter(r => r.requestNumber !== requestToReturn));
       toast.success('All items returned successfully');
     }
     setReturnDialogOpen(false);
