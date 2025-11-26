@@ -29,6 +29,9 @@ async function updateKitService(id: number, data: Partial<Kit>): Promise<Kit> {
 }
 
 interface InventoryState {
+  selectedCategory: string | null;
+  searchQuery: string;
+  items: InventoryItem[];
   articles: Article[];
   kits: Kit[];
   bins: Bin[];

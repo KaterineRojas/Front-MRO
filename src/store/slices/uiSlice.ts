@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UIState {
+  currentPage: any;
   sidebarOpen: boolean;
   darkMode: boolean;
   notificationsOpen: boolean;

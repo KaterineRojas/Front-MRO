@@ -1,19 +1,19 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Textarea } from '../../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
-import { Checkbox } from '../../ui/checkbox';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Badge } from '../../../ui/badge';
+import { Input } from '../../../ui/input';
+import { Label } from '../../../ui/label';
+import { Textarea } from '../../../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
+import { Checkbox } from '../../../ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
 import { 
   Package, Search, ChevronDown, ChevronRight, Box, ArrowRightLeft, Camera, Upload, X, AlertCircle, History
 } from 'lucide-react';
-import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
+import { ImageWithFallback } from '../../../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
 import { CompleteHistory } from './CompleteHistory';
 
@@ -274,12 +274,12 @@ export function MyInventoryTransfer() {
   const [inventoryItems] = useState<InventoryItem[]>(mockInventoryItems);
   const [kits] = useState<Kit[]>(mockKits);
   const [expandedKits, setExpandedKits] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState<'items' | 'kits'>('items');
   const [isMobile, setIsMobile] = useState(false);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [projectFilter, setProjectFilter] = useState('all');
   const [warehouseFilter, setWarehouseFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'items' | 'kits'>('all');
 
   // Transfer mode states
   const [showTransferMode, setShowTransferMode] = useState(false);
@@ -409,9 +409,9 @@ export function MyInventoryTransfer() {
 
   const filteredCombinedInventory = useMemo(() => {
     return combinedInventory.filter(item => {
-      // Filter by view type
-      if (activeTab === 'items' && item.isKit) return false;
-      if (activeTab === 'kits' && !item.isKit) return false;
+      // Filter by type
+      if (typeFilter === 'items' && item.isKit) return false;
+      if (typeFilter === 'kits' && !item.isKit) return false;
 
       // Filter by search
       const matchesSearch = !searchTerm || 
@@ -435,7 +435,7 @@ export function MyInventoryTransfer() {
       
       return matchesSearch && matchesProject && matchesWarehouse;
     });
-  }, [combinedInventory, searchTerm, projectFilter, warehouseFilter, activeTab]);
+  }, [combinedInventory, searchTerm, projectFilter, warehouseFilter, typeFilter]);
 
   const handleInventorySelection = (inventoryId: string, checked: boolean) => {
     const newSelected = new Set(selectedInventoryIds);
@@ -942,8 +942,8 @@ export function MyInventoryTransfer() {
 
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 relative">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by name, description, or SKU..."
@@ -952,8 +952,18 @@ export function MyInventoryTransfer() {
                 className="pl-10"
               />
             </div>
+            <Select value={typeFilter} onValueChange={(value: 'all' | 'items' | 'kits') => setTypeFilter(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Inventory" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Inventory</SelectItem>
+                <SelectItem value="items">Items</SelectItem>
+                <SelectItem value="kits">Kits</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={projectFilter} onValueChange={setProjectFilter}>
-              <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectTrigger>
                 <SelectValue placeholder="All Projects" />
               </SelectTrigger>
               <SelectContent>
@@ -966,7 +976,7 @@ export function MyInventoryTransfer() {
               </SelectContent>
             </Select>
             <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
-              <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectTrigger>
                 <SelectValue placeholder="All Warehouses" />
               </SelectTrigger>
               <SelectContent>
@@ -982,13 +992,7 @@ export function MyInventoryTransfer() {
         </CardContent>
       </Card>
 
-      <Tabs value={activeTab} onValueChange={(value: 'items' | 'kits') => setActiveTab(value)} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="items">Items</TabsTrigger>
-          <TabsTrigger value="kits">Kits</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="items" className="mt-6">
+      <div className="mt-6">
           {totalItems === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
@@ -1004,40 +1008,14 @@ export function MyInventoryTransfer() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>Your Items ({totalItems})</CardTitle>
+                <CardTitle>Your Inventory ({totalItems})</CardTitle>
               </CardHeader>
               <CardContent>
                 {isMobile ? renderMobileView() : renderDesktopView()}
               </CardContent>
             </Card>
           )}
-        </TabsContent>
-
-        <TabsContent value="kits" className="mt-6">
-          {totalItems === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Box className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3>No kits in your inventory</h3>
-                <p className="text-muted-foreground">
-                  {searchTerm || projectFilter !== 'all' || warehouseFilter !== 'all'
-                    ? 'No kits match your search criteria' 
-                    : 'When kits are assigned to you, they will appear here'}
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Kits ({totalItems})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isMobile ? renderMobileView() : renderDesktopView()}
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
+        </div>
 
       {/* Transfer Dialog */}
       <Dialog open={transferDialogOpen} onOpenChange={(open:any) => {

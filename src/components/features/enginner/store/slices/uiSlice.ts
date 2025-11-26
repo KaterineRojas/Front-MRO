@@ -1,6 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { Page } from '../../App';
-
+import type { Page } from '../../types/index'; 
 interface UiState {
   currentPage: Page;
   darkMode: boolean;

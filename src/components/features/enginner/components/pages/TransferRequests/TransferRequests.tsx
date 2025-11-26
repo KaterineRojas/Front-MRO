@@ -1,23 +1,23 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
-import { Checkbox } from '../../ui/checkbox';
-import { ScrollArea } from '../../ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Badge } from '../../../ui/badge';
+import { Input } from '../../../ui/input';
+import { Label } from '../../../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
+import { Checkbox } from '../../../ui/checkbox';
+import { ScrollArea } from '../../../ui/scroll-area';
 import { 
   Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle,
   Calendar, User, X, Camera, Upload, ArrowLeftRight, Search, AlertCircle, ArrowLeft
 } from 'lucide-react';
-import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
-import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
+import { ImageWithFallback } from '../../../../../figma/ImageWithFallback';
+import { Avatar, AvatarFallback, AvatarImage } from '../../../ui/avatar';
 import { toast } from 'sonner';
-import { getProjects, type Project } from '../../services';
+import { getProjects, type Project } from '../../../services';
 
 interface Transfer {
   id: string;
@@ -695,7 +695,7 @@ export function TransferRequests() {
                       >
                         <Checkbox
                           checked={selectedItemIds.has(item.id)}
-                          onCheckedChange={(checked:any) => handleItemSelection(item.id, checked as boolean)}
+                          onCheckedChange={(checked: boolean) => handleItemSelection(item.id, checked)}
                         />
                         <ImageWithFallback
                           src={item.image}
@@ -862,7 +862,7 @@ export function TransferRequests() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={(e: any) => {
+                              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                 e.stopPropagation();
                                 handleItemSelection(item.id, false);
                               }}
