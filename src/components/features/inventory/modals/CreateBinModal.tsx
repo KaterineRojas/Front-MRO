@@ -21,6 +21,7 @@ import { Alert, AlertDescription } from '../../../ui/alert';
 import { Info, Loader2 } from 'lucide-react';
 import { getBinTypes } from '../services/inventoryApi';
 //import { getBinTypes } from '../services/binsService';
+import { Switch } from '../../../ui/switch';
 
 interface Bin {
   id: number;
@@ -28,6 +29,7 @@ interface Bin {
   type: string;
   isActive: boolean;
   description: string;
+  allowDifferentItems: boolean;
 }
 
 interface CreateBinModalProps {
@@ -38,11 +40,13 @@ interface CreateBinModalProps {
     binCode: string;
     type: string;
     description: string;
+    allowDifferentItems: boolean;
   };
   onFormDataChange: (data: {
     binCode: string;
     type: string;
     description: string;
+    allowDifferentItems: boolean;
   }) => void;
   onSubmit: (e: React.FormEvent) => void;
   hasStock?: boolean;
@@ -176,6 +180,19 @@ export function CreateBinModal({
               }
               placeholder="Description of this bin..."
               rows={3}
+            />
+          </div>
+
+          {/* Allow Different Items */}
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col">
+              <Label htmlFor="allowDifferentItems" className="font-medium">Allow Different Items</Label>
+              <span className="text-xs text-muted-foreground mt-1">Enable storing multiple item types in this bin</span>
+            </div>
+            <Switch
+              id="allowDifferentItems"
+              checked={formData.allowDifferentItems}
+              onCheckedChange={(checked) => onFormDataChange({ ...formData, allowDifferentItems: checked })}
             />
           </div>
 
