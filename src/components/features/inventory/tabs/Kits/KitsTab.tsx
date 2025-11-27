@@ -3,7 +3,6 @@ import { Plus, Boxes, AlertCircle, Filter, Layers } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../../../../store/hooks';
 import { deleteKit, fetchKits } from '../../../../../store/slices/inventorySlice';
 import { getKitCategories, type KitCategory } from '../../services/kitService';
-import { KitFilters } from './KitFilters';
 import { KitTable } from './KitTable';
 import { UseKitFilters } from './UseKitFilters';
 import type { KitsTabProps } from './types';
@@ -125,7 +124,8 @@ export function KitsTab({
               options={categoryOptions}
               placeholder="All Categories"
               isLoading={loadingCategories}
-              icon={<Layers className="h-4 w-4" />} // El icono se verá dentro del botón
+              icon={<Layers className="h-4 w-4" />} 
+              allOptionIncluded={true}
             />
 
             <FilterSelect
