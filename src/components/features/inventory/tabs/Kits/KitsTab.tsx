@@ -75,7 +75,7 @@ export function KitsTab({
   ];
 
   const categoryOptions = kitCategories.map((cat) => ({
-    value: String(cat.id), // Aseguramos que sea string para el value del html select
+    value: String(cat.id),
     label: cat.name,
   }));
 

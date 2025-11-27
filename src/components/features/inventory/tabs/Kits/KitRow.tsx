@@ -1,54 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '../../../../ui/button';
-// import { Badge } from '../../../../ui/badge';
-import { TableCell, TableRow, TableBody, TableHead, TableHeader, Table } from '../../../../ui/table';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '../../../../ui/alert-dialog';
-import {
-  PackageMinus,
-  ChevronDown,
   ChevronRight,
-  Trash2,
-  Package,
-  Loader2,
-  Plus,
-  MapPin,
-  Minus,
-  AlertCircle,
-  PackagePlus,
-  CopyPlus,
-  Archive,
-  UserCheck,
-  Lock,
-  MoreHorizontal,
-  PackageOpen
 } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../../../ui/select';
-
-import { Input } from '../../../../ui/input';
-import { Label } from '../../../../ui/label';
 import type { KitRowProps } from './types';
 import { getAvailableBins, checkKitOccupation, type Bin } from '../../services/binsService';
 import { getKitCurrentBin, createPhysicalKit, deleteKit as deleteKitService, dismantleKit } from '../../services/kitService';
 import { DismantleKitModal } from '../../modals/DismantleKitModal';
 import { ActionButton } from '../../components/ActionButton'
-import { KitItemsTable } from '../../components/KitItemsTable'
-import { KitStatusCard } from '../../components/KitStatusCard';
 import { AssembleKitModal } from '../../modals/AssembleKitModal'
 import { DeleteKitModal } from '../../modals/DeleteKitModal'
 import { KitExpandedDetails } from '../../components/KitDetailsRow';
@@ -67,8 +25,6 @@ export function KitRow({
   onRefreshKits,
 }: KitRowProps) {
   const [isBuilding, setIsBuilding] = useState(false);
-  const [assemblyQuantity, setAssemblyQuantity] = useState(1);
-  const [confirmAssemblyOpen, setConfirmAssemblyOpen] = useState(false);
   const [assemblyBinId, setAssemblyBinId] = useState<number>(0);
   const [assemblyBinCode, setAssemblyBinCode] = useState('');
   const [availableBins, setAvailableBins] = useState<Bin[]>([]);
@@ -146,73 +102,6 @@ export function KitRow({
   }, [isExpanded, isAssembleModalOpen, kit.id, assemblyBinCode]);
 
 
-
-  // useEffect(() => {
-  //   async function loadBinsForModal() {
-  //     if (!confirmAssemblyOpen) {
-  //       setModalBinId(0);
-  //       setModalBinCode('');
-  //       return;
-  //     }
-
-  //     if (assemblyBinCode && assemblyBinId > 0) {
-  //       setModalBinId(assemblyBinId);
-  //       setModalBinCode(assemblyBinCode);
-  //       return;
-  //     }
-
-  //     if (availableBins.length === 0) {
-  //       try {
-  //         setLoadingAvailableBins(true);
-  //         const bins = await getAvailableBins(0, true);
-  //         setAvailableBins(bins);
-  //       } catch (error) {
-  //         console.error('Error loading bins for modal:', error);
-  //       } finally {
-  //         setLoadingAvailableBins(false);
-  //       }
-  //     }
-  //   }
-
-  //   loadBinsForModal();
-  // }, [confirmAssemblyOpen, assemblyBinCode, assemblyBinId, availableBins.length]);
-
-
-
-
-  // const handleConfirmAssembly = async () => {
-  //   if (!modalBinCode || modalBinId === 0) {
-  //     alert('Please select a BIN location');
-  //     return;
-  //   }
-
-  //   try {
-  //     setIsBuilding(true);
-
-  //     await createPhysicalKit({
-  //       kitId: kit.id,
-  //       binCode: modalBinCode,
-  //       binId: modalBinId,
-  //       quantity: assemblyQuantity,
-  //       notes: `Built ${assemblyQuantity} kit(s) of ${kit.name}`,
-  //     });
-
-  //     alert(`✓ Successfully built ${assemblyQuantity} kit(s) of ${kit.name} in BIN: ${modalBinCode}`);
-  //     setConfirmAssemblyOpen(false);
-  //     setAssemblyQuantity(1);
-  //     setModalBinId(0);
-  //     setModalBinCode('');
-  //     onRefreshKits();
-  //   } catch (error) {
-  //     console.error('Error building kit:', error);
-  //     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-  //     alert(`Unable to build kit\n\nReason: ${errorMessage}`);
-  //   } finally {
-  //     setIsBuilding(false);
-  //   }
-  // };
-
-  // CAMBIO: La función ahora acepta argumentos (qty, binId)
   const handleConfirmAssembly = async (qty: number, selectedBinId?: number) => {
 
     // Validamos qué BIN usar: El seleccionado en el modal O el pre-asignado
@@ -231,14 +120,12 @@ export function KitRow({
         kitId: kit.id,
         binCode: finalBinCode,
         binId: finalBinId,
-        quantity: qty, // Usamos el argumento qty
+        quantity: qty,
         notes: `Built ${qty} kit(s) of ${kit.name}`,
       });
 
-      // Feedback y Cierre
-      // alert(`✓ Successfully built...`); // Opcional, un Toast es mejor
-      setIsAssembleModalOpen(false); // Cerramos el nuevo modal
-      onRefreshKits(); // Recargamos la tabla
+      setIsAssembleModalOpen(false); 
+      onRefreshKits();
 
     } catch (error) {
       console.error('Error building kit:', error);

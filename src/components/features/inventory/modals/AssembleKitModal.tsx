@@ -4,6 +4,8 @@ import {
     PackageCheck, MapPin, Loader2, CheckCircle2, AlertCircle
 } from 'lucide-react';
 
+import {createPortal} from 'react-dom'
+
 interface Bin {
     id: number;
     binCode: string;
@@ -70,12 +72,11 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
     const handleIncrement = () => setQuantity(q => Math.min(999, q + 1));
     const handleDecrement = () => setQuantity(q => Math.max(1, q - 1));
 
-    return (
+    return createPortal(
         <div 
-            onClick={handleBackdropClick} // <--- AQUI AÑADIMOS EL EVENTO
+            onClick={handleBackdropClick}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 cursor-pointer" // cursor-pointer opcional para feedback visual
         >
-            {/* Añadimos cursor-default al hijo para que el cursor no parezca clickeable dentro del modal */}
             <div className="bg-white dark:bg-[#121212] w-full max-w-2xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh] cursor-default">
 
                 {/* HEADER */}
@@ -91,23 +92,23 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
                     </div>
                     <button
                         onClick={!isBuilding ? onClose : undefined}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
+                        className="hover:text-red-500 text-gray-4 transition duration-200 hover:rotate-90 disabled:opacity-50"
                         disabled={isBuilding}
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-6 h-6" />
                     </button>
                 </div>
 
                 {/* BODY */}
-                <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-8">
+                <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-8 bg-[]">
 
                     {/* 1. CANTIDAD */}
                     <div className="flex flex-col items-center justify-center p-6 bg-indigo-50/30 dark:bg-indigo-900/10 rounded-xl border border-dashed border-indigo-200 dark:border-indigo-800/50">
                         <label className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4 uppercase tracking-wide text-xs">
-                            Q   uantity to Build
+                            Kits to Build
                         </label>
                         <div className="flex items-center gap-6">
-                            <button onClick={handleDecrement} disabled={quantity <= 1 || isBuilding} className="w-12 h-12 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:text-indigo-600 transition-all active:scale-95 disabled:opacity-50">
+                            <button onClick={handleDecrement} disabled={quantity <= 1 || isBuilding} className="w-12 h-12 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:text-white dark:hover:bg-red-800 transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none">
                                 <Minus className="w-5 h-5" />
                             </button>
                             <div className="w-20 text-center">
@@ -115,7 +116,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
                                     {quantity}
                                 </span>
                             </div>
-                            <button onClick={handleIncrement} disabled={isBuilding} className="w-12 h-12 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:text-indigo-600 transition-all active:scale-95 disabled:opacity-50">
+                            <button onClick={handleIncrement} disabled={isBuilding} className="w-12 h-12 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:text-white dark:hover:bg-green-700 transition-all active:scale-95 disabled:opacity-50">
                                 <Plus className="w-5 h-5" />
                             </button>
                         </div>
@@ -216,13 +217,15 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
 
                 {/* FOOTER */}
                 <div className="p-4 bg-gray-50 dark:bg-[#0A0A0A] border-t border-gray-200 dark:border-gray-800 flex justify-end gap-3">
-                    <button onClick={onClose} disabled={isBuilding} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-[#121212] dark:text-gray-300 dark:border-gray-700">
+                    <button onClick={onClose} disabled={isBuilding} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg dark:bg-[#121212] dark:text-gray-300 dark:border-gray-700 hover:!bg-red-700 transition duration-200 hover:!border-white">
                         Cancel
                     </button>
                     <button
                         onClick={() => onConfirm(quantity, selectedBinId)}
                         disabled={!canConfirm}
-                        className={`px-6 py-2 text-sm font-medium text-white rounded-lg shadow-sm flex items-center gap-2 transition-all ${canConfirm ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'}`}
+                        className={`px-6 py-2 text-sm font-medium text-white rounded-lg shadow-sm flex items-center gap-2 transition-all duration-200 ${canConfirm ? 'bg-indigo-600 hover:bg-indigo-800' : 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'}
+                        `
+                        }
                     >
                         {isBuilding ? (<> <Loader2 className="w-4 h-4 animate-spin" /> Building... </>) : (<> Confirm Assembly <ArrowRight className="w-4 h-4" /> </>)}
                     </button>
@@ -230,5 +233,5 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
 
             </div>
         </div>
-    );
+    , document.body);
 };
