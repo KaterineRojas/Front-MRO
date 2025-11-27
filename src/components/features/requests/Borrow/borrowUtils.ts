@@ -11,16 +11,38 @@ import type { BorrowRequest } from './borrowService';
  */
 export function getStatusColor(status: string): string {
   switch (status) {
-    case 'completed':
-      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-    case 'approved':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-    case 'rejected':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+    case 'Sent':
+      return '!bg-green-500 !text-white border-green-500';
+    case 'Pending':
+      return '!bg-yellow-500 !text-white border-yellow-500';
+    case 'Packing':
+      return '!bg-blue-500 !text-white border-blue-500';
+    case 'Approved':
+      return '!bg-purple-500 !text-white border-purple-500';
+    case 'Rejected':
+      return '!bg-red-500 !text-white border-red-500';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+      return '!bg-gray-500 !text-white border-gray-500';
+  }
+}
+
+/**
+ * Obtiene estilos inline como backup si Tailwind no funciona
+ */
+export function getStatusStyle(status: string): React.CSSProperties {
+  switch (status) {
+    case 'Sent':
+      return { backgroundColor: '#10b981', color: 'white', borderColor: '#10b981' };
+    case 'Pending':
+      return { backgroundColor: '#f59e0b', color: 'white', borderColor: '#f59e0b' };
+    case 'Packing':
+      return { backgroundColor: '#3b82f6', color: 'white', borderColor: '#3b82f6' };
+    case 'Approved':
+      return { backgroundColor: '#8b5cf6', color: 'white', borderColor: '#8b5cf6' };
+    case 'Rejected':
+      return { backgroundColor: '#ef4444', color: 'white', borderColor: '#ef4444' };
+    default:
+      return { backgroundColor: '#6b7280', color: 'white', borderColor: '#6b7280' };
   }
 }
 
@@ -29,16 +51,18 @@ export function getStatusColor(status: string): string {
  */
 export function getStatusText(status: string): string {
   switch (status) {
-    case 'completed':
+    case 'Sent':
       return 'Active';
-    case 'pending':
+    case 'Pending':
       return 'Pending';
-    case 'approved':
+    case 'Packing':
+      return 'Packing';
+    case 'Approved':
       return 'Approved';
-    case 'rejected':
+    case 'Rejected':
       return 'Rejected';
     default:
-      return status;
+      return status; // Devuelve el estado original si no se reconoce
   }
 }
 
@@ -57,14 +81,15 @@ export function formatDate(dateString: string): string {
  * Determina si una solicitud puede ser cancelada
  */
 export function canCancelBorrowRequest(request: BorrowRequest): boolean {
-  return request.status === 'pending';
+  return request.status === 'Pending';
 }
 
 /**
  * Determina si se pueden devolver todos los items
  */
 export function canReturnAll(request: BorrowRequest): boolean {
-  return request.status === 'completed' || request.status === 'approved';
+//return request.status === 'active' || request.status === 'approved';
+return  request.status === 'Approved';
 }
 
 /**

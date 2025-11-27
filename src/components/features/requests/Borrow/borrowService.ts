@@ -20,7 +20,7 @@ export interface BorrowRequest {
   warehouseId: string;
   warehouseName: string;
   projectName: string;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  status: 'Pending' | 'Packing' | 'Sent' | 'Approved' | 'Rejected' | 'Completed' | 'Cancelled';
   expectedReturnDate: string;
   createdAt?: string;
   totalItems?: number;
@@ -43,7 +43,7 @@ const mockBorrowRequests: BorrowRequest[] = [
     projectName: 'Proyecto Amazonas',
     expectedReturnDate: '2024-02-15',
     notes: 'Equipment for field testing',
-    status: 'completed',
+    status: 'Completed',
     items: [
       {
         id: 1,
@@ -73,7 +73,7 @@ const mockBorrowRequests: BorrowRequest[] = [
     projectName: 'Campaign 2024',
     expectedReturnDate: '2024-02-25',
     notes: 'Event equipment',
-    status: 'completed',
+    status: 'Completed',
     items: [
       {
         id: 6,
@@ -230,7 +230,7 @@ export async function createBorrowRequest(
     const newRequest: BorrowRequest = {
       ...request,
       requestNumber: newId,
-      status: 'pending',
+      status: 'Pending',
       createdAt: new Date().toISOString()
     };
 
@@ -386,7 +386,7 @@ export async function returnBorrowedItems(
 
     const request = mockBorrowRequests[requestIndex];
 
-    if (request.status !== 'completed' && request.status !== 'approved') {
+    if (request.status !== 'Completed' && request.status !== 'Approved') {
       return {
         success: false,
         message: 'Only active or approved requests can be returned'

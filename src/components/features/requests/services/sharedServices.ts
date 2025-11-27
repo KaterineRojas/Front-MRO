@@ -216,12 +216,12 @@ export async function getCatalogItemsByWarehouse(warehouseId: string): Promise<C
     return data.map((item: any) => ({
       id: item.itemId ? item.itemId.toString() : '0',
       name: item.itemName || 'Unknown Item',
-      sku: item.sku || `SKU-${item.itemId || '000'}`,
-      description: item.description || '',
+      sku: item.Sku || `SKU-${item.itemId || '000'}`,
+      description: item.itemDescription || '',
       image: item.imageUrl || '',
-      category: item.category || 'General',
-      availableQuantity: item.quantityAvailable || 0,
-      totalQuantity: item.quantityAvailable || 0,
+      category: item.Category || 'General',
+      availableQuantity: item.totalAvailable || 0,
+      totalQuantity: item.totalQuantity || 0,
       warehouseId: warehouseId.toString(),
       warehouseName: `Warehouse ${warehouseId}`
     }));

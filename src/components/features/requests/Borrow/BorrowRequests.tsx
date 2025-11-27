@@ -13,7 +13,7 @@ import { ConfirmModal } from '../../../ui/confirm-modal';
 import type { User } from '../../enginner/types';
 
 import { useBorrowRequests } from './useBorrowRequests';
-import { getStatusColor, getStatusText, formatDate, hasActiveFilters } from './borrowUtils';
+import { getStatusColor, getStatusText, formatDate, hasActiveFilters, getStatusStyle } from './borrowUtils';
 
 export function BorrowRequests() {
   const {
@@ -129,9 +129,10 @@ export function BorrowRequests() {
               <SelectContent>
                 <SelectItem value="all">All Status ({getBorrowStatusCount('all')})</SelectItem>
                 <SelectItem value="Pending">Pending ({getBorrowStatusCount('Pending')})</SelectItem>
-                <SelectItem value="approved">Approved ({getBorrowStatusCount('approved')})</SelectItem>
-                <SelectItem value="completed">Active ({getBorrowStatusCount('completed')})</SelectItem>
-                <SelectItem value="rejected">Rejected ({getBorrowStatusCount('rejected')})</SelectItem>
+                <SelectItem value="Packing">Packing ({getBorrowStatusCount('Packing')})</SelectItem>
+                <SelectItem value="Sent">Sent ({getBorrowStatusCount('Sent')})</SelectItem>
+                <SelectItem value="Approved">Approved ({getBorrowStatusCount('Approved')})</SelectItem>
+                <SelectItem value="Rejected">Rejected ({getBorrowStatusCount('Rejected')})</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -173,7 +174,11 @@ export function BorrowRequests() {
                         )}
                       </h3>
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        <Badge className={getStatusColor(request.status)} variant="secondary">
+                        <Badge 
+                          className={getStatusColor(request.status)} 
+                          variant={null as any}
+                          style={getStatusStyle(request.status)}
+                        >
                           {getStatusText(request.status)}
                         </Badge>
                         <Badge variant="outline">{request.warehouseName}</Badge>
@@ -285,7 +290,11 @@ export function BorrowRequests() {
                           {formatDate(request.expectedReturnDate)}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge className={`${getStatusColor(request.status)} mx-auto`} variant="secondary">
+                          <Badge 
+                            className={`${getStatusColor(request.status)} mx-auto`} 
+                            variant={null as any}
+                            style={getStatusStyle(request.status)}
+                          >
                             {getStatusText(request.status)}
                           </Badge>
                         </TableCell>

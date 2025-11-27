@@ -183,7 +183,7 @@ export function useBorrowRequests() {
           'active': 'completed',
           'completed': 'completed',
           'approved': 'approved',
-          'pending': 'pending',
+          'Pending': 'Pending',
           'rejected': 'rejected'
         };
         
@@ -216,10 +216,10 @@ export function useBorrowRequests() {
       
       // Mapeo para manejar "active" como "completed"
       const statusMap: Record<string, string> = {
-        'active': 'completed',
+        'active': 'active',
         'completed': 'completed',
         'approved': 'approved',
-        'pending': 'pending',
+        'Pending': 'Pending',
         'rejected': 'rejected'
       };
       
