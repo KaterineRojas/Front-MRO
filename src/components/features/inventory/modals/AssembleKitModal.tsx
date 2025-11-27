@@ -4,7 +4,7 @@ import {
     PackageCheck, MapPin, Loader2, CheckCircle2, AlertCircle
 } from 'lucide-react';
 
-import {createPortal} from 'react-dom'
+import { createPortal } from 'react-dom'
 
 interface Bin {
     id: number;
@@ -18,7 +18,7 @@ interface KitItem {
     articleName: string;
     quantity: number;
     articleDescription?: string;
-    currentStock?: number;      
+    currentStock?: number;
 }
 
 interface AssembleKitModalProps {
@@ -44,12 +44,37 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
 }) => {
     const [quantity, setQuantity] = useState(1);
     const [selectedBinId, setSelectedBinId] = useState<number>(0);
+    const [isVisible, setIsVisible] = useState(false);
+    const [shouldRender, setShouldRender] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
+            setShouldRender(true);
             setQuantity(1);
             setSelectedBinId(0);
+            document.body.style.overflow = 'hidden';
+
+            // Activar animación después de que el componente se monte
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    setIsVisible(true);
+                });
+            });
+        } else {
+            setIsVisible(false);
+            document.body.style.overflow = 'unset';
+
+            // Esperar a que termine la animación antes de desmontar
+            const timer = setTimeout(() => {
+                setShouldRender(false);
+            }, 200); // Duración de la animación
+
+            return () => clearTimeout(timer);
         }
+
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
     }, [isOpen]);
 
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -58,7 +83,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
         }
     };
 
-    if (!isOpen || !kit) return null;
+    if (!shouldRender || !kit) return null;
 
     const canBuildStock = kit.items.every((item: KitItem) => {
         const currentStock = item.quantity ?? 0;
@@ -73,11 +98,14 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
     const handleDecrement = () => setQuantity(q => Math.max(1, q - 1));
 
     return createPortal(
-        <div 
+        <div
             onClick={handleBackdropClick}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 cursor-pointer" // cursor-pointer opcional para feedback visual
+            className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ease-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}
         >
-            <div className="bg-white dark:bg-[#121212] w-full max-w-2xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh] cursor-default">
+            <div className={`bg-white dark:bg-[#121212] w-full max-w-2xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh] cursor-default transform transition-all duration-200 ease-out ${isVisible
+                    ? 'opacity-100 scale-100'
+                    : 'opacity-0 scale-95'
+                }`}>
 
                 {/* HEADER */}
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-[#0A0A0A]">
@@ -167,7 +195,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
                     <div>
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Resource Requirements</h3>
                         <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
-                            <table className="w-full text-sm">
+                            <table className="w-full text-sm overflow-y-auto">
                                 <thead className="bg-gray-50 dark:bg-[#0A0A0A] text-gray-500 dark:text-gray-400 text-xs uppercase font-medium border-b border-gray-200 dark:border-gray-800">
                                     <tr>
                                         <th className="px-4 py-2 text-left">Item</th>
@@ -233,5 +261,5 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
 
             </div>
         </div>
-    , document.body);
+        , document.body);
 };

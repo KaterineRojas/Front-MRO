@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
     Trash2,
     CheckCircle2,
@@ -23,7 +24,36 @@ export const DeleteKitModal: React.FC<DeleteKitModalProps> = ({
     status,
     message
 }) => {
-    if (!isOpen || !status) return null;
+    const [isVisible, setIsVisible] = useState(false);
+    const [shouldRender, setShouldRender] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setShouldRender(true);
+            document.body.style.overflow = 'hidden';
+            
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    setIsVisible(true);
+                });
+            });
+        } else {
+            setIsVisible(false);
+            document.body.style.overflow = 'unset';
+            
+            const timer = setTimeout(() => {
+                setShouldRender(false);
+            }, 200);
+            
+            return () => clearTimeout(timer);
+        }
+
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
+    if (!shouldRender || !status) return null;
 
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget && status !== 'loading') {
@@ -115,12 +145,20 @@ export const DeleteKitModal: React.FC<DeleteKitModalProps> = ({
     const content = renderContent();
     if (!content) return null;
 
-    return (
+    return createPortal(
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ease-out ${
+                isVisible ? 'opacity-100' : 'opacity-0'
+            }`}
             onClick={handleBackdropClick}
         >
-            <div className="relative bg-white dark:bg-[#121212] w-full max-w-sm rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 p-6 transform transition-all animate-in zoom-in-95 duration-200">
+            <div 
+                className={`relative bg-white dark:bg-[#121212] w-full max-w-sm rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 p-6 transform transition-all duration-200 ease-out ${
+                    isVisible 
+                        ? 'opacity-100 scale-100' 
+                        : 'opacity-0 scale-95'
+                }`}
+            >
                 {content.icon}
                 <div className="text-center mb-6">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{content.title}</h3>
@@ -128,6 +166,7 @@ export const DeleteKitModal: React.FC<DeleteKitModalProps> = ({
                 </div>
                 {content.footer && <div className="mt-4">{content.footer}</div>}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
