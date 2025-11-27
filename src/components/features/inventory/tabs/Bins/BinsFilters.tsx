@@ -1,6 +1,6 @@
 import React from 'react';
-import { Input } from '../../../ui2/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui2/select';
+import { Input } from '../../../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { Search } from 'lucide-react';
 
 interface BinsFiltersProps {

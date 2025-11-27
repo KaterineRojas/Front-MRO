@@ -128,7 +128,7 @@ export function BorrowRequests() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status ({getBorrowStatusCount('all')})</SelectItem>
-                <SelectItem value="pending">Pending ({getBorrowStatusCount('pending')})</SelectItem>
+                <SelectItem value="Pending">Pending ({getBorrowStatusCount('Pending')})</SelectItem>
                 <SelectItem value="approved">Approved ({getBorrowStatusCount('approved')})</SelectItem>
                 <SelectItem value="completed">Active ({getBorrowStatusCount('completed')})</SelectItem>
                 <SelectItem value="rejected">Rejected ({getBorrowStatusCount('rejected')})</SelectItem>

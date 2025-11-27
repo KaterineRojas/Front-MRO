@@ -78,6 +78,22 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const recomputeFilteredItems = (itemsList: { itemId: string }[]) => {
+    const selectedItemIds = itemsList
+      .map(i => i.itemId)
+      .filter(id => id !== '');
+
+    const updatedFiltered: { [key: number]: CatalogItem[] } = {};
+
+    itemsList.forEach((_, index) => {
+      updatedFiltered[index] = catalogItems.filter(
+        ci => !selectedItemIds.includes(ci.id)
+      );
+    });
+
+    return updatedFiltered;
+  };
+
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
 
 
@@ -395,9 +411,15 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
           // Initialize filtered items for all indexes
           const newFilteredItems: { [key: number]: CatalogItem[] } = {};
           // Usamos el tamaño actual de formData.items, que puede ser 0 o 1 si se reseteó
-          formData.items.forEach((_, index) => { 
-            newFilteredItems[index] = items;
+          const selectedItemIds = formData.items
+            .map(i => i.itemId)
+            .filter(id => id !== '');
+          const selectedIds = formData.items.map(i => i.itemId).filter(id => id !== '');
+
+          formData.items.forEach((_, index) => {
+            newFilteredItems[index] = items.filter(ci => !selectedIds.includes(ci.id));
           });
+
           setFilteredItems(newFilteredItems);
         } catch (error: any) {
           toast.error('Failed to load catalog items');
@@ -424,26 +446,65 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
   }, [dropdownOpen]);
 
   const handleItemSearch = (index: number, value: string) => {
+    const selectedItemIds = formData.items
+      .map(i => i.itemId)
+      .filter(id => id !== '');
+    if (!formData.warehouseId) {
+      toast.error("Select a warehouse first.");
+      return;
+    }
+
     setItemSearches(prev => ({ ...prev, [index]: value }));
+
     if (value.length >= 2) {
-      const filtered = catalogItems.filter(item =>
-        item.name.toLowerCase().includes(value.toLowerCase())
-      );
+      const filtered = catalogItems
+        .filter(item =>
+          item.name.toLowerCase().includes(value.toLowerCase())
+        )
+        .filter(item => !selectedItemIds.includes(item.id));
       setFilteredItems(prev => ({ ...prev, [index]: filtered }));
     } else {
       setFilteredItems(prev => ({ ...prev, [index]: catalogItems }));
     }
+
     setDropdownOpen(prev => ({ ...prev, [index]: true }));
   };
 
   const selectItem = (index: number, item: CatalogItem) => {
     updateItem(index, 'itemId', item.id);
+    const updatedSelected = formData.items.map((it, idx) =>
+      idx === index ? item.id : it.itemId
+    ).filter(id => id !== '');
+
+
+    const newFiltered = Object.keys(filteredItems).reduce((acc, key) => {
+      const idx = parseInt(key);
+      acc[idx] = catalogItems.filter(ci => !updatedSelected.includes(ci.id));
+      return acc;
+    }, {} as { [key: number]: CatalogItem[] });
+
+    setFilteredItems(newFiltered);
+
+
+    const newItemsList = formData.items.map((it, idx) =>
+      idx === index ? { ...it, itemId: item.id, itemName: item.name } : it
+    );
+
+    setFilteredItems(recomputeFilteredItems(newItemsList));
+
+
+
     updateItem(index, 'itemName', item.name);
     setItemSearches(prev => ({ ...prev, [index]: item.name }));
     setDropdownOpen(prev => ({ ...prev, [index]: false }));
   };
 
   const toggleDropdown = (index: number) => {
+    if (!formData.warehouseId) {
+      toast.error("Select a warehouse first.");
+      return;
+    }
+
     const currentItem = formData.items[index];
     if (currentItem.itemId) {
       setDropdownOpen(prev => ({ ...prev, [index]: !prev[index] }));
@@ -459,7 +520,39 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
       items: [...prev.items, { itemId: '', itemName: '', quantity: 1 }]
     }));
     setItemSearches(prev => ({ ...prev, [newIndex]: '' }));
-    setFilteredItems(prev => ({ ...prev, [newIndex]: catalogItems }));
+    const addNewItem = () => {
+      const newIndex = formData.items.length;
+
+      // calcular items ya seleccionados
+      const selectedItemIds = formData.items
+        .map(i => i.itemId)
+        .filter(id => id !== '');
+
+      setFormData(prev => ({
+        ...prev,
+        items: [...prev.items, { itemId: '', itemName: '', quantity: 1 }]
+      }));
+
+      setItemSearches(prev => ({ ...prev, [newIndex]: '' }));
+
+      // filtrar catálogo excluyendo ya seleccionados
+      const recomputeFilteredItems = (itemsList: { itemId: string }[]) => {
+        const selectedItemIds = itemsList
+          .map(i => i.itemId)
+          .filter(id => id !== '');
+
+        const updatedFiltered: { [key: number]: CatalogItem[] } = {};
+
+        itemsList.forEach((_, index) => {
+          updatedFiltered[index] = catalogItems.filter(ci => !selectedItemIds.includes(ci.id));
+        });
+
+        return updatedFiltered;
+      };
+
+      setDropdownOpen(prev => ({ ...prev, [newIndex]: false }));
+    };
+
     setDropdownOpen(prev => ({ ...prev, [newIndex]: false }));
   };
 
@@ -478,6 +571,17 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
       delete newFiltered[index];
       return newFiltered;
     });
+    const newItemsList = formData.items.filter((_, i) => i !== index);
+    const selectedIds = newItemsList.map(it => it.itemId).filter(id => id !== '');
+
+    const newFiltered = Object.keys(filteredItems).reduce((acc, key) => {
+      const idx = parseInt(key);
+      acc[idx] = catalogItems.filter(ci => !selectedIds.includes(ci.id));
+      return acc;
+    }, {} as { [key: number]: CatalogItem[] });
+
+    setFilteredItems(newFiltered);
+
   };
 
   const updateItem = (index: number, field: string, value: any) => {
@@ -518,8 +622,8 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
     if (!formData.workOrder) {
       toast.error('Please select a work order');
       return;
-        }
-      
+    }
+
     // Validate stock for all items
     for (const item of formData.items) {
       if (!item.itemId) {
@@ -587,10 +691,10 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                 <Select
                   value={formData.warehouseId}
                   onValueChange={(newWarehouseId: string) => {
-                    
+
                     // LÓGICA DE RESETEO DE ITEMS AL CAMBIAR DE WAREHOUSE
                     if (newWarehouseId !== formData.warehouseId) {
-                      
+
                       setFormData(prev => ({
                         ...prev,
                         warehouseId: newWarehouseId,
@@ -601,14 +705,14 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
                       // Resetear los estados de búsqueda de ítems
                       setItemSearches({});
                       setFilteredItems({});
-                      
+
                       // Notificación al usuario si había ítems antes
                       if (formData.items.length > 0) {
                         toast.warning('The list of items was reset because you changed the warehouse.');
                       }
                     } else {
-                        // Solo actualiza el ID si es necesario (aunque el Select ya lo maneja)
-                        setFormData(prev => ({ ...prev, warehouseId: newWarehouseId }));
+                      // Solo actualiza el ID si es necesario (aunque el Select ya lo maneja)
+                      setFormData(prev => ({ ...prev, warehouseId: newWarehouseId }));
                     }
                   }}
                 >

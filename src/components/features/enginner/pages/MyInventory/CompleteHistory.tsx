@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Card, CardContent } from '../../../ui2/card';
-import { Button } from '../../../ui2/button';
-import { Badge } from '../../../ui2/badge';
-import { Input } from '../../../ui2/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui2/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui2/table';
+import { Card, CardContent } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Badge } from '../../../ui/badge';
+import { Input } from '../../../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { 
   Download, 
   Search, 

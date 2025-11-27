@@ -47,7 +47,7 @@ export {
   getBorrowRequestById,
   createBorrowRequest,
   updateBorrowRequestStatus,
-  deleteBorrowRequest,
+  deleteBorrow,
   returnBorrowedItems
 } from './borrowService';
 

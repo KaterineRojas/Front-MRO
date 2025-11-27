@@ -1,4 +1,4 @@
-import { Badge } from '../../ui2/badge';
+import { Badge } from '../../ui/badge';
 import { TrendingDown, TrendingUp, RotateCcw, Package } from 'lucide-react';
 
 /**

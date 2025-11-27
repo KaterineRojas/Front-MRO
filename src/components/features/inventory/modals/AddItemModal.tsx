@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../ui2/dialog';
-import { Button } from '../../ui2/button';
-import { Input } from '../../ui2/input';
-import { Label } from '../../ui2/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui2/select';
-import { Textarea } from '../../ui2/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../ui/dialog';
+import { Button } from '../../ui/button';
+import { Input } from '../../ui/input';
+import { Label } from '../../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { Textarea } from '../../ui/textarea';
 import { BinSelector } from '../components/BinSelector';
 
 interface Article {

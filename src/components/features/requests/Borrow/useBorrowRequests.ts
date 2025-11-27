@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react'; // 👈 Importar useMemo y useCallback
 import { toast } from 'sonner';
 import { useAppSelector, useAppDispatch } from '../../enginner/store/hooks';
 import { clearCart } from '../../enginner/store/slices/cartSlice';
@@ -8,7 +8,7 @@ import { handleError, setupConnectionListener } from '../../enginner/services/er
 
 import {
   getBorrowRequests,
-  deleteBorrowRequest,
+  deleteBorrow,
   type BorrowRequest
 } from './borrowService';
 
@@ -20,11 +20,28 @@ import {
 } from '../services/sharedServices';
 
 import {
-  filterBorrowRequests,
-  getStatusCount,
   canCancelBorrowRequest,
   canReturnAll
 } from './borrowUtils';
+
+interface GetRequestsParams {
+  warehouseId?: string;
+  status?: string;
+  requesterId?: string;
+  pageNumber?: number;
+  pageSize?: number;
+  searchTerm?: string;
+}
+
+interface PagedResponse<T> {
+  data: T[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
 
 /**
  * Custom Hook para manejar la lógica de Borrow Requests
@@ -37,7 +54,9 @@ export function useBorrowRequests() {
   // Estados del componente
   const [showBorrowForm, setShowBorrowForm] = useState(false);
   const [borrowRequests, setBorrowRequests] = useState<BorrowRequest[]>([]);
-  const [filteredBorrowRequests, setFilteredBorrowRequests] = useState<BorrowRequest[]>([]);
+  
+  // ⚠️ Ya no inicializaremos filteredBorrowRequests aquí, lo hará useMemo
+  // const [filteredBorrowRequests, setFilteredBorrowRequests] = useState<BorrowRequest[]>([]);
   const [borrowSearchTerm, setBorrowSearchTerm] = useState('');
   const [borrowStatusFilter, setBorrowStatusFilter] = useState<string>('all');
   const [warehouseFilter, setWarehouseFilter] = useState<string>('all');
@@ -80,11 +99,15 @@ export function useBorrowRequests() {
         const [whData, statusData, requestsData] = await Promise.all([
           getWarehouses(),
           getStatuses(),
-          getBorrowRequests(currentUser?.id) // Pasar el ID del usuario
+          // ⚠️ NOTA: Si getBorrowRequests ya devuelve paginación, esta línea debe ajustarse. 
+          // Por ahora, asumimos que trae todo y los filtros se hacen en el cliente.
+          getBorrowRequests(currentUser?.id) 
         ]);
         setWarehouses(whData);
         setStatuses(statusData);
-        setBorrowRequests(requestsData);
+        // Si getBorrowRequests devuelve PagedResponse, usar requestsData.data:
+        // setBorrowRequests(requestsData.data);
+        setBorrowRequests(requestsData); 
       } catch (error: any) {
         const appError = handleError(error);
         showConfirm({
@@ -102,7 +125,7 @@ export function useBorrowRequests() {
       }
     };
     loadData();
-  }, []);
+  }, [currentUser?.id]); // Añadir currentUser?.id a las dependencias
 
   // Check mobile
   useEffect(() => {
@@ -114,18 +137,102 @@ export function useBorrowRequests() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Filter requests
-  useEffect(() => {
-    const filtered = filterBorrowRequests(
-      borrowRequests,
-      borrowSearchTerm,
-      borrowStatusFilter,
-      warehouseFilter
-    );
-    setFilteredBorrowRequests(filtered);
+  // ✅ 3. Reemplazar el useEffect de filtrado por useMemo
+  // Esto recalcula filteredBorrowRequests SOLO cuando cambian sus dependencias.
+  const filteredBorrowRequests = useMemo(() => {
+    return borrowRequests.filter(request => {
+      // 1. Filtro de búsqueda por texto
+      const searchLower = borrowSearchTerm.toLowerCase().trim();
+      if (searchLower) {
+        const matchesSearch = 
+          request.requestNumber?.toLowerCase().includes(searchLower) ||
+          request.projectName?.toLowerCase().includes(searchLower) ||
+          request.warehouseName?.toLowerCase().includes(searchLower) ||
+          request.departmentName?.toLowerCase().includes(searchLower) ||
+          request.notes?.toLowerCase().includes(searchLower) ||
+          request.items?.some(item => 
+            item.name?.toLowerCase().includes(searchLower) ||
+            item.sku?.toLowerCase().includes(searchLower) ||
+            item.description?.toLowerCase().includes(searchLower)
+          );
+        
+        if (!matchesSearch) return false;
+      }
+
+      // 2. Filtro por Warehouse
+      if (warehouseFilter && warehouseFilter !== 'all') {
+        const matchesWarehouse = 
+          request.warehouseId === warehouseFilter ||
+          request.warehouseName === warehouseFilter ||
+          // Comparación case-insensitive por si acaso
+          request.warehouseName?.toLowerCase() === warehouseFilter.toLowerCase();
+        
+        if (!matchesWarehouse) {
+          // console.log('Warehouse filter mismatch:', { filter: warehouseFilter, requestWarehouseId: request.warehouseId, requestWarehouseName: request.warehouseName });
+          return false;
+        }
+      }
+
+      // 3. Filtro por Status
+      if (borrowStatusFilter && borrowStatusFilter !== 'all') {
+        const normalizedRequestStatus = request.status?.toLowerCase();
+        const normalizedFilterStatus = borrowStatusFilter.toLowerCase();
+        
+        // Mapeo para manejar estados inconsistentes (p. ej., "Active" como "Completed")
+        const statusMap: Record<string, string> = {
+          'active': 'completed',
+          'completed': 'completed',
+          'approved': 'approved',
+          'pending': 'pending',
+          'rejected': 'rejected'
+        };
+        
+        const mappedRequestStatus = statusMap[normalizedRequestStatus as keyof typeof statusMap] || normalizedRequestStatus;
+        const mappedFilterStatus = statusMap[normalizedFilterStatus as keyof typeof statusMap] || normalizedFilterStatus;
+        
+        const matchesStatus = mappedRequestStatus === mappedFilterStatus;
+        
+        if (!matchesStatus) {
+          // console.log('Status filter mismatch:', { filter: borrowStatusFilter, requestStatus: request.status, normalized: normalizedRequestStatus, mapped: mappedRequestStatus });
+          return false;
+        }
+      }
+
+      return true;
+    });
   }, [borrowRequests, borrowSearchTerm, borrowStatusFilter, warehouseFilter]);
 
+
+  // ✅ 4. Reemplazar la función getBorrowStatusCount por useCallback
+  const getBorrowStatusCount = useCallback((status: string) => {
+    if (!borrowRequests || !Array.isArray(borrowRequests)) return 0;
+    
+    if (status === 'all') return borrowRequests.length;
+    
+    // Normalizar para la comparación
+    return borrowRequests.filter(req => {
+      const normalizedRequestStatus = req.status?.toLowerCase();
+      const normalizedFilterStatus = status.toLowerCase();
+      
+      // Mapeo para manejar "active" como "completed"
+      const statusMap: Record<string, string> = {
+        'active': 'completed',
+        'completed': 'completed',
+        'approved': 'approved',
+        'pending': 'pending',
+        'rejected': 'rejected'
+      };
+      
+      const mappedRequestStatus = statusMap[normalizedRequestStatus as keyof typeof statusMap] || normalizedRequestStatus;
+      const mappedFilterStatus = statusMap[normalizedFilterStatus as keyof typeof statusMap] || normalizedFilterStatus;
+      
+      return mappedRequestStatus === mappedFilterStatus;
+    }).length;
+  }, [borrowRequests]); // Se recalcula solo si cambia borrowRequests
+
   // Handlers
+  // ... (el resto de los Handlers permanecen igual) ...
+
   const handleClearCart = () => {
     dispatch(clearCart());
   };
@@ -140,7 +247,7 @@ export function useBorrowRequests() {
       cancelText: 'Keep Request',
       onConfirm: async () => {
         try {
-          const result = await deleteBorrowRequest(requestId);
+          const result = await deleteBorrow(requestId);
           if (result.success) {
             setBorrowRequests(prev => prev.filter(req => req.requestNumber !== requestId));
             toast.success('Request cancelled successfully');
@@ -148,7 +255,7 @@ export function useBorrowRequests() {
           } else {
             showConfirm({
               title: 'Cannot Cancel Request',
-              description: result.message,
+              description: result.message ?? "Unknown error",
               type: 'error',
               confirmText: 'OK',
               showCancel: false
@@ -202,15 +309,16 @@ export function useBorrowRequests() {
     });
   };
 
-  const getBorrowStatusCount = (status: string) => {
-    return getStatusCount(borrowRequests, status);
-  };
+  // ⚠️ La función ya no está definida aquí, sino arriba con useCallback
+  // const getBorrowStatusCount = (status: string) => {
+  //   return getStatusCount(borrowRequests, status);
+  // };
 
   return {
     // State
     showBorrowForm,
     borrowRequests,
-    filteredBorrowRequests,
+    filteredBorrowRequests, // 👈 Ahora es el resultado de useMemo
     borrowSearchTerm,
     borrowStatusFilter,
     warehouseFilter,
@@ -240,7 +348,7 @@ export function useBorrowRequests() {
     handleReturnAll,
     confirmReturnAll,
     toggleBorrowRow,
-    getBorrowStatusCount,
+    getBorrowStatusCount, // 👈 Ahora es la función de useCallback
     hideModal,
 
     // Utilities

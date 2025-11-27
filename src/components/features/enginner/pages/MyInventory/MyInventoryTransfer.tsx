@@ -1,15 +1,15 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../ui2/card';
-import { Button } from '../../../ui2/button';
-import { Badge } from '../../../ui2/badge';
-import { Input } from '../../../ui2/input';
-import { Label } from '../../../ui2/label';
-import { Textarea } from '../../../ui2/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui2/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui2/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui2/table';
-import { Checkbox } from '../../../ui2/checkbox';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui2/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Badge } from '../../../ui/badge';
+import { Input } from '../../../ui/input';
+import { Label } from '../../../ui/label';
+import { Textarea } from '../../../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
+import { Checkbox } from '../../../ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
 import { 
   Package, Search, ChevronDown, ChevronRight, Box, ArrowRightLeft, Camera, Upload, X, AlertCircle, History
 } from 'lucide-react';

@@ -38,7 +38,7 @@ export interface CatalogItem {
 
 // Project Details Types
 export interface Company {
-  id: string | number; 
+  id: string | number;
   name: string;
   code?: string;
   description?: string;
@@ -134,7 +134,7 @@ async function fetchDataWithRetry<T>(
  * Get all warehouses
  */
 export async function getWarehouses(): Promise<Warehouse[]> {
-  const endpoint = `/Warehouse`;
+  const endpoint = `/Warehouses`;
   return fetchDataWithRetry(endpoint, (data: any) => {
     // 1. Verificar si 'data' es un array. Si no, devuelve un array vacío
     if (!Array.isArray(data)) {
@@ -146,7 +146,7 @@ export async function getWarehouses(): Promise<Warehouse[]> {
     const mappedWarehouses: Warehouse[] = data
       .map((wh: any) => {
         // Paso 2a: Mapear el ID
-        const id = wh.idWh ? wh.idWh.toString() : '';
+        const id = wh.id ? wh.id.toString() : '';
         // Paso 2b: Si no hay un ID válido, retornamos un valor que será descartado
         // En lugar de devolver 'null', podemos devolver 'undefined' o simplemente 
         // dejar que el filtro se encargue de los objetos sin ID.
@@ -203,8 +203,8 @@ export async function getDepartments(): Promise<Department[]> {
  * Get catalog items by warehouse
  */
 export async function getCatalogItemsByWarehouse(warehouseId: string): Promise<CatalogItem[]> {
-  const endpoint = `/Items/${warehouseId}`;
-  
+  const endpoint = `/Inventory/by-warehouse/${warehouseId}`;
+  //http://localhost:5048/api/Items/1
   return fetchDataWithRetry(endpoint, (data: any) => {
     // Verificar si data es un array
     if (!Array.isArray(data)) {
@@ -214,16 +214,16 @@ export async function getCatalogItemsByWarehouse(warehouseId: string): Promise<C
 
     // Mapeo correcto según tu API real
     return data.map((item: any) => ({
-      id: item.itemId ? item.itemId.toString() : '0',             
-      name: item.itemName || 'Unknown Item',                       
-      sku: item.sku || `SKU-${item.itemId || '000'}`,             
+      id: item.itemId ? item.itemId.toString() : '0',
+      name: item.itemName || 'Unknown Item',
+      sku: item.sku || `SKU-${item.itemId || '000'}`,
       description: item.description || '',
-      image: item.imageUrl || '',  
+      image: item.imageUrl || '',
       category: item.category || 'General',
-      availableQuantity: item.quantityAvailable || 0,             
-      totalQuantity: item.quantityAvailable || 0,                  
+      availableQuantity: item.quantityAvailable || 0,
+      totalQuantity: item.quantityAvailable || 0,
       warehouseId: warehouseId.toString(),
-      warehouseName: `Warehouse ${warehouseId}`                   
+      warehouseName: `Warehouse ${warehouseId}`
     }));
   });
 }

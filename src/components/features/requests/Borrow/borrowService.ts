@@ -106,16 +106,16 @@ export async function getBorrowRequests(userId?: string): Promise<BorrowRequest[
 
     // Construir los parámetros de la query
     const params = new URLSearchParams();
-    
+
     // Si hay un userId, lo enviamos como requesterId
     if (userId) {
       params.append('requesterId', userId);
     }
-    
+
     // Agregar parámetros de paginación por defecto
     params.append('pageNumber', '1');
     params.append('pageSize', '20');
-    
+
     // Realizar la petición a la API real
     const response = await fetch(`${API_BASE_URL}/loan-requests?${params.toString()}`, {
       method: 'GET',
@@ -130,19 +130,19 @@ export async function getBorrowRequests(userId?: string): Promise<BorrowRequest[
 
     // Parsear el JSON de la respuesta
     const responseData: ApiResponse = await response.json();
-    
+
     // La API devuelve los datos en la propiedad 'data'
     if (responseData.data && Array.isArray(responseData.data)) {
       return responseData.data;
     }
-    
+
     // Si no hay datos, devolver array vacío
     console.warn('No data found in API response');
     return [];
-    
+
   } catch (error) {
     console.error('Error fetching borrow requests:', error);
-    
+
     // En caso de error, usar datos mock como fallback
     console.log('Using mock data due to API error');
     return [...mockBorrowRequests];
@@ -171,14 +171,14 @@ export async function getBorrowRequestById(requestId: string): Promise<BorrowReq
     }
 
     const data = await response.json();
-    
+
     // Si la respuesta viene envuelta en 'data'
     if (data.data) {
       return data.data as BorrowRequest;
     }
-    
+
     return data as BorrowRequest;
-    
+
   } catch (error) {
     console.error('Error fetching borrow request by ID:', error);
     // Fallback to mock data
@@ -195,6 +195,7 @@ export async function getBorrowRequestById(requestId: string): Promise<BorrowReq
 export async function createBorrowRequest(
   request: Omit<BorrowRequest, 'requestNumber' | 'status' | 'createdAt'>
 ): Promise<BorrowRequest> {
+  console.log('Creating borrow request:', request);
   try {
     const response = await fetch(`${API_BASE_URL}/loan-requests`, {
       method: 'POST',
@@ -209,34 +210,36 @@ export async function createBorrowRequest(
     }
 
     const data = await response.json();
-    
+
     // Si la respuesta viene envuelta en 'data'
     if (data.data) {
       return data.data as BorrowRequest;
     }
-    
+
     return data as BorrowRequest;
-    
+
   } catch (error) {
     console.error('Error creating borrow request:', error);
-    
+
     // Fallback to mock implementation
     console.log('Using mock implementation for create');
-    
+
     // Generate new request ID
     const newId = `BRW${String(mockBorrowRequests.length + 1).padStart(3, '0')}`;
-    
+
     const newRequest: BorrowRequest = {
       ...request,
       requestNumber: newId,
       status: 'pending',
       createdAt: new Date().toISOString()
     };
-    
+
     mockBorrowRequests.push(newRequest);
     return newRequest;
   }
 }
+
+
 
 /**
  * Update borrow request status
@@ -265,93 +268,77 @@ export async function updateBorrowRequestStatus(
     }
 
     const data = await response.json();
-    
+
     // Si la respuesta viene envuelta en 'data'
     if (data.data) {
       return data.data as BorrowRequest;
     }
-    
+
     return data as BorrowRequest;
-    
+
   } catch (error) {
     console.error('Error updating borrow request status:', error);
-    
+
     // Fallback to mock implementation
     const requestIndex = mockBorrowRequests.findIndex(r => r.requestNumber === requestId);
-    
+
     if (requestIndex === -1) {
       throw new Error('Borrow request not found');
     }
-    
+
     mockBorrowRequests[requestIndex] = {
       ...mockBorrowRequests[requestIndex],
       status
     };
-    
+
     return { ...mockBorrowRequests[requestIndex] };
   }
 }
 
-/**
- * Delete borrow request (cancel)
- * @param requestId - The request ID to delete
- * @returns Promise with success status and message
- */
-export async function deleteBorrowRequest(requestId: string): Promise<{ success: boolean; message: string }> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/loan-requests/${requestId}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        return {
-          success: false,
-          message: 'Borrow request not found'
-        };
-      }
-      throw new Error(`Error deleting borrow request: ${response.status}`);
-    }
-    
-    return {
-      success: true,
-      message: 'Request cancelled successfully'
-    };
-    
-  } catch (error) {
-    console.error('Error deleting borrow request:', error);
-    
-    // Fallback to mock implementation
-    const requestIndex = mockBorrowRequests.findIndex(r => r.requestNumber === requestId);
-    
-    if (requestIndex === -1) {
-      return {
-        success: false,
-        message: 'Borrow request not found'
-      };
-    }
-    
-    const request = mockBorrowRequests[requestIndex];
-    
-    // Only pending requests can be deleted
-    if (request.status !== 'pending') {
-      return {
-        success: false,
-        message: 'Only pending requests can be cancelled'
-      };
-    }
-
-    mockBorrowRequests.splice(requestIndex, 1);
-    
-    return {
-      success: true,
-      message: 'Request cancelled successfully'
-    };
+export async function deleteBorrow(
+  requestNumber: string | number,
+  options?: {
+    token?: string;
+    signal?: AbortSignal;
   }
+): Promise<{ success: boolean; message?: string; status: number }> {
+  const url = `${API_BASE_URL}/loan-requests/${requestNumber}`;
+
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+  if (options?.token) {
+    headers["Authorization"] = `Bearer ${options.token}`;
+  }
+
+  const resp = await fetch(url, {
+    method: "DELETE",
+    headers,
+    signal: options?.signal,
+  });
+
+  let message: string | undefined;
+  try {
+    const contentType = resp.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      const data = await resp.json();
+      message = data?.message ?? data?.error ?? undefined;
+    } else {
+      message = await resp.text();
+    }
+  } catch {
+    // ignoramos si no hay cuerpo
+  }
+
+  return {
+    success: resp.ok,
+    status: resp.status,
+    message: message,
+  };
 }
+
+
 
 /**
  * Return all items from a borrow request
@@ -378,27 +365,27 @@ export async function returnBorrowedItems(
       }
       throw new Error(`Error returning items: ${response.status}`);
     }
-    
+
     return {
       success: true,
       message: 'All items returned successfully'
     };
-    
+
   } catch (error) {
     console.error('Error returning borrowed items:', error);
-    
+
     // Fallback to mock implementation
     const requestIndex = mockBorrowRequests.findIndex(r => r.requestNumber === requestId);
-    
+
     if (requestIndex === -1) {
       return {
         success: false,
         message: 'Borrow request not found'
       };
     }
-    
+
     const request = mockBorrowRequests[requestIndex];
-    
+
     if (request.status !== 'completed' && request.status !== 'approved') {
       return {
         success: false,
@@ -408,7 +395,7 @@ export async function returnBorrowedItems(
 
     // Mark as completed or remove from active requests
     mockBorrowRequests.splice(requestIndex, 1);
-    
+
     return {
       success: true,
       message: 'All items returned successfully'
