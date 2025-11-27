@@ -177,3 +177,33 @@ export const setupConnectionListener = (
     window.removeEventListener('offline', onOffline);
   };
 };
+
+// En tu archivo de manejo de errores (donde está createError)
+
+/**
+ * Clasifica los errores de respuesta HTTP (4xx, 5xx)
+ */
+export const classifyFetchError = async (response: Response): Promise<AppError> => {
+    const statusCode = response.status;
+    let message = `Request failed with status ${statusCode}.`;
+    let type = ErrorType.BACKEND_ERROR;
+
+    try {
+        const errorBody = await response.json();
+        message = errorBody.message || errorBody.error || message;
+    } catch {
+        // Ignorar si el cuerpo no es JSON
+    }
+
+    if (statusCode === 401 || statusCode === 403) {
+        type = ErrorType.UNAUTHORIZED;
+        message = 'Authentication required or invalid permissions.';
+    } else if (statusCode === 404) {
+        type = ErrorType.NOT_FOUND;
+        message = 'Resource not found. Check the selected IDs.';
+    } else if (statusCode >= 400 && statusCode < 500) {
+        type = ErrorType.VALIDATION_ERROR;
+    }
+
+    return createError(type, message, response, statusCode);
+};

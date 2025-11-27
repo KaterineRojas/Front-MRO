@@ -1,8 +1,8 @@
 import React from 'react';
 import { X, Trash2, Plus, Minus } from 'lucide-react';
-import { Button } from './ui/button';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './ui/sheet';
-import { ScrollArea } from './ui/scroll-area';
+import { Button } from '../../ui/button';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../../ui/sheet';
+import { ScrollArea } from '../../ui/scroll-area';
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import type { CartItem } from './types';
 
