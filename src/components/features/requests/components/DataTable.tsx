@@ -1,23 +1,15 @@
 import React from 'react';
-import { ChevronDown, ChevronRight, Package, FileText } from 'lucide-react';
+import { ChevronRight, Package, } from 'lucide-react';
 import { type Request } from '../data/mockRequest.ts';
 import { useSelector } from 'react-redux';
+import {RequestStatusBadge, RequestTypeBadge, UrgencyBadge} from '../../inventory/components/RequestBadges.tsx'
 
 
-// No necesitamos importar componentes de UI (Table, Button, etc.)
 
-// (Asegúrate de importar tu componente de imagen)
-// import ImageWithFallback from './ImageWithFallback'; 
-
-// --- Interfaz de Props (Sin cambios) ---
 interface RequestsTableProps {
   requests: Request[];
   expandedRequests: Set<number>;
   calculateTotalCost: (request: Request) => number;
-  getStatusIcon: (status: Request['status']) => React.ReactNode;
-  getStatusBadge: (status: Request['status']) => React.ReactNode;
-  getTypeBadge: (type: Request['type']) => React.ReactNode;
-  getUrgencyBadge: (urgency: Request['urgency']) => React.ReactNode;
   handleToggleExpand: (id: number) => void;
   setSelectedRequest: (request: Request) => void;
   setShowModal: (open: boolean) => void;
@@ -25,16 +17,11 @@ interface RequestsTableProps {
   loading: boolean;
 }
 
-// --- Componente Modularizado (Puro HTML/Tailwind) ---
 
 export default function RequestsTable({
   requests,
   expandedRequests,
   calculateTotalCost,
-  getStatusIcon,
-  getStatusBadge,
-  getTypeBadge,
-  getUrgencyBadge,
   handleToggleExpand,
   setSelectedRequest,
   setShowModal,
@@ -44,24 +31,6 @@ export default function RequestsTable({
 
 
   const darkMode = useSelector((state: any) => state.ui.darkMode);
-
-
-  // {
-  //   loading && (
-  //     <div className="flex justify-center items-center py-10">
-  //       <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-  //     </div>
-  //   )
-  // }
-
-
-  // if (requests.length === 0) {
-  //   return (
-  //     <div className="rounded-md border p-8 text-center text-gray-500">
-  //       No requests found.
-  //     </div>
-  //   );
-  // }
 
   return (
 
@@ -120,11 +89,11 @@ export default function RequestsTable({
                   </td>
                   <td className="px-4 align-middle">
                     <div className="flex items-center space-x-2 ">
-                      {getStatusIcon(request.status)}
-                      {getStatusBadge(request.status)} {/* (Asumiendo que esta función ya devuelve un <span> con clases) */}
+                      {RequestStatusBadge(request.status)}
+                      {RequestStatusBadge(request.status)} 
                     </div>
                   </td>
-                  <td className="px-4 align-middle ">{getTypeBadge(request.type)}</td>
+                  <td className="px-4 align-middle ">{RequestTypeBadge(request.type)}</td>
                   <td className="px-4 align-middle">
                     <div>
                       <p>{request.requestedBy}</p>
@@ -139,7 +108,7 @@ export default function RequestsTable({
                       <p className="text-xs text-gray-500">-</p>
                     )}
                   </td>
-                  <td className="px-4 align-middle">{getUrgencyBadge(request.urgency)}</td>
+                  <td className="px-4 align-middle">{UrgencyBadge(request.urgency)}</td>
                   <td className="px-0 align-middle">
                     <div>
                       <p className="text-sm">{request.requestDate}</p>

@@ -1,4 +1,4 @@
-interface PurchaseItem {
+export interface PurchaseItem {
     id: number;
     articleCode: string;
     articleDescription: string;
@@ -12,7 +12,7 @@ interface PurchaseItem {
     imageUrl?: string;
 }
 
-interface PurchaseOrder {
+export interface PurchaseOrder {
     id: number;
     poNumber: string;
     supplier: string;

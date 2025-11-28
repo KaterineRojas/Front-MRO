@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'; 
 import { type Request } from '../data/mockRequest.ts';
 import { X } from 'lucide-react'; 
+import {RequestTypeBadge} from '../../inventory/components/RequestBadges.tsx'
 
 interface RequestActionDialogProps {
     show: boolean;
@@ -8,7 +9,6 @@ interface RequestActionDialogProps {
     request: Request | null;
     onCancel: () => void;
     onConfirm: () => void; 
-    getTypeBadge: (type: Request['type']) => React.ReactNode;
 }
 
 export default function RequestModal({
@@ -17,7 +17,6 @@ export default function RequestModal({
     request,
     onCancel,
     onConfirm,
-    getTypeBadge,
 }: RequestActionDialogProps) {
 
     const [reason, setReason] = useState("");
@@ -81,7 +80,7 @@ export default function RequestModal({
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-500 mb-1">Type</label>
-                                {getTypeBadge(request.type)}
+                                {RequestTypeBadge(request.type)}
                             </div>
                             <div className='overflow-x-auto'>
                                 <label className="block text-sm font-medium text-gray-500 mb-1">Requested By</label>

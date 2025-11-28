@@ -1,4 +1,4 @@
-  import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Badge } from '../../ui/badge';
 import { Check, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { mockRequests, type Request } from './data/mockRequest'
@@ -27,14 +27,14 @@ export function RequestManagement() {
       setLoading(true)
       try {
         const response = await fetch('http://localhost:3001/requests');
-        
+
         if (!response.ok) throw new Error('Error fetching data');
-        
+
         const data = await response.json();
         setRequests(data);
       } catch (error) {
         console.error(error);
-      }finally{
+      } finally {
         setLoading(false)
       }
     };
@@ -120,73 +120,7 @@ export function RequestManagement() {
     setRejectNotes('');
   };
 
-  const getStatusBadge = (status: Request['status']) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="text-[#F0B100] border-[#F0B100]">Pending</Badge>;
-      case 'approved':
-        return <Badge variant="outline" className="text-green-600 border-green-600">Approved</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive">Rejected</Badge>;
-      case 'completed':
-        return <Badge variant="secondary">Completed</Badge>;
-    }
-  };
-
-  const getStatusIcon = (status: Request['status']) => {
-    switch (status) {
-      case 'pending':
-        return <Clock className="h-4 w-4 text-[#F0B100]" />;
-      case 'approved':
-        return <Check className="h-4 w-4 text-green-600" />;
-      case 'rejected':
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-blue-600" />;
-    }
-  };
-
-  const getUrgencyBadge = (urgency: Request['urgency']) => {
-    switch (urgency) {
-      case 'low':
-        return (
-          <Badge variant="outline" className="text-emerald-600 border-emerald-600 dark:text-emerald-400 dark:border-emerald-800">
-            Low
-          </Badge>
-        );
-      case 'medium':
-        return (
-          <Badge variant="outline" className="text-amber-600 border-amber-600">
-            Medium
-          </Badge>
-        );
-      case 'high':
-        return (
-          <Badge variant="outline" className="text-red-600 border-red-600 dark:border-red-800 font-bold">
-            High
-          </Badge>
-        );
-      case 'urgent':
-        // Para 'urgent', a veces es mejor mantener el estilo sólido (destructive)
-        // para que grite "¡MÍRAME!", o usar un borde rojo muy fuerte.
-        return (
-          <Badge variant="outline" className="text-white border-red-600 bg-red-600 dark:bg-red-900 dark:text-white dark:border-red-800 font-bold">
-            Urgent
-          </Badge>
-        );
-    }
-};
-
-  const getTypeBadge = (type: Request['type']) => {
-    switch (type) {
-      case 'transfer-on-site':
-        return <Badge variant="default">Transfer on Site</Badge>;
-      case 'purchase':
-        return <Badge variant="outline" className="text-purple-600 border-purple-600">Purchase</Badge>;
-      case 'purchase-on-site':
-        return <Badge variant="outline" className="text-blue-600 border-blue-600">Purchase On Site</Badge>;
-    }
-  };
+  
 
   const pendingCount = requests.filter(r => r.status === 'pending').length;
   const approvedCount = requests.filter(r => r.status === 'approved').length;
@@ -297,15 +231,10 @@ export function RequestManagement() {
           <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden dark:bg-gray-900 dark:border-gray-800">
 
             <RequestsTable
-              // Datos
               requests={getFilteredRequests(activeTab)}
               expandedRequests={expandedRequests}
 
               calculateTotalCost={calculateTotalCost}
-              getStatusIcon={getStatusIcon}
-              getStatusBadge={getStatusBadge}
-              getTypeBadge={getTypeBadge}
-              getUrgencyBadge={getUrgencyBadge}
 
               handleToggleExpand={handleToggleExpand}
               setSelectedRequest={setSelectedRequest}
@@ -325,7 +254,6 @@ export function RequestManagement() {
         request={selectedRequest}
         onConfirm={modalType === 'approve' ? handleApprove : handleReject}
         onCancel={handleCancelApprove}
-        getTypeBadge={getTypeBadge}
         variant={modalType === 'approve' ? 'approve' : 'reject'}
       />
 

@@ -14,7 +14,7 @@ import { Plus, ShoppingCart, Calendar as CalendarIcon, CheckCircle, Clock, XCirc
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import { CreatePurchaseRequestPage } from './CreatePurchaseRequestPage';
 import { format } from 'date-fns';
-import {mockPurchaseOrders} from './data/mockPurchaseOrders'
+import {mockPurchaseOrders, PurchaseOrder, PurchaseItem} from './data/mockPurchaseOrders'
 
 
 const mockArticles = [
