@@ -43,7 +43,7 @@ export function KitRow({
 
   useEffect(() => {
     // console.log(kit);
-    // console.log(articles);
+    console.log(articles);
 
   }, [])
 
@@ -331,6 +331,7 @@ export function KitRow({
         onConfirm={(qty, binId) => {
           handleConfirmAssembly(qty, binId);
         }}
+        articles={articles}
       />
 
       {/* MODAL DE DISMANTLE */}

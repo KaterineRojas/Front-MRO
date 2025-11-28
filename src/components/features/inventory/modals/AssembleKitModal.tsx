@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     X, Minus, Plus, AlertTriangle, ArrowRight,
     PackageCheck, MapPin, Loader2, CheckCircle2, AlertCircle
 } from 'lucide-react';
+import {Badge} from '../components/Badge'
 
 import { createPortal } from 'react-dom'
 
@@ -10,6 +11,13 @@ interface Bin {
     id: number;
     binCode: string;
     description?: string;
+}
+
+export interface InventoryArticle {
+    id: number;
+    quantityAvailable: number;
+    sku: string;
+    name: string;
 }
 
 interface KitItem {
@@ -30,6 +38,7 @@ interface AssembleKitModalProps {
     assemblyBinCode?: string | null;
     isBuilding: boolean;
     onConfirm: (qty: number, binId?: number) => void;
+    articles: InventoryArticle[];
 }
 
 export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
@@ -40,7 +49,8 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
     loadingAvailableBins,
     assemblyBinCode,
     isBuilding,
-    onConfirm
+    onConfirm,
+    articles,
 }) => {
     const [quantity, setQuantity] = useState(1);
     const [selectedBinId, setSelectedBinId] = useState<number>(0);
@@ -54,7 +64,6 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
             setSelectedBinId(0);
             document.body.style.overflow = 'hidden';
 
-            // Activar animación después de que el componente se monte
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     setIsVisible(true);
@@ -64,10 +73,9 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
             setIsVisible(false);
             document.body.style.overflow = 'unset';
 
-            // Esperar a que termine la animación antes de desmontar
             const timer = setTimeout(() => {
                 setShouldRender(false);
-            }, 200); // Duración de la animación
+            }, 200);
 
             return () => clearTimeout(timer);
         }
@@ -83,13 +91,20 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
         }
     };
 
-    if (!shouldRender || !kit) return null;
 
-    const canBuildStock = kit.items.every((item: KitItem) => {
-        const currentStock = item.quantity ?? 0;
-        const required = item.quantity * quantity;
-        return currentStock >= required;
-    });
+    const canBuildStock = useMemo(() => {
+        if (!kit || !kit.items) return false;
+
+        return kit.items.every((kitItem: KitItem) => {
+            const articleInInventory = articles.find(a => a.id === kitItem.articleId);
+
+            const currentAvailable = articleInInventory?.quantityAvailable ?? 0;
+
+            const requiredTotal = kitItem.quantity * quantity;
+
+            return currentAvailable >= requiredTotal;
+        });
+    }, [kit, articles, quantity]);
 
     const hasValidBin = assemblyBinCode || selectedBinId >= 0;
     const canConfirm = canBuildStock && hasValidBin && !isBuilding;
@@ -97,14 +112,17 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
     const handleIncrement = () => setQuantity(q => Math.min(999, q + 1));
     const handleDecrement = () => setQuantity(q => Math.max(1, q - 1));
 
+    if (!shouldRender || !kit) return null;
+
+
     return createPortal(
         <div
             onClick={handleBackdropClick}
             className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ease-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}
         >
             <div className={`bg-white dark:bg-[#121212] w-full max-w-2xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh] cursor-default transform transition-all duration-200 ease-out ${isVisible
-                    ? 'opacity-100 scale-100'
-                    : 'opacity-0 scale-95'
+                ? 'opacity-100 scale-100'
+                : 'opacity-0 scale-95'
                 }`}>
 
                 {/* HEADER */}
@@ -132,11 +150,11 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
 
                     {/* 1. CANTIDAD */}
                     <div className="flex flex-col items-center justify-center p-6 bg-indigo-50/30 dark:bg-indigo-900/10 rounded-xl border border-dashed border-indigo-200 dark:border-indigo-800/50">
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4 uppercase tracking-wide text-xs">
+                        <label className="font-medium text-gray-600 dark:text-gray-400 mb-4 uppercase tracking-wide text-xs">
                             Kits to Build
                         </label>
                         <div className="flex items-center gap-6">
-                            <button onClick={handleDecrement} disabled={quantity <= 1 || isBuilding} className="w-12 h-12 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:text-white dark:hover:bg-red-800 transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none">
+                            <button onClick={handleDecrement} disabled={quantity <= 1 || isBuilding} className="w-12 h-12 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:text-white hover:!bg-red-800 transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none">
                                 <Minus className="w-5 h-5" />
                             </button>
                             <div className="w-20 text-center">
@@ -144,7 +162,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
                                     {quantity}
                                 </span>
                             </div>
-                            <button onClick={handleIncrement} disabled={isBuilding} className="w-12 h-12 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:text-white dark:hover:bg-green-700 transition-all active:scale-95 disabled:opacity-50">
+                            <button onClick={handleIncrement} disabled={isBuilding} className="w-12 h-12 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:text-white hover:!bg-green-700 transition-all active:scale-95 disabled:opacity-50">
                                 <Plus className="w-5 h-5" />
                             </button>
                         </div>
@@ -206,35 +224,52 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-[#0A0A0A]">
                                     {kit.items.map((item: KitItem, idx: number) => {
 
-                                        const currentStock = item.quantity ?? 0;
+                                        const articleInInventory = articles.find(a => a.id === item.articleId);
+                                        const currentStock = articleInInventory?.quantityAvailable ?? 0;
+
                                         const required = item.quantity * quantity;
                                         const hasStock = currentStock >= required;
 
                                         return (
-                                            <tr key={`${item.articleSku}-${idx}`} className={!hasStock ? 'bg-red-50 dark:bg-red-900/10' : ''}>
+                                            <tr
+                                                key={`${item.articleSku}-${idx}`}
+                                                className={!hasStock ? 'bg-red-50 dark:bg-red-900/10' : ''}
+                                            >
+                                                {/* Nombre y SKU */}
                                                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-200">
                                                     {item.articleName}
-                                                    <div className="text-xs text-gray-400 font-mono font-normal">{item.articleSku}</div>
-                                                </td>
-                                                <td className="px-4 py-3 text-center">
-                                                    <div className="flex flex-col items-center">
-                                                        <span className="text-[10px] text-gray-400">{item.quantity} x {quantity}</span>
-                                                        <span className="font-bold text-gray-900 dark:text-white">{required}</span>
+                                                    <div className="text-xs text-gray-400 font-mono font-normal">
+                                                        {item.articleSku}
                                                     </div>
                                                 </td>
+
+                                                {/* Cantidad Requerida */}
+                                                <td className="px-4 py-3 text-center">
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-[10px] text-gray-400">
+                                                            {item.quantity} x {quantity}
+                                                        </span>
+                                                        <span className={`font-bold ${!hasStock ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                                                            {required}
+                                                        </span>
+                                                    </div>
+                                                </td>
+
                                                 <td className="px-4 py-3 text-right">
                                                     {hasStock ? (
-                                                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs font-semibold bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded border border-emerald-100 dark:border-emerald-900/30">
-                                                            <CheckCircle2 className="w-3 h-3" /> Available ({currentStock})
-                                                        </span>
+                                                        <Badge variant="success">
+                                                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                                                            Available ({currentStock})
+                                                        </Badge>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-bold bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded border border-red-100 dark:border-red-900/30">
-                                                            <AlertTriangle className="w-3 h-3" /> Low Stock ({currentStock})
-                                                        </span>
+                                                        <Badge variant="critical">
+                                                            <AlertTriangle className="w-3 h-3 mr-1" />
+                                                            Low Stock ({currentStock})
+                                                        </Badge>
                                                     )}
                                                 </td>
                                             </tr>
-                                        )
+                                        );
                                     })}
                                 </tbody>
                             </table>
@@ -245,7 +280,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
 
                 {/* FOOTER */}
                 <div className="p-4 bg-gray-50 dark:bg-[#0A0A0A] border-t border-gray-200 dark:border-gray-800 flex justify-end gap-3">
-                    <button onClick={onClose} disabled={isBuilding} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg dark:bg-[#121212] dark:text-gray-300 dark:border-gray-700 hover:!bg-red-700 transition duration-200 hover:!border-white">
+                    <button onClick={onClose} disabled={isBuilding} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg dark:bg-[#121212] dark:text-gray-300 dark:border-gray-700 hover:!bg-red-700 transition duration-200 hover:!border-white hover:text-white">
                         Cancel
                     </button>
                     <button
