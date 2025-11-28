@@ -42,8 +42,8 @@ export function KitRow({
 
 
   useEffect(() => {
-    // console.log(kit);
-    console.log(articles);
+    console.log(kit);
+    // console.log(articles);
 
   }, [])
 
