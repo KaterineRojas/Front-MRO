@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronRight, Package, } from 'lucide-react';
 import { type Request } from '../data/mockRequest.ts';
 import { useSelector } from 'react-redux';
-import {RequestStatusBadge, RequestTypeBadge, UrgencyBadge} from '../../inventory/components/RequestBadges.tsx'
+import {getStatusBadge, getTypeBadge, getUrgencyBadge} from '../../inventory/components/RequestBadges.tsx'
 
 
 
@@ -29,12 +29,9 @@ export default function RequestsTable({
   loading,
 }: RequestsTableProps) {
 
-
   const darkMode = useSelector((state: any) => state.ui.darkMode);
 
   return (
-
-
 
     // <div className="rounded-md border"> (Este era el wrapper de <Table>)
     <div className="w-full overflow-auto rounded-md border">
@@ -57,14 +54,13 @@ export default function RequestsTable({
         <tbody className="[&_tr:last-child]:border-0 bg-white dark:bg-[#0A0A0A]">
 
           {requests.map((request) => {
-            const totalCost = calculateTotalCost(request);
+            const totalCost = calculateTotalCost(request);            
             return (
               <React.Fragment key={request.id}>
-                {/* Esta es la <TableRow> */}
-                <tr className="border-b transition-colors hover:bg-[#F5F5F7] dark:hover:bg-gray-400/10">
-                  {/* Esta es la <TableCell> */}
+                <tr className={`border-b transition-colors hover:bg-[#F5F5F7] dark:hover:bg-gray-400/10
+                    ${expandedRequests.has(request.id) ? 'dark:!bg-gray-800' : ''}
+                    `}>
                   <td className="p-3 align-middle text-center">
-                    {/* Este es el <Button variant="ghost"> */}
                     <button
                       onClick={() => handleToggleExpand(request.id)}
                       className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 w-10
@@ -89,11 +85,10 @@ export default function RequestsTable({
                   </td>
                   <td className="px-4 align-middle">
                     <div className="flex items-center space-x-2 ">
-                      {RequestStatusBadge(request.status)}
-                      {RequestStatusBadge(request.status)} 
+                      {getStatusBadge(request.status, darkMode ? 'outline' : 'soft')}
                     </div>
                   </td>
-                  <td className="px-4 align-middle ">{RequestTypeBadge(request.type)}</td>
+                  <td className="px-4 align-middle ">{getTypeBadge(request.type, darkMode ? 'outline' : 'soft')}</td>
                   <td className="px-4 align-middle">
                     <div>
                       <p>{request.requestedBy}</p>
@@ -108,7 +103,7 @@ export default function RequestsTable({
                       <p className="text-xs text-gray-500">-</p>
                     )}
                   </td>
-                  <td className="px-4 align-middle">{UrgencyBadge(request.urgency)}</td>
+                  <td className="px-4 align-middle">{getUrgencyBadge(request.urgency, darkMode ? 'outline' : 'soft')}</td>
                   <td className="px-0 align-middle">
                     <div>
                       <p className="text-sm">{request.requestDate}</p>
@@ -171,7 +166,7 @@ export default function RequestsTable({
                 {/* Expanded Item Details Section */}
                 {expandedRequests.has(request.id) && (
                   <tr className="border-b transition-colors" data-state="open">
-                    <td colSpan={10} className="p-0 bg-gray-50 hover:bg-[#F2F2F4] dark:bg-gray-900/50 transition duration-300">
+                    <td colSpan={10} className="p-0 bg-[#F2F2F4] dark:bg-gray-900/50 transition duration-300">
                       <div className="p-6">
                         <h4 className="flex items-center mb-4 text-lg font-semibold">
                           <Package className="h-5 w-5 mr-2 text-gray-700" />

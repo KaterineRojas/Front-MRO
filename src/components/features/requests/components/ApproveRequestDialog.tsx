@@ -1,23 +1,27 @@
-import React, { useState, useEffect } from 'react'; 
+import React, { useState, useEffect } from 'react';
 import { type Request } from '../data/mockRequest.ts';
-import { X } from 'lucide-react'; 
-import {RequestTypeBadge} from '../../inventory/components/RequestBadges.tsx'
+import { X } from 'lucide-react';
+import { getTypeBadge } from '../../inventory/components/RequestBadges.tsx'
+import { useSelector } from 'react-redux';
+
 
 interface RequestActionDialogProps {
     show: boolean;
     variant: 'approve' | 'reject';
     request: Request | null;
     onCancel: () => void;
-    onConfirm: () => void; 
+    onConfirm: () => void;
 }
 
 export default function RequestModal({
     show,
-    variant, 
+    variant,
     request,
     onCancel,
     onConfirm,
 }: RequestActionDialogProps) {
+
+    const darkMode = useSelector((state: any) => state.ui.darkMode);
 
     const [reason, setReason] = useState("");
     const isReject = variant === 'reject';
@@ -58,12 +62,12 @@ export default function RequestModal({
                 {/* Cabecera (Actualizada con títulos dinámicos) */}
                 <div className="mb-4">
                     <h2 className="text-xl text-center md:text-left font-semibold text-gray-900 dark:text-gray-100">
-                        {title} 
+                        {title}
                     </h2>
                     <p className="text-sm text-center md:text-left text-gray-500 dark:text-gray-400">
-                        {description} 
+                        {description}
                     </p>
-                    
+
                     <X className='h-6 w-6 absolute right-0 top-0 m-4 text-gray-400 hover:text-red-500 hover:rotate-90 transition duration-300'
                         onClick={onCancel}
                     />
@@ -80,7 +84,7 @@ export default function RequestModal({
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-500 mb-1">Type</label>
-                                {RequestTypeBadge(request.type)}
+                                {getTypeBadge(request.type, darkMode ? 'outline' : 'soft')}
                             </div>
                             <div className='overflow-x-auto'>
                                 <label className="block text-sm font-medium text-gray-500 mb-1">Requested By</label>
@@ -173,7 +177,7 @@ export default function RequestModal({
                             onClick={onConfirm}
                             disabled={isConfirmDisabled}
                         >
-                            {confirmText} 
+                            {confirmText}
                         </button>
                     </div>
                 </div>
