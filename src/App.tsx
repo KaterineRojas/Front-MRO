@@ -1,4 +1,3 @@
-import React from 'react';
 import { Provider } from 'react-redux';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { store, useAppSelector } from './store';
@@ -7,7 +6,7 @@ import { Dashboard } from './components/features/dashboard/Dashboard';
 import { InventoryManager } from './components/features/inventory/InventoryManager';
 import { RequestOrders } from './components/features/loans/RequestOrders';
 import { PurchaseOrders } from './components/features/orders/PurchaseOrders';
-import { RequestManagement } from './components/features/requests/RequestManagement';
+import { RequestOrders as RequestManagement } from './components/features/requests/RequestOrders';
 import { Reports } from './components/features/reports/Reports';
 import { UserManagement } from './components/features/users/UserManagement';
 import { QuickFind } from './components/features/quick-find/QuickFind';
@@ -16,6 +15,16 @@ import { LoanDetailView } from './components/features/loans/LoanDetailView';
 import { OrderDetailView } from './components/features/orders/OrderDetailView';
 import { CycleCountView } from './components/features/cycle-count/CycleCountView';
 import { ReturnItemsPage } from './components/features/loans/ReturnItemsPage';
+import { ManageRequests } from './components/features/manage-requests/ManageRequests';
+
+// Engineer Module Imports
+import { 
+  Catalog as EngineerCatalog,
+  MyInventoryTransfer as EngineerMyInventory,
+  CompleteHistory as EngineerCompleteHistory,
+  RequestOrders as EngineerRequestOrders
+} from './components/features/enginner';
+import { EngineerModuleWrapper } from './components/features/enginner/EngineerModuleWrapper';
 
 // Wrapper components for route navigation
 function CycleCountWrapper() {
@@ -24,7 +33,7 @@ function CycleCountWrapper() {
   return (
     <CycleCount 
       onStartCycleCount={() => navigate('/cycle-count/active')}
-      onViewCycleCount={(record) => navigate('/cycle-count/active')}
+      onViewCycleCount={(_record) => navigate('/cycle-count/active')}
     />
   );
 }
@@ -137,6 +146,10 @@ function CycleCountActiveWrapper() {
   );
 }
 
+function EngineerRequestOrdersWrapper() {
+  return <EngineerRequestOrders />;
+}
+
 function AppRoutes() {
   // Get user from Redux store
   const user = useAppSelector((state) => state.auth.user);
@@ -162,6 +175,9 @@ function AppRoutes() {
         {/* Purchase Orders Routes */}
         <Route path="orders" element={<PurchaseOrdersWrapper />} />
         <Route path="orders/detail" element={<OrderDetailWrapper />} />
+
+        {/* Manage Requests Route */}
+        <Route path="manage-requests" element={<ManageRequests />} />
         
         {/* Request Management (Admin/Manager only) */}
         {user && ['administrator', 'manager'].includes(user.role) && (
@@ -172,6 +188,12 @@ function AppRoutes() {
         {user && user.role === 'administrator' && (
           <Route path="users" element={<UserManagement />} />
         )}
+        
+        {/* Engineer Modules - Nuevos módulos integrados */}
+        <Route path="engineer/catalog" element={<EngineerModuleWrapper><EngineerCatalog /></EngineerModuleWrapper>} />
+        <Route path="engineer/requests" element={<EngineerModuleWrapper><EngineerRequestOrdersWrapper /></EngineerModuleWrapper>} />
+        <Route path="engineer/my-inventory" element={<EngineerModuleWrapper><EngineerMyInventory /></EngineerModuleWrapper>} />
+        <Route path="engineer/history" element={<EngineerModuleWrapper><EngineerCompleteHistory /></EngineerModuleWrapper>} />
         
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
