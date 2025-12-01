@@ -1,7 +1,7 @@
 // Simula las llamadas al backend para AI Camera Search
 
 import { CatalogItem } from './catalogService';
-import { apiCall } from './errorHandler';
+import { apiCall } from '../enginner/services/errorHandler';
 
 export interface AISearchResult {
   item: CatalogItem;
@@ -33,16 +33,16 @@ export const searchItemsByImage = async (imageData: string): Promise<AISearchRes
   const mockResults: AISearchResult[] = [
     {
       item: {
-        id: 9,
-        sku: "IT-HT-NC-2025001",
-        name: "Hammer",
-        description: "Professional grade hammer",
-        category: "HandTools",
-        unit: "units",
+        itemId: 9,
+        itemSku: "IT-HT-NC-2025001",
+        itemName: "Hammer",
+        itemDescription: "Professional grade hammer",
+        itemCategory: "HandTools",
+        itemUnit: "units",
         isActive: true,
         consumible: false,
         imageUrl: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400",
-        availableQuantity: 15,
+        totalQuantity: 15,
         warehouseId: 'wh-1',
         warehouseName: 'Amax'
       },
@@ -51,16 +51,16 @@ export const searchItemsByImage = async (imageData: string): Promise<AISearchRes
     },
     {
       item: {
-        id: 2,
-        sku: "HT-NC-002",
-        name: "Screwdriver Set",
-        description: "5-piece Phillips set",
-        category: "HandTools",
-        unit: "units",
+        itemId: 2,
+        itemSku: "HT-NC-002",
+        itemName: "Screwdriver Set",
+        itemDescription: "5-piece Phillips set",
+        itemCategory: "HandTools",
+        itemUnit: "units",
         isActive: true,
         consumible: false,
         imageUrl: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400",
-        availableQuantity: 12,
+        totalQuantity: 12,
         warehouseId: 'wh-2',
         warehouseName: 'Best'
       },
@@ -69,16 +69,16 @@ export const searchItemsByImage = async (imageData: string): Promise<AISearchRes
     },
     {
       item: {
-        id: 1,
-        sku: "HT-NC-001",
-        name: "Adjustable Wrench 10\"",
-        description: "Heavy duty wrench",
-        category: "ElectricalSupplies",
-        unit: "units",
+        itemId: 1,
+        itemSku: "HT-NC-001",
+        itemName: "Adjustable Wrench 10\"",
+        itemDescription: "Heavy duty wrench",
+        itemCategory: "ElectricalSupplies",
+        itemUnit: "units",
         isActive: true,
         consumible: false,
         imageUrl: "https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=400",
-        availableQuantity: 8,
+        totalQuantity: 8,
         warehouseId: 'wh-1',
         warehouseName: 'Amax'
       },
@@ -87,16 +87,16 @@ export const searchItemsByImage = async (imageData: string): Promise<AISearchRes
     },
     {
       item: {
-        id: 5,
-        sku: "DRL-001",
-        name: "Power Drill",
-        description: "Cordless drill with battery",
-        category: "PowerTools",
-        unit: "units",
+        itemId: 5,
+        itemSku: "DRL-001",
+        itemName: "Power Drill",
+        itemDescription: "Cordless drill with battery",
+        itemCategory: "PowerTools",
+        itemUnit: "units",
         isActive: true,
         consumible: false,
         imageUrl: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400",
-        availableQuantity: 7,
+        totalQuantity: 7,
         warehouseId: 'wh-3',
         warehouseName: 'Central'
       },
@@ -125,16 +125,16 @@ export const searchItemsByText = async (query: string): Promise<AISearchResponse
   const mockResults: AISearchResult[] = [
     {
       item: {
-        id: 3,
-        sku: "MECH-KB-001",
-        name: "Mechanical Keyboard RGB",
-        description: "Gaming keyboard with RGB lighting",
-        category: "Electronics",
-        unit: "units",
+        itemId: 3,
+        itemSku: "MECH-KB-001",
+        itemName: "Mechanical Keyboard RGB",
+        itemDescription: "Gaming keyboard with RGB lighting",
+        itemCategory: "Electronics",
+        itemUnit: "units",
         isActive: true,
         consumible: false,
         imageUrl: "https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?w=400",
-        availableQuantity: 5,
+        totalQuantity: 5,
         warehouseId: 'wh-2',
         warehouseName: 'Best'
       },
@@ -143,16 +143,16 @@ export const searchItemsByText = async (query: string): Promise<AISearchResponse
     },
     {
       item: {
-        id: 8,
-        sku: "GM-002",
-        name: "Gaming Mouse",
-        description: "Ergonomic gaming mouse with RGB",
-        category: "Electronics",
-        unit: "units",
+        itemId: 8,
+        itemSku: "GM-002",
+        itemName: "Gaming Mouse",
+        itemDescription: "Ergonomic gaming mouse with RGB",
+        itemCategory: "Electronics",
+        itemUnit: "units",
         isActive: true,
         consumible: false,
         imageUrl: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400",
-        availableQuantity: 10,
+        totalQuantity: 10,
         warehouseId: 'wh-3',
         warehouseName: 'Central'
       },

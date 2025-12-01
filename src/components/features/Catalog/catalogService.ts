@@ -1,17 +1,18 @@
 // Simula las llamadas al backend para el Catálogo de Inventario
-import { apiCall } from './errorHandler';
+
+import { apiCall } from '../enginner/services/errorHandler';
 
 export interface CatalogItem {
-  id: number;
-  sku: string;
-  name: string;
-  description: string;
-  category: string;
-  unit: string;
+  itemId: number;
+  itemSku: string;
+  itemName: string;
+  itemDescription: string;
+  itemCategory: string;
+  itemUnit: string;
   isActive: boolean;
   consumible: boolean;
   imageUrl: string;
-  availableQuantity?: number;
+  totalQuantity?: number;
   warehouseId: string;
   warehouseName: string;
 }
@@ -19,282 +20,282 @@ export interface CatalogItem {
 // Datos mock
 const mockCatalogItems: CatalogItem[] = [
   {
-    id: 9,
-    sku: "IT-HT-NC-2025001",
-    name: "Hammer",
-    description: "Professional grade hammer",
-    category: "HandTools",
-    unit: "units",
+    itemId: 9,
+    itemSku: "IT-HT-NC-2025001",
+    itemName: "Hammer",
+    itemDescription: "Professional grade hammer",
+    itemCategory: "HandTools",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400",
-    availableQuantity: 15,
+    totalQuantity: 15,
     warehouseId: 'wh-1',
     warehouseName: 'Amax'
   },
   {
-    id: 1,
-    sku: "HT-NC-001",
-    name: "Adjustable Wrench 10\"",
-    description: "Heavy duty wrench",
-    category: "ElectricalSupplies",
-    unit: "units",
+    itemId: 1,
+    itemSku: "HT-NC-001",
+    itemName: "Adjustable Wrench 10\"",
+    itemDescription: "Heavy duty wrench",
+    itemCategory: "ElectricalSupplies",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=400",
-    availableQuantity: 8,
+    totalQuantity: 8,
     warehouseId: 'wh-1',
     warehouseName: 'Amax'
   },
   {
-    id: 2,
-    sku: "HT-NC-002",
-    name: "Screwdriver Set",
-    description: "5-piece Phillips set",
-    category: "HandTools",
-    unit: "units",
+    itemId: 2,
+    itemSku: "HT-NC-002",
+    itemName: "Screwdriver Set",
+    itemDescription: "5-piece Phillips set",
+    itemCategory: "HandTools",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400",
-    availableQuantity: 12,
+    totalQuantity: 12,
     warehouseId: 'wh-2',
     warehouseName: 'Best'
   },
   {
-    id: 3,
-    sku: "MECH-KB-001",
-    name: "Mechanical Keyboard RGB",
-    description: "Gaming keyboard with RGB lighting",
-    category: "Electronics",
-    unit: "units",
+    itemId: 3,
+    itemSku: "MECH-KB-001",
+    itemName: "Mechanical Keyboard RGB",
+    itemDescription: "Gaming keyboard with RGB lighting",
+    itemCategory: "Electronics",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?w=400",
-    availableQuantity: 5,
+    totalQuantity: 5,
     warehouseId: 'wh-2',
     warehouseName: 'Best'
   },
   {
-    id: 4,
-    sku: "SAM-003",
-    name: "Samsung 27\" Monitor",
-    description: "Full HD display",
-    category: "Electronics",
-    unit: "units",
+    itemId: 4,
+    itemSku: "SAM-003",
+    itemName: "Samsung 27\" Monitor",
+    itemDescription: "Full HD display",
+    itemCategory: "Electronics",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1758598497364-544a0cdbc950?w=400",
-    availableQuantity: 3,
+    totalQuantity: 3,
     warehouseId: 'wh-1',
     warehouseName: 'Amax'
   },
   {
-    id: 5,
-    sku: "DRL-001",
-    name: "Power Drill",
-    description: "Cordless drill with battery",
-    category: "PowerTools",
-    unit: "units",
+    itemId: 5,
+    itemSku: "DRL-001",
+    itemName: "Power Drill",
+    itemDescription: "Cordless drill with battery",
+    itemCategory: "PowerTools",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400",
-    availableQuantity: 7,
+    totalQuantity: 7,
     warehouseId: 'wh-3',
     warehouseName: 'Central'
   },
   {
-    id: 6,
-    sku: "SG-002",
-    name: "Safety Goggles",
-    description: "Clear protective safety goggles",
-    category: "SafetyEquipment",
-    unit: "units",
+    itemId: 6,
+    itemSku: "SG-002",
+    itemName: "Safety Goggles",
+    itemDescription: "Clear protective safety goggles",
+    itemCategory: "SafetyEquipment",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1577760258779-e787a1733016?w=400",
-    availableQuantity: 20,
+    totalQuantity: 20,
     warehouseId: 'wh-2',
     warehouseName: 'Best'
   },
   {
-    id: 7,
-    sku: "HDMI-004",
-    name: "HDMI 2.0 Cable",
-    description: "High speed HDMI cable 6ft",
-    category: "Electronics",
-    unit: "units",
+    itemId: 7,
+    itemSku: "HDMI-004",
+    itemName: "HDMI 2.0 Cable",
+    itemDescription: "High speed HDMI cable 6ft",
+    itemCategory: "Electronics",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1733913106110-3f9832a788a0?w=400",
-    availableQuantity: 25,
+    totalQuantity: 25,
     warehouseId: 'wh-1',
     warehouseName: 'Amax'
   },
   {
-    id: 8,
-    sku: "GM-002",
-    name: "Gaming Mouse",
-    description: "Ergonomic gaming mouse with RGB",
-    category: "Electronics",
-    unit: "units",
+    itemId: 8,
+    itemSku: "GM-002",
+    itemName: "Gaming Mouse",
+    itemDescription: "Ergonomic gaming mouse with RGB",
+    itemCategory: "Electronics",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400",
-    availableQuantity: 10,
+    totalQuantity: 10,
     warehouseId: 'wh-3',
     warehouseName: 'Central'
   },
   {
-    id: 10,
-    sku: "LAP-001",
-    name: "Dell Latitude Laptop",
-    description: "15.6\" Business laptop Intel i7",
-    category: "Electronics",
-    unit: "units",
+    itemId: 10,
+    itemSku: "LAP-001",
+    itemName: "Dell Latitude Laptop",
+    itemDescription: "15.6\" Business laptop Intel i7",
+    itemCategory: "Electronics",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1484788984921-03950022c9ef?w=400",
-    availableQuantity: 4,
+    totalQuantity: 4,
     warehouseId: 'wh-1',
     warehouseName: 'Amax'
   },
   {
-    id: 11,
-    sku: "MSE-002",
-    name: "Measuring Tape 25ft",
-    description: "Professional grade measuring tape",
-    category: "HandTools",
-    unit: "units",
+    itemId: 11,
+    itemSku: "MSE-002",
+    itemName: "Measuring Tape 25ft",
+    itemDescription: "Professional grade measuring tape",
+    itemCategory: "HandTools",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400",
-    availableQuantity: 18,
+    totalQuantity: 18,
     warehouseId: 'wh-2',
     warehouseName: 'Best'
   },
   {
-    id: 12,
-    sku: "WEB-001",
-    name: "Webcam 1080p",
-    description: "High definition webcam with microphone",
-    category: "Electronics",
-    unit: "units",
+    itemId: 12,
+    itemSku: "WEB-001",
+    itemName: "Webcam 1080p",
+    itemDescription: "High definition webcam with microphone",
+    itemCategory: "Electronics",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1614624532983-4ce03382d63d?w=400",
-    availableQuantity: 6,
+    totalQuantity: 6,
     warehouseId: 'wh-3',
     warehouseName: 'Central'
   },
   {
-    id: 13,
-    sku: "CHR-001",
-    name: "Office Chair Ergonomic",
-    description: "Comfortable ergonomic office chair",
-    category: "Furniture",
-    unit: "units",
+    itemId: 13,
+    itemSku: "CHR-001",
+    itemName: "Office Chair Ergonomic",
+    itemDescription: "Comfortable ergonomic office chair",
+    itemCategory: "Furniture",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=400",
-    availableQuantity: 8,
+    totalQuantity: 8,
     warehouseId: 'wh-1',
     warehouseName: 'Amax'
   },
   {
-    id: 14,
-    sku: "PLR-001",
-    name: "Pliers Set",
-    description: "3-piece professional pliers set",
-    category: "HandTools",
-    unit: "units",
+    itemId: 14,
+    itemSku: "PLR-001",
+    itemName: "Pliers Set",
+    itemDescription: "3-piece professional pliers set",
+    itemCategory: "HandTools",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400",
-    availableQuantity: 14,
+    totalQuantity: 14,
     warehouseId: 'wh-2',
     warehouseName: 'Best'
   },
   {
-    id: 15,
-    sku: "HDS-001",
-    name: "Headset Wireless",
-    description: "Bluetooth wireless headset with noise canceling",
-    category: "Electronics",
-    unit: "units",
+    itemId: 15,
+    itemSku: "HDS-001",
+    itemName: "Headset Wireless",
+    itemDescription: "Bluetooth wireless headset with noise canceling",
+    itemCategory: "Electronics",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400",
-    availableQuantity: 11,
+    totalQuantity: 11,
     warehouseId: 'wh-3',
     warehouseName: 'Central'
   },
   {
-    id: 16,
-    sku: "EXT-001",
-    name: "Extension Cord 50ft",
-    description: "Heavy duty outdoor extension cord",
-    category: "ElectricalSupplies",
-    unit: "units",
+    itemId: 16,
+    itemSku: "EXT-001",
+    itemName: "Extension Cord 50ft",
+    itemDescription: "Heavy duty outdoor extension cord",
+    itemCategory: "ElectricalSupplies",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1473186578172-c141e6798cf4?w=400",
-    availableQuantity: 9,
+    totalQuantity: 9,
     warehouseId: 'wh-1',
     warehouseName: 'Amax'
   },
   {
-    id: 17,
-    sku: "SAW-001",
-    name: "Circular Saw",
-    description: "7.25\" circular saw with laser guide",
-    category: "PowerTools",
-    unit: "units",
+    itemId: 17,
+    itemSku: "SAW-001",
+    itemName: "Circular Saw",
+    itemDescription: "7.25\" circular saw with laser guide",
+    itemCategory: "PowerTools",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400",
-    availableQuantity: 5,
+    totalQuantity: 5,
     warehouseId: 'wh-2',
     warehouseName: 'Best'
   },
   {
-    id: 18,
-    sku: "PRJ-001",
-    name: "Projector HD",
-    description: "Full HD projector 3000 lumens",
-    category: "Electronics",
-    unit: "units",
+    itemId: 18,
+    itemSku: "PRJ-001",
+    itemName: "Projector HD",
+    itemDescription: "Full HD projector 3000 lumens",
+    itemCategory: "Electronics",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1518416177092-ec985e4d6c14?w=400",
-    availableQuantity: 2,
+    totalQuantity: 2,
     warehouseId: 'wh-3',
     warehouseName: 'Central'
   },
   {
-    id: 19,
-    sku: "HLM-001",
-    name: "Hard Hat Safety Helmet",
-    description: "ANSI approved safety hard hat",
-    category: "SafetyEquipment",
-    unit: "units",
+    itemId: 19,
+    itemSku: "HLM-001",
+    itemName: "Hard Hat Safety Helmet",
+    itemDescription: "ANSI approved safety hard hat",
+    itemCategory: "SafetyEquipment",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1577760258779-e787a1733016?w=400",
-    availableQuantity: 30,
+    totalQuantity: 30,
     warehouseId: 'wh-1',
     warehouseName: 'Amax'
   },
   {
-    id: 20,
-    sku: "TAB-001",
-    name: "iPad Pro 12.9\"",
-    description: "Apple tablet with Apple Pencil",
-    category: "Electronics",
-    unit: "units",
+    itemId: 20,
+    itemSku: "TAB-001",
+    itemName: "iPad Pro 12.9\"",
+    itemDescription: "Apple tablet with Apple Pencil",
+    itemCategory: "Electronics",
+    itemUnit: "units",
     isActive: true,
     consumible: false,
     imageUrl: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400",
-    availableQuantity: 3,
+    totalQuantity: 3,
     warehouseId: 'wh-2',
     warehouseName: 'Best'
   }
@@ -321,7 +322,7 @@ export const getCatalogItems = async (): Promise<CatalogItem[]> => {
 export const getCatalogItemById = async (id: number): Promise<CatalogItem | null> => {
   return apiCall(async () => {
     await simulateNetworkDelay();
-    const item = mockCatalogItems.find(item => item.id === id);
+    const item = mockCatalogItems.find(item => item.itemId === id);
     return item || null;
   });
 };
@@ -332,7 +333,7 @@ export const getCatalogItemById = async (id: number): Promise<CatalogItem | null
 export const getCatalogItemsByCategory = async (category: string): Promise<CatalogItem[]> => {
   return apiCall(async () => {
     await simulateNetworkDelay();
-    return mockCatalogItems.filter(item => item.category === category);
+    return mockCatalogItems.filter(item => item.itemCategory === category);
   });
 };
 
@@ -344,7 +345,7 @@ export const createCatalogItem = async (item: Omit<CatalogItem, 'id'>): Promise<
     await simulateNetworkDelay();
     const newItem: CatalogItem = {
       ...item,
-      id: Math.max(...mockCatalogItems.map(i => i.id)) + 1
+      itemId: Math.max(...mockCatalogItems.map(i => i.itemId)) + 1
     };
     mockCatalogItems.push(newItem);
     return newItem;
@@ -357,7 +358,7 @@ export const createCatalogItem = async (item: Omit<CatalogItem, 'id'>): Promise<
 export const updateCatalogItem = async (id: number, updates: Partial<CatalogItem>): Promise<CatalogItem | null> => {
   return apiCall(async () => {
     await simulateNetworkDelay();
-    const index = mockCatalogItems.findIndex(item => item.id === id);
+    const index = mockCatalogItems.findIndex(item => item.itemId === id);
     if (index === -1) return null;
     
     mockCatalogItems[index] = { ...mockCatalogItems[index], ...updates };
@@ -371,7 +372,7 @@ export const updateCatalogItem = async (id: number, updates: Partial<CatalogItem
 export const deleteCatalogItem = async (id: number): Promise<boolean> => {
   return apiCall(async () => {
     await simulateNetworkDelay();
-    const index = mockCatalogItems.findIndex(item => item.id === id);
+    const index = mockCatalogItems.findIndex(item => item.itemId === id);
     if (index === -1) return false;
     
     // Soft delete - marca como inactivo
@@ -386,10 +387,10 @@ export const deleteCatalogItem = async (id: number): Promise<boolean> => {
 export const updateItemQuantity = async (id: number, quantity: number): Promise<CatalogItem | null> => {
   return apiCall(async () => {
     await simulateNetworkDelay();
-    const index = mockCatalogItems.findIndex(item => item.id === id);
+    const index = mockCatalogItems.findIndex(item => item.itemId === id);
     if (index === -1) return null;
     
-    mockCatalogItems[index].availableQuantity = quantity;
+    mockCatalogItems[index].totalQuantity = quantity;
     return mockCatalogItems[index];
   });
 };

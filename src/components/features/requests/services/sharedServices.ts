@@ -7,8 +7,10 @@ export interface Warehouse {
   id: string;
   name: string;
   code: string;
-  location?: string;
+  location: string;
 }
+
+
 
 export interface Status {
   id: string;
