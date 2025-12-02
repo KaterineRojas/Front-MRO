@@ -1,10 +1,10 @@
-import React from 'react';
-import { X, Trash2, Plus, Minus } from 'lucide-react';
+
+import { Trash2, Plus, Minus } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../../ui/sheet';
 import { ScrollArea } from '../../ui/scroll-area';
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
-import type { CartItem } from './types';
+import type { CartItem } from '../enginner/types';
 
 interface CartSidebarProps {
   open: boolean;
@@ -24,10 +24,11 @@ export function CartSidebar({
   onProceed
 }: CartSidebarProps) {
   const handleIncrement = (item: CartItem) => {
-    if (item.quantity < item.item.availableQuantity) {
+    const availableQuantity = item.item.availableQuantity || 0;
+    if (item.quantity < availableQuantity) {
       onUpdateQuantity(item.item.id, item.quantity + 1);
     }
-  };
+  }; 
 
   const handleDecrement = (item: CartItem) => {
     if (item.quantity > 1) {
@@ -90,7 +91,7 @@ export function CartSidebar({
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium truncate">{cartItem.item.name}</h4>
-                          <p className="text-xs text-muted-foreground">{cartItem.item.code}</p>
+                          <p className="text-xs text-muted-foreground">{cartItem.item.sku}</p>
                         </div>
                         <Button
                           variant="ghost"
@@ -120,13 +121,13 @@ export function CartSidebar({
                             size="icon"
                             className="h-7 w-7"
                             onClick={() => handleIncrement(cartItem)}
-                            disabled={cartItem.quantity >= cartItem.item.availableQuantity}
+                            disabled={cartItem.quantity >= (cartItem.item.availableQuantity || 0)}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          Max: {cartItem.item.availableQuantity}
+                          Max: {cartItem.item.availableQuantity || 0}
                         </span>
                       </div>
                     </div>

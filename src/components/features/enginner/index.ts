@@ -1,7 +1,7 @@
 // Engineer Module Exports
 // This file re-exports all engineer components for easy integration
 
-export { Catalog } from './pages/Catalog/Catalog';
+export { Catalog } from '../Catalog/Catalog';
 export { BorrowRequests } from '../requests/Borrow/BorrowRequests';
 export { PurchaseRequests } from '../requests/Purchase/PurchaseRequests';
 export { TransferRequests } from '../requests/Transfer/TransferRequests';
