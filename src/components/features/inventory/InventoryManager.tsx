@@ -6,10 +6,11 @@ import { CreateKitPage } from './pages/CreateKitPage';
 import { RecordMovementModal } from './modals/RecordMovement/RecordMovementModal';
 import { ItemsTab } from './tabs/Items/ItemsTab';
 import { KitsTab } from './tabs/Kits/KitsTab';
-import { BinsTab } from './tabs/Bins/BinsTab';
+import { BinManagerTab } from './tabs/BinManager/BinManagerTab';
 import { TransactionsTab } from './tabs/transactions/TransactionsTab';
 import { LoadingOverlay } from '../../ui/loading-overlay';
-import type {  Kit } from './types';
+import type { Kit, MovementData as ApiMovementData } from './types';
+import type { MovementData, MovementType } from './modals/RecordMovement/types';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import {
   fetchArticles,
@@ -24,12 +25,11 @@ import {
   deleteKit,
   recordMovementAsync
 } from '../../../store/slices/inventorySlice';
-import type { MovementData } from './modals/RecordMovement/types';
 
 export function InventoryManager() {
   const dispatch = useAppDispatch();
-  const { articles, kits, loading, error } = useAppSelector((state) => state.inventory);
-  const [viewMode, setViewMode] = useState<'items' | 'kits' | 'create-kit' | 'bins' | 'transactions'>('items');
+  const { articles, kits, error } = useAppSelector((state) => state.inventory);
+  const [viewMode, setViewMode] = useState<'items' | 'kits' | 'create-kit' | 'bin-manager' | 'transactions'>('items');
   const [recordMovementOpen, setRecordMovementOpen] = useState(false);
   const [editingKit, setEditingKit] = useState<Kit | null>(null);
   const [isCreatingItem, setIsCreatingItem] = useState(false);
@@ -232,19 +232,28 @@ export function InventoryManager() {
         // ✅ Dispatch al thunk que llama a recordMovementApi
         console.log('📤 Dispatching recordMovementAsync...');
         // Map movementData to correct type for recordMovementAsync
-        const allowedTypes = ['entry', 'exit', 'relocation'];
+        const allowedTypes: MovementType[] = ['entry', 'exit', 'relocation'];
         if (!allowedTypes.includes(movementData.movementType)) {
           // Do not dispatch if movementType is not allowed
           alert('Invalid movement type.');
           return;
         }
-        const mappedMovement = {
-          ...movementData,
-          articleSKU: '',
-          articleBinCode: '',
-          unitPrice: '',
+        
+        // Map to ApiMovementData with required fields
+        const selectedArticle = articles.find(article => article.id === movementData.articleId);
+        const selectedBin = selectedArticle?.bins?.find(bin => bin.binId === movementData.articleBinId);
+        
+        const mappedMovement: ApiMovementData = {
+          itemType: movementData.itemType,
+          movementType: movementData.movementType as 'entry' | 'exit' | 'relocation',
+          articleSKU: selectedArticle?.sku || '',
+          articleBinCode: selectedBin?.binCode || '',
+          kitBinCode: movementData.kitBinCode,
+          quantity: movementData.quantity,
+          unitPrice: '0',
+          status: selectedArticle?.status || true,
           newLocation: '',
-          status: typeof movementData.status === 'boolean' ? movementData.status : true,
+          notes: movementData.notes,
         };
         await dispatch(recordMovementAsync(mappedMovement)).unwrap();
 
@@ -272,15 +281,18 @@ export function InventoryManager() {
       }
 
       try {
-        const allowedTypes = ['entry', 'exit', 'relocation'];
-        const mappedMovement = {
-          ...movementData,
-          movementType: allowedTypes.includes(movementData.movementType) ? movementData.movementType : 'relocation',
+        const allowedTypes: MovementType[] = ['entry', 'exit', 'relocation'];
+        const mappedMovement: ApiMovementData = {
+          itemType: movementData.itemType,
+          movementType: allowedTypes.includes(movementData.movementType) ? (movementData.movementType as 'entry' | 'exit' | 'relocation') : 'relocation',
           articleSKU: '',
           articleBinCode: '',
-          unitPrice: '',
+          kitBinCode: movementData.kitBinCode,
+          quantity: movementData.quantity,
+          unitPrice: '0',
+          status: true,
           newLocation: '',
-          status: typeof movementData.status === 'boolean' ? movementData.status : true,
+          notes: movementData.notes,
         };
         await dispatch(recordMovementAsync(mappedMovement)).unwrap();
         await dispatch(fetchKits()).unwrap();
@@ -358,14 +370,14 @@ export function InventoryManager() {
 
         <Tabs
           value={viewMode}
-          onValueChange={(value: 'items' | 'kits' | 'create-kit' | 'bins' | 'transactions') => setViewMode(value)}
+          onValueChange={(value: 'items' | 'kits' | 'create-kit' | 'bin-manager' | 'transactions') => setViewMode(value)}
           className="w-full"
         >
-          <TabsList className="w-full !flex !flex-row">
+          <TabsList className="w-full !grid !grid-cols-4 gap-1">
             <TabsTrigger value="items">Items</TabsTrigger>
             <TabsTrigger value="kits">Kits</TabsTrigger>
-            <TabsTrigger value="bins">Bins</TabsTrigger>
-            <TabsTrigger value="transactions">Transaction</TabsTrigger>
+            <TabsTrigger value="bin-manager">Bin Manager</TabsTrigger>
+            <TabsTrigger value="transactions">Transactions</TabsTrigger>
           </TabsList>
 
           <TabsContent value="items" className="space-y-4">
@@ -398,8 +410,8 @@ export function InventoryManager() {
             />
           </TabsContent>
 
-          <TabsContent value="bins" className="space-y-4">
-            <BinsTab />
+          <TabsContent value="bin-manager" className="space-y-4">
+            <BinManagerTab />
           </TabsContent>
 
           <TabsContent value="transactions" className="space-y-4">

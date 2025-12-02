@@ -56,7 +56,6 @@ export interface ArticleBin {
   inventoryId: number; // ID de la relación Inventory (item + bin)
   binId: number;
   binCode: string;
-  binPurpose: 'GoodCondition' | 'OnRevision' | 'Scrap' | 'Hold' | 'Packing' | 'Reception';
   quantity: number;
 }
 
@@ -74,7 +73,6 @@ export interface InventoryItemResponse {
     inventoryId: number; // ID de la relación Inventory
     binId: number;
     binCode: string;
-    binPurpose: string;
     quantity: number;
   }[];
   quantityAvailable: number;

@@ -6,19 +6,25 @@ import { Input } from '../../../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../ui/select';
 import { Textarea } from '../../../../ui/textarea';
 import { Button } from '../../../../ui/button';
-import { BookOpen, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import type { Article, Kit } from '../../types';
 import type { TransactionFormData, PurchaseRequest, DamagedRequest, StockCorrectionRequest, WarehouseTransferRequest } from './types';
 import { MOCK_TRANSACTION_DATA, type TransactionTypesResponse } from './transactionTypes';
 import { HelpTab } from './HelpTab';
-import { checkItemOccupation, getAvailableBins } from '../../services/binsService';
 import {
   createPurchaseApi,
   createDamagedApi,
   createStockCorrectionApi,
   createWarehouseTransferApi,
-  getValidDestinationBins
+  // getValidDestinationBins // Temporalmente desactivado - pendiente nueva lógica de bins
 } from '../../services/inventoryApi';
+import { checkItemOccupation, getAvailableBins } from '../../services/binsService';
+
+// Función temporal mock mientras se migra a la nueva lógica de bins
+const getValidDestinationBins = async (_itemId: number, _fromBinId: number): Promise<any[]> => {
+  console.warn('⚠️ getValidDestinationBins temporalmente desactivado - pendiente migración a nueva lógica');
+  return [];
+};
 
 interface RecordMovementModalProps {
   open: boolean;
@@ -105,12 +111,12 @@ export function RecordMovementModal({
   onRecordTransaction,
   onSuccess
 }: RecordMovementModalProps) {
-  const [transactionData, setTransactionData] = useState<TransactionTypesResponse>(MOCK_TRANSACTION_DATA);
+  const [transactionData] = useState<TransactionTypesResponse>(MOCK_TRANSACTION_DATA);
   const [formData, setFormData] = useState<TransactionFormData>(initialFormData);
   const [entityType, setEntityType] = useState<'item' | 'kit'>('item'); // New state for entity type
   const [selectedTransactionOption, setSelectedTransactionOption] = useState<string>('entry-purchase');
   const [activeTab, setActiveTab] = useState('transaction');
-  const [allBins, setAllBins] = useState<{ id: number; code: string; purpose: string }[]>([]);
+  const [allBins, setAllBins] = useState<{ id: number; fullCode: string; name: string }[]>([]);
   const [validDestinationBins, setValidDestinationBins] = useState<{ binId: number; binCode: string; binPurpose: string; description: string }[]>([]);
 
   // Get transaction options based on entity type
@@ -128,9 +134,6 @@ export function RecordMovementModal({
   const selectedKit = kits.find(k => k.id === formData.kitId);
   const fromBins = selectedArticle?.bins || [];
 
-  // Check if current transaction is a Purchase
-  const isPurchase = currentOption.value === 'entry-purchase';
-
   // Effect to fetch available bins based on transaction type and entity type
   useEffect(() => {
     const loadAvailableBins = async () => {
@@ -139,20 +142,20 @@ export function RecordMovementModal({
           const bins = await getAvailableBins(0, true); // binPurpose=0 (GoodCondition), isActive=true
           setAllBins(bins.map(bin => ({
             id: bin.id,
-            code: bin.binCode,
-            purpose: bin.type
+            fullCode: bin.binCode,
+            name: bin.description
           })));
         } catch (error) {
           console.error('Failed to load available bins:', error);
-          // Fallback to collecting bins from articles
-          const bins = new Set<{ id: number; code: string; purpose: string }>();
+          // Fallback to collecting bins from articles (formato antiguo)
+          const bins = new Set<{ id: number; fullCode: string; name: string }>();
           articles.forEach(article => {
             article.bins.forEach(bin => {
               if (bin.binPurpose === 'GoodCondition') {
                 bins.add({
                   id: bin.binId,
-                  code: bin.binCode,
-                  purpose: bin.binPurpose
+                  fullCode: bin.binCode,
+                  name: bin.binCode // En formato antiguo no tenemos name, usamos code
                 });
               }
             });
@@ -161,13 +164,13 @@ export function RecordMovementModal({
         }
       } else {
         // For other transaction types, collect bins from articles
-        const bins = new Set<{ id: number; code: string; purpose: string }>();
+        const bins = new Set<{ id: number; fullCode: string; name: string }>();
         articles.forEach(article => {
           article.bins.forEach(bin => {
             bins.add({
               id: bin.binId,
-              code: bin.binCode,
-              purpose: bin.binPurpose
+              fullCode: bin.binCode,
+              name: bin.binCode // En formato antiguo no tenemos name, usamos code
             });
           });
         });
@@ -183,56 +186,61 @@ export function RecordMovementModal({
     if (entityType === 'kit' && formData.kitId && selectedKit && showFromBin) {
       // For kits, we need to find the bin ID from the binCode
       // Since we don't have direct access to bin mapping, we'll search in allBins
-      const kitBin = allBins.find(bin => bin.code === selectedKit.binCode);
+      const kitBin = allBins.find(bin => bin.fullCode === selectedKit.binCode);
       if (kitBin) {
         setFormData(prev => ({ ...prev, fromBinId: kitBin.id }));
       }
     }
   }, [entityType, formData.kitId, selectedKit, showFromBin, allBins]);
 
-  // Auto-select bin for Entry transactions when item is selected
+  // Auto-select bin for Entry (Purchase) transactions when item is selected
   useEffect(() => {
     const checkAndAutoSelectBin = async () => {
-      if (entityType === 'item' && currentOption.transactionType === 0 && formData.itemId > 0) { // Entry and item selected
+      // Solo ejecutar para transacciones de tipo Entry (Purchase) cuando se selecciona un item
+      if (entityType === 'item' && currentOption.value === 'entry-purchase' && formData.itemId > 0) {
         try {
+          console.log(`🔍 Checking occupation for item ${formData.itemId}...`);
           const occupation = await checkItemOccupation(formData.itemId);
-          if (occupation && occupation.isOccupied) {
+          
+          if (occupation && occupation.isOccupied && occupation.occupiedBin) {
             // Item has a bin assigned, auto-select it
             const binId = occupation.occupiedBin.id;
             setFormData(prev => ({ ...prev, toBinId: binId }));
-            console.log(`Auto-selected bin ${occupation.occupiedBin.binCode} for item ${formData.itemId}`);
+            console.log(`✅ Auto-selected bin ${occupation.occupiedBin.binCode} (ID: ${binId}) for item ${formData.itemId}`);
 
-            // Load just this bin for display
+            // Load just this bin for display in the dropdown
             setAllBins([{
               id: occupation.occupiedBin.id,
-              code: occupation.occupiedBin.binCode,
-              purpose: occupation.occupiedBin.binPurposeDisplay
+              fullCode: occupation.occupiedBin.binCode, // binCode ya viene en formato jerárquico (WH01-ZA-R01-L01-B01)
+              name: occupation.occupiedBin.description
             }]);
           } else {
-            // Item doesn't have a bin, load available bins
-            console.log(`Item ${formData.itemId} is not occupied, loading available bins...`);
+            // Item doesn't have a bin assigned yet, load available bins
+            console.log(`ℹ️ Item ${formData.itemId} does not have a bin assigned (isOccupied: ${occupation?.isOccupied}), loading available bins...`);
             setFormData(prev => ({ ...prev, toBinId: undefined }));
 
             try {
               const bins = await getAvailableBins(0, true); // binPurpose=0 (GoodCondition), isActive=true
               setAllBins(bins.map(bin => ({
                 id: bin.id,
-                code: bin.binCode,
-                purpose: bin.type
+                fullCode: bin.binCode, // binCode ya viene transformado desde el servicio (fullCode del API)
+                name: bin.description // description ya viene transformado desde el servicio (name del API)
               })));
-              console.log(`Loaded ${bins.length} available bins`);
+              console.log(`✅ Loaded ${bins.length} available bins`);
             } catch (error) {
-              console.error('Failed to load available bins:', error);
+              console.error('⚠️ Failed to load available bins:', error);
+              setAllBins([]);
             }
           }
         } catch (error) {
-          console.error('Failed to check item occupation:', error);
+          console.error('❌ Failed to check item occupation:', error);
+          setFormData(prev => ({ ...prev, toBinId: undefined }));
         }
       }
     };
 
     checkAndAutoSelectBin();
-  }, [formData.itemId, currentOption.transactionType, entityType]);
+  }, [formData.itemId, currentOption.value, entityType]);
 
   // Reset form when entity type changes
   useEffect(() => {
@@ -602,7 +610,7 @@ export function RecordMovementModal({
                       // For other transactions, use all bins
                       allBins.map((bin, index) => (
                         <SelectItem key={`to-bin-${bin.id}-${index}`} value={bin.id.toString()}>
-                          {bin.code} ({bin.purpose})
+                          {bin.fullCode} - {bin.name}
                         </SelectItem>
                       ))
                     ) : (
