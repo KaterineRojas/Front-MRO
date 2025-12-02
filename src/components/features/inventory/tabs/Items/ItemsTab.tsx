@@ -3,7 +3,7 @@ import  { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../ui/card';
 import { Button } from '../../../../ui/button';
 import { Package, Plus } from 'lucide-react';
-import { CreateItemModal, ApiPayload } from '../../modals/CreateItemModal';
+import { CreateItemModal, ApiPayload } from '../../modals/CreateItemModal/CreateItemModal';
 import { ItemsFilters } from './ItemsFilters';
 import { ItemsTable } from './ItemsTable';
 import { useItemsFilters } from './useItemsFilters';

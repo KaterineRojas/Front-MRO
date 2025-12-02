@@ -1,5 +1,3 @@
-// src/components/features/inventory/tabs/Items/ItemStockDistribution.tsx
-import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../ui/table';
 import { Badge } from '../../../../ui/badge';
 import { Package } from 'lucide-react';
