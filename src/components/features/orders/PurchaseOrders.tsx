@@ -14,7 +14,10 @@ import { Plus, ShoppingCart, Calendar as CalendarIcon, CheckCircle, Clock, XCirc
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import { CreatePurchaseRequestPage } from './CreatePurchaseRequestPage';
 import { format } from 'date-fns';
-import {mockPurchaseOrders, PurchaseOrder, PurchaseItem} from './data/mockPurchaseOrders'
+import { mockPurchaseOrders, PurchaseOrder, PurchaseItem } from './data/mockPurchaseOrders'
+
+
+import { Button as ActionButton } from '../inventory/components/Button'
 
 
 const mockArticles = [
@@ -82,10 +85,10 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
     notes: ''
   });
 
-  const activeOrders = purchaseOrders.filter(order => 
+  const activeOrders = purchaseOrders.filter(order =>
     order.status === 'pending' || order.status === 'approved' || order.status === 'activated'
   );
-  const inactiveOrders = purchaseOrders.filter(order => 
+  const inactiveOrders = purchaseOrders.filter(order =>
     order.status === 'delivered' || order.status === 'cancelled' || order.status === 'completed'
   );
 
@@ -109,7 +112,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedArticle) return;
 
     const quantity = parseInt(formData.quantity);
@@ -151,14 +154,14 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
   };
 
   const handleStatusUpdate = (orderId: number, newStatus: PurchaseOrder['status'], approvedBy?: string) => {
-    setPurchaseOrders(purchaseOrders.map(order => 
-      order.id === orderId 
-        ? { 
-            ...order, 
-            status: newStatus, 
-            ...(approvedBy && { approvedBy }),
-            ...(newStatus === 'delivered' && { actualDelivery: format(new Date(), 'yyyy-MM-dd') })
-          }
+    setPurchaseOrders(purchaseOrders.map(order =>
+      order.id === orderId
+        ? {
+          ...order,
+          status: newStatus,
+          ...(approvedBy && { approvedBy }),
+          ...(newStatus === 'delivered' && { actualDelivery: format(new Date(), 'yyyy-MM-dd') })
+        }
         : order
     ));
   };
@@ -321,11 +324,16 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
             Manage purchase requests and orders
           </p>
         </div>
-        
-        <Button onClick={handleCreateNewRequest}>
+
+        <ActionButton variant='success' size='md' onClick={handleCreateNewRequest} >
+          <Plus className="h-4 w-4 mr-2" />
+          Register Kit
+        </ActionButton>
+
+        {/* <Button onClick={handleCreateNewRequest}>
           <Plus className="mr-2 h-4 w-4" />
           Create Purchase Request
-        </Button>
+        </Button> */}
       </div>
 
       <Tabs defaultValue="active" className="space-y-6">
@@ -539,9 +547,9 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                                           </TableCell>
                                           {item.purchaseUrl && (
                                             <TableCell>
-                                              <a 
-                                                href={item.purchaseUrl} 
-                                                target="_blank" 
+                                              <a
+                                                href={item.purchaseUrl}
+                                                target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-blue-600 hover:underline text-sm"
                                               >
@@ -554,7 +562,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                                     </TableBody>
                                   </Table>
                                 </div>
-                                
+
                                 {/* Action Buttons */}
                                 <div className="flex justify-end space-x-2 mt-4">
                                   {order.status === 'pending' && (
@@ -755,9 +763,9 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                                           </TableCell>
                                           {item.purchaseUrl && (
                                             <TableCell>
-                                              <a 
-                                                href={item.purchaseUrl} 
-                                                target="_blank" 
+                                              <a
+                                                href={item.purchaseUrl}
+                                                target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-blue-600 hover:underline text-sm"
                                               >

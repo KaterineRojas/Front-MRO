@@ -7,7 +7,7 @@ const VARIANTS = {
     secondary: "border-transparent bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-50",
     outline: "text-gray-950 dark:text-gray-50 border-gray-200 dark:border-gray-800",
     
-    destructive: "border-transparent bg-red-600 text-white shadow hover:bg-red-700 dark:bg-red-700",
+    destructive: "border-transparent bg-red-600 text-white shadow dark:bg-red-700",
 
     success: "bg-transparent border-emerald-600 text-emerald-600 dark:border-emerald-500 dark:text-emerald-400",
     
@@ -30,7 +30,7 @@ const VARIANTS = {
     
     "critical-soft": "border-transparent bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
     
-    "neutral-soft": "border-black  dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700",
+    "neutral-soft": "border-black bg-gray-900 text-white dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700",
     
     "brand-soft": "border-transparent bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
 };
