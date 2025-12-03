@@ -1,6 +1,4 @@
-import type { Article2, KitItem } from '../../types';
-//import type { Kit } from '../../types';
-
+import type { Article, KitItem } from '../../types';
 import type { Category } from '../../services/kitService';
 import type { KitCategory } from '../../services/kitService';
 
@@ -32,7 +30,7 @@ export interface Kit {
 }
 
 export interface KitsTabProps {
-  articles?: Article2[];
+  articles?: Article[];
   categories: Category[];
   onCreateKit: () => void;
   onEditKit: (kit: Kit) => void;
@@ -58,7 +56,7 @@ export interface KitFiltersProps {
 
 export interface KitTableProps {
   kits: Kit[];
-  articles: Article2[];
+  articles: Article[];
   categories: Category[];
   expandedKits: Set<number>;
   onToggleExpand: (kitId: number) => void;
@@ -70,7 +68,7 @@ export interface KitTableProps {
 
 export interface KitRowProps {
   kit: Kit;
-  articles: Article2[];
+  articles: Article[];
   categories: Category[];
   isExpanded: boolean;
   onToggleExpand: (kitId: number) => void;
@@ -80,4 +78,4 @@ export interface KitRowProps {
   onRefreshKits: () => void;
 }
 
-export { Article2, KitItem };
+export { Article, KitItem };

@@ -15,6 +15,7 @@ import { LoanDetailView } from './components/features/loans/LoanDetailView';
 import { OrderDetailView } from './components/features/orders/OrderDetailView';
 import { CycleCountView } from './components/features/cycle-count/CycleCountView';
 import { ReturnItemsPage } from './components/features/loans/ReturnItemsPage';
+import { ThemeProvider } from "next-themes";
 import { ManageRequests } from './components/features/manage-requests/ManageRequests';
 
 // Engineer Module Imports
@@ -204,10 +205,12 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <Provider store={store}>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </Provider>
+    // <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <Provider store={store}>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </Provider>
+    // </ThemeProvider>
   );
 }

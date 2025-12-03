@@ -362,12 +362,13 @@ export function InventoryManager() {
               Manage your inventory articles and track stock levels
             </p>
           </div>
-          <Button variant="default" onClick={() => setRecordMovementOpen(true)}>
+          <Button variant="action" onClick={() => setRecordMovementOpen(true)}>
             <ArrowUpDown className="h-4 w-4 mr-2" />
             Record Movement
           </Button>
         </div>
 
+        {/* tabs */}
         <Tabs
           value={viewMode}
           onValueChange={(value: 'items' | 'kits' | 'create-kit' | 'bin-manager' | 'transactions') => setViewMode(value)}
