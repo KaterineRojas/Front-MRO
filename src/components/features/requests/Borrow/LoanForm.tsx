@@ -13,6 +13,7 @@ import type { CartItem } from '../../enginner/types';
 import type { User as UserType } from '../../enginner/types';
 import { ConfirmModal, useConfirmModal, type ModalType } from '../../../ui/confirm-modal';
 import { ErrorType, type AppError } from '../../../features/enginner/services/errorHandler';
+import { createBorrowRequest } from './borrowService';
 import {
   getWarehouses,
   getCatalogItemsByWarehouse,
@@ -35,6 +36,7 @@ interface LoanFormProps {
   clearCart: () => void;
   currentUser: UserType;
   onBack: (() => void) | null;
+  onBorrowCreated?: () => Promise<void>;
 }
 
 interface LoanFormData {
@@ -50,7 +52,7 @@ interface LoanFormData {
 }
 
 
-export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanFormProps) {
+export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCreated }: LoanFormProps) {
   const [formData, setFormData] = useState<LoanFormData>({
     items: cartItems.map(item => ({
       itemId: item.item.id,
@@ -442,9 +444,6 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
           // Initialize filtered items for all indexes
           const newFilteredItems: { [key: number]: CatalogItem[] } = {};
           // Usamos el tamaño actual de formData.items, que puede ser 0 o 1 si se reseteó
-          const selectedItemIds = formData.items
-            .map(i => i.itemId)
-            .filter(id => id !== '');
           const selectedIds = formData.items.map(i => i.itemId).filter(id => id !== '');
 
           formData.items.forEach((_, index) => {
@@ -549,34 +548,6 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
       items: [...prev.items, { itemId: '', itemName: '', quantity: 1 }]
     }));
     setItemSearches(prev => ({ ...prev, [newIndex]: '' }));
-    const addNewItem = () => {
-      const newIndex = formData.items.length;
-      const selectedItemIds = formData.items
-        .map(i => i.itemId)
-        .filter(id => id !== '');
-
-      setFormData(prev => ({
-        ...prev,
-        items: [...prev.items, { itemId: '', itemName: '', quantity: 1 }]
-      }));
-
-      setItemSearches(prev => ({ ...prev, [newIndex]: '' }));
-      const recomputeFilteredItems = (itemsList: { itemId: string }[]) => {
-        const selectedItemIds = itemsList
-          .map(i => i.itemId)
-          .filter(id => id !== '');
-
-        const updatedFiltered: { [key: number]: CatalogItem[] } = {};
-        itemsList.forEach((_, index) => {
-          updatedFiltered[index] = catalogItems.filter(ci => !selectedItemIds.includes(ci.id));
-        });
-
-        return updatedFiltered;
-      };
-
-      setDropdownOpen(prev => ({ ...prev, [newIndex]: false }));
-    };
-
     setDropdownOpen(prev => ({ ...prev, [newIndex]: false }));
   };
 
@@ -660,10 +631,55 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack }: LoanForm
       }
     }
 
-    // Simulate submission
-    toast.success('Borrow request submitted successfully');
-    clearCart();
-    if (onBack) onBack();
+    // Show confirmation modal
+    const itemsCount = formData.items.length;
+    const companyInfo = companies.find(c => c.name === formData.company)?.name || formData.company;
+    const returnDateFormatted = formData.returnDate ? new Date(formData.returnDate).toLocaleDateString() : 'Not set';
+    
+    showConfirm({
+      title: '¿Confirmar envío de solicitud de préstamo?',
+      description: `Company: ${companyInfo}\nItems: ${itemsCount}\nReturn Date: ${returnDateFormatted}`,
+      type: 'warning',
+      confirmText: 'Confirm',
+      cancelText: 'Cancel',
+      showCancel: true,
+      onConfirm: async () => {
+        hideModal();
+        // Prepare payload for API
+        const payload = {
+          requesterId: currentUser.id,
+          warehouseId: parseInt(formData.warehouseId, 10),
+          companyId: formData.company,
+          customerId: formData.customer,
+          departmentId: formData.department,
+          projectId: formData.project,
+          workOrderId: formData.workOrder,
+          expectedReturnDate: formData.returnDate ? new Date(formData.returnDate).toISOString() : new Date().toISOString(),
+          notes: formData.notes || '',
+          items: formData.items.map(item => ({
+            itemId: parseInt(item.itemId, 10),
+            quantityRequested: item.quantity
+          }))
+        };
+
+        // Call API
+        const result = await createBorrowRequest(payload);
+        
+        if (result.success) {
+          toast.success(`Borrow request created: ${result.requestNumber || 'Success'}`);
+          clearCart();
+          
+          // Reload borrow requests if callback provided
+          if (onBorrowCreated) {
+            await onBorrowCreated();
+          }
+          
+          if (onBack) onBack();
+        } else {
+          toast.error(result.message || 'Failed to create borrow request');
+        }
+      }
+    });
   };
 
   const getMinDate = () => {

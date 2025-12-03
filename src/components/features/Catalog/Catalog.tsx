@@ -4,7 +4,7 @@ import { Search, Camera, ShoppingCart, Package, Plus, Minus } from 'lucide-react
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
-import { Badge } from '../../ui/badge';
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import { toast } from 'sonner';
