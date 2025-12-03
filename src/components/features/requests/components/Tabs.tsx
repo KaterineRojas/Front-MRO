@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { ClipboardCheck, Check, X, Clock, Package, AlertTriangle, ChevronDown, ChevronRight, FileText, CheckCircle, XCircle } from 'lucide-react';
+import {
+    ClipboardCheck, Check, X, Clock, Package, AlertTriangle, ChevronDown, ChevronRight,
+    FileText, CheckCircle, XCircle, ShoppingCart, MinusCircle, History,
+} from 'lucide-react';
 
 interface TabItem {
     name: string,
@@ -10,7 +13,7 @@ interface TabItem {
 interface TabsProps {
     tabsList: TabItem[]
     activeTab: string
-    setActiveTab: (tabName : string) => void
+    setActiveTab: (tabName: string) => void
 }
 
 function Tabs({ tabsList, activeTab, setActiveTab }: TabsProps) {
@@ -73,6 +76,12 @@ function Tabs({ tabsList, activeTab, setActiveTab }: TabsProps) {
                 return <CheckCircle className={iconClass} />;
             case 'xCircle':
                 return <XCircle className={iconClass} />;
+            case 'shoppingCart':
+                return <ShoppingCart className={iconClass} />;
+            case 'history':
+                return <History className={iconClass} />;
+            case 'minusCircle':
+                return <MinusCircle className={iconClass} />;
 
             // Un 'default' es importante para que la función siempre devuelva algo
             default:
@@ -106,7 +115,7 @@ function Tabs({ tabsList, activeTab, setActiveTab }: TabsProps) {
                                 color: getTextColor(e.name),
                                 fontWeight: '500',
                             }}
-                            onClick={() => { setActiveTab(e.name.toLowerCase());  }}
+                            onClick={() => { setActiveTab(e.name.toLowerCase()); }}
                         >
                             {getIconType(e.iconType)}
                             {e.name}
