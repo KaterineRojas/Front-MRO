@@ -291,6 +291,23 @@ export function useBorrowRequests() {
     });
   };
 
+  const reloadBorrowRequests = async () => {
+    if (!currentUser?.id) return;
+    try {
+      const requestsData = await getBorrowRequests(currentUser.id);
+      setBorrowRequests(requestsData.items || []);
+    } catch (error: any) {
+      const appError = handleError(error);
+      showConfirm({
+        title: 'Error Reloading Requests',
+        description: appError.message,
+        type: 'error',
+        confirmText: 'OK',
+        showCancel: false
+      });
+    }
+  };
+
   // ⚠️ La función ya no está definida aquí, sino arriba con useCallback
   // const getBorrowStatusCount = (status: string) => {
   //   return getStatusCount(borrowRequests, status);
@@ -331,6 +348,7 @@ export function useBorrowRequests() {
     confirmReturnAll,
     toggleBorrowRow,
     getBorrowStatusCount, // 👈 Ahora es la función de useCallback
+    reloadBorrowRequests,
     hideModal,
 
     // Utilities

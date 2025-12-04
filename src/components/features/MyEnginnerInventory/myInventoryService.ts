@@ -1,7 +1,9 @@
-// Simula las llamadas al backend para My Inventory (Items y Kits)
-import { apiCall } from './errorHandler';
+/**
+ * My Inventory Service
+ * Handles inventory operations for the current engineer
+ */
 
-export interface InventoryItem {
+interface InventoryItem {
   id: string;
   itemId: string;
   name: string;
@@ -10,12 +12,12 @@ export interface InventoryItem {
   project: string;
   projectCode: string;
   quantity: number;
-  sku: string;
-  warehouseId: string;
-  warehouseName: string;
+  sku?: string;
+  warehouse?: string;
+  warehouseCode?: string;
 }
 
-export interface KitItem {
+interface KitItem {
   id: string;
   sku: string;
   name: string;
@@ -24,7 +26,7 @@ export interface KitItem {
   image?: string;
 }
 
-export interface Kit {
+interface Kit {
   id: string;
   kitId: string;
   name: string;
@@ -32,38 +34,43 @@ export interface Kit {
   project: string;
   projectCode: string;
   quantity: number;
+  warehouse: string;
+  warehouseCode: string;
   items: KitItem[];
-  warehouseId: string;
-  warehouseName: string;
 }
 
-// Datos mock para Items
+interface InventoryResponse {
+  items: InventoryItem[];
+  kits: Kit[];
+}
+
+// Mock data for inventory items
 const mockInventoryItems: InventoryItem[] = [
   {
     id: 'inv-1',
     itemId: 'hammer-001',
-    name: '*********Hammer',
+    name: 'Hammer',
     description: 'Professional grade hammer',
     image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400',
     project: 'Proyecto Amazonas',
     projectCode: 'AMZ-2024',
     quantity: 4,
     sku: 'HAM-001',
-    warehouseId: 'wh-1',
-    warehouseName: 'Amax'
+    warehouse: 'Amax',
+    warehouseCode: 'AMAX'
   },
   {
     id: 'inv-2',
     itemId: 'hammer-001',
     name: 'Hammer',
-    description: 'OTRA PRUEBAProfessional grade hammer2',
+    description: 'Professional grade hammer',
     image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400',
     project: 'Proyecto Innova',
     projectCode: 'INN-2024',
     quantity: 6,
     sku: 'HAM-001',
-    warehouseId: 'wh-2',
-    warehouseName: 'Best'
+    warehouse: 'Best',
+    warehouseCode: 'BEST'
   },
   {
     id: 'inv-3',
@@ -75,8 +82,8 @@ const mockInventoryItems: InventoryItem[] = [
     projectCode: 'WEB-2024',
     quantity: 2,
     sku: 'MECH-KB-001',
-    warehouseId: 'wh-1',
-    warehouseName: 'Amax'
+    warehouse: 'Central',
+    warehouseCode: 'CENT'
   },
   {
     id: 'inv-4',
@@ -88,8 +95,8 @@ const mockInventoryItems: InventoryItem[] = [
     projectCode: 'WEB-2024',
     quantity: 1,
     sku: 'SAM-003',
-    warehouseId: 'wh-1',
-    warehouseName: 'Amax'
+    warehouse: 'Amax',
+    warehouseCode: 'AMAX'
   },
   {
     id: 'inv-5',
@@ -101,23 +108,23 @@ const mockInventoryItems: InventoryItem[] = [
     projectCode: 'CONS-2024',
     quantity: 3,
     sku: 'DRL-001',
-    warehouseId: 'wh-2',
-    warehouseName: 'Best'
+    warehouse: 'Best',
+    warehouseCode: 'BEST'
   }
 ];
 
-// Datos mock para Kits
+// Mock data for kits
 const mockKits: Kit[] = [
   {
     id: 'kit-1',
     kitId: 'electrical-kit-001',
-    name: 'Electrical Maintenance Kit',
+    name: 'Electrical Maintenance Kit prueba',
     description: 'Complete electrical maintenance toolkit',
     project: 'Proyecto Web',
     projectCode: 'WEB-2024',
     quantity: 2,
-    warehouseId: 'wh-1',
-    warehouseName: 'Amax',
+    warehouse: 'Central',
+    warehouseCode: 'CENT',
     items: [
       { 
         id: 'kit-item-1', 
@@ -153,8 +160,8 @@ const mockKits: Kit[] = [
     project: 'Proyecto Construcción',
     projectCode: 'CONS-2024',
     quantity: 1,
-    warehouseId: 'wh-2',
-    warehouseName: 'Best',
+    warehouse: 'Amax',
+    warehouseCode: 'AMAX',
     items: [
       { 
         id: 'kit-item-4', 
@@ -190,8 +197,8 @@ const mockKits: Kit[] = [
     project: 'Proyecto Innova',
     projectCode: 'INN-2024',
     quantity: 1,
-    warehouseId: 'wh-3',
-    warehouseName: 'Central',
+    warehouse: 'Best',
+    warehouseCode: 'BEST',
     items: [
       { 
         id: 'kit-item-7', 
@@ -221,177 +228,71 @@ const mockKits: Kit[] = [
   }
 ];
 
-// Simula delay de red
-const simulateNetworkDelay = (ms: number = 500) => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-};
-
-// ==================== INVENTORY ITEMS ====================
-
 /**
- * GET - Obtiene todos los items del inventario del usuario
+ * Get inventory items and kits for a specific engineer
+ * @param engineerId - The engineer's ID
+ * @returns Promise with object containing inventory items and kits
  */
-export const getInventoryItems = async (): Promise<InventoryItem[]> => {
-  return apiCall(async () => {
-    await simulateNetworkDelay();
-    return [...mockInventoryItems];
-  });
-};
-
-/**
- * GET - Obtiene un item específico por ID
- */
-export const getInventoryItemById = async (id: string): Promise<InventoryItem | null> => {
-  return apiCall(async () => {
-    await simulateNetworkDelay();
-    const item = mockInventoryItems.find(item => item.id === id);
-    return item || null;
-  });
-};
-
-/**
- * GET - Obtiene items por proyecto
- */
-export const getInventoryItemsByProject = async (project: string): Promise<InventoryItem[]> => {
-  return apiCall(async () => {
-    await simulateNetworkDelay();
-    return mockInventoryItems.filter(item => item.project === project);
-  });
-};
-
-/**
- * PUT - Actualiza la cantidad de un item
- */
-export const updateInventoryItemQuantity = async (
-  id: string, 
-  quantity: number
-): Promise<InventoryItem | null> => {
-  return apiCall(async () => {
-    await simulateNetworkDelay();
+export async function getInventoryEngineer(
+  engineerId: string
+): Promise<InventoryResponse> {
+  try {
+    console.log(`Fetching inventory for engineer: ${engineerId}`);
     
-    const index = mockInventoryItems.findIndex(item => item.id === id);
-    if (index === -1) return null;
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 300));
     
-    mockInventoryItems[index].quantity = quantity;
-    return mockInventoryItems[index];
-  });
-};
-
-/**
- * POST - Añade un item al inventario del usuario
- */
-export const addInventoryItem = async (
-  item: Omit<InventoryItem, 'id'>
-): Promise<InventoryItem> => {
-  return apiCall(async () => {
-    await simulateNetworkDelay();
+    // Return mock data
+    // In a real scenario, this would filter items/kits by engineerId from the API
+    console.log(`Returning ${mockInventoryItems.length} items and ${mockKits.length} kits for engineer ${engineerId}`);
     
-    const newItem: InventoryItem = {
-      ...item,
-      id: `inv-${Date.now()}`
+    return {
+      items: mockInventoryItems,
+      kits: mockKits
     };
-    
-    mockInventoryItems.push(newItem);
-    return newItem;
-  });
-};
-
-/**
- * DELETE - Elimina un item del inventario
- */
-export const deleteInventoryItem = async (id: string): Promise<boolean> => {
-  return apiCall(async () => {
-    await simulateNetworkDelay();
-    
-    const index = mockInventoryItems.findIndex(item => item.id === id);
-    if (index === -1) return false;
-    
-    mockInventoryItems.splice(index, 1);
-    return true;
-  });
-};
-
-// ==================== KITS ====================
-
-/**
- * GET - Obtiene todos los kits del inventario del usuario
- */
-export const getKits = async (): Promise<Kit[]> => {
-  return apiCall(async () => {
-    await simulateNetworkDelay();
-    return [...mockKits];
-  });
-};
-
-/**
- * GET - Obtiene un kit específico por ID
- */
-export const getKitById = async (id: string): Promise<Kit | null> => {
-  return apiCall(async () => {
-    await simulateNetworkDelay();
-    const kit = mockKits.find(kit => kit.id === id);
-    return kit || null;
-  });
-};
-
-/**
- * GET - Obtiene kits por proyecto
- */
-export const getKitsByProject = async (project: string): Promise<Kit[]> => {
-  return apiCall(async () => {
-    await simulateNetworkDelay();
-    return mockKits.filter(kit => kit.project === project);
-  });
-};
-
-/**
- * PUT - Actualiza la cantidad de un kit
- */
-export const updateKitQuantity = async (
-  id: string, 
-  quantity: number
-): Promise<Kit | null> => {
-  return apiCall(async () => {
-    await simulateNetworkDelay();
-    
-    const index = mockKits.findIndex(kit => kit.id === id);
-    if (index === -1) return null;
-    
-    mockKits[index].quantity = quantity;
-    return mockKits[index];
-  });
-};
-
-/**
- * POST - Añade un kit al inventario del usuario
- */
-export const addKit = async (
-  kit: Omit<Kit, 'id'>
-): Promise<Kit> => {
-  return apiCall(async () => {
-    await simulateNetworkDelay();
-    
-    const newKit: Kit = {
-      ...kit,
-      id: `kit-${Date.now()}`
+  } catch (error) {
+    console.error('Error fetching engineer inventory:', error);
+    // Fallback to empty arrays on error
+    return {
+      items: [],
+      kits: []
     };
-    
-    mockKits.push(newKit);
-    return newKit;
-  });
-};
+  }
+}
 
 /**
- * DELETE - Elimina un kit del inventario
+ * Transfer inventory items to another engineer
+ * @param fromEngineerId - The engineer transferring items
+ * @param toEngineerId - The engineer receiving items
+ * @param itemIds - IDs of items to transfer
+ * @param quantities - Quantities for each item
+ * @returns Promise with success status
  */
-export const deleteKit = async (id: string): Promise<boolean> => {
-  return apiCall(async () => {
-    await simulateNetworkDelay();
+export async function transferInventory(
+  fromEngineerId: string,
+  toEngineerId: string,
+  itemIds: string[],
+  quantities: Record<string, number>
+): Promise<{ success: boolean; message: string }> {
+  try {
+    console.log(`Transferring items from ${fromEngineerId} to ${toEngineerId}`);
+    console.log('Item IDs:', itemIds);
+    console.log('Quantities:', quantities);
     
-    const index = mockKits.findIndex(kit => kit.id === id);
-    if (index === -1) return false;
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    mockKits.splice(index, 1);
-    return true;
-  });
-};
+    return {
+      success: true,
+      message: `Successfully transferred ${itemIds.length} item(s) to engineer ${toEngineerId}`
+    };
+  } catch (error) {
+    console.error('Error transferring inventory:', error);
+    return {
+      success: false,
+      message: 'Failed to transfer inventory'
+    };
+  }
+}
+
+export type { InventoryItem, Kit, KitItem, InventoryResponse };
