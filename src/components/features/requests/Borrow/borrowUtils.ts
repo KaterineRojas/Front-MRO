@@ -4,7 +4,7 @@
  * Siguiendo principios SOLID: Single Responsibility
  */
 
-import type { BorrowRequest } from './borrowService';
+import type { LoanRequest } from './borrowService';
 
 /**
  * Obtiene el color del badge según el estado
@@ -80,15 +80,14 @@ export function formatDate(dateString: string): string {
 /**
  * Determina si una solicitud puede ser cancelada
  */
-export function canCancelBorrowRequest(request: BorrowRequest): boolean {
+export function canCancelBorrowRequest(request: LoanRequest): boolean {
   return request.status === 'Pending';
 }
 
 /**
  * Determina si se pueden devolver todos los items
  */
-export function canReturnAll(request: BorrowRequest): boolean {
-//return request.status === 'active' || request.status === 'approved';
+export function canReturnAll(request: LoanRequest): boolean {
 return  request.status === 'Approved';
 }
 
@@ -96,11 +95,11 @@ return  request.status === 'Approved';
  * Filtra solicitudes de préstamo según criterios de búsqueda
  */
 export function filterBorrowRequests(
-  requests: BorrowRequest[],
+  requests: LoanRequest[],
   searchTerm: string,
   statusFilter: string,
   warehouseFilter: string
-): BorrowRequest[] {
+): LoanRequest[] {
   let filtered = requests;
 
   // Filtrar por término de búsqueda
@@ -108,8 +107,8 @@ export function filterBorrowRequests(
     const searchLower = searchTerm.toLowerCase();
     filtered = filtered.filter(request =>
       request.requestNumber.toLowerCase().includes(searchLower) ||
-      request.projectName.toLowerCase().includes(searchLower) ||
-      request.departmentName.toLowerCase().includes(searchLower) ||
+      request.projectId.toLowerCase().includes(searchLower) ||
+      request.departmentId.toLowerCase().includes(searchLower) ||
       request.warehouseName.toLowerCase().includes(searchLower) ||
       request.items.some(item =>
         item.name.toLowerCase().includes(searchLower) ||
@@ -125,7 +124,7 @@ export function filterBorrowRequests(
 
   // Filtrar por almacén
   if (warehouseFilter !== 'all') {
-    filtered = filtered.filter(request => request.warehouseId === warehouseFilter);
+    filtered = filtered.filter(request => request.warehouseName === warehouseFilter);
   }
 
   return filtered;
@@ -135,7 +134,7 @@ export function filterBorrowRequests(
  * Cuenta solicitudes por estado
  */
 export function getStatusCount(
-  requests: BorrowRequest[],
+  requests: LoanRequest[],
   status: string
 ): number {
   if (status === 'all') return requests.length;

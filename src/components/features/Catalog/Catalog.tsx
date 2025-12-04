@@ -4,7 +4,7 @@ import { Search, Camera, ShoppingCart, Package, Plus, Minus } from 'lucide-react
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
-import { Badge } from '../../ui/badge';
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import { toast } from 'sonner';
@@ -23,6 +23,189 @@ import type { AppError } from '../enginner/services/errorHandler';
 import { useAppDispatch } from '../../../store';
 import { AICameraModal } from './AICameraModal';
 
+const styles: { [key: string]: React.CSSProperties } = {
+container: {
+        padding: '24px',
+        maxWidth: '1200px',
+        margin: '0 auto'
+    },
+
+   header: {
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        marginBottom: '24px'
+    },
+    title: {
+        fontSize: '1.5rem',
+        fontWeight: 'bold',
+        marginBottom: '4px'
+    },
+
+   subtitle: {
+        fontSize: '0.875rem',
+        color: '#6b7280' // muted-foreground
+    },
+    warehouseSelector: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: '24px'
+    },
+   searchBar: {
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '24px'
+    },
+    searchInputContainer: {
+        position: 'relative',
+        flexGrow: 1
+    },
+
+    searchIcon: {
+        position: 'absolute',
+        left: '12px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        height: '16px',
+        width: '16px',
+        color: '#6b7280'
+    },
+
+   inputStyle: {
+        paddingLeft: '40px'
+    },
+    // Grid para las tarjetas - USANDO CSS GRID PURO
+    itemsGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', // Responsivo: mínimo 180px por columna
+        gap: '16px'
+    },
+
+    // Estilos para cada tarjeta de producto
+
+    cardWrapper: {
+        height: '100%'
+    },
+    card: {
+        // Tipificación para corregir el error de TypeScript
+        overflow: 'hidden',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        border: '1px solid #e5e7eb', // border
+        borderRadius: '8px', // rounded-md
+    } as React.CSSProperties, // <--- Tipo agregado aquí para resolver el error TS
+
+imageContainer: {
+        position: 'relative',
+        width: '100%',
+        // AJUSTE CLAVE: Hacer el contenedor CUADRADO (1:1)
+        aspectRatio: '1 / 1', 
+        // Reducir el padding general para darle más espacio al contenido
+        padding: '8px', 
+        boxSizing: 'border-box',
+        // Reducir padding inferior para acercar al título
+        paddingBottom: '0px' // Ensure no extra space below the image
+    },
+    image: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain'
+    },
+badgeAvailable: {
+        position: 'absolute',
+        top: '8px',
+        right: '8px',
+        padding: '4px 8px',
+        borderRadius: '9999px',
+        fontSize: '0.75rem',
+        fontWeight: '600',
+        backgroundColor: '#d1fae5', // green-100
+        color: '#065f46' // green-800
+    },
+badgeOutOfStock: {
+        position: 'absolute',
+        top: '8px',
+        right: '8px',
+        padding: '4px 8px', // Aumento de padding
+        borderRadius: '9999px',
+        fontSize: '0.75rem',
+        fontWeight: '600',
+        backgroundColor: '#fee2e2', // red-100
+        color: '#991b1b' // red-800
+    },
+
+    cardHeader: {
+        padding: '12px',
+        // Ajustado para acercar al contenedor de imagen (padding: 4px)
+        paddingTop: '0px', // Remove space above itemName
+        paddingBottom: '0px' // Remove space below itemName
+    },
+    cardTitle: {
+        fontSize: '0.875rem',
+        fontWeight: '600',
+        lineHeight: '1.25',
+        marginBottom: '4px',
+        overflow: 'hidden',
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        minHeight: '32px' // Para evitar saltos si el título es de una o dos líneas
+    },
+
+    cardDescription: {
+        fontSize: '0.75rem',
+        color: '#6b7280', // muted-foreground
+        overflow: 'hidden',
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        // Reducir margen inferior para acercar a la Categoría/Unidad
+        marginBottom: '0px' // Remove space below description
+    },
+    cardContent: {
+        padding: '12px',
+        paddingTop: '0'
+    },
+
+    priceUnitContainer: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        fontSize: '0.75rem',
+        // Reducido de 12px a 8px para compactar antes del botón
+        marginBottom: '8px',
+        marginTop: '0px' // Ensure no extra space above category/unit
+    },
+    categoryText: {
+        color: '#6b7280', // muted-foreground
+        fontWeight: 'bold',
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+        textOverflow: 'ellipsis'
+    },
+    unitText: {
+        fontWeight: 'bold',
+        fontSize: '0.875rem',
+        color: '#16a34a' // primary color similar
+    },cartControls: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '4px',
+        border: '1px solid #e5e7eb',
+        borderRadius: '6px'
+    },
+    quantityDisplay: {
+        fontSize: '0.875rem',
+        fontWeight: '500',
+        width: '32px',
+        textAlign: 'center'
+    }
+};
+
 export function Catalog() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -36,8 +219,6 @@ export function Catalog() {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const { modalState, showConfirm, hideModal, setModalOpen } = useConfirmModal();
-
-
 
   // Load warehouses on mount
   useEffect(() => {
@@ -80,7 +261,7 @@ export function Catalog() {
             itemName: item.name,
             itemDescription: item.description,
             itemCategory: item.category,
-            itemUnit: 'units',
+            itemUnit: 'units', // Manteniendo el valor 'units' del código original.
             isActive: true,
             consumible: false,
             imageUrl: item.image,
@@ -213,17 +394,17 @@ export function Catalog() {
         retryable={modalState.retryable}
       />
       <div className="space-y-6">
-        <div className="flex items-start justify-between">
+        <div style={styles.header}>
           <div>
-            <h1>Inventory Catalog</h1>
-            <p className="text-muted-foreground">
+            <h1 style={styles.title}>Inventory Catalog</h1>
+            <p style={styles.subtitle}>
               Search and select items to borrow
             </p>
           </div>
           <Button
             onClick={() => setCartOpen(true)}
             variant="outline"
-            className="flex items-center gap-2"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
             <ShoppingCart className="h-4 w-4" />
             Cart {totalCartItems > 0 && `(${totalCartItems})`}
@@ -231,11 +412,11 @@ export function Catalog() {
         </div>
 
         {/* Warehouse Selector */}
-        <div className="flex items-center gap-2">
-          <Package className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm">Warehouse:</span>
+        <div style={styles.warehouseSelector}>
+          <Package className="h-4 w-4" style={{ color: '#6b7280' }} />
+          <span style={{ fontSize: '0.875rem' }}>Warehouse:</span>
           <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger style={{ width: '200px' }}>
               <SelectValue placeholder="Select warehouse" />
             </SelectTrigger>
             <SelectContent>
@@ -249,17 +430,17 @@ export function Catalog() {
         </div>
 
         {/* Search Bar */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div style={styles.searchBar}>
+          <div style={styles.searchInputContainer}>
+            <Search style={styles.searchIcon} />
             <Input
               placeholder="Search by code or name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              style={styles.inputStyle}
             />
           </div>
-          <Button onClick={() => setCameraOpen(true)} variant="outline" className="flex items-center gap-2">
+          <Button onClick={() => setCameraOpen(true)} variant="outline" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Camera className="h-4 w-4" />
             AI Camera
           </Button>
@@ -283,79 +464,94 @@ export function Catalog() {
           onProceed={onNavigateToRequest}
         />
 
-        {/* Items Grid */}
-        <div className="
-  grid
-  grid-cols-1
-  sm:grid-cols-3
-  md:grid-cols-5
-  lg:grid-cols-5
-  xl:grid-cols-6
-  2xl:grid-cols-6
-  gap-4
-">
+        {/* Items Grid - APLICANDO ESTILOS EN LÍNEA */}
+        <div style={styles.itemsGrid}>
           {filteredItems.map((item) => {
             const cartQty = getItemCartQuantity(item.itemId);
+            const totalQty = item.totalQuantity || 0;
+            const isAvailable = totalQty > 0;
+            const badgeStyle = isAvailable ? styles.badgeAvailable : styles.badgeOutOfStock;
+
             return (
-              <div key={item.itemId} className="h-full">
-                <Card className="overflow-hidden h-full">
+              <div key={item.itemId} style={styles.cardWrapper}>
+                <Card style={styles.card}>
 
-
-                  <div className="aspect-square relative">
+                  {/* Imagen y Badge de Disponibilidad */}
+                  <div style={styles.imageContainer}>
                     <ImageWithFallback
                       src={item.imageUrl}
                       alt={item.itemName}
-                      className="w-full h-full object-cover"
+                      style={styles.image}
                     />
-                    <Badge
-                      className={`absolute top-2 right-2 ${(item.totalQuantity || 0) > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}
-                    >
-                      {(item.totalQuantity || 0) > 0 ? 'Available' : 'Out of Stock'}
-                    </Badge>
+                    {/* CÓDIGO MODIFICADO AQUÍ ⬇️ */}
+                    <div style={badgeStyle}>
+                      {isAvailable ? `Available: ${totalQty}` : 'Out of Stock'}
+                    </div>
+                    {/* CÓDIGO MODIFICADO AQUÍ ⬆️ */}
                   </div>
-                  <CardHeader className="p-4">
-                    <div className="space-y-1">
-                      <CardTitle className="text-base">{item.itemName}</CardTitle>
-                      <p className="text-sm text-muted-foreground">{item.itemSku}</p>
-                      <p className="text-xs text-muted-foreground line-clamp-2">{item.itemDescription}</p>
-                      <Badge variant="secondary" className="mt-2 inline-block">{item.itemCategory}</Badge>
+
+                  {/* Contenido de la Tarjeta - Nombres y Nuevos Mapeos */}
+                  <CardHeader style={{ ...styles.cardHeader, paddingTop: '0', marginTop: '0' }}>
+                    <div>
+                      <CardTitle style={styles.cardTitle}>
+                        {item.itemName}
+                      </CardTitle>
+                      {/* DESCRIPCIÓN */}
+                      <p style={styles.cardDescription}>
+                        {item.itemDescription || item.itemSku}
+                      </p>
                     </div>
                   </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-sm">
-                        Available: <span className="font-medium">{item.totalQuantity || 0}</span>
+
+                  {/* Mapeos de Categoria/Unidad y Controles de Carrito */}
+                  <CardContent style={styles.cardContent}>
+                    {/* Categoria y Unidad (como Precio Original y Final) */}
+                    <div style={styles.priceUnitContainer}>
+                      <span style={styles.categoryText} title={item.itemCategory}>
+                        **{item.itemCategory}**
+                      </span>
+                      <span style={styles.unitText} title={item.itemUnit}>
+                        {item.itemUnit}
                       </span>
                     </div>
 
+                    {/* CANTIDAD DISPONIBLE: ELIMINADA AQUÍ */}
+                    {/* Antes estaba:
+                                        <div style={styles.availableText}>
+                                            <span>
+                                                Available: <span style={styles.availableQuantity}>{item.totalQuantity || 0}</span>
+                                            </span>
+                                        </div>
+                                        */}
+
+                    {/* Controles de Carrito */}
                     {cartQty === 0 ? (
                       <Button
                         onClick={() => handleAddToCart(item, 1)}
-                        disabled={(item.totalQuantity || 0) === 0}
-                        className="w-full"
+                        disabled={!isAvailable}
+                        style={{ width: '100%', height: '32px', fontSize: '0.875rem' }}
                       >
-                        {(item.totalQuantity || 0) === 0 ? 'Not Available' : 'Add to Cart'}
+                        {!isAvailable ? 'Not Available' : 'Add to Cart'}
                       </Button>
                     ) : (
-                      <div className="flex items-center justify-center gap-2 border rounded-md p-1">
+                      <div style={styles.cartControls}>
                         <Button
                           onClick={() => handleDecreaseQuantity(item)}
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0"
+                          style={{ height: '28px', width: '28px', padding: '0' }}
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus style={{ height: '16px', width: '16px' }} />
                         </Button>
-                        <span className="text-sm font-medium w-12 text-center">{cartQty}</span>
+                        <span style={styles.quantityDisplay}>{cartQty}</span>
                         <Button
                           onClick={() => handleIncreaseQuantity(item)}
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0"
-                          disabled={cartQty >= (item.totalQuantity || 0)}
+                          style={{ height: '28px', width: '28px', padding: '0' }}
+                          disabled={cartQty >= totalQty}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus style={{ height: '16px', width: '16px' }} />
                         </Button>
                       </div>
                     )}
@@ -368,8 +564,8 @@ export function Catalog() {
 
         {
           filteredItems.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">
+            <div style={{ textAlign: 'center', padding: '48px 0' }}>
+              <p style={styles.subtitle}>
                 No items found in this warehouse
               </p>
             </div>

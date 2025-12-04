@@ -46,6 +46,7 @@ export function BorrowRequests() {
     confirmReturnAll,
     toggleBorrowRow,
     getBorrowStatusCount,
+    reloadBorrowRequests,
 
     // Utilities
     canCancelBorrowRequest,
@@ -79,6 +80,7 @@ export function BorrowRequests() {
         clearCart={handleClearCart}
         currentUser={userForForm}
         onBack={() => setShowBorrowForm(false)}
+        onBorrowCreated={reloadBorrowRequests}
       />
     );
   }
@@ -207,13 +209,15 @@ export function BorrowRequests() {
                   </div>
 
                   <div className="text-sm text-muted-foreground space-y-1">
-                    <p className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      Requested: {formatDate(request.createdAt || '')}
-                    </p>
-                    <p>Project: {request.projectName}</p>
-                    <p>Department: {request.departmentName || '-'}</p>
-                    <p>Return Date: {formatDate(request.expectedReturnDate)}</p>
+                    <div className="grid grid-cols-2 gap-2 text-[11px] sm:text-sm">
+                      <p className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                        Requested: {formatDate(request.createdAt || '')}
+                      </p>
+                      <p>Project: {request.projectId}</p>
+                      <p>Department: {request.departmentId || '-'}</p>
+                      <p>Return: {formatDate(request.expectedReturnDate)}</p>
+                    </div>
                     {request.notes && (
                       <p className="text-xs italic">Notes: {request.notes}</p>
                     )}
@@ -221,6 +225,32 @@ export function BorrowRequests() {
 
                   {expandedBorrowRows.has(request.requestNumber) && (
                     <div>
+                      {/* Cadena de relaciones en móvil */}
+                      <div className="bg-white rounded-lg p-3 border border-muted mb-4">
+                        <h4 className="text-[10px] sm:text-xs font-semibold mb-2 text-muted-foreground">Details project</h4>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <div className="flex flex-col items-center">
+                            <span className="text-[8px] sm:text-[10px] opacity-50">Company</span>
+                            <span className="text-[9px] sm:text-xs font-medium text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">{request.companyId}</span>
+                          </div>
+                          <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
+                          <div className="flex flex-col items-center">
+                            <span className="text-[8px] sm:text-[10px] opacity-50">Customer</span>
+                            <span className="text-[9px] sm:text-xs font-medium text-green-700 bg-green-50 px-1.5 py-0.5 rounded">{request.customerId}</span>
+                          </div>
+                          <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
+                          <div className="flex flex-col items-center">
+                            <span className="text-[8px] sm:text-[10px] opacity-50">Project</span>
+                            <span className="text-[9px] sm:text-xs font-medium text-yellow-700 bg-yellow-50 px-1.5 py-0.5 rounded">{request.projectId}</span>
+                          </div>
+                          <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
+                          <div className="flex flex-col items-center">
+                            <span className="text-[8px] sm:text-[10px] opacity-50">Work Order</span>
+                            <span className="text-[9px] sm:text-xs font-medium text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">{request.workOrderId}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
                       <h4 className="text-sm mb-2">Items:</h4>
                       <div className="space-y-2">
                         {request.items.map((item, index) => (
@@ -233,12 +263,12 @@ export function BorrowRequests() {
                               />
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm truncate">{item.name}</p>
+                              <p className="text-xs sm:text-sm truncate">{item.name}</p>
                               {item.description && (
-                                <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{item.description}</p>
                               )}
                             </div>
-                            <Badge variant="secondary">x{item.quantityRequested}</Badge>
+                            <Badge variant="secondary" className="text-xs">x{item.quantityRequested}</Badge>
                           </div>
                         ))}
                       </div>
@@ -284,7 +314,7 @@ export function BorrowRequests() {
                           <Badge variant="outline" className="mx-auto">{request.warehouseName}</Badge>
                         </TableCell>
                         <TableCell className="text-center">
-                          <p className="text-sm">{request.projectName}</p>
+                          <p className="text-sm">{request.projectId}</p>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground text-center">
                           {formatDate(request.expectedReturnDate)}
@@ -299,7 +329,7 @@ export function BorrowRequests() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center">
-                          <p className="text-sm">{request.departmentName || '-'}</p>
+                          <p className="text-sm">{request.departmentId || '-'}</p>
                         </TableCell>
                         <TableCell className="text-center">
                           <p className="text-sm text-muted-foreground truncate max-w-[200px] mx-auto" title={request.notes}>
@@ -338,7 +368,42 @@ export function BorrowRequests() {
                       {expandedBorrowRows.has(request.requestNumber) && (
                         <TableRow>
                           <TableCell colSpan={9} className="bg-muted/20 p-0">
-                            <div className="p-4">
+                            <div className="p-4 space-y-4">
+                              {/* Cadena de relaciones */}
+                              <div className="bg-white rounded-lg p-4 border border-muted flex items-center justify-between">
+                                <h4 className="text-sm font-semibold text-muted-foreground">Details project</h4>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-xs opacity-50 mb-1">Company</span>
+                                    <div className="bg-blue-50 border border-blue-200 rounded px-3 py-2 text-sm font-medium">
+                                      {request.companyId}
+                                    </div>
+                                  </div>
+                                  <span className="text-muted-foreground">→</span>
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-xs opacity-50 mb-1">Customer</span>
+                                    <div className="bg-green-50 border border-green-200 rounded px-3 py-2 text-sm font-medium">
+                                      {request.customerId}
+                                    </div>
+                                  </div>
+                                  <span className="text-muted-foreground">→</span>
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-xs opacity-50 mb-1">Project</span>
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded px-3 py-2 text-sm font-medium">
+                                      {request.projectId}
+                                    </div>
+                                  </div>
+                                  <span className="text-muted-foreground">→</span>
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-xs opacity-50 mb-1">Work Order</span>
+                                    <div className="bg-purple-50 border border-purple-200 rounded px-3 py-2 text-sm font-medium">
+                                      {request.workOrderId}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Tabla de items */}
                               <Table>
                                 <TableHeader>
                                   <TableRow>

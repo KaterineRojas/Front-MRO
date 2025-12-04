@@ -1,6 +1,5 @@
 import { API_BASE_URL } from "../services/api";
-// Simulate API delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 
 // Types
 export interface BorrowItem {
@@ -29,10 +28,7 @@ export interface BorrowRequest {
   items: BorrowItem[];
 }
 
-// Interface para la respuesta de la API
-interface ApiResponse {
-  data: BorrowRequest[];
-}
+
 
 // Mock Data - Borrow Requests (mantener como fallback)
 const mockBorrowRequests: BorrowRequest[] = [
@@ -92,32 +88,52 @@ const mockBorrowRequests: BorrowRequest[] = [
 
 // API Functions
 
-/**
- * Get all borrow requests from the real API
- * @param userId - The user ID to filter requests by (sent as requesterId)
- * @returns Promise with array of BorrowRequest
- */
-export async function getBorrowRequests(userId?: string): Promise<BorrowRequest[]> {
+// Definimos el tipo de respuesta según lo que Swagger muestra.
+// Normalmente devuelve un PagedResponseDto con una lista de LoanRequest.
+export interface LoanRequest {
+  requestNumber: string;
+  requesterId: string;
+  requesterName: string;
+  warehouseName: string;
+  companyId: string;
+  customerId: string;
+  departmentId: string;
+  projectId: string;
+  workOrderId: string;
+  status: string;
+  expectedReturnDate: string;
+  createdAt: string;
+  totalItems: number;
+  totalQuantity: number;
+  notes: string;
+  items: BorrowItem[];
+}
+
+export interface PagedResponse<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+}
+
+// Implementación de la API call
+export async function getBorrowRequests(
+  pageNumber?: number,
+  pageSize?: number
+): Promise<PagedResponse<LoanRequest>> {
+  //const idUser = requesterId || 'amx0142';
+  const idUser =  'amx0142';
+  const page = pageNumber ?? 1;
+  const size = pageSize ?? 20;
+
+  const url = `${API_BASE_URL}/loan-requests?requesterId=${encodeURIComponent(
+    idUser
+  )}&pageNumber=${page}&pageSize=${size}`;
+
+  console.log('Fetching borrow requests from URL:', url);
+
   try {
-    // Console.log con el id del usuario
-    if (userId) {
-      console.log('Usuario ID:', userId);
-    }
-
-    // Construir los parámetros de la query
-    const params = new URLSearchParams();
-
-    // Si hay un userId, lo enviamos como requesterId
-    if (userId) {
-      params.append('requesterId', userId);
-    }
-
-    // Agregar parámetros de paginación por defecto
-    params.append('pageNumber', '1');
-    params.append('pageSize', '20');
-
-    // Realizar la petición a la API real
-    const response = await fetch(`${API_BASE_URL}/loan-requests?${params.toString()}`, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -128,26 +144,31 @@ export async function getBorrowRequests(userId?: string): Promise<BorrowRequest[
       throw new Error(`Error fetching borrow requests: ${response.status}`);
     }
 
-    // Parsear el JSON de la respuesta
-    const responseData: ApiResponse = await response.json();
+    const responseData = await response.json();
+    
+    // La respuesta viene envuelta en "data"
+    const apiData = responseData.data || responseData;
 
-    // La API devuelve los datos en la propiedad 'data'
-    if (responseData.data && Array.isArray(responseData.data)) {
-      return responseData.data;
-    }
+    console.log('Borrow requests data received:', apiData);
 
-    // Si no hay datos, devolver array vacío
-    console.warn('No data found in API response');
-    return [];
-
+    return {
+      items: apiData as LoanRequest[],
+      totalCount: responseData.totalCount,
+      pageNumber: responseData.pageNumber,
+      pageSize: responseData.pageSize,
+    };
   } catch (error) {
     console.error('Error fetching borrow requests:', error);
-
-    // En caso de error, usar datos mock como fallback
-    console.log('Using mock data due to API error');
-    return [...mockBorrowRequests];
+    
+    return {
+      items: [],
+      totalCount: 0,
+      pageNumber: page,
+      pageSize: size,
+    };
   }
 }
+
 
 /**
  * Get borrow request by ID
@@ -189,53 +210,54 @@ export async function getBorrowRequestById(requestId: string): Promise<BorrowReq
 
 /**
  * Create a new borrow request
- * @param request - The request data without ID, status, or createdAt
+ * @param request - The request data in the correct API format
  * @returns Promise with the created BorrowRequest
  */
-export async function createBorrowRequest(
-  request: Omit<BorrowRequest, 'requestNumber' | 'status' | 'createdAt'>
-): Promise<BorrowRequest> {
-  console.log('Creating borrow request:', request);
+export async function createBorrowRequest(payload: {
+  requesterId: string;
+  warehouseId: number;
+  companyId: string;
+  customerId: string;
+  departmentId: string;
+  projectId: string;
+  workOrderId: string;
+  expectedReturnDate: string;
+  notes: string;
+  items: { itemId: number; quantityRequested: number }[];
+}): Promise<{ success: boolean; message: string; requestNumber?: string }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/loan-requests`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error creating borrow request: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Si la respuesta viene envuelta en 'data'
-    if (data.data) {
-      return data.data as BorrowRequest;
-    }
-
-    return data as BorrowRequest;
-
-  } catch (error) {
-    console.error('Error creating borrow request:', error);
-
-    // Fallback to mock implementation
-    console.log('Using mock implementation for create');
-
-    // Generate new request ID
-    const newId = `BRW${String(mockBorrowRequests.length + 1).padStart(3, '0')}`;
-
-    const newRequest: BorrowRequest = {
-      ...request,
-      requestNumber: newId,
-      status: 'Pending',
-      createdAt: new Date().toISOString()
+    const apiPayload = {
+      ...payload,
+      requesterId: 'amx0142'  // Por ahora, usar hardcodeado
     };
 
-    mockBorrowRequests.push(newRequest);
-    return newRequest;
+    const url = `${API_BASE_URL}/loan-requests`;
+    console.log('POST URL:', url);
+    console.log('Enviando solicitud de préstamo:', apiPayload);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(apiPayload)
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to create borrow request');
+    }
+    
+    return { 
+      success: true, 
+      message: 'Borrow request created successfully', 
+      requestNumber: data.requestNumber 
+    };
+  } catch (error: any) {
+    console.error('Error creating borrow request:', error);
+    return { 
+      success: false, 
+      message: error.message || 'Error creating borrow request' 
+    };
   }
 }
 

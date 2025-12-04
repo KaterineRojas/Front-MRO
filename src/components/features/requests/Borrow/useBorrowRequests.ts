@@ -9,7 +9,7 @@ import { handleError, setupConnectionListener } from '../../enginner/services/er
 import {
   getBorrowRequests,
   deleteBorrow,
-  type BorrowRequest
+  type LoanRequest
 } from './borrowService';
 
 import {
@@ -53,7 +53,7 @@ export function useBorrowRequests() {
 
   // Estados del componente
   const [showBorrowForm, setShowBorrowForm] = useState(false);
-  const [borrowRequests, setBorrowRequests] = useState<BorrowRequest[]>([]);
+  const [borrowRequests, setBorrowRequests] = useState<LoanRequest[]>([]);
   
   // ⚠️ Ya no inicializaremos filteredBorrowRequests aquí, lo hará useMemo
   // const [filteredBorrowRequests, setFilteredBorrowRequests] = useState<BorrowRequest[]>([]);
@@ -99,15 +99,12 @@ export function useBorrowRequests() {
         const [whData, statusData, requestsData] = await Promise.all([
           getWarehouses(),
           getStatuses(),
-          // ⚠️ NOTA: Si getBorrowRequests ya devuelve paginación, esta línea debe ajustarse. 
-          // Por ahora, asumimos que trae todo y los filtros se hacen en el cliente.
           getBorrowRequests(currentUser?.id) 
         ]);
         setWarehouses(whData);
         setStatuses(statusData);
-        // Si getBorrowRequests devuelve PagedResponse, usar requestsData.data:
-        // setBorrowRequests(requestsData.data);
-        setBorrowRequests(requestsData); 
+        setBorrowRequests(requestsData.items || []);
+        console.log('Departamentos de los préstamos:', requestsData.items?.map(req => ({ requestNumber: req.requestNumber, departmentId: req.departmentId })));
       } catch (error: any) {
         const appError = handleError(error);
         showConfirm({
@@ -237,6 +234,17 @@ export function useBorrowRequests() {
     dispatch(clearCart());
   };
 
+  const reloadBorrowRequests = async () => {
+    try {
+      const requestsData = await getBorrowRequests(currentUser?.id);
+      setBorrowRequests(requestsData.items || []);
+      toast.success('Requests updated');
+    } catch (error: any) {
+      const appError = handleError(error);
+      toast.error(appError.message || 'Failed to reload requests');
+    }
+  };
+
   const handleCancelBorrowRequest = (requestId: string) => {
     setRequestToDelete(requestId);
     showConfirm({
@@ -350,6 +358,7 @@ export function useBorrowRequests() {
     toggleBorrowRow,
     getBorrowStatusCount, // 👈 Ahora es la función de useCallback
     hideModal,
+    reloadBorrowRequests,
 
     // Utilities
     canCancelBorrowRequest,

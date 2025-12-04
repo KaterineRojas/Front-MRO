@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "./api";
 import { withRetry, classifyFetchError, handleError } from "../../enginner/services/errorHandler";
-// Simulate API delay
+
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export interface Warehouse {
@@ -9,8 +9,6 @@ export interface Warehouse {
   code: string;
   location: string;
 }
-
-
 
 export interface Status {
   id: string;
@@ -38,15 +36,8 @@ export interface CatalogItem {
   warehouseName: string;
 }
 
-// Project Details Types
 export interface Company {
-  id: string | number;
   name: string;
-  code?: string;
-  description?: string;
-  active?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 export interface Customer {
@@ -116,105 +107,69 @@ async function fetchDataWithRetry<T>(
   };
 
   try {
-    // Intentamos la llamada con retries
     return await withRetry(apiFunction);
   } catch (error) {
-    // Si withRetry falla (después de todos los reintentos), manejamos y lanzamos el AppError final.
     const appError = handleError(error);
-    // Puedes dejar el console.error aquí o quitarlo si lo manejas completamente en la UI
     console.error(`Final Error fetching from ${endpoint}:`, appError);
     throw appError;
   }
 }
 
-// ============================================
-// API FUNCTIONS - Shared Resources
-// ============================================
-
-
-/**
- * Get all warehouses
- */
 export async function getWarehouses(): Promise<Warehouse[]> {
   const endpoint = `/Warehouses`;
   return fetchDataWithRetry(endpoint, (data: any) => {
-    // 1. Verificar si 'data' es un array. Si no, devuelve un array vacío
     if (!Array.isArray(data)) {
       console.error("API /Warehouse did not return an array:", data);
-      return []; // Retorna un array vacío que sí coincide con Warehouse[]
+      return [];
     }
-    // 2. Mapear y filtrar en un solo paso (o en pasos que manejen el tipo)
-    // Utilizamos una variable intermedia para el resultado filtrado.
+
     const mappedWarehouses: Warehouse[] = data
       .map((wh: any) => {
-        // Paso 2a: Mapear el ID
         const id = wh.id ? wh.id.toString() : '';
-        // Paso 2b: Si no hay un ID válido, retornamos un valor que será descartado
-        // En lugar de devolver 'null', podemos devolver 'undefined' o simplemente 
-        // dejar que el filtro se encargue de los objetos sin ID.
         if (!id) {
           console.warn("Warehouse object missing idWh:", wh);
-          return undefined; // Usamos undefined para el filtro
+          return undefined;
         }
-        // Paso 2c: Retornar el objeto Warehouse válido
         return {
           id: id,
           name: wh.name || 'Unnamed Warehouse',
           code: wh.code || 'N/A',
           location: wh.location || undefined,
-        } as Warehouse; // Aseguramos que el objeto retornado es Warehouse
+        } as Warehouse;
       })
-      // 3. Filtrar cualquier elemento que haya devuelto 'undefined' (o 'null')
-      // La clave es el type guard 'Boolean' para eliminar falsy values (undefined, null, etc.)
       .filter((wh): wh is Warehouse => Boolean(wh));
     return mappedWarehouses;
   });
 }
 
-/**
- * Get all statuses
- */
 export async function getStatuses(): Promise<Status[]> {
   await delay(100);
   return [...mockStatuses];
 }
 
-
-/**
- * Get all departments from real API: /api/Department
- */
-export async function getDepartments(): Promise<Department[]> {
-  const endpoint = `/Department`;
-  console.log("Fetching departments from endpoint:", endpoint);
+export async function getDepartments(companyName: string): Promise<Department[]> {
+  const endpoint = `/amx/departments/${encodeURIComponent(companyName)}`;
+  const fullUrl = `${API_BASE_URL}${endpoint}`;
+  console.log("Fetching departments from URL:", fullUrl);
 
   return fetchDataWithRetry(endpoint, (data: any) => {
-    if (!Array.isArray(data)) {
-      console.error("API /Department returned non-array:", data);
-      return [];
-    }
-    return data.map((dept: any) => ({
-      id: dept.idDepartament?.toString() ?? "0",
-      name: dept.name ?? "Unnamed Department",
-      code: dept.code || undefined,
-      description: dept.description || undefined
+    return (data as string[]).map((deptName) => ({
+      id: deptName,
+      name: deptName,
+      code: undefined,
+      description: undefined
     }));
   });
 }
 
-/**
- * Get catalog items by warehouse
- */
 export async function getCatalogItemsByWarehouse(warehouseId: string): Promise<CatalogItem[]> {
   const endpoint = `/Inventory/by-warehouse/${warehouseId}`;
-  //http://localhost:5048/api/Items/1
   return fetchDataWithRetry(endpoint, (data: any) => {
-    // Verificar si data es un array
     if (!Array.isArray(data)) {
       console.error("API /Items did not return an array:", data);
       return [];
     }
 
-    // Mapeo correcto según tu API real
     return data.map((item: any) => ({
       id: item.itemId ? item.itemId.toString() : '0',
       name: item.itemName || 'Unknown Item',
@@ -230,10 +185,6 @@ export async function getCatalogItemsByWarehouse(warehouseId: string): Promise<C
   });
 }
 
-
-/**
- * Search catalog items by name or SKU
- */
 export async function searchCatalogItems(query: string, warehouseId: string): Promise<CatalogItem[]> {
   const items = await getCatalogItemsByWarehouse(warehouseId);
   const q = query.toLowerCase();
@@ -244,71 +195,46 @@ export async function searchCatalogItems(query: string, warehouseId: string): Pr
   );
 }
 
-// ============================================
-// PROJECT DETAILS - REAL API FUNCTIONS
-// ============================================
-
-/**
- * Get all companies from real API
- */
 export async function getCompanies(): Promise<Company[]> {
-  return fetchDataWithRetry(`/Companies`, (data: any) => {
-    // Normalizar los IDs y establecer defaults
-    return data.map((company: any) => ({
-      ...company,
-      id: company.id.toString(),
-      active: company.active !== undefined ? company.active : true,
-      code: company.code || '',
-      description: company.description || ''
+  const endpoint = `/amx/companies`;
+  return fetchDataWithRetry(endpoint, (data: any) =>
+    (data as string[]).map((companyName) => ({ name: companyName }))
+  );
+}
+
+export async function getCustomersByCompany(companyName: string): Promise<Customer[]> {
+  const endpoint = `/amx/customers/${encodeURIComponent(companyName)}`;
+  return fetchDataWithRetry(endpoint, (data: any) => {
+    return (data as string[]).map((customerName) => ({
+      id: customerName,
+      companyId: companyName,
+      name: customerName,
+      code: undefined,
     }));
   });
 }
 
-
-/**
- * Get customers by company ID
- */
-export async function getCustomersByCompany(companyId: string | number): Promise<Customer[]> {
-  const endpoint = `/Companies/${companyId}/customers`;
-  return fetchDataWithRetry(endpoint, (data: Array<{ id: number; name: string; code?: string }>) => {
-    return data.map((customerApi) => ({
-      id: customerApi.id.toString(),
-      companyId: companyId.toString(),
-      name: customerApi.name,
-      code: customerApi.code || undefined,
+export async function getProjectsByCustomer(companyName: string, customerName: string): Promise<Project[]> {
+  const endpoint = `/amx/projects/${encodeURIComponent(companyName)}/${encodeURIComponent(customerName)}`;
+  return fetchDataWithRetry(endpoint, (data: any) => {
+    return (data as string[]).map((projectName) => ({
+      id: projectName,
+      customerId: customerName,
+      name: projectName,
+      code: projectName,
+      description: undefined,
     }));
   });
 }
 
-/**
- * Get projects by customer ID
- */
-export async function getProjectsByCustomer(customerId: string | number): Promise<Project[]> {
-  const endpoint = `/Customers/${customerId}/projects`;
-  return fetchDataWithRetry(endpoint, (data: Array<{ id: number; name: string; code?: string; description?: string }>) => {
-    return data.map((projectApi) => ({
-      id: projectApi.id.toString(),
-      customerId: customerId.toString(),
-      name: projectApi.name,
-      code: projectApi.code ? projectApi.code.toString() : projectApi.id.toString(),
-      description: projectApi.description || undefined,
-    }));
-  });
-}
-
-/**
- * Get work orders by project ID
- */
-
-export async function getWorkOrdersByProject(projectId: string | number): Promise<WorkOrder[]> {
-  const endpoint = `/Projects/${projectId}/workorders`;
-  return fetchDataWithRetry(endpoint, (data: Array<{ id: number; name: string }>) => {
-    return data.map((woApi) => ({
-      id: woApi.id.toString(),
-      projectId: projectId.toString(),
-      orderNumber: woApi.id.toString(),
-      description: woApi.name,
-      // Manteniendo las aserciones de tipo para la seguridad
+export async function getWorkOrdersByProject(companyName: string, customerName: string, projectName: string): Promise<WorkOrder[]> {
+  const endpoint = `/amx/workorders/${encodeURIComponent(companyName)}/${encodeURIComponent(customerName)}/${encodeURIComponent(projectName)}`;
+  return fetchDataWithRetry(endpoint, (data: any) => {
+    return (data as string[]).map((woName) => ({
+      id: woName,
+      projectId: projectName,
+      orderNumber: woName,
+      description: woName,
       status: 'pending' as const,
       priority: 'medium' as const,
     }));
