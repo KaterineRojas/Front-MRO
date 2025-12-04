@@ -143,9 +143,9 @@ export function useBorrowRequests() {
       if (searchLower) {
         const matchesSearch = 
           request.requestNumber?.toLowerCase().includes(searchLower) ||
-          request.projectName?.toLowerCase().includes(searchLower) ||
+          request.projectId?.toLowerCase().includes(searchLower) ||
           request.warehouseName?.toLowerCase().includes(searchLower) ||
-          request.departmentName?.toLowerCase().includes(searchLower) ||
+          request.departmentId?.toLowerCase().includes(searchLower) ||
           request.notes?.toLowerCase().includes(searchLower) ||
           request.items?.some(item => 
             item.name?.toLowerCase().includes(searchLower) ||
@@ -159,7 +159,7 @@ export function useBorrowRequests() {
       // 2. Filtro por Warehouse
       if (warehouseFilter && warehouseFilter !== 'all') {
         const matchesWarehouse = 
-          request.warehouseId === warehouseFilter ||
+          request.warehouseName === warehouseFilter ||
           request.warehouseName === warehouseFilter ||
           // Comparación case-insensitive por si acaso
           request.warehouseName?.toLowerCase() === warehouseFilter.toLowerCase();
@@ -232,17 +232,6 @@ export function useBorrowRequests() {
 
   const handleClearCart = () => {
     dispatch(clearCart());
-  };
-
-  const reloadBorrowRequests = async () => {
-    try {
-      const requestsData = await getBorrowRequests(currentUser?.id);
-      setBorrowRequests(requestsData.items || []);
-      toast.success('Requests updated');
-    } catch (error: any) {
-      const appError = handleError(error);
-      toast.error(appError.message || 'Failed to reload requests');
-    }
   };
 
   const handleCancelBorrowRequest = (requestId: string) => {
@@ -358,7 +347,6 @@ export function useBorrowRequests() {
     toggleBorrowRow,
     getBorrowStatusCount, // 👈 Ahora es la función de useCallback
     hideModal,
-    reloadBorrowRequests,
 
     // Utilities
     canCancelBorrowRequest,

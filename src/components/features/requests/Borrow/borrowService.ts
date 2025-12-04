@@ -232,20 +232,37 @@ export async function createBorrowRequest(payload: {
     };
 
     const url = `${API_BASE_URL}/loan-requests`;
+    console.log('===== CREANDO BORROW REQUEST =====');
     console.log('POST URL:', url);
     console.log('Enviando solicitud de préstamo:', apiPayload);
+    console.log('JSON a enviar:', JSON.stringify(apiPayload, null, 2));
+    console.log('===== FIN DATOS A ENVIAR =====');
 
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(apiPayload)
     });
+
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
     
-    const data = await response.json();
+    const responseText = await response.text();
+    console.log('Response body:', responseText);
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Response is not valid JSON');
+      throw new Error(`Server error ${response.status}: ${responseText}`);
+    }
     
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to create borrow request');
+      throw new Error(data.message || `Failed to create borrow request: ${response.status}`);
     }
+    
+    console.log('Success! Response data:', data);
     
     return { 
       success: true, 
