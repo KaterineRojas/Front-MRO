@@ -118,16 +118,18 @@ export interface PagedResponse<T> {
 
 // Implementación de la API call
 export async function getBorrowRequests(
+  requesterId: string,
   pageNumber?: number,
   pageSize?: number
 ): Promise<PagedResponse<LoanRequest>> {
-  //const idUser = requesterId || 'amx0142';
-  const idUser =  'amx0142';
+  if (!requesterId) {
+    throw new Error('requesterId is required');
+  }
   const page = pageNumber ?? 1;
   const size = pageSize ?? 20;
 
   const url = `${API_BASE_URL}/loan-requests?requesterId=${encodeURIComponent(
-    idUser
+    requesterId
   )}&pageNumber=${page}&pageSize=${size}`;
 
   console.log('Fetching borrow requests from URL:', url);
@@ -173,11 +175,13 @@ export async function getBorrowRequests(
 /**
  * Get borrow request by ID
  * @param requestId - The request ID to search for
+ * @param requesterId - The requester ID (from authSlice)
  * @returns Promise with BorrowRequest or null
  */
-export async function getBorrowRequestById(requestId: string): Promise<BorrowRequest | null> {
+export async function getBorrowRequestById(requestId: string, requesterId: string): Promise<BorrowRequest | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/loan-requests/${requestId}`, {
+    const url = `${API_BASE_URL}/loan-requests/${requestId}?requesterId=${encodeURIComponent(requesterId)}`;
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -227,8 +231,8 @@ export async function createBorrowRequest(payload: {
 }): Promise<{ success: boolean; message: string; requestNumber?: string }> {
   try {
     const apiPayload = {
-      ...payload,
-      requesterId: 'amx0142'  // Por ahora, usar hardcodeado
+      ...payload
+      // requesterId comes from payload (from currentUser.id in LoanForm)
     };
 
     const url = `${API_BASE_URL}/loan-requests`;

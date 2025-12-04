@@ -68,9 +68,10 @@ export const getBorrowRequests = async (): Promise<BorrowRequest[]> => {
 /**
  * GET - Obtiene una solicitud de préstamo por ID
  */
-export const getBorrowRequestById = async (requestId: string): Promise<BorrowRequest | null> => {
+export const getBorrowRequestById = async (requestId: string, requesterId: string): Promise<BorrowRequest | null> => {
   return apiCall(async () => {
-    const response = await fetch(`${API_BASE_URL}/borrow-requests/${requestId}`, {
+    const url = `${API_BASE_URL}/borrow-requests/${requestId}?requesterId=${encodeURIComponent(requesterId)}`;
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

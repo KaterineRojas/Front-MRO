@@ -24,25 +24,6 @@ import {
   canReturnAll
 } from './borrowUtils';
 
-interface GetRequestsParams {
-  warehouseId?: string;
-  status?: string;
-  requesterId?: string;
-  pageNumber?: number;
-  pageSize?: number;
-  searchTerm?: string;
-}
-
-interface PagedResponse<T> {
-  data: T[];
-  pageNumber: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;
-  hasPreviousPage: boolean;
-  hasNextPage: boolean;
-}
-
 /**
  * Custom Hook para manejar la lógica de Borrow Requests
  */
@@ -93,13 +74,17 @@ export function useBorrowRequests() {
   }, []);
 
   // Load initial data
+  // Ensure currentUser has ID (amx0142)
   useEffect(() => {
     const loadData = async () => {
+      if (!currentUser?.id) {
+        return;
+      }
       try {
         const [whData, statusData, requestsData] = await Promise.all([
           getWarehouses(),
           getStatuses(),
-          getBorrowRequests(currentUser?.id) 
+          getBorrowRequests(currentUser.id) 
         ]);
         setWarehouses(whData);
         setStatuses(statusData);

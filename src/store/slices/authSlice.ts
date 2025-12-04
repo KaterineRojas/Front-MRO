@@ -15,9 +15,10 @@ interface AuthState {
   isAuthenticated: boolean;
 }
 
+// User ID: amx0142 (Engineer user)
 const initialState: AuthState = {
   user: {
-    id: '1',
+    id: 'amx0142',
     name: 'John Smith',
     role: 'administrator',
     email: 'john@company.com',
