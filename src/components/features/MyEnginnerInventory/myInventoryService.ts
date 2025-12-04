@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../requests/services/api";
 /**
  * My Inventory Service
  * Handles inventory operations for the current engineer
@@ -228,37 +229,107 @@ const mockKits: Kit[] = [
   }
 ];
 
-/**
- * Get inventory items and kits for a specific engineer
- * @param engineerId - The engineer's ID
- * @returns Promise with object containing inventory items and kits
- */
+
+
+
+
 export async function getInventoryEngineer(
   engineerId: string
 ): Promise<InventoryResponse> {
   try {
+    const url = `${API_BASE_URL}/engineer-holdings/${engineerId}`;
     console.log(`Fetching inventory for engineer: ${engineerId}`);
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Return mock data
-    // In a real scenario, this would filter items/kits by engineerId from the API
-    console.log(`Returning ${mockInventoryItems.length} items and ${mockKits.length} kits for engineer ${engineerId}`);
-    
+    console.log(`API URL: ${url}`);
+
+    const response = await fetch(
+      url,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          // Si tu API requiere autenticación, agrega aquí el token:
+          // "Authorization": `Bearer ${token}`
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    // El backend devuelve un DTO (EngineerHoldingsDto)
+    const data = await response.json();
+    console.log('API Response:', data);
+
+    // Transformar la respuesta de la API al formato esperado
+    const items: InventoryItem[] = [];
+    const kits: Kit[] = [];
+
+    // Procesar items de todos los almacenes
+    if (data.holdingsByWarehouse && Array.isArray(data.holdingsByWarehouse)) {
+      data.holdingsByWarehouse.forEach((warehouse: any) => {
+        // Procesar items
+        if (warehouse.items && Array.isArray(warehouse.items)) {
+          warehouse.items.forEach((item: any) => {
+            items.push({
+              id: `${item.itemId}-${warehouse.warehouse.code}`,
+              itemId: item.itemId.toString(),
+              name: item.name,
+              description: item.description,
+              image: item.imageUrl,
+              project: item.projectIds?.[0] || 'general expenses',
+              projectCode: item.projectIds?.[0] || 'GEN',
+              quantity: item.quantity,
+              sku: item.sku,
+              warehouse: warehouse.warehouse.name,
+              warehouseCode: warehouse.warehouse.code
+            });
+          });
+        }
+
+        // Procesar kits
+        if (warehouse.kits && Array.isArray(warehouse.kits)) {
+          warehouse.kits.forEach((kit: any) => {
+            kits.push({
+              id: `kit-${kit.kitId}-${warehouse.warehouse.code}`,
+              kitId: kit.kitId.toString(),
+              name: kit.name,
+              description: kit.description,
+              project: kit.projectIds?.[0] || 'general expenses',
+              projectCode: kit.projectIds?.[0] || 'GEN',
+              quantity: kit.quantity,
+              warehouse: warehouse.warehouse.name,
+              warehouseCode: warehouse.warehouse.code,
+              items: kit.items?.map((kitItem: any) => ({
+                id: `kit-item-${kitItem.itemId}`,
+                sku: kitItem.sku,
+                name: kitItem.name,
+                description: kitItem.description,
+                quantity: kitItem.quantity,
+                image: kitItem.imageUrl
+              })) || []
+            });
+          });
+        }
+      });
+    }
+
+    console.log('Transformed items:', items);
+    console.log('Transformed kits:', kits);
+
     return {
-      items: mockInventoryItems,
-      kits: mockKits
+      items,
+      kits
     };
   } catch (error) {
-    console.error('Error fetching engineer inventory:', error);
-    // Fallback to empty arrays on error
+    console.error("Error fetching engineer inventory:", error);
     return {
       items: [],
-      kits: []
+      kits: [],
     };
   }
 }
+
 
 /**
  * Transfer inventory items to another engineer
@@ -296,3 +367,7 @@ export async function transferInventory(
 }
 
 export type { InventoryItem, Kit, KitItem, InventoryResponse };
+//export interface InventoryResponse {
+// items: ItemDto[];
+//  kits: KitDto[];
+//}
