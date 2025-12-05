@@ -6,6 +6,7 @@ import {
 import {Badge} from '../components/Badge'
 
 import { createPortal } from 'react-dom'
+import { AvailableBinResponse } from '../services/binsService';
 
 interface Bin {
     id: number;
@@ -33,7 +34,7 @@ interface AssembleKitModalProps {
     isOpen: boolean;
     onClose: () => void;
     kit: any;
-    availableBins: Bin[];
+    availableBins: AvailableBinResponse[];
     loadingAvailableBins: boolean;
     assemblyBinCode?: string | null;
     isBuilding: boolean;
@@ -199,7 +200,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
                                             <option value={0}>Select a target BIN...</option>
                                             {availableBins.map((bin) => (
                                                 <option key={bin.id} value={bin.id}>
-                                                    {bin.binCode} {bin.description ? `- ${bin.description}` : ''}
+                                                    {bin.code} {bin.name ? `- ${bin.name}` : ''}
                                                 </option>
                                             ))}
                                         </select>
@@ -239,7 +240,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
                                                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-200">
                                                     {item.articleName}
                                                     <div className="text-xs text-gray-400 font-mono font-normal">
-                                                        {item.articleSku}
+                                                        {kit.binCode}
                                                     </div>
                                                 </td>
 

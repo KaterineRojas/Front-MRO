@@ -3,15 +3,17 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import type { KitRowProps } from './types';
-import { getAvailableBins, checkKitOccupation, type Bin } from '../../services/binsService';
-import { getKitCurrentBin, createPhysicalKit, deleteKit as deleteKitService, dismantleKit } from '../../services/kitService';
+import { getAvailableBins, checkKitOccupation, type Bin, getAllAvailableBins, AvailableBinResponse } from '../../services/binsService';
+import { getKitCurrentBin, createPhysicalKit, deleteKit as deleteKitService, dismantleKit, getKitDefaultBin } from '../../services/kitService';
 import { DismantleKitModal } from '../../modals/DismantleKitModal';
 import { ActionButton } from '../../components/ActionButton'
 import { AssembleKitModal } from '../../modals/AssembleKitModal'
 import { DeleteKitModal } from '../../modals/DeleteKitModal'
 import { KitExpandedDetails } from '../../components/KitDetailsRow';
-import {Badge} from '../../components/Badge'
+import { Badge } from '../../components/Badge'
 import { isPending } from '@reduxjs/toolkit';
+import { useSelector } from 'react-redux';
+
 
 export function KitRow({
   kit,
@@ -27,7 +29,7 @@ export function KitRow({
   const [isBuilding, setIsBuilding] = useState(false);
   const [assemblyBinId, setAssemblyBinId] = useState<number>(0);
   const [assemblyBinCode, setAssemblyBinCode] = useState('');
-  const [availableBins, setAvailableBins] = useState<Bin[]>([]);
+  const [availableBins, setAvailableBins] = useState<AvailableBinResponse[]>([]);
   const [loadingAvailableBins, setLoadingAvailableBins] = useState(false);
   const [modalBinId, setModalBinId] = useState<number>(0);
   const [modalBinCode, setModalBinCode] = useState('');
@@ -39,74 +41,105 @@ export function KitRow({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteStatus, setDeleteStatus] = useState<'confirm' | 'loading' | 'success' | 'error'>('confirm');
   const [deleteMessageModal, setDeleteMessageModal] = useState('')
+  const darkMode = useSelector((state: any) => state.ui.darkMode);
+  const WAREHOUSE_ID = 1;
+
 
 
   useEffect(() => {
-    console.log(kit);
+    // console.log(kit);
     // console.log(articles);
+    async function getBinsNow(){
+      const bins = await getAllAvailableBins(WAREHOUSE_ID, true);
+      console.log(bins);
+    } 
+
+    getBinsNow()
 
   }, [])
 
+  
 
-  // for updating BIN code showed in the BIN info card and assembly modal
+
   useEffect(() => {
-    // REGLA 0: Si todo está cerrado, no hacemos nada.
+    // 1. EARLY EXIT: If UI is closed, do nothing.
     if (!isExpanded && !isAssembleModalOpen) return;
 
-    // REGLA 2, 3 y 4 (Verificación de Caché):
-    // Si YA tenemos un código de BIN cargado (sea porque estaba expandido o porque se abrió el modal antes),
-    // NO hacemos la petición de ocupación nuevamente. Asumimos que el dato local es válido.
-    if (assemblyBinCode) {
-      setLoadingAvailableBins(false);
-      return;
-    }
+    // 2. CACHE CHECK: If already have the code, do nothing.
+    if (assemblyBinCode) return;
 
-    // REGLA 1: Si no tenemos dato (assemblyBinCode es vacío), hacemos la carga.
+    // Setup AbortController for cleanup
+    const controller = new AbortController();
+    let isActive = true;
+
     async function loadKitData() {
       try {
         setLoadingAvailableBins(true);
 
-        // 1. Verificamos ocupación
-        const occupation = await checkKitOccupation(kit.id);
+        // A. Fetch Kit Occupation (Default Bin)
+        const occupation = await getKitDefaultBin(
+          { kitId: kit.id, warehouseId: WAREHOUSE_ID },
+          controller.signal
+        );
 
-        if (occupation && occupation.isOccupied) {
-          // Si tiene BIN, lo guardamos y terminamos.
-          // Al guardar 'assemblyBinCode', la proxima vez que este effect corra,
-          // entrara en el 'if(assemblyBinCode)' de arriba y no pedira nada.
-          setAssemblyBinId(occupation.occupiedBin.id);
-          setAssemblyBinCode(occupation.occupiedBin.binCode);
+        // Check if component is still mounted before setting state
+        if (!isActive) return;
+
+        if (occupation) {
+          // CASE: Found Default Bin
+          setAssemblyBinId(occupation.id);
+          setAssemblyBinCode(occupation.binCode);
         } else {
+          // CASE: No Default Bin (404/Null)
           setAssemblyBinId(0);
           setAssemblyBinCode('');
 
-          // Regla 2
-          // Si el modal está abierto y NO hay bin asignado, necesitamos
-          // cargar la lista de opciones para el Dropdown.
+          // B. Fetch Dropdown Options (Only if Modal is Open)
+          // We check isAssembleModalOpen here again because it might have changed during the await
           if (isAssembleModalOpen) {
-            // Solo si la lista esta vacia
+            // OPTIMIZATION: We pass 'availableBins' length check to the service 
+            // or simply fetch. To avoid dependency loops, we assume if we are here,
+            // we want to ensure the list is populated.
+
+            // NOTE: Ideally, 'availableBins' should be managed by a separate query (React Query),
+            // but for this manual effect, we fetch if the list is likely empty.
             if (availableBins.length === 0) {
-              const bins = await getAvailableBins(0, true);
-              setAvailableBins(bins);
+              const bins = await getAllAvailableBins(WAREHOUSE_ID, true);
+              if (isActive) setAvailableBins(bins);
             }
           }
         }
       } catch (error) {
-        console.error('Error loading kit bin info:', error);
+        // Ignore AbortErrors (user cancelled/closed modal)
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Error loading kit bin info:', error);
+        }
       } finally {
-        setLoadingAvailableBins(false);
+        if (isActive) setLoadingAvailableBins(false);
       }
     }
 
     loadKitData();
 
+    // Cleanup function: Abort fetch if user closes modal/collapses card
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isExpanded, isAssembleModalOpen, kit.id, assemblyBinCode]);
+  // We intentionally exclude 'availableBins' to avoid loops, or we handle it via ref.
+
+
+
 
 
   const handleConfirmAssembly = async (qty: number, selectedBinId?: number) => {
 
     // Validamos qué BIN usar: El seleccionado en el modal O el pre-asignado
     const finalBinId = selectedBinId || assemblyBinId;
-    const finalBinCode = availableBins.find(b => b.id === finalBinId)?.binCode || assemblyBinCode;
+    const finalBinCode = availableBins.find(b => b.id === finalBinId)?.code || assemblyBinCode;
 
     if (!finalBinId) {
       alert('Error: No BIN location identified.');
@@ -124,7 +157,7 @@ export function KitRow({
         notes: `Built ${qty} kit(s) of ${kit.name}`,
       });
 
-      setIsAssembleModalOpen(false); 
+      setIsAssembleModalOpen(false);
       onRefreshKits();
 
     } catch (error) {
@@ -144,7 +177,7 @@ export function KitRow({
     const selectedBin = availableBins.find(b => b.id.toString() === binId);
     if (selectedBin) {
       setModalBinId(selectedBin.id);
-      setModalBinCode(selectedBin.binCode);
+      setModalBinCode(selectedBin.code);
     }
   };
 
@@ -192,8 +225,8 @@ export function KitRow({
   };
 
   const getAvailableBadge = (required: number, available: number) => {
-    if (required >= available) return <Badge variant="critical">{available}</Badge>;
-    if (required < available) return <Badge variant="success">{available}</Badge>;
+    if (required >= available) return <Badge variant={`${darkMode ? 'critical' : 'critical-soft'}`}>{available}</Badge>;
+    if (required < available) return <Badge variant={`${darkMode ? 'success' : 'success-soft'}`}>{available}</Badge>;
   };
 
   const handleOpenDeleteModal = () => {
@@ -225,17 +258,16 @@ export function KitRow({
 
   return (
     <React.Fragment>
-      <tr 
-        className={`border-b border-gray-100 dark:border-gray-800 transition-colors ${
-          isExpanded ? 'bg-gray-50 dark:bg-gray-700/50' : 'hover:bg-[#F5F5F7] dark:hover:bg-gray-800/30'
-        }`}
+      <tr
+        className={`border-b border-gray-100 dark:border-gray-800 transition-colors ${isExpanded ? 'bg-gray-50 dark:bg-gray-700/50' : 'hover:bg-[#F5F5F7] dark:hover:bg-gray-800/30'
+          }`}
       >
         <td className="p-2 align-middle">
-          <button 
+          <button
             className="p-1.5 rounded-md hover:bg-[#E5E7EB] dark:hover:bg-white dark:hover:text-black text-gray-500 transition-colors"
             onClick={handleToggleAndScroll}
           >
-            <ChevronRight className={`h-4 w-4 transition duration-1500 ${isExpanded ? 'rotate-90' : ''}`}/>
+            <ChevronRight className={`h-4 w-4 transition duration-1500 ${isExpanded ? 'rotate-90' : ''}`} />
           </button>
         </td>
 
@@ -257,11 +289,11 @@ export function KitRow({
         </td>
 
         <td className="p-2 align-middle text-center">
-          <Badge variant="info">{kit.items.length} items</Badge>
+          <Badge variant={`${darkMode ? 'info' : 'info-soft'}`}>{kit.items.length} items</Badge>
         </td>
 
         <td className="p-2 align-middle text-center">
-          <Badge variant="neutral" className="font-semibold">{kit.quantity}</Badge>
+          <Badge variant={`${darkMode ? 'neutral' : 'neutral-soft'}`} className="font-semibold">{kit.quantity}</Badge>
         </td>
 
         <td className="p-2 align-middle text-center">
@@ -313,8 +345,8 @@ export function KitRow({
         <KitExpandedDetails
           kit={kit}
           articles={articles}
-          assemblyBinCode={assemblyBinCode} 
-          loadingAvailableBins={loadingAvailableBins} 
+          assemblyBinCode={assemblyBinCode}
+          loadingAvailableBins={loadingAvailableBins}
           colSpan={8} // 8 columnas en la tabla principal
         />
       )}
@@ -327,7 +359,7 @@ export function KitRow({
         availableBins={availableBins}
         loadingAvailableBins={loadingAvailableBins}
         assemblyBinCode={assemblyBinCode}
-        isBuilding={isBuilding} 
+        isBuilding={isBuilding}
         onConfirm={(qty, binId) => {
           handleConfirmAssembly(qty, binId);
         }}
