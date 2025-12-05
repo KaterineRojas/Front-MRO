@@ -107,7 +107,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
         });
     }, [kit, articles, quantity]);
 
-    const hasValidBin = assemblyBinCode || selectedBinId >= 0;
+    const hasValidBin = assemblyBinCode || selectedBinId > 0;
     const canConfirm = canBuildStock && hasValidBin && !isBuilding;
 
     const handleIncrement = () => setQuantity(q => Math.min(999, q + 1));
@@ -171,8 +171,8 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
 
                     {/* 2. SELECCIÓN BIN */}
                     <div className="space-y-3">
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-gray-500" />
+                        <h3 className="text-sm font-semibold  dark:text-gray-100 flex items-center gap-2 text-indigo-500">
+                            <MapPin className="w-4 h-4 text-indigo-500" />
                             Target Location
                         </h3>
                         {assemblyBinCode ? (

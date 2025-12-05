@@ -276,6 +276,8 @@ export interface CreatePhysicalKitRequest {
  * Creates physical kits (builds/assembles kits)
  */
 export async function createPhysicalKit(kitData: CreatePhysicalKitRequest): Promise<void> {
+  console.log(kitData);
+  
   const response = await fetch(`${API_URL}/Kits/create-physical`, {
     method: 'POST',
     headers: {
@@ -288,7 +290,7 @@ export async function createPhysicalKit(kitData: CreatePhysicalKitRequest): Prom
     // Backend always returns error in format: { "message": "error description" }
     let errorMessage = 'Failed to build kit';
 
-    try {
+    try { 
       const errorData = await response.json();
       errorMessage = errorData.message || 'Failed to build kit';
     } catch (parseError) {

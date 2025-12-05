@@ -31,8 +31,6 @@ export function KitRow({
   const [assemblyBinCode, setAssemblyBinCode] = useState('');
   const [availableBins, setAvailableBins] = useState<AvailableBinResponse[]>([]);
   const [loadingAvailableBins, setLoadingAvailableBins] = useState(false);
-  const [modalBinId, setModalBinId] = useState<number>(0);
-  const [modalBinCode, setModalBinCode] = useState('');
   const [dismantleModalOpen, setDismantleModalOpen] = useState(false);
   const [dismantleQuantity, setDismantleQuantity] = useState(1);
   const [dismantleNotes, setDismantleNotes] = useState('');
@@ -47,17 +45,17 @@ export function KitRow({
 
 
   useEffect(() => {
-    // console.log(kit);
+    console.log(kit);
     // console.log(articles);
-    async function getBinsNow(){
-      const bins = await getAllAvailableBins(WAREHOUSE_ID, true);
-      console.log(bins);
-    } 
-
-    getBinsNow()
+    
 
   }, [])
 
+  useEffect(() => {
+    console.log(assemblyBinCode);
+    
+  }, [assemblyBinCode])
+  
   
 
 
@@ -171,14 +169,6 @@ export function KitRow({
 
   const handleUseKit = () => {
     onUseAsTemplate(kit);
-  };
-
-  const handleModalBinChange = (binId: string) => {
-    const selectedBin = availableBins.find(b => b.id.toString() === binId);
-    if (selectedBin) {
-      setModalBinId(selectedBin.id);
-      setModalBinCode(selectedBin.code);
-    }
   };
 
   const handleToggleAndScroll = () => {
