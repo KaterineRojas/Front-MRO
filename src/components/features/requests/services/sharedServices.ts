@@ -184,18 +184,23 @@ export async function getCatalogItemsByWarehouse(warehouseId: string): Promise<C
       return [];
     }
 
-    return data.map((item: any) => ({
+    console.log("Raw API response for catalog items:", data);
+
+    const mappedItems = data.map((item: any) => ({
       id: item.itemId ? item.itemId.toString() : '0',
       name: item.itemName || 'Unknown Item',
-      sku: item.Sku || `SKU-${item.itemId || '000'}`,
+      sku: item.itemSku || `SKU-${item.itemId || '000'}`,
       description: item.itemDescription || '',
       image: item.imageUrl || '',
-      category: item.Category || 'General',
+      category: item.itemCategory || 'General',
       availableQuantity: item.totalAvailable || 0,
       totalQuantity: item.totalQuantity || 0,
       warehouseId: warehouseId.toString(),
       warehouseName: `Warehouse ${warehouseId}`
     }));
+
+    console.log("Mapped catalog items:", mappedItems);
+    return mappedItems;
   });
 }
 
