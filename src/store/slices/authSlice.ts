@@ -22,7 +22,7 @@ const initialState: AuthState = {
     name: 'John Smith',
     role: 'administrator',
     email: 'john@company.com',
-    department: 'Engineering'
+    department: 'IT-Bolivia'
   },
   isAuthenticated: true,
 };

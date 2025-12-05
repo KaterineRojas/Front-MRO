@@ -94,7 +94,7 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
             id: 'amx0142',
             name: 'John Smith',
             email: credentials.email,
-            department: 'Engineering'
+            department: 'IT-Bolivia'
           }
         };
         
@@ -117,7 +117,6 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
 export const logoutUser = (): void => {
   removeToken();
 };
-
 /**
  * Obtiene los headers para las llamadas API
  * Incluye el token si USE_AUTH_TOKENS es true

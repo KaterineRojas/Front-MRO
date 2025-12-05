@@ -28,7 +28,7 @@ const getInitialState = (): UserState => {
         id: 'amx0142',
         name: 'John Smith',
         email: 'john@company.com',
-        department: 'Engineering'
+        department: 'IT-Bolivia'
       },
       isLoggedIn: true,
       token: null

@@ -17,8 +17,10 @@ export interface Status {
 }
 
 export interface Department {
-  id: string | number;
-  name: string;
+  id?: string | number;
+  unitCode: string | number;
+  unitName: string;
+  company: string;
   code?: string;
   description?: string;
 }
@@ -69,10 +71,14 @@ export interface Project {
 
 export interface WorkOrder {
   id: string | number;
+  wo: string;
   projectId: string | number;
   orderNumber: string;
+  serviceDesc: string;
   description: string;
-  status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  startDate: string;
+  endDate: string;
+  status: string;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   assignedDate?: string;
   dueDate?: string;
@@ -153,11 +159,19 @@ export async function getDepartments(companyName: string): Promise<Department[]>
   console.log("Fetching departments from URL:", fullUrl);
 
   return fetchDataWithRetry(endpoint, (data: any) => {
-    return (data as string[]).map((deptName) => ({
-      id: deptName,
-      name: deptName,
-      code: undefined,
-      description: undefined
+    // Data ahora viene como array de objetos con unitCode, unitName, company
+    if (!Array.isArray(data)) {
+      console.error("API /departments did not return an array:", data);
+      return [];
+    }
+
+    return data.map((dept: any) => ({
+      id: dept.unitCode,
+      unitCode: dept.unitCode,
+      unitName: dept.unitName || 'Unnamed Department',
+      company: dept.company,
+      code: dept.unitCode,
+      description: dept.unitName
     }));
   });
 }
@@ -230,12 +244,21 @@ export async function getProjectsByCustomer(companyName: string, customerName: s
 export async function getWorkOrdersByProject(companyName: string, customerName: string, projectName: string): Promise<WorkOrder[]> {
   const endpoint = `/amx/workorders/${encodeURIComponent(companyName)}/${encodeURIComponent(customerName)}/${encodeURIComponent(projectName)}`;
   return fetchDataWithRetry(endpoint, (data: any) => {
-    return (data as string[]).map((woName) => ({
-      id: woName,
+    if (!Array.isArray(data)) {
+      console.error("API /workorders did not return an array:", data);
+      return [];
+    }
+
+    return data.map((wo: any) => ({
+      id: wo.wo,
+      wo: wo.wo,
       projectId: projectName,
-      orderNumber: woName,
-      description: woName,
-      status: 'pending' as const,
+      orderNumber: wo.wo,
+      serviceDesc: wo.serviceDesc || 'Unknown Service',
+      description: wo.serviceDesc || 'Unknown Service',
+      startDate: wo.startDate || '',
+      endDate: wo.endDate || '',
+      status: wo.status || 'OPEN',
       priority: 'medium' as const,
     }));
   });

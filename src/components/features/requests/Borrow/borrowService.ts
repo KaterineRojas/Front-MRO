@@ -98,6 +98,7 @@ export interface LoanRequest {
   companyId: string;
   customerId: string;
   departmentId: string;
+  departmentName: string;
   projectId: string;
   workOrderId: string;
   status: string;

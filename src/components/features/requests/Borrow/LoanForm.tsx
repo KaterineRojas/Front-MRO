@@ -21,14 +21,12 @@ import {
   getCustomersByCompany,
   getProjectsByCustomer,
   getWorkOrdersByProject,
-  getDepartments,
   type Warehouse,
   type CatalogItem,
   type Project,
   type Company,
   type Customer,
-  type WorkOrder,
-  type Department
+  type WorkOrder
 } from '../services/sharedServices';
 
 interface LoanFormProps {
@@ -92,9 +90,6 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
   };
 
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [loadingDepartments, setLoadingDepartments] = useState(false);
-  const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
 
   // Project Details states
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -266,21 +261,6 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
     loadInitialData();
   }, []);
 
-  const loadDepartments = async () => {
-    if (departmentsLoaded || offlineMode || !formData.company) return;
-
-    setLoadingDepartments(true);
-    try {
-      const data = await getDepartments(formData.company);
-      setDepartments(data);
-      setDepartmentsLoaded(true);
-    } catch (error) {
-      handleApiError(error as AppError, 'departments', loadDepartments);
-    } finally {
-      setLoadingDepartments(false);
-    }
-  };
-
   // Load companies function (Carga Perezosa)
   const loadCompanies = async () => {
     // If already loaded or currently loading, don't reload
@@ -297,39 +277,6 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
       handleApiError(error, 'companies', loadCompanies);
     }
   };
-
-  useEffect(() => {
-    if (!formData.company) {
-      setDepartments([]);
-      setDepartmentsLoaded(false);
-      setFormData(prev => ({
-        ...prev,
-        department: ''
-      }));
-      return;
-    }
-
-    // Cargar departamentos automáticamente cuando se selecciona una company
-    const loadDeptsByCompany = async () => {
-      setLoadingDepartments(true);
-      try {
-        const data = await getDepartments(formData.company);
-        setDepartments(data);
-        setDepartmentsLoaded(true);
-      } catch (error) {
-        handleApiError(error as AppError, 'departments', () => loadDeptsByCompany());
-      } finally {
-        setLoadingDepartments(false);
-      }
-    };
-
-    setDepartments([]);
-    setFormData(prev => ({
-      ...prev,
-      department: ''
-    }));
-    loadDeptsByCompany();
-  }, [formData.company]);
 
   // Load customers when company changes (Carga en Cascada)
   useEffect(() => {
@@ -1041,8 +988,8 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                     </SelectTrigger>
                     <SelectContent>
                       {workOrders.map((wo) => (
-                        <SelectItem key={wo.id} value={wo.id.toString()}>
-                          {wo.orderNumber} - {wo.description}
+                        <SelectItem key={wo.id} value={wo.wo}>
+                          {wo.wo} - {wo.serviceDesc}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1054,41 +1001,12 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                     <div className="flex items-center gap-2 mb-1.5">
                       <Package className="h-4 w-4" />
                       Department *
-                      {loadingDepartments && <span className="text-xs text-muted-foreground">(Loading...)</span>}
                     </div>
                   </Label>
-                  <Select
-                    value={formData.department}
-                    onValueChange={(value: string) => setFormData(prev => ({ ...prev, department: value }))}
-                    disabled={!formData.company || loadingDepartments || offlineMode}
-                    // Carga Perezosa - solo cuando company está seleccionado
-                    onOpenChange={(open: boolean) => {
-                      if (open && !departmentsLoaded && !offlineMode && formData.company) {
-                        loadDepartments();
-                      }
-                    }}
-                  >
-                    <SelectTrigger id="department">
-                      <SelectValue placeholder={
-                        offlineMode ? "Offline - Cannot load departments" :
-                          !formData.company ? "Select company first" :
-                            loadingDepartments ? "Loading departments..." :
-                              "Select a department"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {!departmentsLoaded && !loadingDepartments && formData.company && (
-                        <SelectItem value="_loading" disabled>
-                          Click to load departments...
-                        </SelectItem>
-                      )}
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id.toString()}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2 p-2 border border-input rounded-md bg-muted">
+                    <Badge variant="secondary">{currentUser.department}</Badge>
+                    <span className="text-sm text-muted-foreground">(Fixed)</span>
+                  </div>
                 </div>
 
                 <div>

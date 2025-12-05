@@ -471,8 +471,8 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.name}>
-                        {dept.name}
+                      <SelectItem key={dept.unitCode} value={dept.unitName}>
+                        {dept.unitName}
                       </SelectItem>
                     ))}
                   </SelectContent>

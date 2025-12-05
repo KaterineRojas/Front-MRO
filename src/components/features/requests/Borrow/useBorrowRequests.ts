@@ -119,7 +119,7 @@ export function useBorrowRequests() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // ✅ 3. Reemplazar el useEffect de filtrado por useMemo
+  //  3. Reemplazar el useEffect de filtrado por useMemo
   // Esto recalcula filteredBorrowRequests SOLO cuando cambian sus dependencias.
   const filteredBorrowRequests = useMemo(() => {
     return borrowRequests.filter(request => {
@@ -139,6 +139,11 @@ export function useBorrowRequests() {
           );
         
         if (!matchesSearch) return false;
+      }
+
+      // 1.5. Excluir requests con status "Sent" (no se muestran en pantalla)
+      if (request.status === 'Sent') {
+        return false;
       }
 
       // 2. Filtro por Warehouse
