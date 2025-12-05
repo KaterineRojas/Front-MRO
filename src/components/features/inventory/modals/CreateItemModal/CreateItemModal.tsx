@@ -40,7 +40,7 @@ export function CreateItemModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+        <DialogHeader className="flex-shrink-0 mt-1">
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Package className="h-6 w-6" />
             {editingArticle ? 'Edit Item' : 'Register New Item'}
@@ -53,7 +53,7 @@ export function CreateItemModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+          <div className="flex-1 overflow-y-auto space-y-4 pr-1">
             <ItemBasicInfoSection formData={formData} onFormDataChange={updateFormData} />
 
             <ItemClassificationSection
@@ -78,12 +78,12 @@ export function CreateItemModal({
             )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t mt-4 flex-shrink-0 bg-background">
+          <div className="flex justify-end gap-2 pt-3 border-t mt-3 flex-shrink-0 bg-background">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="min-w-[100px]"
+              className="min-w-[96px]"
             >
               Cancel
             </Button>
