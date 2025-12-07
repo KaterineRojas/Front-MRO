@@ -1,21 +1,16 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Checkbox } from '../ui/checkbox';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import React, { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../../ui/card';
+import { Button } from '../../../../ui/button';
+import { Badge } from '../../../../ui/badge';
+import { Input } from '../../../../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../ui/select';
+import { Dialog, DialogContent } from '../../../../ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../ui/table';
 import { 
-  Package, Search, ChevronDown, ChevronRight, Box, ArrowRightLeft, Camera, Upload, X, AlertCircle, History
+  Package, Search, ChevronDown, ChevronRight, Box, History
 } from 'lucide-react';
-import { ImageWithFallback } from '../../figma/ImageWithFallback';
-import { toast } from 'sonner';
-import { CompleteHistory } from '../enginner/pages/MyInventory/CompleteHistory';
+import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
+import { CompleteHistory } from './CompleteHistory';
 
 interface InventoryItem {
   id: string;
@@ -80,13 +75,6 @@ type CombinedInventory = {
   warehouse?: string;
   warehouseCode?: string;
 };
-
-const mockUsers = [
-  { id: '2', name: 'Ana Martínez', department: 'Development' },
-  { id: '3', name: 'Luis González', department: 'Design' },
-  { id: '4', name: 'María Rodriguez', department: 'Marketing' },
-  { id: '5', name: 'Juan Pérez', department: 'Engineering' }
-];
 
 const mockInventoryItems: InventoryItem[] = [
   {
@@ -281,24 +269,8 @@ export function MyInventoryTransfer() {
   const [warehouseFilter, setWarehouseFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'items' | 'kits'>('all');
 
-  // Transfer mode states
-  const [showTransferMode, setShowTransferMode] = useState(false);
-  const [selectedInventoryIds, setSelectedInventoryIds] = useState<Set<string>>(new Set());
-  const [selectedKitIds, setSelectedKitIds] = useState<Set<string>>(new Set());
-  const [transferQuantities, setTransferQuantities] = useState<Record<string, number>>({});
-  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
-  const [targetEngineerId, setTargetEngineerId] = useState('');
-  const [transferPhoto, setTransferPhoto] = useState<string | null>(null);
-  const [transferNotes, setTransferNotes] = useState('');
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  
   // Complete History Dialog
   const [showCompleteHistory, setShowCompleteHistory] = useState(false);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
 
   React.useEffect(() => {
     const checkMobile = () => {
@@ -437,178 +409,11 @@ export function MyInventoryTransfer() {
     });
   }, [combinedInventory, searchTerm, projectFilter, warehouseFilter, typeFilter]);
 
-  const handleInventorySelection = (inventoryId: string, checked: boolean) => {
-    const newSelected = new Set(selectedInventoryIds);
-    if (checked) {
-      newSelected.add(inventoryId);
-      const item = inventoryItems.find(i => i.id === inventoryId);
-      if (item) {
-        setTransferQuantities(prev => ({
-          ...prev,
-          [inventoryId]: 1
-        }));
-      }
-    } else {
-      newSelected.delete(inventoryId);
-      setTransferQuantities(prev => {
-        const newQuantities = { ...prev };
-        delete newQuantities[inventoryId];
-        return newQuantities;
-      });
-    }
-    setSelectedInventoryIds(newSelected);
-  };
-
-  const handleKitSelection = (kitId: string, checked: boolean) => {
-    const newSelected = new Set(selectedKitIds);
-    if (checked) {
-      newSelected.add(kitId);
-      const kit = kits.find(k => k.id === kitId);
-      if (kit) {
-        setTransferQuantities(prev => ({
-          ...prev,
-          [kitId]: 1
-        }));
-      }
-    } else {
-      newSelected.delete(kitId);
-      setTransferQuantities(prev => {
-        const newQuantities = { ...prev };
-        delete newQuantities[kitId];
-        return newQuantities;
-      });
-    }
-    setSelectedKitIds(newSelected);
-  };
-
-  const handleQuantityChange = (id: string, quantity: number) => {
-    const item = inventoryItems.find(i => i.id === id);
-    const kit = kits.find(k => k.id === id);
-    const maxQty = item ? item.quantity : kit ? kit.quantity : 1;
-    
-    if (quantity >= 1 && quantity <= maxQty) {
-      setTransferQuantities(prev => ({
-        ...prev,
-        [id]: quantity
-      }));
-    }
-  };
-
-  const openCamera = async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' }
-      });
-      setStream(mediaStream);
-      setCameraOpen(true);
-      
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-        }
-      }, 100);
-    } catch (error) {
-      toast.error('Could not access camera');
-    }
-  };
-
-  const capturePhoto = () => {
-    if (videoRef.current) {
-      const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(videoRef.current, 0, 0);
-        const photoData = canvas.toDataURL('image/jpeg');
-        setTransferPhoto(photoData);
-        closeCamera();
-        toast.success('Photo captured');
-      }
-    }
-  };
-
-  const closeCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
-    setCameraOpen(false);
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setTransferPhoto(reader.result as string);
-        toast.success('Photo uploaded');
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleTransferClick = () => {
-    if (selectedInventoryIds.size === 0 && selectedKitIds.size === 0) {
-      toast.error('Please select at least one item or kit to transfer');
-      return;
-    }
-    setTransferDialogOpen(true);
-  };
-
-  const handleConfirmTransfer = () => {
-    if (!targetEngineerId) {
-      toast.error('Please select a target engineer');
-      return;
-    }
-
-    if (!transferPhoto) {
-      toast.error('Please upload or capture a photo');
-      return;
-    }
-
-    setConfirmDialogOpen(true);
-  };
-
-  const submitTransfer = () => {
-    const targetUser = mockUsers.find(u => u.id === targetEngineerId);
-    const itemCount = selectedInventoryIds.size;
-    const kitCount = selectedKitIds.size;
-    
-    toast.success(
-      `Transfer initiated to ${targetUser?.name}. ${itemCount} item${itemCount !== 1 ? 's' : ''} and ${kitCount} kit${kitCount !== 1 ? 's' : ''} selected. Requires dual approval.`
-    );
-
-    // Reset all states
-    setShowTransferMode(false);
-    setSelectedInventoryIds(new Set());
-    setSelectedKitIds(new Set());
-    setTransferQuantities({});
-    setTargetEngineerId('');
-    setTransferPhoto(null);
-    setTransferNotes('');
-    setTransferDialogOpen(false);
-    setConfirmDialogOpen(false);
-    closeCamera();
-  };
-
-  const cancelTransferMode = () => {
-    setShowTransferMode(false);
-    setSelectedInventoryIds(new Set());
-    setSelectedKitIds(new Set());
-    setTransferQuantities({});
-    setTargetEngineerId('');
-    setTransferPhoto(null);
-    setTransferNotes('');
-    closeCamera();
-  };
-
   const renderDesktopView = () => (
     <div className="border rounded-lg">
       <Table>
         <TableHeader>
           <TableRow>
-            {showTransferMode && <TableHead className="w-12"></TableHead>}
             <TableHead className="w-12"></TableHead>
             <TableHead>Image</TableHead>
             <TableHead>Name</TableHead>
@@ -616,7 +421,6 @@ export function MyInventoryTransfer() {
             <TableHead>Project</TableHead>
             <TableHead>Warehouse</TableHead>
             <TableHead>Quantity</TableHead>
-            {showTransferMode && <TableHead>Transfer Qty</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -624,22 +428,8 @@ export function MyInventoryTransfer() {
             <React.Fragment key={item.id}>
               <TableRow 
                 className={item.isKit ? "cursor-pointer hover:bg-muted/50" : ""}
-                onClick={item.isKit && !showTransferMode ? () => toggleKitExpansion(item.id) : undefined}
+                onClick={item.isKit ? () => toggleKitExpansion(item.id) : undefined}
               >
-                {showTransferMode && (
-                  <TableCell>
-                    <Checkbox
-                      checked={item.isKit ? selectedKitIds.has(item.id) : 
-                        (item.projects?.some(p => selectedInventoryIds.has(p.inventoryId)) || false)}
-                      onCheckedChange={(checked:any) => {
-                        if (item.isKit) {
-                          handleKitSelection(item.id, checked as boolean);
-                        }
-                      }}
-                      disabled={!item.isKit}
-                    />
-                  </TableCell>
-                )}
                 <TableCell>
                   {item.isKit && (
                     expandedKits.has(item.id) ? (
@@ -682,16 +472,8 @@ export function MyInventoryTransfer() {
                   ) : (
                     <div className="space-y-1">
                       {item.projects?.map((proj, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          {showTransferMode && (
-                            <Checkbox
-                              checked={selectedInventoryIds.has(proj.inventoryId)}
-                              onCheckedChange={(checked:any) => handleInventorySelection(proj.inventoryId, checked as boolean)}
-                            />
-                          )}
-                          <div className="text-sm">
-                            {proj.quantity} {proj.project}
-                          </div>
+                        <div key={idx} className="text-sm">
+                          {proj.quantity} {proj.project}
                         </div>
                       ))}
                     </div>
@@ -713,37 +495,10 @@ export function MyInventoryTransfer() {
                 <TableCell>
                   <Badge variant="secondary">{item.quantity}</Badge>
                 </TableCell>
-                {showTransferMode && (
-                  <TableCell>
-                    {item.isKit && selectedKitIds.has(item.id) && (
-                      <Input
-                        type="number"
-                        min={1}
-                        max={item.quantity}
-                        value={transferQuantities[item.id] || 1}
-                        onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1)}
-                        className="w-20"
-                      />
-                    )}
-                    {!item.isKit && item.projects?.map((proj) => (
-                      selectedInventoryIds.has(proj.inventoryId) && (
-                        <Input
-                          key={proj.inventoryId}
-                          type="number"
-                          min={1}
-                          max={proj.quantity}
-                          value={transferQuantities[proj.inventoryId] || 1}
-                          onChange={(e) => handleQuantityChange(proj.inventoryId, parseInt(e.target.value) || 1)}
-                          className="w-20 mb-1"
-                        />
-                      )
-                    ))}
-                  </TableCell>
-                )}
               </TableRow>
               {item.isKit && expandedKits.has(item.id) && item.kitItems && (
                 <TableRow>
-                  <TableCell colSpan={showTransferMode ? 9 : 8} className="bg-muted/30 p-0">
+                  <TableCell colSpan={7} className="bg-muted/30 p-0">
                     <div className="p-4">
                       <div className="text-sm mb-3 ml-2">Kit Contents:</div>
                       <Table>
@@ -799,22 +554,8 @@ export function MyInventoryTransfer() {
           <CardContent className="p-4">
             <div 
               className="flex gap-3"
-              onClick={item.isKit && !showTransferMode ? () => toggleKitExpansion(item.id) : undefined}
+              onClick={item.isKit ? () => toggleKitExpansion(item.id) : undefined}
             >
-              {showTransferMode && (
-                <div className="flex items-start pt-1">
-                  <Checkbox
-                    checked={item.isKit ? selectedKitIds.has(item.id) : 
-                      (item.projects?.some(p => selectedInventoryIds.has(p.inventoryId)) || false)}
-                    onCheckedChange={(checked:any) => {
-                      if (item.isKit) {
-                        handleKitSelection(item.id, checked as boolean);
-                      }
-                    }}
-                    disabled={!item.isKit}
-                  />
-                </div>
-              )}
               {item.isKit ? (
                 <div className="w-16 h-16 bg-muted rounded flex items-center justify-center flex-shrink-0">
                   <Box className="h-8 w-8 text-muted-foreground" />
@@ -850,12 +591,6 @@ export function MyInventoryTransfer() {
                     <>
                       {item.projects?.map((proj, idx) => (
                         <div key={idx} className="flex items-center gap-1 flex-wrap">
-                          {showTransferMode && (
-                            <Checkbox
-                              checked={selectedInventoryIds.has(proj.inventoryId)}
-                              onCheckedChange={(checked:any) => handleInventorySelection(proj.inventoryId, checked as boolean)}
-                            />
-                          )}
                           <Badge variant="outline" className="text-xs">
                             {proj.quantity} {proj.project}
                           </Badge>
@@ -866,35 +601,6 @@ export function MyInventoryTransfer() {
                     </>
                   )}
                 </div>
-                {showTransferMode && (item.isKit ? selectedKitIds.has(item.id) : item.projects?.some(p => selectedInventoryIds.has(p.inventoryId))) && (
-                  <div className="mt-2">
-                    <Label className="text-xs">Transfer Quantity:</Label>
-                    {item.isKit ? (
-                      <Input
-                        type="number"
-                        min={1}
-                        max={item.quantity}
-                        value={transferQuantities[item.id] || 1}
-                        onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1)}
-                        className="w-20 h-8 text-sm mt-1"
-                      />
-                    ) : (
-                      item.projects?.map((proj) => (
-                        selectedInventoryIds.has(proj.inventoryId) && (
-                          <Input
-                            key={proj.inventoryId}
-                            type="number"
-                            min={1}
-                            max={proj.quantity}
-                            value={transferQuantities[proj.inventoryId] || 1}
-                            onChange={(e) => handleQuantityChange(proj.inventoryId, parseInt(e.target.value) || 1)}
-                            className="w-20 h-8 text-sm mt-1"
-                          />
-                        )
-                      ))
-                    )}
-                  </div>
-                )}
               </div>
             </div>
             {item.isKit && expandedKits.has(item.id) && item.kitItems && (
@@ -923,7 +629,6 @@ export function MyInventoryTransfer() {
   );
 
   const totalItems = filteredCombinedInventory.length;
-  const selectedCount = selectedInventoryIds.size + selectedKitIds.size;
 
   return (
     <div className="space-y-6">
@@ -948,7 +653,7 @@ export function MyInventoryTransfer() {
               <Input
                 placeholder="Search by name, description, or SKU..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -1016,218 +721,6 @@ export function MyInventoryTransfer() {
             </Card>
           )}
         </div>
-
-      {/* Transfer Dialog */}
-      <Dialog open={transferDialogOpen} onOpenChange={(open:any) => {
-        setTransferDialogOpen(open);
-        if (!open) {
-          closeCamera();
-        }
-      }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Transfer Items</DialogTitle>
-            <DialogDescription>
-              Transfer selected items to another engineer with photo evidence.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Target Engineer</Label>
-              <Select value={targetEngineerId} onValueChange={setTargetEngineerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select engineer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} - {user.department}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Selected Items ({selectedInventoryIds.size})</Label>
-              <div className="mt-2 max-h-48 overflow-y-auto space-y-2">
-                {Array.from(selectedInventoryIds).map(id => {
-                  const item = inventoryItems.find(i => i.id === id);
-                  if (!item) return null;
-                  return (
-                    <div key={id} className="flex items-center gap-2 p-2 bg-accent/50 rounded text-sm">
-                      <ImageWithFallback
-                        src={item.image}
-                        alt={item.name}
-                        className="w-10 h-10 object-cover rounded"
-                      />
-                      <div className="flex-1">
-                        <div>{item.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {item.projectCode} • Transfer: {transferQuantities[id] || 1} of {item.quantity}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <Label>Selected Kits ({selectedKitIds.size})</Label>
-              <div className="mt-2 max-h-48 overflow-y-auto space-y-2">
-                {Array.from(selectedKitIds).map(id => {
-                  const kit = kits.find(k => k.id === id);
-                  if (!kit) return null;
-                  return (
-                    <div key={id} className="flex items-center gap-2 p-2 bg-accent/50 rounded text-sm">
-                      <Package className="h-10 w-10 text-muted-foreground" />
-                      <div className="flex-1">
-                        <div>{kit.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {kit.projectCode} • Transfer: {transferQuantities[id] || 1} of {kit.quantity} • {kit.items.length} items per kit
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Photo Upload Section */}
-            <div>
-              <Label>Photo Evidence (Required)</Label>
-              <div className="space-y-3 mt-2">
-                {transferPhoto ? (
-                  <div className="relative">
-                    <img
-                      src={transferPhoto}
-                      alt="Transfer evidence"
-                      className="w-full h-48 object-cover rounded border"
-                    />
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="absolute top-2 right-2"
-                      onClick={() => setTransferPhoto(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : cameraOpen ? (
-                  <div className="space-y-2">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      className="w-full h-48 object-cover rounded border bg-black"
-                    />
-                    <div className="flex gap-2">
-                      <Button onClick={capturePhoto} className="flex-1">
-                        <Camera className="h-4 w-4 mr-2" />
-                        Capture Photo
-                      </Button>
-                      <Button variant="outline" onClick={closeCamera}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1 gap-2"
-                      onClick={openCamera}
-                    >
-                      <Camera className="h-4 w-4" />
-                      Take Photo
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1 gap-2"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload className="h-4 w-4" />
-                      Upload
-                    </Button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={handleFileUpload}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Notes Section */}
-            <div>
-              <Label>Notes (Optional)</Label>
-              <Textarea
-                placeholder="Add any notes about this transfer..."
-                value={transferNotes}
-                onChange={(e) => setTransferNotes(e.target.value)}
-                rows={3}
-                className="mt-2"
-              />
-            </div>
-
-            <div className="flex gap-2 justify-end">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setTransferDialogOpen(false);
-                  closeCamera();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleConfirmTransfer}>
-                <ArrowRightLeft className="h-4 w-4 mr-2" />
-                Confirm Transfer
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Confirm Transfer Dialog */}
-      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Transfer</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p>
-              Are you sure you want to transfer {selectedInventoryIds.size + selectedKitIds.size} item{selectedInventoryIds.size + selectedKitIds.size !== 1 ? 's' : ''} to{' '}
-              {mockUsers.find(u => u.id === targetEngineerId)?.name}?
-            </p>
-            <div className="bg-muted p-4 rounded-lg space-y-2">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                <div className="text-sm">
-                  <p className="mb-2">This transfer requires dual approval:</p>
-                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                    <li>Manager approval</li>
-                    <li>Target engineer acceptance</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-2 justify-end mt-4">
-            <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={submitTransfer}>
-              Yes, Transfer
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Complete History Dialog */}
       <Dialog open={showCompleteHistory} onOpenChange={setShowCompleteHistory}>
