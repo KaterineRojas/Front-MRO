@@ -469,3 +469,37 @@ export async function cancelTransfer(transferId: string): Promise<{ success: boo
     success: true
   };
 }
+
+/**
+ * Delete a transfer by ID
+ */
+export async function deleteTransfer(transferId: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const url = `${API_BASE_URL}/transfer-requests/${transferId}`;
+    console.log('Deleting transfer from URL:', url);
+    
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        // Si tu backend requiere autenticación, aquí se añade el token:
+        // "Authorization": `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error al eliminar transferencia: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    console.log('Delete response:', responseData);
+
+    return {
+      success: true,
+      message: 'Transfer deleted successfully'
+    };
+  } catch (error) {
+    console.error('Error deleting transfer:', error);
+    throw error;
+  }
+}
