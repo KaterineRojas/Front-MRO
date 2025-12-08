@@ -51,13 +51,6 @@ export function KitRow({
 
   }, [])
 
-  useEffect(() => {
-    console.log(assemblyBinCode);
-    
-  }, [assemblyBinCode])
-  
-  
-
 
   useEffect(() => {
     // 1. EARLY EXIT: If UI is closed, do nothing.
@@ -214,9 +207,12 @@ export function KitRow({
     }
   };
 
-  const getAvailableBadge = (required: number, available: number) => {
-    if (required >= available) return <Badge variant={`${darkMode ? 'critical' : 'critical-soft'}`}>{available}</Badge>;
-    if (required < available) return <Badge variant={`${darkMode ? 'success' : 'success-soft'}`}>{available}</Badge>;
+  const getAvailableBadge = (stock: number, available: number) => {
+    if (available < 5) {
+      return <Badge variant={`${darkMode ? 'critical' : 'critical-soft'}`}>{available}</Badge>;
+    }else{
+      return <Badge variant={`${darkMode ? 'success' : 'success-soft'}`}>{available}</Badge>;
+    }
   };
 
   const handleOpenDeleteModal = () => {
@@ -287,7 +283,7 @@ export function KitRow({
         </td>
 
         <td className="p-2 align-middle text-center">
-          {getAvailableBadge(kit.items.length, kit.quantityAvailable)}
+          {getAvailableBadge(kit.quantity, kit.quantityAvailable)}
         </td>
 
         <td className="p-2 align-middle text-center py-3">
