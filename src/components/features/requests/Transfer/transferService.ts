@@ -89,7 +89,7 @@ const mockInventoryItems: InventoryItem[] = [
   {
     id: 'inv-3',
     itemId: 'keyboard-001',
-    name: 'Mechanical Keyboard RGB',
+    name: 'Mechanical Keyboard RGB2',
     description: 'Gaming keyboard with RGB lighting',
     image: 'https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?w=400',
     project: 'Proyecto Web',

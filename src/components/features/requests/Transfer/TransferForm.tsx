@@ -22,6 +22,7 @@ import {
   type User
 } from './transferService'; 
 
+
 interface TransferFormProps {
   onBack: () => void;
   onSuccess: () => void;
@@ -74,6 +75,15 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
     loadData();
   }, []);
 
+  // Clear selected items when warehouse changes
+  useEffect(() => {
+    if (selectedItemIds.size > 0) {
+      setSelectedItemIds(new Set());
+      setTransferQuantities({});
+      toast.info('Selected items cleared - warehouse changed');
+    }
+  }, [warehouseFilter]);
+
   // Computed values
   const uniqueProjects = useMemo(() => {
     const projects = new Set<string>();
@@ -95,7 +105,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
         (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()));
       
       const matchesProject = projectFilter === 'all' || item.project === projectFilter;
-      const matchesWarehouse = warehouseFilter === 'all' || item.warehouse === warehouseFilter;
+      const matchesWarehouse = !warehouseFilter || item.warehouse === warehouseFilter;
       
       return matchesSearch && matchesProject && matchesWarehouse;
     });
@@ -319,10 +329,9 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                 </Select>
                 <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="All Warehouses" />
+                    <SelectValue placeholder="Select Warehouse" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Warehouses</SelectItem>
                     {uniqueWarehouses.map((warehouse) => (
                       <SelectItem key={warehouse} value={warehouse}>
                         {warehouse}
