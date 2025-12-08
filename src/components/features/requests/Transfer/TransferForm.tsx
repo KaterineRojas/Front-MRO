@@ -22,7 +22,7 @@ import {
   type InventoryItem,
   type User
 } from './transferService';
-import { getWarehouses, getUsers } from '../services/sharedServices';
+import { getWarehouses, getUsers, sendImage } from '../services/sharedServices';
 import type { Warehouse, Employee } from '../services/sharedServices'; 
 
 
@@ -43,6 +43,8 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
   const [transferQuantities, setTransferQuantities] = useState<Record<string, number>>({});
   const [targetEngineerId, setTargetEngineerId] = useState('');
   const [transferPhoto, setTransferPhoto] = useState<string | null>(null);
+  const [validatedImageUrl, setValidatedImageUrl] = useState<string | null>(null);
+  const [isValidatingPhoto, setIsValidatingPhoto] = useState(false);
   
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -138,7 +140,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
     return inventoryItems.filter(item => selectedItemIds.has(item.id));
   }, [inventoryItems, selectedItemIds]);
 
-  const canTransfer = targetEngineerId && transferPhoto && selectedItemIds.size > 0;
+  const canTransfer = targetEngineerId && validatedImageUrl && selectedItemIds.size > 0;
 
   // Handlers
   const handleItemSelection = (itemId: string, checked: boolean) => {
@@ -229,6 +231,44 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
     }
   };
 
+  const validatePhoto = async () => {
+    if (!transferPhoto) {
+      toast.error('Please capture or upload a photo first');
+      return;
+    }
+
+    try {
+      setIsValidatingPhoto(true);
+      
+      // Convert base64 to File object
+      const base64Data = transferPhoto.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const file = new File([byteArray], `transfer-photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+      // Upload to server
+      console.log('Validating photo, uploading to server...');
+      const response = await sendImage(file);
+      console.log('Photo validation response:', response);
+
+      if (response.url) {
+        setValidatedImageUrl(response.url);
+        toast.success('Photograph validated successfully');
+      } else {
+        toast.error('Failed to validate photograph');
+      }
+    } catch (error: any) {
+      console.error('Error validating photo:', error);
+      toast.error(error.message || 'Failed to validate photograph');
+    } finally {
+      setIsValidatingPhoto(false);
+    }
+  };
+
   const handleTransferClick = () => {
     if (!targetEngineerId) {
       toast.error('Please select a target engineer');
@@ -260,7 +300,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
       await createTransfer({
         targetEngineerId,
         items,
-        photo: transferPhoto!
+        photo: validatedImageUrl!
       });
 
       const targetUser = users.find(u => u.employeeId === targetEngineerId);
@@ -279,6 +319,8 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
 
   const handleCancel = () => {
     closeCamera();
+    setTransferPhoto(null);
+    setValidatedImageUrl(null);
     onBack();
   };
 
@@ -443,20 +485,54 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
             <div>
               <Label>Photograph (Required)</Label>
               <div className="mt-2">
-                {transferPhoto ? (
-                  <div className="relative">
-                    <img
-                      src={transferPhoto}
-                      alt="Transfer evidence"
-                      className="w-full h-32 object-cover rounded border"
-                    />
+                {validatedImageUrl ? (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <img
+                        src={transferPhoto || ''}
+                        alt="Transfer evidence"
+                        className="w-full h-32 object-cover rounded border"
+                      />
+                      <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold">
+                        ✓ Photograph Validated
+                      </div>
+                    </div>
                     <Button
                       size="sm"
-                      variant="destructive"
-                      className="absolute top-2 right-2"
-                      onClick={() => setTransferPhoto(null)}
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setTransferPhoto(null);
+                        setValidatedImageUrl(null);
+                      }}
                     >
-                      <X className="h-4 w-4" />
+                      Change Photo
+                    </Button>
+                  </div>
+                ) : transferPhoto ? (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <img
+                        src={transferPhoto}
+                        alt="Transfer evidence"
+                        className="w-full h-32 object-cover rounded border"
+                      />
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="absolute top-2 right-2"
+                        onClick={() => setTransferPhoto(null)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Button
+                      onClick={validatePhoto}
+                      disabled={isValidatingPhoto}
+                      className="w-full"
+                      size="sm"
+                    >
+                      {isValidatingPhoto ? 'Validating...' : 'Validate Photograph'}
                     </Button>
                   </div>
                 ) : cameraOpen ? (

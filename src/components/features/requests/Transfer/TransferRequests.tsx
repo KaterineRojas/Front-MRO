@@ -17,7 +17,7 @@ import { getProjects, type Project } from '../../enginner/services';
 import { useTransfers } from './useTransfers';
 import { TransferForm } from './TransferForm';
 import { formatDate, getStatusColor, getStatusText } from './transferUtils';
-import { getAvailableUsers, type Transfer, type User } from './transferService';
+import { getAvailableUsers, getTransferId, type Transfer, type User } from './transferService';
 
 
 export function TransferRequests() {
@@ -28,6 +28,8 @@ export function TransferRequests() {
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [transferToAccept, setTransferToAccept] = useState<Transfer | null>(null);
   const [confirmTransferOpen, setConfirmTransferOpen] = useState(false);
+  const [expandedTransferDetails, setExpandedTransferDetails] = useState<Record<string, Transfer>>({});
+  const [loadingTransferIds, setLoadingTransferIds] = useState<Set<string>>(new Set());
 
   const {
     filteredTransfers,
@@ -101,6 +103,40 @@ export function TransferRequests() {
   const handleCancelClick = (transferId: string) => {
     if (window.confirm('Are you sure you want to cancel this transfer?')) {
       handleCancel(transferId);
+    }
+  };
+
+  const handleExpandTransfer = async (transferId: string) => {
+    // Si ya está expandido, simplemente contraerlo
+    if (expandedRows.has(transferId)) {
+      toggleRow(transferId);
+      return;
+    }
+
+    // Si los detalles ya están cargados, solo expandir
+    if (expandedTransferDetails[transferId]) {
+      toggleRow(transferId);
+      return;
+    }
+
+    // Cargar detalles del transfer
+    try {
+      setLoadingTransferIds(prev => new Set(prev).add(transferId));
+      const transferDetails = await getTransferId(transferId);
+      setExpandedTransferDetails(prev => ({
+        ...prev,
+        [transferId]: transferDetails
+      }));
+      toggleRow(transferId);
+    } catch (error) {
+      console.error('Error loading transfer details:', error);
+      toast.error('Failed to load transfer details');
+    } finally {
+      setLoadingTransferIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(transferId);
+        return newSet;
+      });
     }
   };
 
@@ -198,7 +234,7 @@ export function TransferRequests() {
                 <div className="space-y-3">
                   <div 
                     className="flex justify-between items-start cursor-pointer"
-                    onClick={() => toggleRow(transfer.id)}
+                    onClick={() => handleExpandTransfer(transfer.id)}
                   >
                     <div className="flex-1">
                       <h3 className="flex items-center gap-2">
@@ -220,7 +256,7 @@ export function TransferRequests() {
                       </div>
                     </div>
                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                      {transfer.type === 'incoming' && transfer.status === 'pending-engineer' && (
+                      {transfer.type === 'incoming' && (
                         <>
                           <Button
                             size="sm"
@@ -258,30 +294,36 @@ export function TransferRequests() {
 
                   {expandedRows.has(transfer.id) && (
                     <div>
-                      <h4 className="text-sm mb-2">Items:</h4>
-                      <div className="space-y-2">
-                        {transfer.items.map((item, index) => (
-                          <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
-                            {item.image && (
-                              <ImageWithFallback
-                                src={item.image}
-                                alt={item.itemName}
-                                className="w-10 h-10 object-cover rounded"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm truncate">{item.itemName}</p>
-                              {item.description && (
-                                <p className="text-xs text-muted-foreground truncate">{item.description}</p>
-                              )}
-                              {item.warehouseCode && (
-                                <Badge className="text-xs mt-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">{item.warehouseCode}</Badge>
-                              )}
-                            </div>
-                            <Badge variant="secondary">x{item.quantity}</Badge>
+                      {loadingTransferIds.has(transfer.id) ? (
+                        <p className="text-sm text-muted-foreground">Loading items...</p>
+                      ) : (
+                        <>
+                          <h4 className="text-sm mb-2">Items:</h4>
+                          <div className="space-y-2">
+                            {(expandedTransferDetails[transfer.id]?.items || transfer.items).map((item, index) => (
+                              <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
+                                {item.image && (
+                                  <ImageWithFallback
+                                    src={item.image}
+                                    alt={item.itemName}
+                                    className="w-10 h-10 object-cover rounded"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm truncate">{item.itemName}</p>
+                                  {item.description && (
+                                    <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                                  )}
+                                  {item.warehouseCode && (
+                                    <Badge className="text-xs mt-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">{item.warehouseCode}</Badge>
+                                  )}
+                                </div>
+                                <Badge variant="secondary">x{item.quantity}</Badge>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -312,7 +354,7 @@ export function TransferRequests() {
                   <React.Fragment key={transfer.id}>
                     <TableRow 
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => toggleRow(transfer.id)}
+                      onClick={() => handleExpandTransfer(transfer.id)}
                     >
                       <TableCell>
                         {expandedRows.has(transfer.id) ? (
@@ -334,11 +376,7 @@ export function TransferRequests() {
                         <Badge variant="secondary">{transfer.items.length} item{transfer.items.length !== 1 ? 's' : ''}</Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {Array.from(new Set(transfer.items.map(item => item.warehouseCode).filter(Boolean))).map((wh, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">{wh}</Badge>
-                          ))}
-                        </div>
+                        {transfer.warehouseName || 'N/A'}
                       </TableCell>
                       <TableCell>{formatDate(transfer.requestDate)}</TableCell>
                       <TableCell>
@@ -348,7 +386,7 @@ export function TransferRequests() {
                       </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-2">
-                          {transfer.type === 'incoming' && transfer.status === 'pending-engineer' && (
+                          {transfer.type === 'incoming' && (
                             <>
                               <Button
                                 size="sm"
@@ -383,45 +421,49 @@ export function TransferRequests() {
                       <TableRow>
                         <TableCell colSpan={9} className="bg-muted/30 p-0">
                           <div className="p-4">
-                            <div className="space-y-3">
-                              <div>
-                                <h4 className="text-sm mb-2">Items:</h4>
-                                <div className="space-y-2">
-                                  {transfer.items.map((item, index) => (
-                                    <div key={index} className="flex items-center gap-3 p-2 bg-background rounded border">
-                                      {item.image && (
-                                        <ImageWithFallback
-                                          src={item.image}
-                                          alt={item.itemName}
-                                          className="w-12 h-12 object-cover rounded"
-                                        />
-                                      )}
-                                      <div className="flex-1">
-                                        <p>{item.itemName}</p>
-                                        {item.code && (
-                                          <p className="text-sm text-muted-foreground">{item.code}</p>
-                                        )}
-                                        {item.description && (
-                                          <p className="text-xs text-muted-foreground">{item.description}</p>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        {item.warehouseCode && (
-                                          <Badge variant="outline" className="text-xs">{item.warehouseCode}</Badge>
-                                        )}
-                                        <Badge variant="secondary">Qty: {item.quantity}</Badge>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                              {transfer.notes && (
+                            {loadingTransferIds.has(transfer.id) ? (
+                              <p className="text-sm text-muted-foreground">Loading transfer details...</p>
+                            ) : (
+                              <div className="space-y-3">
                                 <div>
-                                  <h4 className="text-sm mb-1">Notes:</h4>
-                                  <p className="text-sm text-muted-foreground">{transfer.notes}</p>
+                                  <h4 className="text-sm mb-2">Items:</h4>
+                                  <div className="space-y-2">
+                                    {(expandedTransferDetails[transfer.id]?.items || transfer.items).map((item, index) => (
+                                      <div key={index} className="flex items-center gap-3 p-2 bg-background rounded border">
+                                        {item.image && (
+                                          <ImageWithFallback
+                                            src={item.image}
+                                            alt={item.itemName}
+                                            className="w-12 h-12 object-cover rounded"
+                                          />
+                                        )}
+                                        <div className="flex-1">
+                                          <p>{item.itemName}</p>
+                                          {item.code && (
+                                            <p className="text-sm text-muted-foreground">{item.code}</p>
+                                          )}
+                                          {item.description && (
+                                            <p className="text-xs text-muted-foreground">{item.description}</p>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          {item.warehouseCode && (
+                                            <Badge variant="outline" className="text-xs">{item.warehouseCode}</Badge>
+                                          )}
+                                          <Badge variant="secondary">Qty: {item.quantity}</Badge>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                              )}
-                            </div>
+                                {(expandedTransferDetails[transfer.id]?.notes || transfer.notes) && (
+                                  <div>
+                                    <h4 className="text-sm mb-1">Notes:</h4>
+                                    <p className="text-sm text-muted-foreground">{expandedTransferDetails[transfer.id]?.notes || transfer.notes}</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -436,92 +478,94 @@ export function TransferRequests() {
 
       {/* Accept Transfer Confirmation Dialog */}
       <Dialog open={confirmTransferOpen} onOpenChange={setConfirmTransferOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Accept Transfer</DialogTitle>
             <DialogDescription>
               Are you sure you want to accept this transfer?
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            {transferToAccept && (
-              <>
-                <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage 
-                      src={users.find(u => u.id === transferToAccept.fromUserId)?.avatar} 
-                      alt={transferToAccept.fromUser} 
-                    />
-                    <AvatarFallback>
-                      {transferToAccept.fromUser?.split(' ').map(n => n[0]).join('') || 'NA'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p>From</p>
-                    <p className="text-muted-foreground">{transferToAccept.fromUser}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {users.find(u => u.id === transferToAccept.fromUserId)?.department}
-                    </p>
+          <div className="flex-1 overflow-y-auto pr-4">
+            <div className="space-y-4">
+              {transferToAccept && (
+                <>
+                  <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage 
+                        src={users.find(u => u.id === transferToAccept.fromUserId)?.avatar} 
+                        alt={transferToAccept.fromUser} 
+                      />
+                      <AvatarFallback>
+                        {transferToAccept.fromUser?.split(' ').map(n => n[0]).join('') || 'NA'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p>From</p>
+                      <p className="text-muted-foreground">{transferToAccept.fromUser}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {users.find(u => u.id === transferToAccept.fromUserId)?.department}
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                {transferToAccept.transferPhoto && (
+                  {transferToAccept.transferPhoto && (
+                    <div>
+                      <h4 className="text-sm mb-2">Transfer Photo:</h4>
+                      <img
+                        src={transferToAccept.transferPhoto}
+                        alt="Transfer evidence"
+                        className="w-full h-48 object-cover rounded border"
+                      />
+                    </div>
+                  )}
+
                   <div>
-                    <h4 className="text-sm mb-2">Transfer Photo:</h4>
-                    <img
-                      src={transferToAccept.transferPhoto}
-                      alt="Transfer evidence"
-                      className="w-full h-48 object-cover rounded border"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <h4 className="text-sm mb-2">Items:</h4>
-                  <div className="space-y-2">
-                    {transferToAccept.items.map((item, index) => (
-                      <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
-                        {item.image && (
-                          <ImageWithFallback
-                            src={item.image}
-                            alt={item.itemName}
-                            className="w-10 h-10 object-cover rounded"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <p className="text-sm">{item.itemName}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <p className="text-xs text-muted-foreground">{item.code}</p>
-                            {item.warehouseCode && (
-                              <Badge className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">{item.warehouseCode}</Badge>
-                            )}
+                    <h4 className="text-sm mb-2">Items:</h4>
+                    <div className="space-y-2">
+                      {transferToAccept.items.map((item, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
+                          {item.image && (
+                            <ImageWithFallback
+                              src={item.image}
+                              alt={item.itemName}
+                              className="w-10 h-10 object-cover rounded"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <p className="text-sm">{item.itemName}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-xs text-muted-foreground">{item.code}</p>
+                              {item.warehouseCode && (
+                                <Badge className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">{item.warehouseCode}</Badge>
+                              )}
+                            </div>
                           </div>
+                          <Badge variant="secondary">x{item.quantity}</Badge>
                         </div>
-                        <Badge variant="secondary">x{item.quantity}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="project-select">Assign to Project *</Label>
-                  <Select value={selectedProject} onValueChange={setSelectedProject}>
-                    <SelectTrigger id="project-select" className="mt-2">
-                      <SelectValue placeholder="Select a project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name} ({project.code})
-                        </SelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="project-select">Assign to Project *</Label>
+                    <Select value={selectedProject} onValueChange={setSelectedProject}>
+                      <SelectTrigger id="project-select" className="mt-2">
+                        <SelectValue placeholder="Select a project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name} ({project.code})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end flex-shrink-0 border-t pt-4">
             <Button variant="outline" onClick={() => setConfirmTransferOpen(false)}>
               Cancel
             </Button>

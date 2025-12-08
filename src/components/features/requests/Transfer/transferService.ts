@@ -17,6 +17,7 @@ export interface Transfer {
   requestDate: string;
   status: 'pending-manager' | 'pending-engineer' | 'approved' | 'rejected';
   transferPhoto?: string;
+  warehouseName?: string;
 }
 
 export interface TransferItem {
@@ -264,6 +265,126 @@ const mockTransfers: Transfer[] = [
  * Get all transfers desde el backend
  */
 export async function getTransfers(): Promise<Transfer[]> {
+  try {
+    const senderId = getCurrentUserId();
+    const url = `${API_BASE_URL}/transfer-requests?senderId=${senderId}&pageNumber=1&pageSize=20`;
+    console.log('Fetching transfers from URL:', url);
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        // Si tu backend requiere autenticación, aquí se añade el token:
+        // "Authorization": `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener transferencias: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    
+    // Mapear la respuesta del backend a nuestro formato Transfer
+    const currentUserId = getCurrentUserId();
+    console.log('Current User ID:', currentUserId);
+    console.log('Backend Response:', responseData.data);
+    
+    const transfers: Transfer[] = responseData.data.map((item: any) => {
+      const type = item.senderId === currentUserId ? 'incoming' : 'outgoing';
+      console.log(`Transfer ${item.requestNumber}: senderId=${item.senderId}, currentUserId=${currentUserId}, type=${type}`);
+      return {
+        id: item.requestNumber,
+        type: type,
+        fromUser: item.senderName,
+        toUser: item.recipientName,
+        fromUserId: item.senderId,
+        toUserId: item.recipientId,
+        items: Array(item.totalItems).fill(null).map((_, idx) => ({
+          itemId: `item-${idx}`,
+          itemName: `Item ${idx + 1}`,
+          code: '',
+          quantity: 1,
+          image: '',
+          description: '',
+          warehouse: item.warehouseName,
+          warehouseCode: ''
+        })), // Aquí irán los items reales cuando la API los envíe
+        notes: '',
+        requestDate: item.createdAt,
+        status: mapBackendStatusToLocal(item.status),
+        transferPhoto: item.hasImage ? `${API_BASE_URL}/transfer-requests/${item.requestNumber}/image` : undefined,
+        warehouseName: item.warehouseName,
+      };
+    });
+
+    return transfers;
+  } catch (error) {
+    console.error('Error fetching transfers:', error);
+    // Fallback a mock data en caso de error
+    await delay(300);
+    return [...mockTransfers];
+  }
+}
+
+/**
+ * Get a specific transfer by ID
+ */
+export async function getTransferId(transferId: string): Promise<Transfer> {
+  try {
+    const url = `${API_BASE_URL}/transfer-requests/${transferId}`;
+    console.log('Fetching transfer details from URL:', url);
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener transferencia: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    console.log('Transfer details response:', responseData);
+
+    // Mapear la respuesta del backend a nuestro formato Transfer
+    const currentUserId = getCurrentUserId();
+    const type = responseData.senderId === currentUserId ? 'outgoing' : 'incoming';
+    
+    const transfer: Transfer = {
+      id: responseData.requestNumber,
+      type: type,
+      fromUser: responseData.senderName || responseData.senderId,
+      toUser: responseData.recipientName || responseData.recipientId,
+      fromUserId: responseData.senderId,
+      toUserId: responseData.recipientId,
+      items: responseData.items.map((item: any) => ({
+        itemId: item.itemId.toString(),
+        itemName: item.name,
+        code: item.sku,
+        quantity: item.quantity,
+        image: item.imageUrl || '',
+        description: item.description || '',
+        warehouse: responseData.warehouse?.name || '',
+        warehouseCode: responseData.warehouse?.code || ''
+      })),
+      notes: responseData.notes || '',
+      requestDate: responseData.createdAt,
+      status: mapBackendStatusToLocal(responseData.status),
+      transferPhoto: responseData.imageUrl || undefined,
+      warehouseName: responseData.warehouseName || '',
+    };
+
+    return transfer;
+  } catch (error) {
+    console.error('Error fetching transfer details:', error);
+    throw error;
+  }
+}
+
+export async function getTransfers2(): Promise<Transfer[]> {
   try {
     const senderId = getCurrentUserId();
     const url = `${API_BASE_URL}/transfer-requests?senderId=${senderId}&pageNumber=1&pageSize=20`;
