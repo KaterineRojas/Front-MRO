@@ -52,7 +52,7 @@ export function getStatusStyle(status: string): React.CSSProperties {
 export function getStatusText(status: string): string {
   switch (status) {
     case 'Sent':
-      return 'Active';
+      return 'Sent';
     case 'Pending':
       return 'Pending';
     case 'Packing':

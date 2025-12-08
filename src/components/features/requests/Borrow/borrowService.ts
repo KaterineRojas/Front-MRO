@@ -98,6 +98,7 @@ export interface LoanRequest {
   companyId: string;
   customerId: string;
   departmentId: string;
+  departmentName: string;
   projectId: string;
   workOrderId: string;
   status: string;
@@ -118,16 +119,18 @@ export interface PagedResponse<T> {
 
 // Implementación de la API call
 export async function getBorrowRequests(
+  requesterId: string,
   pageNumber?: number,
   pageSize?: number
 ): Promise<PagedResponse<LoanRequest>> {
-  //const idUser = requesterId || 'amx0142';
-  const idUser =  'amx0142';
+  if (!requesterId) {
+    throw new Error('requesterId is required');
+  }
   const page = pageNumber ?? 1;
   const size = pageSize ?? 20;
 
   const url = `${API_BASE_URL}/loan-requests?requesterId=${encodeURIComponent(
-    idUser
+    requesterId
   )}&pageNumber=${page}&pageSize=${size}`;
 
   console.log('Fetching borrow requests from URL:', url);
@@ -173,11 +176,13 @@ export async function getBorrowRequests(
 /**
  * Get borrow request by ID
  * @param requestId - The request ID to search for
+ * @param requesterId - The requester ID (from authSlice)
  * @returns Promise with BorrowRequest or null
  */
-export async function getBorrowRequestById(requestId: string): Promise<BorrowRequest | null> {
+export async function getBorrowRequestById(requestId: string, requesterId: string): Promise<BorrowRequest | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/loan-requests/${requestId}`, {
+    const url = `${API_BASE_URL}/loan-requests/${requestId}?requesterId=${encodeURIComponent(requesterId)}`;
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -227,25 +232,42 @@ export async function createBorrowRequest(payload: {
 }): Promise<{ success: boolean; message: string; requestNumber?: string }> {
   try {
     const apiPayload = {
-      ...payload,
-      requesterId: 'amx0142'  // Por ahora, usar hardcodeado
+      ...payload
+      // requesterId comes from payload (from currentUser.id in LoanForm)
     };
 
     const url = `${API_BASE_URL}/loan-requests`;
+    console.log('===== CREANDO BORROW REQUEST =====');
     console.log('POST URL:', url);
     console.log('Enviando solicitud de préstamo:', apiPayload);
+    console.log('JSON a enviar:', JSON.stringify(apiPayload, null, 2));
+    console.log('===== FIN DATOS A ENVIAR =====');
 
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(apiPayload)
     });
+
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
     
-    const data = await response.json();
+    const responseText = await response.text();
+    console.log('Response body:', responseText);
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Response is not valid JSON');
+      throw new Error(`Server error ${response.status}: ${responseText}`);
+    }
     
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to create borrow request');
+      throw new Error(data.message || `Failed to create borrow request: ${response.status}`);
     }
+    
+    console.log('Success! Response data:', data);
     
     return { 
       success: true, 

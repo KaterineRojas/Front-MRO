@@ -261,7 +261,7 @@ export const getBorrowRequests = async (): Promise<BorrowRequest[]> => {
 /**
  * GET - Obtiene una solicitud de préstamo por ID
  */
-export const getBorrowRequestById = async (requestId: string): Promise<BorrowRequest | null> => {
+export const getBorrowRequestById = async (requestId: string, requesterId: string): Promise<BorrowRequest | null> => {
   return apiCall(async () => {
     await simulateNetworkDelay();
     const request = mockBorrowRequests.find(req => req.requestId === requestId);

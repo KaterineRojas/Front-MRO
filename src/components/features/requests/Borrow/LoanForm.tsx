@@ -21,14 +21,12 @@ import {
   getCustomersByCompany,
   getProjectsByCustomer,
   getWorkOrdersByProject,
-  getDepartments,
   type Warehouse,
   type CatalogItem,
   type Project,
   type Company,
   type Customer,
-  type WorkOrder,
-  type Department
+  type WorkOrder
 } from '../services/sharedServices';
 
 interface LoanFormProps {
@@ -92,9 +90,6 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
   };
 
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [loadingDepartments, setLoadingDepartments] = useState(false);
-  const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
 
   // Project Details states
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -266,21 +261,6 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
     loadInitialData();
   }, []);
 
-  const loadDepartments = async () => {
-    if (departmentsLoaded || offlineMode || !formData.company) return;
-
-    setLoadingDepartments(true);
-    try {
-      const data = await getDepartments(formData.company);
-      setDepartments(data);
-      setDepartmentsLoaded(true);
-    } catch (error) {
-      handleApiError(error as AppError, 'departments', loadDepartments);
-    } finally {
-      setLoadingDepartments(false);
-    }
-  };
-
   // Load companies function (Carga Perezosa)
   const loadCompanies = async () => {
     // If already loaded or currently loading, don't reload
@@ -297,39 +277,6 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
       handleApiError(error, 'companies', loadCompanies);
     }
   };
-
-  useEffect(() => {
-    if (!formData.company) {
-      setDepartments([]);
-      setDepartmentsLoaded(false);
-      setFormData(prev => ({
-        ...prev,
-        department: ''
-      }));
-      return;
-    }
-
-    // Cargar departamentos automáticamente cuando se selecciona una company
-    const loadDeptsByCompany = async () => {
-      setLoadingDepartments(true);
-      try {
-        const data = await getDepartments(formData.company);
-        setDepartments(data);
-        setDepartmentsLoaded(true);
-      } catch (error) {
-        handleApiError(error as AppError, 'departments', () => loadDeptsByCompany());
-      } finally {
-        setLoadingDepartments(false);
-      }
-    };
-
-    setDepartments([]);
-    setFormData(prev => ({
-      ...prev,
-      department: ''
-    }));
-    loadDeptsByCompany();
-  }, [formData.company]);
 
   // Load customers when company changes (Carga en Cascada)
   useEffect(() => {
@@ -431,7 +378,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
         setLoadingWorkOrders(false);
         handleApiError(error, 'work orders', () => loadWorkOrders());
       }
-    };    loadWorkOrders();
+    }; loadWorkOrders();
   }, [formData.project]);
 
   // Load catalog items when warehouse changes
@@ -537,6 +484,12 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
     if (currentItem.itemId) {
       setDropdownOpen(prev => ({ ...prev, [index]: !prev[index] }));
     } else {
+      // Initialize filteredItems[index] with all catalog items when opening for the first time
+      if (!filteredItems[index]) {
+        const selectedIds = formData.items.map(i => i.itemId).filter(id => id !== '');
+        const filtered = catalogItems.filter(ci => !selectedIds.includes(ci.id));
+        setFilteredItems(prev => ({ ...prev, [index]: filtered }));
+      }
       setDropdownOpen(prev => ({ ...prev, [index]: true }));
     }
   };
@@ -635,7 +588,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
     const itemsCount = formData.items.length;
     const companyInfo = companies.find(c => c.name === formData.company)?.name || formData.company;
     const returnDateFormatted = formData.returnDate ? new Date(formData.returnDate).toLocaleDateString() : 'Not set';
-    
+
     showConfirm({
       title: '¿Confirmar envío de solicitud de préstamo?',
       description: `Company: ${companyInfo}\nItems: ${itemsCount}\nReturn Date: ${returnDateFormatted}`,
@@ -664,16 +617,16 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
 
         // Call API
         const result = await createBorrowRequest(payload);
-        
+
         if (result.success) {
           toast.success(`Borrow request created: ${result.requestNumber || 'Success'}`);
           clearCart();
-          
+
           // Reload borrow requests if callback provided
           if (onBorrowCreated) {
             await onBorrowCreated();
           }
-          
+
           if (onBack) onBack();
         } else {
           toast.error(result.message || 'Failed to create borrow request');
@@ -770,20 +723,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="returnDate">Return Date</Label>
-                  <div className="relative">
-                    <Input
-                      id="returnDate"
-                      type="date"
-                      min={getMinDate()}
-                      value={formData.returnDate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, returnDate: e.target.value }))}
-                      required
-                    />
-                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  </div>
-                </div>
+
               </div>
 
               {formData.items.map((item, index) => {
@@ -820,12 +760,12 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                               />
                               {dropdownOpen[index] && (
                                 <div className="absolute z-10 w-full border rounded-md bg-background shadow-lg max-h-40 overflow-y-auto">
-                                  {(filteredItems[index] || catalogItems).length === 0 ? (
+                                  {catalogItems.length === 0 ? (
                                     <div className="px-3 py-2 text-sm text-muted-foreground">
-                                      No items found matching "{itemSearches[index]}"
+                                      No items available
                                     </div>
                                   ) : (
-                                    (filteredItems[index] || catalogItems).map((mockItem) => (
+                                    catalogItems.map((mockItem) => (
                                       <button
                                         key={mockItem.id}
                                         type="button"
@@ -909,7 +849,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                 <p className="text-sm text-muted-foreground mt-2">Select a Warehouse to add items.</p>
               )}
             </CardContent>
-          </Card>
+          </Card>{/*  */}
 
           <Card>
             <CardHeader>
@@ -917,6 +857,41 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div>
+                  <Label htmlFor="department">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Package className="h-4 w-4" />
+                      Department *
+                    </div>
+                  </Label>
+                  <div className="flex items-center gap-2 p-2 border border-input rounded-md bg-muted">
+                    <Badge variant="secondary">{currentUser.department}</Badge>
+                    <span className="text-sm text-muted-foreground">(Fixed)</span>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="returnDate">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Calendar className="h-4 w-4" />
+                      Return Date
+                    </div>
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="returnDate"
+                      type="date"
+                      min={getMinDate()}
+                      value={formData.returnDate}
+                      onChange={(e) => setFormData(prev => ({ ...prev, returnDate: e.target.value }))}
+                      required
+                    />
+                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  </div>
+                </div>
+
+
                 <div>
                   <Label htmlFor="company">
                     <div className="flex items-center gap-2 mb-1.5">
@@ -1041,66 +1016,24 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                     </SelectTrigger>
                     <SelectContent>
                       {workOrders.map((wo) => (
-                        <SelectItem key={wo.id} value={wo.id.toString()}>
-                          {wo.orderNumber} - {wo.description}
+                        <SelectItem key={wo.id} value={wo.wo}>
+                          {wo.wo} - {wo.serviceDesc}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                <div>
-                  <Label htmlFor="department">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Package className="h-4 w-4" />
-                      Department *
-                      {loadingDepartments && <span className="text-xs text-muted-foreground">(Loading...)</span>}
-                    </div>
-                  </Label>
-                  <Select
-                    value={formData.department}
-                    onValueChange={(value: string) => setFormData(prev => ({ ...prev, department: value }))}
-                    disabled={!formData.company || loadingDepartments || offlineMode}
-                    // Carga Perezosa - solo cuando company está seleccionado
-                    onOpenChange={(open: boolean) => {
-                      if (open && !departmentsLoaded && !offlineMode && formData.company) {
-                        loadDepartments();
-                      }
-                    }}
-                  >
-                    <SelectTrigger id="department">
-                      <SelectValue placeholder={
-                        offlineMode ? "Offline - Cannot load departments" :
-                          !formData.company ? "Select company first" :
-                            loadingDepartments ? "Loading departments..." :
-                              "Select a department"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {!departmentsLoaded && !loadingDepartments && formData.company && (
-                        <SelectItem value="_loading" disabled>
-                          Click to load departments...
-                        </SelectItem>
-                      )}
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id.toString()}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="notes">Additional Notes (optional)</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="Additional information about the borrow request..."
-                    value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    rows={3}
-                  />
-                </div>
+              <div>
+                <Label htmlFor="notes">Additional Notes (optional)</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Additional information about the borrow request..."
+                  value={formData.notes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                />
               </div>
             </CardContent>
           </Card>
