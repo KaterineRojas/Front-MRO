@@ -10,13 +10,13 @@ export * from './warehouseService';
 export * from './statusService';
 
 // AI Search Service
-export * from './aiSearchService';
+export * from '../../Catalog/aiSearchService';
 
 // Catalog Service
-export * from './catalogService';
+export * from '../../Catalog/catalogService';
 
 // Request Service (Borrow & Purchase)
-export * from './requestService';
+export * from '../../requests/services/requestService';
 
 // Inventory Service (Items & Kits)
 export * from './inventoryService';

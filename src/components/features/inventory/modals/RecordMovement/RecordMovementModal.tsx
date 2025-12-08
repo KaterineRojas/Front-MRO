@@ -398,22 +398,23 @@ export function RecordMovementModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader className="mb-4 flex-shrink-0">
           <DialogTitle>Record Transaction</DialogTitle>
           <DialogDescription>
             Record inventory movements and transactions for items in the warehouse
           </DialogDescription>
         </DialogHeader>
 
+        <div className="flex-1 overflow-y-auto pr-2 min-h-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-1">
+          {/* <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="transaction">Transaction</TabsTrigger>
-            {/* <TabsTrigger value="help">
+            <TabsTrigger value="help">
               <BookOpen className="h-4 w-4 mr-2" />
               Help
-            </TabsTrigger> */}
-          </TabsList>
+            </TabsTrigger>
+          </TabsList> */}
 
           <TabsContent value="transaction" className="space-y-4 mt-4">
             {/* Entity Type Selector (Item or Kit) */}
@@ -678,6 +679,7 @@ export function RecordMovementModal({
             <HelpTab transactionData={transactionData} />
           </TabsContent>
         </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );

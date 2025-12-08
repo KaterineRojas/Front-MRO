@@ -6,7 +6,7 @@ import { Dashboard } from './components/features/dashboard/Dashboard';
 import { InventoryManager } from './components/features/inventory/InventoryManager';
 import { RequestOrders } from './components/features/loans/RequestOrders';
 import { PurchaseOrders } from './components/features/orders/PurchaseOrders';
-import { RequestManagement } from './components/features/requests/RequestManagement';
+import { RequestOrders as RequestManagement } from './components/features/requests/RequestOrders';
 import { Reports } from './components/features/reports/Reports';
 import { UserManagement } from './components/features/users/UserManagement';
 import { QuickFind } from './components/features/quick-find/QuickFind';
@@ -15,8 +15,8 @@ import { LoanDetailView } from './components/features/loans/LoanDetailView';
 import { OrderDetailView } from './components/features/orders/OrderDetailView';
 import { CycleCountView } from './components/features/cycle-count/CycleCountView';
 import { ReturnItemsPage } from './components/features/loans/ReturnItemsPage';
-import { ManageRequestsPage } from './components/features/manage-requests/pages/ManageRequestsPage';
-import { Toaster } from 'react-hot-toast';
+import { ThemeProvider } from "next-themes";
+import { ManageRequests } from './components/features/manage-requests/ManageRequests';
 
 // Engineer Module Imports
 import { 
@@ -205,28 +205,12 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <Provider store={store}>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-      <Toaster 
-        position="top-center"
-        reverseOrder={false}
-        toastOptions={{
-          error: {
-            style: {
-              color: '#C62828',          // Texto rojo oscuro
-              border: '2px solid #C62828', // Borde rojo fuerte
-              fontWeight: 'bold',
-            },
-            iconTheme: {
-              primary: '#C62828', // Color del ícono de error (la X)
-              secondary: '#FFFAEE',
-            },
-            duration: 5000,
-          },
-        }}
-      />
-    </Provider>
+    // <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <Provider store={store}>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </Provider>
+    // </ThemeProvider>
   );
 }

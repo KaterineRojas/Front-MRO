@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, ShoppingCart, User, LogOut, Plus, Minus, X, Moon, Sun } from 'lucide-react';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import { Button } from '../../ui/button';
+import { Badge } from '../../ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu';
+} from '../../ui/dropdown-menu';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from './ui/popover';
+} from '../../ui/popover';
 import {
   Sheet,
   SheetContent,
@@ -21,9 +21,11 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from './ui/sheet';
+} from '../../ui/sheet';
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
-import type { User as UserType, Notification, CartItem } from '../App';
+import type {  Notification, CartItem } from '../App';
+
+import type { User as UserType } from '../App';
 
 interface HeaderProps {
   currentUser: UserType;

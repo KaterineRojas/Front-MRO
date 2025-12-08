@@ -26,8 +26,8 @@ const getInitialState = (): UserState => {
     return {
       currentUser: {
         id: '1',
-        name: 'Carlos García',
-        email: 'carlos.garcia@company.com',
+        name: 'John Smith',
+        email: 'john@company.com',
         department: 'Engineering'
       },
       isLoggedIn: true,

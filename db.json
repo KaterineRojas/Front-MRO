@@ -1,0 +1,762 @@
+{
+    "requests": [
+        {
+            "id": 1,
+            "type": "transfer-on-site",
+            "requestNumber": "REQ-2025-001",
+            "requestedBy": "Mike Chen",
+            "requestedByEmail": "mike.chen@company.com",
+            "department": "Marketing",
+            "project": "Q1 Client Presentations",
+            "reason": "Need equipment for important client presentations scheduled for next week",
+            "urgency": "high",
+            "requestDate": "2025-01-22",
+            "requiredDate": "2025-01-25",
+            "returnDate": "2025-02-05",
+            "status": "pending",
+            "items": [
+                {
+                    "id": 1,
+                    "articleCode": "TECH-002",
+                    "articleDescription": "Laptop Dell Latitude 5520",
+                    "quantity": 1,
+                    "unit": "units",
+                    "imageUrl": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=300"
+                },
+                {
+                    "id": 2,
+                    "articleCode": "PROJ-004",
+                    "articleDescription": "Projector Epson EB-X41",
+                    "quantity": 1,
+                    "unit": "units",
+                    "imageUrl": "https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=300"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "type": "purchase",
+            "requestNumber": "REQ-2025-002",
+            "requestedBy": "Anna Rodriguez",
+            "requestedByEmail": "anna.rodriguez@company.com",
+            "department": "IT",
+            "project": "Workstation Setup 2025",
+            "reason": "Stock is running low, need for new workstation setups",
+            "urgency": "medium",
+            "requestDate": "2025-01-21",
+            "requiredDate": "2025-01-30",
+            "status": "pending",
+            "purchasedBy": "keeper",
+            "items": [
+                {
+                    "id": 3,
+                    "articleCode": "USB-003",
+                    "articleDescription": "USB Cable Type-C 2m",
+                    "quantity": 20,
+                    "unit": "units",
+                    "estimatedCost": 8.99,
+                    "imageUrl": "https://images.unsplash.com/photo-1625948515291-69613efd103f?w=300"
+                },
+                {
+                    "id": 4,
+                    "articleCode": "KB-015",
+                    "articleDescription": "Wireless Keyboard Logitech",
+                    "quantity": 10,
+                    "unit": "units",
+                    "estimatedCost": 45.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=300"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "type": "purchase-on-site",
+            "requestNumber": "REQ-2025-003",
+            "requestedBy": "David Wilson",
+            "requestedByEmail": "david.wilson@company.com",
+            "department": "Finance",
+            "reason": "Emergency replacement needed for broken printer",
+            "urgency": "urgent",
+            "requestDate": "2025-01-23",
+            "requiredDate": "2025-01-24",
+            "status": "approved",
+            "reviewedBy": "Sarah Johnson",
+            "reviewDate": "2025-01-23",
+            "reviewNotes": "Approved for immediate purchase",
+            "purchasedBy": "applicant",
+            "items": [
+                {
+                    "id": 5,
+                    "articleCode": "PRINT-008",
+                    "articleDescription": "Printer HP LaserJet Pro",
+                    "quantity": 1,
+                    "unit": "units",
+                    "estimatedCost": 350.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=300"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "type": "transfer-on-site",
+            "requestNumber": "REQ-2025-004",
+            "requestedBy": "Linda Martinez",
+            "requestedByEmail": "linda.martinez@company.com",
+            "department": "Training",
+            "project": "Q1 Employee Onboarding",
+            "reason": "Quarterly training session for new employees",
+            "urgency": "medium",
+            "requestDate": "2025-01-20",
+            "requiredDate": "2025-01-28",
+            "returnDate": "2025-02-01",
+            "status": "approved",
+            "reviewedBy": "Sarah Johnson",
+            "reviewDate": "2025-01-21",
+            "reviewNotes": "Approved for training purposes",
+            "items": [
+                {
+                    "id": 6,
+                    "articleCode": "PROJ-004",
+                    "articleDescription": "Projector Epson EB-X41",
+                    "quantity": 1,
+                    "unit": "units",
+                    "imageUrl": "https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=300"
+                },
+                {
+                    "id": 7,
+                    "articleCode": "SCREEN-002",
+                    "articleDescription": "Projection Screen 100 inch",
+                    "quantity": 1,
+                    "unit": "units",
+                    "imageUrl": "https://images.unsplash.com/photo-1605647540924-852290f6b0d5?w=300"
+                },
+                {
+                    "id": 8,
+                    "articleCode": "MIC-005",
+                    "articleDescription": "Wireless Microphone Set",
+                    "quantity": 2,
+                    "unit": "units",
+                    "imageUrl": "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=300"
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "type": "purchase",
+            "requestNumber": "REQ-2025-005",
+            "requestedBy": "James Thompson",
+            "requestedByEmail": "james.thompson@company.com",
+            "department": "Sales",
+            "project": "Sales Team Equipment Upgrade",
+            "reason": "Need for client presentations and training sessions",
+            "urgency": "low",
+            "requestDate": "2025-01-19",
+            "requiredDate": "2025-02-10",
+            "status": "rejected",
+            "reviewedBy": "Sarah Johnson",
+            "reviewDate": "2025-01-22",
+            "reviewNotes": "Budget constraints this quarter. Please resubmit next quarter.",
+            "purchasedBy": "keeper",
+            "items": [
+                {
+                    "id": 9,
+                    "articleCode": "REMOTE-003",
+                    "articleDescription": "Wireless Presenter Remote",
+                    "quantity": 3,
+                    "unit": "units",
+                    "estimatedCost": 50.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1560272564-c83b66b1ad12?w=300"
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "type": "transfer-on-site",
+            "requestNumber": "REQ-2025-006",
+            "requestedBy": "Sarah Kim",
+            "requestedByEmail": "sarah.kim@company.com",
+            "department": "Operations",
+            "project": "Warehouse Inventory Audit",
+            "reason": "Equipment needed for annual warehouse inventory audit",
+            "urgency": "medium",
+            "requestDate": "2025-01-15",
+            "requiredDate": "2025-01-18",
+            "returnDate": "2025-01-20",
+            "status": "completed",
+            "reviewedBy": "Sarah Johnson",
+            "reviewDate": "2025-01-16",
+            "reviewNotes": "Approved and completed",
+            "items": [
+                {
+                    "id": 10,
+                    "articleCode": "SCAN-007",
+                    "articleDescription": "Barcode Scanner Handheld",
+                    "quantity": 5,
+                    "unit": "units",
+                    "imageUrl": "https://images.unsplash.com/photo-1588508065123-287b28e013da?w=300"
+                },
+                {
+                    "id": 11,
+                    "articleCode": "TAB-009",
+                    "articleDescription": "Tablet Samsung Galaxy Tab",
+                    "quantity": 3,
+                    "unit": "units",
+                    "imageUrl": "https://images.unsplash.com/photo-1561154464-82e9adf32764?w=300"
+                }
+            ]
+        },
+        {
+            "id": 7,
+            "type": "purchase-on-site",
+            "requestNumber": "REQ-2025-007",
+            "requestedBy": "Robert Chang",
+            "requestedByEmail": "robert.chang@company.com",
+            "department": "Engineering",
+            "reason": "Urgent replacement for damaged equipment",
+            "urgency": "urgent",
+            "requestDate": "2025-01-24",
+            "requiredDate": "2025-01-25",
+            "status": "pending",
+            "purchasedBy": "applicant",
+            "items": [
+                {
+                    "id": 12,
+                    "articleCode": "DRILL-012",
+                    "articleDescription": "Cordless Drill DeWalt 20V",
+                    "quantity": 1,
+                    "unit": "units",
+                    "estimatedCost": 180.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=300"
+                },
+                {
+                    "id": 13,
+                    "articleCode": "BITS-025",
+                    "articleDescription": "Drill Bit Set Professional",
+                    "quantity": 1,
+                    "unit": "sets",
+                    "estimatedCost": 45.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=300"
+                }
+            ]
+        },
+        {
+            "id": 18,
+            "type": "purchase-on-site",
+            "requestNumber": "REQ-2025-007",
+            "requestedBy": "Robert Chang",
+            "requestedByEmail": "robert.chang@company.com",
+            "department": "Engineering",
+            "reason": "Urgent replacement for damaged equipment",
+            "urgency": "urgent",
+            "requestDate": "2025-01-24",
+            "requiredDate": "2025-01-25",
+            "status": "pending",
+            "purchasedBy": "applicant",
+            "items": [
+                {
+                    "id": 12,
+                    "articleCode": "DRILL-012",
+                    "articleDescription": "Cordless Drill DeWalt 20V",
+                    "quantity": 1,
+                    "unit": "units",
+                    "estimatedCost": 180.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=300&q=80"
+                },
+                {
+                    "id": 13,
+                    "articleCode": "BITS-025",
+                    "articleDescription": "Drill Bit Set Professional",
+                    "quantity": 1,
+                    "unit": "sets",
+                    "estimatedCost": 45.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=300&q=80"
+                },
+                {
+                    "id": 29,
+                    "articleCode": "SAFE-GLS-01",
+                    "articleDescription": "Safety Goggles Anti-Fog",
+                    "quantity": 2,
+                    "unit": "units",
+                    "estimatedCost": 15.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1582560475093-6b21b5c377a1?w=300&q=80"
+                },
+                {
+                    "id": 30,
+                    "articleCode": "TOOL-TAPE-5M",
+                    "articleDescription": "Measuring Tape 5m",
+                    "quantity": 1,
+                    "unit": "units",
+                    "estimatedCost": 12.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1581147036324-c17ac41dfa6c?w=300&q=80"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "type": "transfer-on-site",
+            "requestNumber": "REQ-2025-008",
+            "requestedBy": "Sarah Connor",
+            "requestedByEmail": "sarah.connor@company.com",
+            "department": "Operations",
+            "reason": "Safety equipment for new warehouse staff",
+            "urgency": "high",
+            "requestDate": "2025-01-25",
+            "requiredDate": "2025-01-28",
+            "status": "approved",
+            "items": [
+                {
+                    "id": 14,
+                    "articleCode": "PPE-BOOT-42",
+                    "articleDescription": "Safety Steel Toe Boots (Size 42)",
+                    "quantity": 5,
+                    "unit": "pairs",
+                    "estimatedCost": 450.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1605901309584-818e25960b8f?w=300&q=80"
+                },
+                {
+                    "id": 15,
+                    "articleCode": "PPE-HELM-Y",
+                    "articleDescription": "Hard Hat (Yellow)",
+                    "quantity": 5,
+                    "unit": "units",
+                    "estimatedCost": 125.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=300&q=80"
+                },
+                {
+                    "id": 31,
+                    "articleCode": "PPE-VEST-HV",
+                    "articleDescription": "High Visibility Vest (L)",
+                    "quantity": 5,
+                    "unit": "units",
+                    "estimatedCost": 50.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1598556776374-aa6b548382e5?w=300&q=80"
+                },
+                {
+                    "id": 32,
+                    "articleCode": "PPE-GLOV-H",
+                    "articleDescription": "Heavy Duty Work Gloves",
+                    "quantity": 10,
+                    "unit": "pairs",
+                    "estimatedCost": 80.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1620221481601-668060b38846?w=300&q=80"
+                }
+            ]
+        },
+        {
+            "id": 9,
+            "type": "purchase",
+            "requestNumber": "REQ-2025-009",
+            "requestedBy": "Michael Scott",
+            "requestedByEmail": "michael.scott@company.com",
+            "department": "Sales",
+            "reason": "Quarterly office supplies restock",
+            "urgency": "low",
+            "requestDate": "2025-01-26",
+            "requiredDate": "2025-02-10",
+            "status": "pending",
+            "items": [
+                {
+                    "id": 16,
+                    "articleCode": "PAP-A4-500",
+                    "articleDescription": "A4 Copy Paper (Box of 5 reams)",
+                    "quantity": 20,
+                    "unit": "boxes",
+                    "estimatedCost": 600.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=300&q=80"
+                },
+                {
+                    "id": 17,
+                    "articleCode": "INK-HP-950",
+                    "articleDescription": "HP 950XL Black Ink Cartridge",
+                    "quantity": 4,
+                    "unit": "units",
+                    "estimatedCost": 160.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=300&q=80"
+                },
+                {
+                    "id": 33,
+                    "articleCode": "OFF-STAP-01",
+                    "articleDescription": "Heavy Duty Stapler",
+                    "quantity": 2,
+                    "unit": "units",
+                    "estimatedCost": 40.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1586165368502-1bad197a6461?w=300&q=80"
+                },
+                {
+                    "id": 34,
+                    "articleCode": "OFF-NOTE-Y",
+                    "articleDescription": "Sticky Notes 3x3 (Pack of 12)",
+                    "quantity": 5,
+                    "unit": "packs",
+                    "estimatedCost": 25.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1576504677634-06b2130bd1f3?w=300&q=80"
+                },
+                {
+                    "id": 35,
+                    "articleCode": "OFF-FOLD-A4",
+                    "articleDescription": "Manila File Folders (100 pack)",
+                    "quantity": 3,
+                    "unit": "packs",
+                    "estimatedCost": 45.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1616628188859-7a11abb6fcc9?w=300&q=80"
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "type": "purchase",
+            "requestNumber": "REQ-2025-010",
+            "requestedBy": "Elon Musk",
+            "requestedByEmail": "elon.musk@company.com",
+            "department": "R&D",
+            "reason": "Maintenance and supplies for 3D Printer Lab",
+            "urgency": "medium",
+            "requestDate": "2025-01-26",
+            "requiredDate": "2025-02-01",
+            "status": "rejected",
+            "items": [
+                {
+                    "id": 18,
+                    "articleCode": "SERV-MAINT-3D",
+                    "articleDescription": "Annual 3D Printer Calibration Service",
+                    "quantity": 1,
+                    "unit": "service",
+                    "estimatedCost": 1200.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1631541909061-71e349d1f241?w=300&q=80"
+                },
+                {
+                    "id": 36,
+                    "articleCode": "MAT-PLA-WHT",
+                    "articleDescription": "PLA Filament 1.75mm White",
+                    "quantity": 10,
+                    "unit": "spools",
+                    "estimatedCost": 200.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1620123023338-2d4209672dfd?w=300&q=80"
+                },
+                {
+                    "id": 37,
+                    "articleCode": "MAT-RESIN-G",
+                    "articleDescription": "UV Curing Resin Grey (1L)",
+                    "quantity": 5,
+                    "unit": "bottles",
+                    "estimatedCost": 150.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1595429035839-c99c298ffdde?w=300&q=80"
+                }
+            ]
+        },
+        {
+            "id": 11,
+            "type": "purchase-on-site",
+            "requestNumber": "REQ-2025-011",
+            "requestedBy": "Pam Beesly",
+            "requestedByEmail": "pam.beesly@company.com",
+            "department": "Administration",
+            "reason": "Reception decoration for client visit",
+            "urgency": "urgent",
+            "requestDate": "2025-01-27",
+            "requiredDate": "2025-01-27",
+            "status": "approved",
+            "purchasedBy": "applicant",
+            "items": [
+                {
+                    "id": 19,
+                    "articleCode": "DEC-FLOW-01",
+                    "articleDescription": "Fresh Flower Arrangement",
+                    "quantity": 2,
+                    "unit": "units",
+                    "estimatedCost": 80.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1562690868-60bbe7293e94?w=300&q=80"
+                },
+                {
+                    "id": 38,
+                    "articleCode": "DEC-VASE-GLS",
+                    "articleDescription": "Glass Cylindrical Vase",
+                    "quantity": 2,
+                    "unit": "units",
+                    "estimatedCost": 30.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1581541095025-f47965438a81?w=300&q=80"
+                },
+                {
+                    "id": 39,
+                    "articleCode": "CAT-SNACK-MIX",
+                    "articleDescription": "Premium Nut Mix for Guests",
+                    "quantity": 4,
+                    "unit": "bags",
+                    "estimatedCost": 40.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1605170979369-55238ad22254?w=300&q=80"
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "type": "transfer-on-site",
+            "requestNumber": "REQ-2025-012",
+            "requestedBy": "Tony Stark",
+            "requestedByEmail": "tony.stark@company.com",
+            "department": "Engineering",
+            "reason": "Prototype assembly components",
+            "urgency": "high",
+            "requestDate": "2025-01-27",
+            "requiredDate": "2025-01-29",
+            "status": "pending",
+            "items": [
+                {
+                    "id": 20,
+                    "articleCode": "ELEC-RES-KIT",
+                    "articleDescription": "Resistor Kit (1k-1M Ohm)",
+                    "quantity": 5,
+                    "unit": "kits",
+                    "estimatedCost": 25.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1580894732930-0babd100d356?w=300&q=80"
+                },
+                {
+                    "id": 21,
+                    "articleCode": "ELEC-ARD-UNO",
+                    "articleDescription": "Arduino Uno Rev3",
+                    "quantity": 10,
+                    "unit": "units",
+                    "estimatedCost": 250.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1555443408-c62b82c06568?w=300&q=80"
+                },
+                {
+                    "id": 40,
+                    "articleCode": "ELEC-BREAD-L",
+                    "articleDescription": "Solderless Breadboard 830",
+                    "quantity": 5,
+                    "unit": "units",
+                    "estimatedCost": 30.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1603732551681-2e91159b9dc2?w=300&q=80"
+                },
+                {
+                    "id": 41,
+                    "articleCode": "TOOL-MULTI-D",
+                    "articleDescription": "Digital Multimeter",
+                    "quantity": 2,
+                    "unit": "units",
+                    "estimatedCost": 80.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=300&q=80"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "type": "purchase",
+            "requestNumber": "REQ-2025-013",
+            "requestedBy": "Leslie Knope",
+            "requestedByEmail": "leslie.knope@company.com",
+            "department": "Public Relations",
+            "reason": "Merchandise for upcoming trade show",
+            "urgency": "medium",
+            "requestDate": "2025-01-28",
+            "requiredDate": "2025-02-15",
+            "status": "pending",
+            "items": [
+                {
+                    "id": 22,
+                    "articleCode": "MERCH-PEN-01",
+                    "articleDescription": "Branded Ballpoint Pens (Blue)",
+                    "quantity": 1000,
+                    "unit": "units",
+                    "estimatedCost": 500.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1585336261022-680e295ce3fe?w=300&q=80"
+                },
+                {
+                    "id": 23,
+                    "articleCode": "MERCH-BAG-01",
+                    "articleDescription": "Tote Bags with Logo",
+                    "quantity": 200,
+                    "unit": "units",
+                    "estimatedCost": 600.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1597484662317-9bd7bdda2907?w=300&q=80"
+                },
+                {
+                    "id": 42,
+                    "articleCode": "MERCH-LAN-BK",
+                    "articleDescription": "Conference Lanyards (Black)",
+                    "quantity": 500,
+                    "unit": "units",
+                    "estimatedCost": 250.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1594845272520-725c5284b7c2?w=300&q=80"
+                },
+                {
+                    "id": 43,
+                    "articleCode": "MERCH-NB-A5",
+                    "articleDescription": "A5 Branded Notebooks",
+                    "quantity": 300,
+                    "unit": "units",
+                    "estimatedCost": 900.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1544816155-12df9643f363?w=300&q=80"
+                }
+            ]
+        },
+        {
+            "id": 14,
+            "type": "purchase-on-site",
+            "requestNumber": "REQ-2025-014",
+            "requestedBy": "Gordon Ramsay",
+            "requestedByEmail": "gordon.ramsay@company.com",
+            "department": "Cafeteria",
+            "reason": "Emergency kitchen supplies",
+            "urgency": "urgent",
+            "requestDate": "2025-01-28",
+            "requiredDate": "2025-01-28",
+            "status": "pending",
+            "purchasedBy": "applicant",
+            "items": [
+                {
+                    "id": 24,
+                    "articleCode": "KIT-KNIFE-PRO",
+                    "articleDescription": "Chef Knife Professional 8-inch",
+                    "quantity": 1,
+                    "unit": "units",
+                    "estimatedCost": 120.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1593618998160-e34015e67545?w=300&q=80"
+                },
+                {
+                    "id": 44,
+                    "articleCode": "KIT-BOARD-XL",
+                    "articleDescription": "Polyethylene Cutting Board XL",
+                    "quantity": 2,
+                    "unit": "units",
+                    "estimatedCost": 60.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1624821588855-a55993569d22?w=300&q=80"
+                },
+                {
+                    "id": 45,
+                    "articleCode": "FOOD-COFF-KG",
+                    "articleDescription": "Espresso Coffee Beans (1kg)",
+                    "quantity": 5,
+                    "unit": "bags",
+                    "estimatedCost": 100.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=300&q=80"
+                }
+            ]
+        },
+        {
+            "id": 15,
+            "type": "purchase",
+            "requestNumber": "REQ-2025-015",
+            "requestedBy": "Walter White",
+            "requestedByEmail": "walter.white@company.com",
+            "department": "Chemistry Lab",
+            "reason": "Regular chemical restock and safety gear",
+            "urgency": "low",
+            "requestDate": "2025-01-29",
+            "requiredDate": "2025-02-05",
+            "status": "approved",
+            "items": [
+                {
+                    "id": 25,
+                    "articleCode": "CHEM-ETH-5L",
+                    "articleDescription": "Ethanol 99% (5L Container)",
+                    "quantity": 4,
+                    "unit": "units",
+                    "estimatedCost": 180.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1622467827417-bbe2237067a9?w=300&q=80"
+                },
+                {
+                    "id": 26,
+                    "articleCode": "GLS-BEAKER-SET",
+                    "articleDescription": "Borosilicate Beaker Set",
+                    "quantity": 2,
+                    "unit": "sets",
+                    "estimatedCost": 90.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=300&q=80"
+                },
+                {
+                    "id": 46,
+                    "articleCode": "PPE-GLOV-NIT",
+                    "articleDescription": "Nitrile Exam Gloves (Box 100)",
+                    "quantity": 10,
+                    "unit": "boxes",
+                    "estimatedCost": 120.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1584621954413-7c904fb6c092?w=300&q=80"
+                },
+                {
+                    "id": 47,
+                    "articleCode": "PPE-GOGG-CHEM",
+                    "articleDescription": "Chemical Splash Goggles",
+                    "quantity": 5,
+                    "unit": "units",
+                    "estimatedCost": 45.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1582719366793-a080895745c9?w=300&q=80"
+                }
+            ]
+        },
+        {
+            "id": 16,
+            "type": "purchase",
+            "requestNumber": "REQ-2025-016",
+            "requestedBy": "Sherlock Holmes",
+            "requestedByEmail": "sherlock.holmes@company.com",
+            "department": "Security",
+            "reason": "CCTV System repair in Sector 4",
+            "urgency": "high",
+            "requestDate": "2025-01-29",
+            "requiredDate": "2025-01-30",
+            "status": "pending",
+            "items": [
+                {
+                    "id": 27,
+                    "articleCode": "SERV-CCTV-REP",
+                    "articleDescription": "Camera Wiring Repair Service",
+                    "quantity": 1,
+                    "unit": "service",
+                    "estimatedCost": 350.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=300&q=80"
+                },
+                {
+                    "id": 48,
+                    "articleCode": "ELEC-CABLE-CAT6",
+                    "articleDescription": "CAT6 Ethernet Cable (100m)",
+                    "quantity": 1,
+                    "unit": "roll",
+                    "estimatedCost": 80.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=300&q=80"
+                },
+                {
+                    "id": 49,
+                    "articleCode": "TOOL-CRIMP-RJ45",
+                    "articleDescription": "RJ45 Crimping Tool",
+                    "quantity": 1,
+                    "unit": "units",
+                    "estimatedCost": 25.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=300&q=80"
+                }
+            ]
+        },
+        {
+            "id": 17,
+            "type": "transfer-on-site",
+            "requestNumber": "REQ-2025-017",
+            "requestedBy": "Bruce Wayne",
+            "requestedByEmail": "bruce.wayne@company.com",
+            "department": "Executive",
+            "reason": "Office chair replacement (Temporary transfer-on-site)",
+            "urgency": "medium",
+            "requestDate": "2025-01-30",
+            "requiredDate": "2025-02-10",
+            "status": "pending",
+            "items": [
+                {
+                    "id": 28,
+                    "articleCode": "FUR-CHAIR-ERG",
+                    "articleDescription": "Ergonomic Mesh Office Chair",
+                    "quantity": 1,
+                    "unit": "units",
+                    "estimatedCost": 550.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=300&q=80"
+                },
+                {
+                    "id": 50,
+                    "articleCode": "FUR-REST-FOOT",
+                    "articleDescription": "Adjustable Footrest",
+                    "quantity": 1,
+                    "unit": "units",
+                    "estimatedCost": 45.0,
+                    "imageUrl": "https://images.unsplash.com/photo-1505843490578-d38526d16679?w=300&q=80"
+                }
+            ]
+        }
+    ]
+}

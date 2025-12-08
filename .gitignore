@@ -50,3 +50,6 @@ Thumbs.db
 CLAUDE.md
 !.claude
 !.claude/settings.local.json
+
+src/Readme.md
+src/components/features/inventory/trash.txt
