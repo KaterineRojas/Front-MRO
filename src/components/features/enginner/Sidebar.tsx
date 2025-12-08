@@ -24,8 +24,8 @@ import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Button } from '../../ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../../ui/sheet';
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
-import type { Page } from '../types';
-import type { CartItem, Notification } from '../App';
+import type { Page } from './types';
+import type { CartItem, Notification } from './types';
 
 interface SidebarProps {
   currentPage: Page;

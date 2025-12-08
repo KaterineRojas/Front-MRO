@@ -1,3 +1,6 @@
+import { API_BASE_URL } from "../services/api";
+import { store } from "../../../../store/store";
+
 // Simulate API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -14,6 +17,8 @@ export interface Transfer {
   requestDate: string;
   status: 'pending-manager' | 'pending-engineer' | 'approved' | 'rejected';
   transferPhoto?: string;
+  imageUrl?: string;
+  warehouseName?: string;
 }
 
 export interface TransferItem {
@@ -86,7 +91,7 @@ const mockInventoryItems: InventoryItem[] = [
   {
     id: 'inv-3',
     itemId: 'keyboard-001',
-    name: 'Mechanical Keyboard RGB',
+    name: 'Mechanical Keyboard RGB2',
     description: 'Gaming keyboard with RGB lighting',
     image: 'https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?w=400',
     project: 'Proyecto Web',
@@ -258,11 +263,218 @@ const mockTransfers: Transfer[] = [
 // API Simulation Functions
 
 /**
- * Get all transfers
+ * Get all transfers desde el backend
  */
 export async function getTransfers(): Promise<Transfer[]> {
-  await delay(300);
-  return [...mockTransfers];
+  try {
+    const senderId = getCurrentUserId();
+    const url = `${API_BASE_URL}/transfer-requests?senderId=${senderId}&pageNumber=1&pageSize=20`;
+    console.log('Fetching transfers from URL:', url);
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        // Si tu backend requiere autenticación, aquí se añade el token:
+        // "Authorization": `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener transferencias: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    
+    // Mapear la respuesta del backend a nuestro formato Transfer
+    const currentUserId = getCurrentUserId();
+    console.log('Current User ID:', currentUserId);
+    console.log('Backend Response:', responseData.data);
+    
+    const transfers: Transfer[] = responseData.data.map((item: any) => {
+      const type = item.senderId === currentUserId ? 'incoming' : 'outgoing';
+      console.log(`Transfer ${item.requestNumber}: senderId=${item.senderId}, currentUserId=${currentUserId}, type=${type}`);
+      return {
+        id: item.requestNumber,
+        type: type,
+        fromUser: item.senderName,
+        toUser: item.recipientName,
+        fromUserId: item.senderId,
+        toUserId: item.recipientId,
+        items: Array(item.totalItems).fill(null).map((_, idx) => ({
+          itemId: `item-${idx}`,
+          itemName: `Item ${idx + 1}`,
+          code: '',
+          quantity: 1,
+          image: '',
+          description: '',
+          warehouse: item.warehouseName,
+          warehouseCode: ''
+        })), // Aquí irán los items reales cuando la API los envíe
+        notes: '',
+        requestDate: item.createdAt,
+        status: mapBackendStatusToLocal(item.status),
+        transferPhoto: item.hasImage ? `${API_BASE_URL}/transfer-requests/${item.requestNumber}/image` : undefined,
+        warehouseName: item.warehouseName,
+      };
+    });
+
+    return transfers;
+  } catch (error) {
+    console.error('Error fetching transfers:', error);
+    // Fallback a mock data en caso de error
+    await delay(300);
+    return [...mockTransfers];
+  }
+}
+
+/**
+ * Get a specific transfer by ID
+ */
+export async function getTransferId(transferId: string): Promise<Transfer> {
+  try {
+    const url = `${API_BASE_URL}/transfer-requests/${transferId}`;
+    console.log('Fetching transfer details from URL:', url);
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener transferencia: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    console.log('Transfer details response:', responseData);
+
+    // Mapear la respuesta del backend a nuestro formato Transfer
+    const currentUserId = getCurrentUserId();
+    const type = responseData.senderId === currentUserId ? 'outgoing' : 'incoming';
+    
+    const transfer: Transfer = {
+      id: responseData.requestNumber,
+      type: type,
+      fromUser: responseData.senderName || responseData.senderId,
+      toUser: responseData.recipientName || responseData.recipientId,
+      fromUserId: responseData.senderId,
+      toUserId: responseData.recipientId,
+      items: responseData.items.map((item: any) => ({
+        itemId: item.itemId.toString(),
+        itemName: item.name,
+        code: item.sku,
+        quantity: item.quantity,
+        image: item.imageUrl || '',
+        description: item.description || '',
+        warehouse: responseData.warehouse?.name || '',
+        warehouseCode: responseData.warehouse?.code || ''
+      })),
+      notes: responseData.notes || '',
+      requestDate: responseData.createdAt,
+      status: mapBackendStatusToLocal(responseData.status),
+      transferPhoto: responseData.imageUrl || undefined,
+      imageUrl: responseData.imageUrl || undefined,
+      warehouseName: responseData.warehouseName || responseData.warehouse?.name || '',
+    };
+
+    return transfer;
+  } catch (error) {
+    console.error('Error fetching transfer details:', error);
+    throw error;
+  }
+}
+
+export async function getTransfers2(): Promise<Transfer[]> {
+  try {
+    const senderId = getCurrentUserId();
+    const url = `${API_BASE_URL}/transfer-requests?senderId=${senderId}&pageNumber=1&pageSize=20`;
+    console.log('Fetching transfers from URL:', url);
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        // Si tu backend requiere autenticación, aquí se añade el token:
+        // "Authorization": `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener transferencias: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    
+    // Mapear la respuesta del backend a nuestro formato Transfer
+    const currentUserId = getCurrentUserId();
+    console.log('Current User ID:', currentUserId);
+    console.log('Backend Response:', responseData.data);
+    
+    const transfers: Transfer[] = responseData.data.map((item: any) => {
+      const type = item.senderId === currentUserId ? 'outgoing' : 'incoming';
+      console.log(`Transfer ${item.requestNumber}: senderId=${item.senderId}, currentUserId=${currentUserId}, type=${type}`);
+      return {
+        id: item.requestNumber,
+        type: type,
+        fromUser: item.senderName,
+        toUser: item.recipientName,
+        fromUserId: item.senderId,
+        toUserId: item.recipientId,
+        items: Array(item.totalItems).fill(null).map((_, idx) => ({
+          itemId: `item-${idx}`,
+          itemName: `Item ${idx + 1}`,
+          code: '',
+          quantity: 1,
+          image: '',
+          description: '',
+          warehouse: item.warehouseName,
+          warehouseCode: ''
+        })), // Aquí irán los items reales cuando la API los envíe
+        notes: '',
+        requestDate: item.createdAt,
+        status: mapBackendStatusToLocal(item.status),
+        transferPhoto: item.hasImage ? `${API_BASE_URL}/transfer-requests/${item.requestNumber}/image` : undefined,
+      };
+    });
+
+    return transfers;
+  } catch (error) {
+    console.error('Error fetching transfers:', error);
+    // Fallback a mock data en caso de error
+    await delay(300);
+    return [...mockTransfers];
+  }
+}
+
+/**
+ * Mapear estado del backend al estado local
+ */
+function mapBackendStatusToLocal(backendStatus: string): 'pending-manager' | 'pending-engineer' | 'approved' | 'rejected' {
+  const statusMap: Record<string, 'pending-manager' | 'pending-engineer' | 'approved' | 'rejected'> = {
+    'Pending': 'pending-manager',
+    'Approved': 'approved',
+    'Rejected': 'rejected',
+  };
+  return statusMap[backendStatus] || 'pending-manager';
+}
+
+/**
+ * Obtener ID del usuario actualmente logueado desde authSlice
+ */
+function getCurrentUserId(): string {
+  try {
+    const state = store.getState();
+    // Obtener del authSlice - la estructura es state.auth.user.id
+    const userId = state.auth?.user?.id;
+    console.log('Redux auth state:', state.auth);
+    console.log('Retrieved userId from Redux:', userId);
+    return userId || '';
+  } catch (error) {
+    console.error('Error getting user ID from Redux:', error);
+    return localStorage.getItem('userId') || '';
+  }
 }
 
 /**
@@ -282,7 +494,89 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
 }
 
 /**
- * Create a new transfer
+ * Get inventory items for a specific engineer and warehouse
+ * Based on getInventoryEngineer but with warehouseId filter
+ */
+export async function getInventoryTransfer(
+  engineerId: string,
+  warehouseId: string
+): Promise<InventoryItem[]> {
+  try {
+    const url = `${API_BASE_URL}/engineer-holdings/${engineerId}?warehouseId=${warehouseId}`;
+    console.log(`Fetching transfer inventory for engineer: ${engineerId}, warehouse: ${warehouseId}`);
+    console.log(`API URL: ${url}`);
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        // Si tu API requiere autenticación, agrega aquí el token:
+        // "Authorization": `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('Transfer Inventory API Response:', data);
+
+    // Procesar la respuesta: puede venir como array directo o dentro de holdingsByWarehouse
+    const items: InventoryItem[] = [];
+
+    // Si la respuesta es un array directo de items
+    if (Array.isArray(data)) {
+      data.forEach((item: any) => {
+        items.push({
+          id: `${item.itemId}-${item.warehouseCode || warehouseId}`,
+          itemId: item.itemId.toString(),
+          name: item.name,
+          description: item.description,
+          image: item.imageUrl || '',
+          project: item.projectIds?.[0] || 'general expenses',
+          projectCode: item.projectCode || 'GEN',
+          quantity: item.quantity,
+          sku: item.sku,
+          warehouse: item.warehouseName || '',
+          warehouseCode: item.warehouseCode || warehouseId,
+        });
+      });
+    } 
+    // Si la respuesta viene con estructura holdingsByWarehouse
+    else if (data.holdingsByWarehouse && Array.isArray(data.holdingsByWarehouse)) {
+      data.holdingsByWarehouse.forEach((warehouse: any) => {
+        if (warehouse.items && Array.isArray(warehouse.items)) {
+          warehouse.items.forEach((item: any) => {
+            items.push({
+              id: `${item.itemId}-${warehouse.warehouse.code}`,
+              itemId: item.itemId.toString(),
+              name: item.name,
+              description: item.description,
+              image: item.imageUrl || '',
+              project: item.projectIds?.[0] || 'general expenses',
+              projectCode: item.projectCode || 'GEN',
+              quantity: item.quantity,
+              sku: item.sku,
+              warehouse: warehouse.warehouse.name,
+              warehouseCode: warehouse.warehouse.code,
+            });
+          });
+        }
+      });
+    }
+
+    return items;
+  } catch (error) {
+    console.error('Error fetching transfer inventory:', error);
+    // Fallback a mock data en caso de error
+    await delay(300);
+    return [...mockInventoryItems];
+  }
+}
+
+/**
+ * Create a new transfer - Connect to real API
  */
 export async function createTransfer(data: {
   targetEngineerId: string;
@@ -290,28 +584,62 @@ export async function createTransfer(data: {
   photo: string;
   notes?: string;
 }): Promise<{ success: boolean; transferId: string }> {
-  await delay(500);
-  
-  // Simulate validation
-  if (!data.targetEngineerId) {
-    throw new Error('Target engineer is required');
-  }
-  
-  if (!data.photo) {
-    throw new Error('Transfer photo is required');
-  }
-  
-  if (data.items.length === 0) {
-    throw new Error('At least one item must be selected');
-  }
+  try {
+    // Get current user ID from Redux
+    const senderId = getCurrentUserId();
+    
+    if (!senderId) {
+      throw new Error('Unable to get current user ID');
+    }
 
-  // Generate new transfer ID
-  const newId = `TR${String(mockTransfers.length + 1).padStart(3, '0')}`;
-  
-  return {
-    success: true,
-    transferId: newId
-  };
+    // Prepare the API payload
+    const payload = {
+      senderId: senderId,
+      recipientId: data.targetEngineerId,
+      warehouseId: 1, // TODO: Get from form state if needed
+      projectId: '', // TODO: Get from form if needed
+      imageUrl: data.photo,
+      notes: data.notes || '',
+      items: data.items.map(item => ({
+        itemId: parseInt(item.id) || 0, // Convert to number if needed
+        quantity: item.quantity
+      }))
+    };
+
+    const url = `${API_BASE_URL}/transfer-requests`;
+    console.log('Creating transfer to URL:', url);
+    console.log('Transfer payload:', payload);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Si tu backend requiere autenticación, agrega aquí el token:
+        // "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('API Error response:', errorData);
+      throw new Error(`Error creating transfer: ${response.status} - ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    console.log('Transfer created successfully:', responseData);
+
+    // Assuming the API returns the request number or ID
+    const transferId = responseData.requestNumber || responseData.id || `TR${Date.now()}`;
+
+    return {
+      success: true,
+      transferId: transferId
+    };
+  } catch (error) {
+    console.error('Error creating transfer:', error);
+    throw error;
+  }
 }
 
 /**
@@ -379,4 +707,38 @@ export async function cancelTransfer(transferId: string): Promise<{ success: boo
   return {
     success: true
   };
+}
+
+/**
+ * Delete a transfer by ID
+ */
+export async function deleteTransfer(transferId: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const url = `${API_BASE_URL}/transfer-requests/${transferId}`;
+    console.log('Deleting transfer from URL:', url);
+    
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        // Si tu backend requiere autenticación, aquí se añade el token:
+        // "Authorization": `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error al eliminar transferencia: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    console.log('Delete response:', responseData);
+
+    return {
+      success: true,
+      message: 'Transfer deleted successfully'
+    };
+  } catch (error) {
+    console.error('Error deleting transfer:', error);
+    throw error;
+  }
 }

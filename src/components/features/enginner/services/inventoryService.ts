@@ -42,7 +42,7 @@ const mockInventoryItems: InventoryItem[] = [
   {
     id: 'inv-1',
     itemId: 'hammer-001',
-    name: 'Hammer',
+    name: '*********Hammer',
     description: 'Professional grade hammer',
     image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400',
     project: 'Proyecto Amazonas',
@@ -56,7 +56,7 @@ const mockInventoryItems: InventoryItem[] = [
     id: 'inv-2',
     itemId: 'hammer-001',
     name: 'Hammer',
-    description: 'Professional grade hammer',
+    description: 'OTRA PRUEBAProfessional grade hammer2',
     image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400',
     project: 'Proyecto Innova',
     projectCode: 'INN-2024',

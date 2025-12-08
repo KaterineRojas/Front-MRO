@@ -24,25 +24,6 @@ import {
   canReturnAll
 } from './borrowUtils';
 
-interface GetRequestsParams {
-  warehouseId?: string;
-  status?: string;
-  requesterId?: string;
-  pageNumber?: number;
-  pageSize?: number;
-  searchTerm?: string;
-}
-
-interface PagedResponse<T> {
-  data: T[];
-  pageNumber: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;
-  hasPreviousPage: boolean;
-  hasNextPage: boolean;
-}
-
 /**
  * Custom Hook para manejar la lógica de Borrow Requests
  */
@@ -93,13 +74,17 @@ export function useBorrowRequests() {
   }, []);
 
   // Load initial data
+  // Ensure currentUser has ID (amx0142)
   useEffect(() => {
     const loadData = async () => {
+      if (!currentUser?.id) {
+        return;
+      }
       try {
         const [whData, statusData, requestsData] = await Promise.all([
           getWarehouses(),
           getStatuses(),
-          getBorrowRequests(currentUser?.id) 
+          getBorrowRequests(currentUser.id) 
         ]);
         setWarehouses(whData);
         setStatuses(statusData);
@@ -134,7 +119,7 @@ export function useBorrowRequests() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // ✅ 3. Reemplazar el useEffect de filtrado por useMemo
+  //  3. Reemplazar el useEffect de filtrado por useMemo
   // Esto recalcula filteredBorrowRequests SOLO cuando cambian sus dependencias.
   const filteredBorrowRequests = useMemo(() => {
     return borrowRequests.filter(request => {
@@ -143,9 +128,9 @@ export function useBorrowRequests() {
       if (searchLower) {
         const matchesSearch = 
           request.requestNumber?.toLowerCase().includes(searchLower) ||
-          request.projectName?.toLowerCase().includes(searchLower) ||
+          request.projectId?.toLowerCase().includes(searchLower) ||
           request.warehouseName?.toLowerCase().includes(searchLower) ||
-          request.departmentName?.toLowerCase().includes(searchLower) ||
+          request.departmentId?.toLowerCase().includes(searchLower) ||
           request.notes?.toLowerCase().includes(searchLower) ||
           request.items?.some(item => 
             item.name?.toLowerCase().includes(searchLower) ||
@@ -156,10 +141,15 @@ export function useBorrowRequests() {
         if (!matchesSearch) return false;
       }
 
+      // 1.5. Excluir requests con status "Sent" (no se muestran en pantalla)
+      if (request.status === 'Sent') {
+        return false;
+      }
+
       // 2. Filtro por Warehouse
       if (warehouseFilter && warehouseFilter !== 'all') {
         const matchesWarehouse = 
-          request.warehouseId === warehouseFilter ||
+          request.warehouseName === warehouseFilter ||
           request.warehouseName === warehouseFilter ||
           // Comparación case-insensitive por si acaso
           request.warehouseName?.toLowerCase() === warehouseFilter.toLowerCase();
@@ -234,17 +224,6 @@ export function useBorrowRequests() {
     dispatch(clearCart());
   };
 
-  const reloadBorrowRequests = async () => {
-    try {
-      const requestsData = await getBorrowRequests(currentUser?.id);
-      setBorrowRequests(requestsData.items || []);
-      toast.success('Requests updated');
-    } catch (error: any) {
-      const appError = handleError(error);
-      toast.error(appError.message || 'Failed to reload requests');
-    }
-  };
-
   const handleCancelBorrowRequest = (requestId: string) => {
     setRequestToDelete(requestId);
     showConfirm({
@@ -317,6 +296,23 @@ export function useBorrowRequests() {
     });
   };
 
+  const reloadBorrowRequests = async () => {
+    if (!currentUser?.id) return;
+    try {
+      const requestsData = await getBorrowRequests(currentUser.id);
+      setBorrowRequests(requestsData.items || []);
+    } catch (error: any) {
+      const appError = handleError(error);
+      showConfirm({
+        title: 'Error Reloading Requests',
+        description: appError.message,
+        type: 'error',
+        confirmText: 'OK',
+        showCancel: false
+      });
+    }
+  };
+
   // ⚠️ La función ya no está definida aquí, sino arriba con useCallback
   // const getBorrowStatusCount = (status: string) => {
   //   return getStatusCount(borrowRequests, status);
@@ -357,8 +353,8 @@ export function useBorrowRequests() {
     confirmReturnAll,
     toggleBorrowRow,
     getBorrowStatusCount, // 👈 Ahora es la función de useCallback
-    hideModal,
     reloadBorrowRequests,
+    hideModal,
 
     // Utilities
     canCancelBorrowRequest,
