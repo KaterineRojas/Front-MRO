@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, Dispatch, SetStateAction, useEffect } from 'react';
+import { useState, useMemo, useCallback, Dispatch, SetStateAction, useEffect, useRef } from 'react';
 import { LoanRequest, LoanItem} from '../types';
 import { getEngineerReturns,uploadReturnPhoto, submitReturnLoan, ReturnItemPayload, ReturnLoanPayload} from '../services/requestManagementService';
 import { formatConditionText as utilFormatConditionText } from '../utils/requestManagementUtils';
@@ -14,6 +14,8 @@ interface UseReturnsLogicParams {
 
 export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: UseReturnsLogicParams = {}) {
   const [allReturns, setAllReturns] = useState<LoanRequest[]>([]);
+  const allReturnsRef = useRef<LoanRequest[]>([]);
+  
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedReturnBorrower, setSelectedReturnBorrower] = useState<string>('');
@@ -41,6 +43,11 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
   const [currentConditionItem, setCurrentConditionItem] = useState<{requestId: number, itemId: number, kitItemId?: number, isKit: boolean} | null>(null);
   const [conditionCounts, setConditionCounts] = useState<ConditionCounts>({ good: 0, revision: 0, lost: 0 });
   const [missingKitItems, setMissingKitItems] = useState<Array<{id: number, name: string, category: string, missingQuantity: number, totalQuantity: number}>>([]);
+
+  // Mantener la referencia actualizada de allReturns
+  useEffect(() => {
+    allReturnsRef.current = allReturns;
+  }, [allReturns]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -101,11 +108,15 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
     return kitSubItem?.quantity ?? 1;
   }, [kitItemQuantities, allReturns]); 
   
-  const getItemCondition = useCallback((requestId: number, itemId: number) => itemConditions[`${requestId}-${itemId}`] || 'good-condition', [itemConditions]);
-  const getKitItemCondition = useCallback((requestId: number, itemId: number, kitItemId: number) => kitItemConditions[`${requestId}-${itemId}-${kitItemId}`] || 'good-condition', [kitItemConditions]);
+  const getItemCondition = useCallback((requestId: number, itemId: number) => itemConditions[`${requestId}-${itemId}`], [itemConditions]);
+  const getKitItemCondition = useCallback((requestId: number, itemId: number, kitItemId: number) => kitItemConditions[`${requestId}-${itemId}-${kitItemId}`], [kitItemConditions]);
 
+  // Función para obtener el request actualizado desde el ref (para procesamiento secuencial)
+  const getCurrentRequest = useCallback((requestId: number): LoanRequest | undefined => {
+    return allReturnsRef.current.find(r => r.id === requestId);
+  }, []);
 
-  // Handlers
+  // Handlers
   const handleBorrowerSelect = useCallback((value: string) => { setSelectedReturnBorrower(value); setBorrowerSelectSearchTerm(''); }, []);
   const handleToggleExpandReturns = useCallback((id: number) => { setExpandedReturns(prev => { const newExpanded = new Set(prev); if (newExpanded.has(id)) newExpanded.delete(id); else newExpanded.add(id); return newExpanded; }); }, []);
   const handleToggleExpandKitItem = useCallback((requestId: number, itemId: number) => { const kitKey = `${requestId}-${itemId}`; setExpandedKitItems(prev => { const newExpanded = new Set(prev); if (newExpanded.has(kitKey)) newExpanded.delete(kitKey); else newExpanded.add(kitKey); return newExpanded; }); }, []);
@@ -147,7 +158,7 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
             newSelected.add(itemKey); 
             // Inicializar con 0 para que el usuario ingrese la cantidad
             setReturnQuantities(q => ({ ...q, [itemKey]: 0 })); 
-            setItemConditions(c => ({ ...c, [itemKey]: 'good-condition' })); 
+            // Condition will be set when user saves condition modal or defaults to "Good: X" on submit
         }
         return newSelected;
     });
@@ -245,8 +256,14 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
     if (conditionCounts.revision > 0) conditionString += (conditionString ? ', ' : '') + `Revision: ${conditionCounts.revision}`;
     if (conditionCounts.lost > 0) conditionString += (conditionString ? ', ' : '') + `Lost: ${conditionCounts.lost}`;
     
-    if (isKit) setKitItemConditions(prev => ({ ...prev, [itemKey]: conditionString })); 
-    else setItemConditions(prev => ({ ...prev, [itemKey]: conditionString }));
+    if (isKit) {
+      setKitItemConditions(prev => ({ ...prev, [itemKey]: conditionString }));
+      setKitItemQuantities(prev => ({ ...prev, [itemKey]: total }));
+    } else {
+      setItemConditions(prev => ({ ...prev, [itemKey]: conditionString }));
+      // Actualizar returnQuantities con el total para asegurar que no sea 0
+      setReturnQuantities(prev => ({ ...prev, [itemKey]: total }));
+    }
 
     setConditionDialogOpen(false); 
     setCurrentConditionItem(null);
@@ -285,23 +302,21 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
 
   const hasSelectedKitItems = useCallback((requestId: number, itemId: number) => Array.from(selectedKitItems).some(k => k.startsWith(`${requestId}-${itemId}`)), [selectedKitItems]);
 
-const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
-    return (async () => {
-        // Obtener la versión más actualizada del request desde allReturns usando el setter funcional
-        let currentRequest: LoanRequest | undefined;
-        
-        setAllReturns(prevReturns => {
-            currentRequest = prevReturns.find(r => r.id === request.id);
-            return prevReturns; // No modificar aún, solo leer
-        });
+const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<void> => {
+    return (async (): Promise<void> => {
+        // Obtener la versión más actualizada del request desde allReturnsRef
+        const currentRequest = allReturnsRef.current.find(r => r.id === request.id);
         
         if (!currentRequest) {
             toast.error('Request not found. It may have been already processed.');
             return;
         }
         
-        const regularItems = currentRequest.items.filter(i => !i.isKit);
-        const selectedCount = regularItems.filter(item => selectedReturnItems.has(`${currentRequest.id}-${item.id}`)).length;
+        // Asegurar a TypeScript que currentRequest no es undefined después de la validación
+        const validatedRequest = currentRequest;
+        
+        const regularItems = validatedRequest.items.filter(i => !i.isKit);
+        const selectedCount = regularItems.filter(item => selectedReturnItems.has(`${validatedRequest.id}-${item.id}`)).length;
         
         // 1. VALIDACIÓN INICIAL DE SELECCIÓN
         if (selectedCount === 0) { 
@@ -311,17 +326,17 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
 
         // --- 2. VALIDACIÓN DETALLADA DE CONDICIÓN (CÓDIGO EXISTENTE) ---
         const itemsWithoutCondition = regularItems.filter(item => { 
-            const itemKey = `${currentRequest.id}-${item.id}`; 
+            const itemKey = `${validatedRequest.id}-${item.id}`; 
             if (!selectedReturnItems.has(itemKey)) return false; 
             const condition = itemConditions[itemKey]; 
-            const returnQty = getReturnQuantity(currentRequest.id, item.id);
+            const returnQty = getReturnQuantity(validatedRequest.id, item.id);
             
             // Si la cantidad es 0, no necesita validación de condición
             if (returnQty === 0) return false;
             
             // Lógica de validación:
-            if (!condition || condition === 'good-condition') {
-                return returnQty > 1; // Falla si es > 1 y solo tiene 'good-condition'
+            if (!condition) {
+                return returnQty > 1; // Falla si es > 1 y no tiene condición guardada
             }
             const goodMatch = condition.match(/Good: (\d+)/);
             const revisionMatch = condition.match(/Revision: (\d+)/);
@@ -342,18 +357,27 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
         const itemsWithZeroQuantity: string[] = [];
 
         regularItems.forEach(item => {
-            const itemKey = `${currentRequest.id}-${item.id}`; 
+            const itemKey = `${validatedRequest.id}-${item.id}`; 
             if (selectedReturnItems.has(itemKey)) { 
                 
-                const returnQty = getReturnQuantity(currentRequest.id, item.id);
+                const returnQty = getReturnQuantity(validatedRequest.id, item.id);
+                
+                console.log(`=== PROCESSING ITEM ===`);
+                console.log(`Item ID: ${item.id}, Name: ${item.name}`);
+                console.log(`Item Key: ${itemKey}`);
+                console.log(`returnQuantities[${itemKey}]:`, returnQuantities[itemKey]);
+                console.log(`getReturnQuantity result:`, returnQty);
+                console.log(`itemConditions[${itemKey}]:`, itemConditions[itemKey]);
                 
                 // Verificar si la cantidad es 0
                 if (returnQty === 0) {
+                    console.log(`⚠️ Item ${item.name} has quantity 0, skipping...`);
                     itemsWithZeroQuantity.push(item.name || `Item ${item.id}`);
                     return; // Saltar este item
                 }
                 
-                const conditionText = itemConditions[itemKey] || 'Good: 1'; // Default si es 1
+                // Usar condición guardada o default dinámico basado en returnQty
+                const conditionText = itemConditions[itemKey] || `Good: ${returnQty}`;
                 
                 // Extraer cantidades de la cadena de condición guardada
                 const goodMatch = conditionText.match(/Good: (\d+)/);
@@ -372,7 +396,7 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
                         quantityReturned: quantityReturned,
                         quantityDamaged: quantityDamaged,
                         quantityLost: quantityLost,
-                        notes: conditionText // Usamos la cadena de condición como nota
+                        notes: '' // Enviar vacío para evitar error de "Data too long for column 'Code'"
                     });
                     hasAnyItemToReturn = true;
                 }
@@ -380,16 +404,16 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
         });
 
         // Validar que se ingresaron cantidades
-        if (itemsWithZeroQuantity.length > 0) {
+        /*if (itemsWithZeroQuantity.length > 0) {
             toast.error(`Please enter a quantity greater than 0 for the selected items.`);
             return;
-        }
+        }*/
 
         // Doble chequeo final de seguridad
-        if (!hasAnyItemToReturn) {
+        /*if (!hasAnyItemToReturn) {
             toast.error('No items were processed for return. Please check quantities and conditions.');
             return;
-        }
+        }*/
 
         // --- 4. LLAMAR AL ENDPOINT DE DEVOLUCIÓN DE INVENTARIO (API) ---
         const loadingToastId = toast.loading('Submitting return items to API...');
@@ -399,9 +423,15 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
                 engineerId: engineerId, 
                 warehouseId: warehouseId,   
                 items: itemsPayload,
-                generalNotes: `Return submitted by Engineer ${engineerId} for Request ${currentRequest.id}.`, 
+                generalNotes: `Req ${validatedRequest.id}`, // Acortado para evitar error "Data too long for column 'Code'"
                 photoUrl: itemsPhotoUrl || '', // URL de SharePoint guardada en el estado
             };
+            
+            console.log('=== PAYLOAD BEING SENT TO API ===');
+            console.log('Request ID:', validatedRequest.id);
+            console.log('Items:', itemsPayload);
+            console.log('Full Payload:', payload);
+            console.log('JSON Stringified:', JSON.stringify(payload, null, 2));
             
             await submitReturnLoan(payload);
 
@@ -409,6 +439,8 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
 
         } catch (err) {
             // Si la llamada API falla, mostramos el error y detenemos la ejecución.
+            console.error('=== API ERROR ===');
+            console.error('Error details:', err);
             toast.error('Failed to submit return to Inventory API. Check console for details.', { id: loadingToastId });
             return; 
         }
@@ -425,7 +457,7 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
         // Actualizar cantidades o eliminar items según corresponda usando setter funcional
         setAllReturns(prevReturns => {
             const newAllReturns = prevReturns.map(req => {
-                if (req.id === currentRequest.id) {
+                if (req.id === validatedRequest.id) {
                     const updatedItems = req.items.map(item => {
                         const returnedQty = returnedQuantitiesMap.get(item.id);
                         if (returnedQty === undefined) return item; // Item no fue devuelto
@@ -460,8 +492,8 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
         const newConditions = { ...itemConditions };
 
         itemsPayload.forEach(payload => {
-            const itemKey = `${currentRequest.id}-${payload.itemId}`;
-            const item = currentRequest.items.find(i => i.id === payload.itemId);
+            const itemKey = `${validatedRequest.id}-${payload.itemId}`;
+            const item = validatedRequest.items.find(i => i.id === payload.itemId);
             const currentQty = item?.quantityFulfilled ?? item?.quantityRequested ?? 0;
             const returnedQty = payload.quantityReturned + payload.quantityDamaged + payload.quantityLost;
             
@@ -689,10 +721,8 @@ const handleSelectAllKitItems = useCallback((requestId: number, kitItem: LoanIte
     conditionCounts, setConditionCounts, 
     returnQuantities, kitItemQuantities, itemConditions, kitItemConditions,
 
-    // Getters
-    getReturnQuantity, getItemCondition, getKitItemQuantity, getKitItemCondition,
-
-    // Handlers
+    // Getters
+    getReturnQuantity, getItemCondition, getKitItemQuantity, getKitItemCondition, getCurrentRequest,    // Handlers
     handleBorrowerSelect, setBorrowerSelectSearchTerm,
     onToggleExpandReturns: handleToggleExpandReturns, onToggleExpandKitItem: handleToggleExpandKitItem,
     handleReturnQuantityChange, handleSelectReturnItem,

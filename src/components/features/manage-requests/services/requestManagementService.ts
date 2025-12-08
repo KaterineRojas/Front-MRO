@@ -51,7 +51,16 @@ export async function getPackingRequests(): Promise<LoanRequest[]> {
       'Packing',
       DEFAULT_WAREHOUSE_ID
     );
-    return [...pending, ...packing];
+    const combined = [...pending, ...packing];
+    
+    // Debug: ver estructura de datos
+    console.log('🔍 Packing Requests from API:', combined);
+    if (combined.length > 0) {
+      console.log('🔍 First request structure:', combined[0]);
+      console.log('🔍 First request keys:', Object.keys(combined[0]));
+    }
+    
+    return combined;
 
   } catch (error) {
     console.warn('Error fetching packing requests:', error);
@@ -376,8 +385,23 @@ export async function submitReturnLoan(payload: ReturnLoanPayload): Promise<bool
 
     if (!response.ok) {
       // Manejo de errores de HTTP (4xx, 5xx)
-      const errorDetail = await response.json();
-      console.error('API Return Loan Error:', errorDetail);
+      const contentType = response.headers.get('content-type');
+      console.error('=== API ERROR RESPONSE ===');
+      console.error('Status:', response.status);
+      console.error('Content-Type:', contentType);
+      
+      let errorDetail;
+      try {
+        if (contentType?.includes('application/json')) {
+          errorDetail = await response.json();
+        } else {
+          errorDetail = await response.text();
+        }
+        console.error('Error Body:', errorDetail);
+      } catch (parseErr) {
+        console.error('Could not parse error response:', parseErr);
+      }
+      
       throw new Error(`Failed to submit return. Status: ${response.status}`);
     }
 

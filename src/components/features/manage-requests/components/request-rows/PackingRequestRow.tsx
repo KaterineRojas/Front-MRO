@@ -10,7 +10,7 @@ import { toast } from 'react-hot-toast';
 interface Props {
   request: LoanRequest;
   expanded: boolean;
-  onToggleExpand: (id: number) => void;
+  onToggleExpand: (requestNumber: string) => void;
   isKitOrder: (req: LoanRequest) => boolean;
   getPriorityBadge: (priority: string) => React.ReactNode;
   selectedPackingItems: Set<string>;
@@ -42,8 +42,11 @@ export const PackingRequestRow: React.FC<Props> = ({
   handlePrintSinglePacking,
   handleConfirmPacking
 }) => {
+  // Debug logging
+  console.log(`🔄 Rendering PackingRequestRow - RequestNumber: ${request.requestNumber}, Expanded: ${expanded}`);
+  
 // 1. Lógica para determinar si el botón debe estar deshabilitado
-    const isPrinted = printedRequests.has(request.id);
+    const isPrinted = printedRequests.has(request.requestNumber);
     const isKit = isKitOrder(request);
     const areItemsSelected = selectedPackingItems.size > 0;
 
@@ -89,7 +92,16 @@ const isSent = request.status === 'Sent';
     <>
       <TableRow className="hover:bg-muted/50">
         <TableCell>
-          <Button variant="ghost" size="sm" onClick={() => onToggleExpand(request.id)}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => {
+              console.log('=== CLICK EN FLECHA ===');
+              console.log('Request Number:', request.requestNumber);
+              console.log('Expanded antes:', expanded);
+              onToggleExpand(request.requestNumber);
+            }}
+          >
             {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
         </TableCell>

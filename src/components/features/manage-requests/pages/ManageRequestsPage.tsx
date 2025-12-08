@@ -84,6 +84,8 @@ export function ManageRequestsPage() {
           <div className="space-y-4">
             <ReturnsTab
               filteredReturns={returnsLogic.filteredReturns}
+              allReturns={returnsLogic.allReturns}
+              getCurrentRequest={returnsLogic.getCurrentRequest}
               selectedReturnBorrower={returnsLogic.selectedReturnBorrower}
               handleBorrowerSelect={returnsLogic.handleBorrowerSelect}
               borrowerSelectSearchTerm={returnsLogic.borrowerSelectSearchTerm}

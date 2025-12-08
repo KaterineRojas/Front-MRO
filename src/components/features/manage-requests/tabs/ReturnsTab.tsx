@@ -10,6 +10,8 @@ import { KitsTabContent } from '../components/request-rows/KitTabReturnRow';
 
 interface Props {
   filteredReturns: LoanRequest[];
+  allReturns: LoanRequest[];
+  getCurrentRequest: (requestId: number) => LoanRequest | undefined;
   selectedReturnBorrower: string;
   handleBorrowerSelect: (value: string) => void;
   borrowerSelectSearchTerm: string;
@@ -209,13 +211,21 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                           </button>
                           <button 
                             onClick={async () => {
-                              // Procesar todos los requests que tienen items seleccionados SECUENCIALMENTE
-                              for (const request of filteredReturns) {
-                                const hasSelectedItems = request.items.some(item => 
-                                  props.selectedReturnItems.has(`${request.id}-${item.id}`)
-                                );
-                                if (hasSelectedItems) {
-                                  await props.handleConfirmReturnItems(request);
+                              // Recopilar los IDs de requests que tienen items seleccionados
+                              const requestIdsToProcess = filteredReturns
+                                .filter(request => 
+                                  request.items.some(item => 
+                                    props.selectedReturnItems.has(`${request.id}-${item.id}`)
+                                  )
+                                )
+                                .map(request => request.id);
+                              
+                              // Procesar cada request por ID (buscando el request actualizado cada vez)
+                              for (const requestId of requestIdsToProcess) {
+                                // Buscar el request actualizado usando getCurrentRequest
+                                const currentRequest = props.getCurrentRequest(requestId);
+                                if (currentRequest) {
+                                  await props.handleConfirmReturnItems(currentRequest);
                                 }
                               }
                             }}
@@ -315,6 +325,7 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                                         min={0}
                                         max={item.quantityFulfilled}
                                         defaultValue={0}
+                                        onFocus={(e) => e.target.select()}
                                         onChange={(e) => {
                                           const raw = parseInt(e.target.value || '0', 10) || 0;
                                           const clamped = Math.max(0, Math.min(raw, item.quantityFulfilled));
