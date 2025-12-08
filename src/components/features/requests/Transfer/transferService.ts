@@ -371,6 +371,88 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
 }
 
 /**
+ * Get inventory items for a specific engineer and warehouse
+ * Based on getInventoryEngineer but with warehouseId filter
+ */
+export async function getInventoryTransfer(
+  engineerId: string,
+  warehouseId: string
+): Promise<InventoryItem[]> {
+  try {
+    const url = `${API_BASE_URL}/engineer-holdings/${engineerId}?warehouseId=${warehouseId}`;
+    console.log(`Fetching transfer inventory for engineer: ${engineerId}, warehouse: ${warehouseId}`);
+    console.log(`API URL: ${url}`);
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        // Si tu API requiere autenticación, agrega aquí el token:
+        // "Authorization": `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('Transfer Inventory API Response:', data);
+
+    // Procesar la respuesta: puede venir como array directo o dentro de holdingsByWarehouse
+    const items: InventoryItem[] = [];
+
+    // Si la respuesta es un array directo de items
+    if (Array.isArray(data)) {
+      data.forEach((item: any) => {
+        items.push({
+          id: `${item.itemId}-${item.warehouseCode || warehouseId}`,
+          itemId: item.itemId.toString(),
+          name: item.name,
+          description: item.description,
+          image: item.imageUrl || '',
+          project: item.projectIds?.[0] || 'general expenses',
+          projectCode: item.projectCode || 'GEN',
+          quantity: item.quantity,
+          sku: item.sku,
+          warehouse: item.warehouseName || '',
+          warehouseCode: item.warehouseCode || warehouseId,
+        });
+      });
+    } 
+    // Si la respuesta viene con estructura holdingsByWarehouse
+    else if (data.holdingsByWarehouse && Array.isArray(data.holdingsByWarehouse)) {
+      data.holdingsByWarehouse.forEach((warehouse: any) => {
+        if (warehouse.items && Array.isArray(warehouse.items)) {
+          warehouse.items.forEach((item: any) => {
+            items.push({
+              id: `${item.itemId}-${warehouse.warehouse.code}`,
+              itemId: item.itemId.toString(),
+              name: item.name,
+              description: item.description,
+              image: item.imageUrl || '',
+              project: item.projectIds?.[0] || 'general expenses',
+              projectCode: item.projectCode || 'GEN',
+              quantity: item.quantity,
+              sku: item.sku,
+              warehouse: warehouse.warehouse.name,
+              warehouseCode: warehouse.warehouse.code,
+            });
+          });
+        }
+      });
+    }
+
+    return items;
+  } catch (error) {
+    console.error('Error fetching transfer inventory:', error);
+    // Fallback a mock data en caso de error
+    await delay(300);
+    return [...mockInventoryItems];
+  }
+}
+
+/**
  * Create a new transfer
  */
 export async function createTransfer(data: {

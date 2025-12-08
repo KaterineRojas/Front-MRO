@@ -14,13 +14,16 @@ import {
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { toast } from 'sonner';
+import { store } from '../../../../store/store';
 import { 
   getAvailableUsers, 
-  getInventoryItems,
   createTransfer,
+  getInventoryTransfer,
   type InventoryItem,
   type User
-} from './transferService'; 
+} from './transferService';
+import { getWarehouses } from '../services/sharedServices';
+import type { Warehouse } from '../services/sharedServices'; 
 
 
 interface TransferFormProps {
@@ -31,6 +34,7 @@ interface TransferFormProps {
 export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
   // Data
   const [users, setUsers] = useState<User[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,7 +47,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [projectFilter, setProjectFilter] = useState('all');
-  const [warehouseFilter, setWarehouseFilter] = useState('all');
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
   
   // Dialog state
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -60,12 +64,13 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        const [usersData, itemsData] = await Promise.all([
-          getAvailableUsers(),
-          getInventoryItems()
-        ]);
+        const usersData = await getAvailableUsers();
+        const warehousesData = await getWarehouses();
         setUsers(usersData);
-        setInventoryItems(itemsData);
+        setWarehouses(warehousesData as Warehouse[]);
+        if (warehousesData.length > 0) {
+          setSelectedWarehouse(warehousesData[0].id);
+        }
       } catch (error) {
         toast.error('Failed to load transfer data');
       } finally {
@@ -75,6 +80,31 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
     loadData();
   }, []);
 
+  // Load items when warehouse changes
+  useEffect(() => {
+    const loadItems = async () => {
+      if (selectedWarehouse) {
+        try {
+          // Get current user ID from Redux
+          const state = store.getState();
+          const currentUserId = state.auth?.user?.id || '';
+          
+          if (!currentUserId) {
+            toast.error('Unable to load user information');
+            return;
+          }
+          
+          console.log(`Loading inventory for user: ${currentUserId}, warehouse: ${selectedWarehouse}`);
+          const data = await getInventoryTransfer(currentUserId, selectedWarehouse);
+          setInventoryItems(data);
+        } catch (error) {
+          toast.error('Failed to load items');
+        }
+      }
+    };
+    loadItems();
+  }, [selectedWarehouse]);
+
   // Clear selected items when warehouse changes
   useEffect(() => {
     if (selectedItemIds.size > 0) {
@@ -82,19 +112,13 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
       setTransferQuantities({});
       toast.info('Selected items cleared - warehouse changed');
     }
-  }, [warehouseFilter]);
+  }, [selectedWarehouse]);
 
   // Computed values
   const uniqueProjects = useMemo(() => {
     const projects = new Set<string>();
     inventoryItems.forEach(item => projects.add(item.project));
     return Array.from(projects).sort();
-  }, [inventoryItems]);
-
-  const uniqueWarehouses = useMemo(() => {
-    const warehouses = new Set<string>();
-    inventoryItems.forEach(item => item.warehouse && warehouses.add(item.warehouse));
-    return Array.from(warehouses).filter(w => w).sort();
   }, [inventoryItems]);
 
   const filteredInventoryItems = useMemo(() => {
@@ -105,11 +129,10 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
         (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()));
       
       const matchesProject = projectFilter === 'all' || item.project === projectFilter;
-      const matchesWarehouse = !warehouseFilter || item.warehouse === warehouseFilter;
       
-      return matchesSearch && matchesProject && matchesWarehouse;
+      return matchesSearch && matchesProject;
     });
-  }, [inventoryItems, searchTerm, projectFilter, warehouseFilter]);
+  }, [inventoryItems, searchTerm, projectFilter]);
 
   const selectedItems = useMemo(() => {
     return inventoryItems.filter(item => selectedItemIds.has(item.id));
@@ -314,6 +337,18 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                 />
               </div>
               <div className="flex gap-2">
+                <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select Warehouse" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {warehouses.map((wh) => (
+                      <SelectItem key={wh.id} value={wh.id}>
+                        {wh.name} ({wh.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={projectFilter} onValueChange={setProjectFilter}>
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="All Projects" />
@@ -323,18 +358,6 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                     {uniqueProjects.map((project) => (
                       <SelectItem key={project} value={project}>
                         {project}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select Warehouse" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {uniqueWarehouses.map((warehouse) => (
-                      <SelectItem key={warehouse} value={warehouse}>
-                        {warehouse}
                       </SelectItem>
                     ))}
                   </SelectContent>
