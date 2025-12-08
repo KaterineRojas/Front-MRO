@@ -287,8 +287,14 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
 
 const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
     return (async () => {
-        // Obtener la versión más actualizada del request desde allReturns
-        const currentRequest = allReturns.find(r => r.id === request.id);
+        // Obtener la versión más actualizada del request desde allReturns usando el setter funcional
+        let currentRequest: LoanRequest | undefined;
+        
+        setAllReturns(prevReturns => {
+            currentRequest = prevReturns.find(r => r.id === request.id);
+            return prevReturns; // No modificar aún, solo leer
+        });
+        
         if (!currentRequest) {
             toast.error('Request not found. It may have been already processed.');
             return;
@@ -416,36 +422,37 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
             returnedQuantitiesMap.set(payload.itemId, totalReturned);
         });
         
-        // Actualizar cantidades o eliminar items según corresponda
-        const newAllReturns = allReturns.map(req => {
-            if (req.id === currentRequest.id) {
-                const updatedItems = req.items.map(item => {
-                    const returnedQty = returnedQuantitiesMap.get(item.id);
-                    if (returnedQty === undefined) return item; // Item no fue devuelto
+        // Actualizar cantidades o eliminar items según corresponda usando setter funcional
+        setAllReturns(prevReturns => {
+            const newAllReturns = prevReturns.map(req => {
+                if (req.id === currentRequest.id) {
+                    const updatedItems = req.items.map(item => {
+                        const returnedQty = returnedQuantitiesMap.get(item.id);
+                        if (returnedQty === undefined) return item; // Item no fue devuelto
+                        
+                        const currentQty = item.quantityFulfilled ?? item.quantityRequested ?? 0;
+                        const remainingQty = currentQty - returnedQty;
+                        
+                        if (remainingQty <= 0) {
+                            // Si no queda cantidad, marcar para eliminar
+                            return null;
+                        } else {
+                            // Si queda cantidad, actualizar
+                            return {
+                                ...item,
+                                quantityFulfilled: remainingQty,
+                                quantityRequested: remainingQty
+                            };
+                        }
+                    }).filter(item => item !== null) as LoanItem[]; // Filtrar items eliminados
                     
-                    const currentQty = item.quantityFulfilled ?? item.quantityRequested ?? 0;
-                    const remainingQty = currentQty - returnedQty;
-                    
-                    if (remainingQty <= 0) {
-                        // Si no queda cantidad, marcar para eliminar
-                        return null;
-                    } else {
-                        // Si queda cantidad, actualizar
-                        return {
-                            ...item,
-                            quantityFulfilled: remainingQty,
-                            quantityRequested: remainingQty
-                        };
-                    }
-                }).filter(item => item !== null) as LoanItem[]; // Filtrar items eliminados
-                
-                return { ...req, items: updatedItems };
-            }
-            return req;
-        }).filter(r => r.items.length > 0); // Eliminar requests sin items
-
-        // Update local state
-        setAllReturns(newAllReturns);
+                    return { ...req, items: updatedItems };
+                }
+                return req;
+            }).filter(r => r.items.length > 0); // Eliminar requests sin items
+            
+            return newAllReturns;
+        });
 
         // Limpiar estados locales de los items devueltos completamente
         const newSelectedItems = new Set(selectedReturnItems);
@@ -478,8 +485,8 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
         
         toast.success('Items successfully returned!'); // Toast de confirmación final
     })();
-// Asegúrate de incluir la URL de la foto en las dependencias
-}, [selectedReturnItems, getReturnQuantity, returnQuantities, itemConditions, setAllReturns, allReturns, itemsPhotoUrl]);
+// Dependencias actualizadas - removemos allReturns ya que usamos setAllReturns funcional
+}, [selectedReturnItems, getReturnQuantity, returnQuantities, itemConditions, setAllReturns, itemsPhotoUrl, engineerId, warehouseId]);
 
   // 🛑 MODIFICACIÓN: Validar condición vs. cantidad devuelta antes de guardar el checklist
   const handleSaveKitChecklist = useCallback((requestId: number, itemId: number) => {

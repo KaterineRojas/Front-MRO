@@ -192,7 +192,10 @@ const isSent = request.status === 'Sent';
                           <td>
                             {!isKitOrder(request) ? (
                               <div className="text-center space-x-2">
-                                <input type="number" min={0} max={item.quantityRequested} value={getPackingItemQuantity(request.id, item.id)} onChange={(e) => handlePackingQuantityChange(request.id, item.id, parseInt(e.target.value) || 0)} className="w-20" />
+                                <input type="number" min={0} max={item.quantityRequested} 
+                                value={getPackingItemQuantity(request.id, item.id)} 
+                                onChange={(e) => handlePackingQuantityChange(request.id, item.id, parseInt(e.target.value) || 0)} 
+                                className="w-20" />
                                 <span className="text-sm text-muted-foreground">/ {item.quantityRequested} {item.unit}</span>
                               </div>
                             ) : (

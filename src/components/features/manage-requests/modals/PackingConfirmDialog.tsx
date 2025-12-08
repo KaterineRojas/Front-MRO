@@ -2,7 +2,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../../ui/dialog';
 import { Button } from '../../../ui/button';
 import { Package, CheckCircle } from 'lucide-react';
-import { LoanRequest } from '../types';
+import { LoanRequest, LoanItem} from '../types';
 
 interface Props {
   open: boolean;
@@ -25,7 +25,7 @@ export const PackingConfirmDialog: React.FC<Props> = ({ open, onOpenChange, curr
           <div className="py-4 space-y-3">
             <div className="bg-[#568FCB]/10 border-2 border-[#568FCB] rounded-lg p-4">
               <p className="text-sm mb-2"><span className="font-semibold">Borrower:</span> {currentPackingRequest.requesterName}</p>
-              <p className="text-sm mb-2"><span className="font-semibold">Project:</span> {currentPackingRequest.project}</p>
+              <p className="text-sm mb-2"><span className="font-semibold">Project:</span> {currentPackingRequest.projectId}</p>
               <p className="text-sm"><span className="font-semibold">Items:</span> {currentPackingRequest.items.length} item(s)</p>
             </div>
             <p className="text-sm text-muted-foreground">This request will be moved to Returns and marked as ready for delivery.</p>
