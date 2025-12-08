@@ -1,3 +1,6 @@
+import { API_BASE_URL } from "../services/api";
+import { store } from "../../../../store/store";
+
 // Simulate API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -258,11 +261,97 @@ const mockTransfers: Transfer[] = [
 // API Simulation Functions
 
 /**
- * Get all transfers
+ * Get all transfers desde el backend
  */
 export async function getTransfers(): Promise<Transfer[]> {
-  await delay(300);
-  return [...mockTransfers];
+  try {
+    const senderId = getCurrentUserId();
+    const url = `${API_BASE_URL}/transfer-requests?senderId=${senderId}&pageNumber=1&pageSize=20`;
+    console.log('Fetching transfers from URL:', url);
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        // Si tu backend requiere autenticación, aquí se añade el token:
+        // "Authorization": `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener transferencias: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    
+    // Mapear la respuesta del backend a nuestro formato Transfer
+    const currentUserId = getCurrentUserId();
+    console.log('Current User ID:', currentUserId);
+    console.log('Backend Response:', responseData.data);
+    
+    const transfers: Transfer[] = responseData.data.map((item: any) => {
+      const type = item.senderId === currentUserId ? 'outgoing' : 'incoming';
+      console.log(`Transfer ${item.requestNumber}: senderId=${item.senderId}, currentUserId=${currentUserId}, type=${type}`);
+      return {
+        id: item.requestNumber,
+        type: type,
+        fromUser: item.senderName,
+        toUser: item.recipientName,
+        fromUserId: item.senderId,
+        toUserId: item.recipientId,
+        items: Array(item.totalItems).fill(null).map((_, idx) => ({
+          itemId: `item-${idx}`,
+          itemName: `Item ${idx + 1}`,
+          code: '',
+          quantity: 1,
+          image: '',
+          description: '',
+          warehouse: item.warehouseName,
+          warehouseCode: ''
+        })), // Aquí irán los items reales cuando la API los envíe
+        notes: '',
+        requestDate: item.createdAt,
+        status: mapBackendStatusToLocal(item.status),
+        transferPhoto: item.hasImage ? `${API_BASE_URL}/transfer-requests/${item.requestNumber}/image` : undefined,
+      };
+    });
+
+    return transfers;
+  } catch (error) {
+    console.error('Error fetching transfers:', error);
+    // Fallback a mock data en caso de error
+    await delay(300);
+    return [...mockTransfers];
+  }
+}
+
+/**
+ * Mapear estado del backend al estado local
+ */
+function mapBackendStatusToLocal(backendStatus: string): 'pending-manager' | 'pending-engineer' | 'approved' | 'rejected' {
+  const statusMap: Record<string, 'pending-manager' | 'pending-engineer' | 'approved' | 'rejected'> = {
+    'Pending': 'pending-manager',
+    'Approved': 'approved',
+    'Rejected': 'rejected',
+  };
+  return statusMap[backendStatus] || 'pending-manager';
+}
+
+/**
+ * Obtener ID del usuario actualmente logueado desde authSlice
+ */
+function getCurrentUserId(): string {
+  try {
+    const state = store.getState();
+    // Obtener del authSlice - la estructura es state.auth.user.id
+    const userId = state.auth?.user?.id;
+    console.log('Redux auth state:', state.auth);
+    console.log('Retrieved userId from Redux:', userId);
+    return userId || '';
+  } catch (error) {
+    console.error('Error getting user ID from Redux:', error);
+    return localStorage.getItem('userId') || '';
+  }
 }
 
 /**
