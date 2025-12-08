@@ -17,6 +17,7 @@ export interface Transfer {
   requestDate: string;
   status: 'pending-manager' | 'pending-engineer' | 'approved' | 'rejected';
   transferPhoto?: string;
+  imageUrl?: string;
   warehouseName?: string;
 }
 
@@ -374,7 +375,8 @@ export async function getTransferId(transferId: string): Promise<Transfer> {
       requestDate: responseData.createdAt,
       status: mapBackendStatusToLocal(responseData.status),
       transferPhoto: responseData.imageUrl || undefined,
-      warehouseName: responseData.warehouseName || '',
+      imageUrl: responseData.imageUrl || undefined,
+      warehouseName: responseData.warehouseName || responseData.warehouse?.name || '',
     };
 
     return transfer;

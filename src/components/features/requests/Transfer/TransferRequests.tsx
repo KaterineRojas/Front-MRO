@@ -18,18 +18,44 @@ import { useTransfers } from './useTransfers';
 import { TransferForm } from './TransferForm';
 import { formatDate, getStatusColor, getStatusText } from './transferUtils';
 import { getAvailableUsers, getTransferId, type Transfer, type User } from './transferService';
+import {
+  getCompanies,
+  getCustomersByCompany,
+  getProjectsByCustomer,
+  getWorkOrdersByProject,
+  type Company,
+  type Customer,
+  type WorkOrder,
+  type Project as SharedProject
+} from '../services/sharedServices';
 
 
 export function TransferRequests() {
   const [showTransferMode, setShowTransferMode] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [sharedProjectsList, setSharedProjectsList] = useState<SharedProject[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [transferToAccept, setTransferToAccept] = useState<Transfer | null>(null);
   const [confirmTransferOpen, setConfirmTransferOpen] = useState(false);
   const [expandedTransferDetails, setExpandedTransferDetails] = useState<Record<string, Transfer>>({});
   const [loadingTransferIds, setLoadingTransferIds] = useState<Set<string>>(new Set());
+
+  // Company, Customer, Project, Work Order states
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<string>('');
+  const [selectedCustomer, setSelectedCustomer] = useState<string>('');
+  const [selectedWorkOrder, setSelectedWorkOrder] = useState<string>('');
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+
+  // Loading states for cascading selects
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [loadingWorkOrders, setLoadingWorkOrders] = useState(false);
+  const [companiesLoaded, setCompaniesLoaded] = useState(false);
 
   const {
     filteredTransfers,
@@ -81,8 +107,122 @@ export function TransferRequests() {
   const handleTransferAcceptStart = (transfer: Transfer) => {
     setTransferToAccept(transfer);
     setSelectedProject('');
+    setSelectedCompany('');
+    setSelectedCustomer('');
+    setSelectedWorkOrder('');
     setConfirmTransferOpen(true);
+    
+    // Load companies when opening modal
+    loadCompanies();
+
+    // Load transfer details to get the full imageUrl
+    const loadTransferDetails = async () => {
+      try {
+        const transferDetails = await getTransferId(transfer.id);
+        // Update transferToAccept with the complete details including imageUrl
+        setTransferToAccept(transferDetails);
+      } catch (error) {
+        console.error('Error loading transfer details for image:', error);
+        // Keep the original transfer data if fetch fails
+      }
+    };
+
+    loadTransferDetails();
   };
+
+  const loadCompanies = async () => {
+    if (companiesLoaded || loadingCompanies) return;
+    
+    setLoadingCompanies(true);
+    try {
+      const companyData = await getCompanies();
+      setCompanies(companyData);
+      setCompaniesLoaded(true);
+    } catch (error: any) {
+      toast.error('Failed to load companies');
+      console.error('Error loading companies:', error);
+    } finally {
+      setLoadingCompanies(false);
+    }
+  };
+
+  // Load customers when company changes
+  useEffect(() => {
+    if (!selectedCompany) {
+      setCustomers([]);
+      setSharedProjectsList([]);
+      setWorkOrders([]);
+      setSelectedCustomer('');
+      setSelectedProject('');
+      setSelectedWorkOrder('');
+      return;
+    }
+
+    const loadCustomers = async () => {
+      setLoadingCustomers(true);
+      try {
+        const customerData = await getCustomersByCompany(selectedCompany);
+        setCustomers(customerData);
+      } catch (error: any) {
+        toast.error('Failed to load customers');
+        console.error('Error loading customers:', error);
+      } finally {
+        setLoadingCustomers(false);
+      }
+    };
+
+    loadCustomers();
+  }, [selectedCompany]);
+
+  // Load projects when customer changes
+  useEffect(() => {
+    if (!selectedCustomer) {
+      setSharedProjectsList([]);
+      setWorkOrders([]);
+      setSelectedProject('');
+      setSelectedWorkOrder('');
+      return;
+    }
+
+    const loadProjects = async () => {
+      setLoadingProjects(true);
+      try {
+        const projectData = await getProjectsByCustomer(selectedCompany, selectedCustomer);
+        setSharedProjectsList(projectData);
+      } catch (error: any) {
+        toast.error('Failed to load projects');
+        console.error('Error loading projects:', error);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+
+    loadProjects();
+  }, [selectedCustomer, selectedCompany]);
+
+  // Load work orders when project changes
+  useEffect(() => {
+    if (!selectedProject) {
+      setWorkOrders([]);
+      setSelectedWorkOrder('');
+      return;
+    }
+
+    const loadWorkOrders = async () => {
+      setLoadingWorkOrders(true);
+      try {
+        const workOrderData = await getWorkOrdersByProject(selectedCompany, selectedCustomer, selectedProject);
+        setWorkOrders(workOrderData);
+      } catch (error: any) {
+        toast.error('Failed to load work orders');
+        console.error('Error loading work orders:', error);
+      } finally {
+        setLoadingWorkOrders(false);
+      }
+    };
+
+    loadWorkOrders();
+  }, [selectedProject, selectedCompany, selectedCustomer]);
 
   const confirmTransferAccept = async () => {
     if (!selectedProject) {
@@ -91,7 +231,7 @@ export function TransferRequests() {
     }
     
     if (transferToAccept) {
-      const selectedProjectData = projects.find(p => p.id === selectedProject);
+      const selectedProjectData = sharedProjectsList.find(p => p.id === selectedProject);
       await handleAccept(transferToAccept.id, selectedProject);
       toast.success(`Items assigned to ${selectedProjectData?.name}.`);
       setConfirmTransferOpen(false);
@@ -547,15 +687,89 @@ export function TransferRequests() {
                   </div>
 
                   <div>
-                    <Label htmlFor="project-select">Assign to Project *</Label>
-                    <Select value={selectedProject} onValueChange={setSelectedProject}>
-                      <SelectTrigger id="project-select" className="mt-2">
-                        <SelectValue placeholder="Select a project" />
+                    <Label htmlFor="company-select">Company *</Label>
+                    <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                      <SelectTrigger id="company-select" className="mt-2">
+                        <SelectValue placeholder={
+                          loadingCompanies ? "Loading companies..." : "Select a company"
+                        } />
                       </SelectTrigger>
                       <SelectContent>
-                        {projects.map((project) => (
+                        {companies.map((company) => (
+                          <SelectItem key={company.name} value={company.name}>
+                            {company.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="customer-select">Customer *</Label>
+                    <Select 
+                      value={selectedCustomer} 
+                      onValueChange={setSelectedCustomer}
+                      disabled={!selectedCompany || loadingCustomers}
+                    >
+                      <SelectTrigger id="customer-select" className="mt-2">
+                        <SelectValue placeholder={
+                          !selectedCompany ? "Select company first" :
+                          loadingCustomers ? "Loading customers..." :
+                          "Select a customer"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customers.map((customer) => (
+                          <SelectItem key={customer.id} value={customer.name}>
+                            {customer.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="project-select">Project *</Label>
+                    <Select 
+                      value={selectedProject} 
+                      onValueChange={setSelectedProject}
+                      disabled={!selectedCustomer || loadingProjects}
+                    >
+                      <SelectTrigger id="project-select" className="mt-2">
+                        <SelectValue placeholder={
+                          !selectedCustomer ? "Select customer first" :
+                          loadingProjects ? "Loading projects..." :
+                          "Select a project"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sharedProjectsList.map((project) => (
                           <SelectItem key={project.id} value={project.id}>
                             {project.name} ({project.code})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="workorder-select">Work Order</Label>
+                    <Select 
+                      value={selectedWorkOrder} 
+                      onValueChange={setSelectedWorkOrder}
+                      disabled={!selectedProject || loadingWorkOrders}
+                    >
+                      <SelectTrigger id="workorder-select" className="mt-2">
+                        <SelectValue placeholder={
+                          !selectedProject ? "Select project first" :
+                          loadingWorkOrders ? "Loading work orders..." :
+                          "Select a work order (optional)"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {workOrders.map((wo) => (
+                          <SelectItem key={wo.id} value={wo.id}>
+                            {wo.orderNumber} - {wo.description}
                           </SelectItem>
                         ))}
                       </SelectContent>
