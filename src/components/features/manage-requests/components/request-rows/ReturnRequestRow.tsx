@@ -38,7 +38,7 @@ interface Props {
 }
 
 export const ReturnRequestRow: React.FC<Props> = (props) => {
-  const { request, expanded, onToggleExpand } = props;
+  const { request } = props;
   
   // Filtramos los items aquí para pasarlos a los componentes hijos
   const regularItems = request.items.filter(i => !i.isKit);
@@ -51,43 +51,36 @@ export const ReturnRequestRow: React.FC<Props> = (props) => {
     <>
       <TableRow className="hover:bg-muted/50 ">
         <TableCell>
-          <Button variant="ghost" size="sm" onClick={() => onToggleExpand(request.id)}>
-            {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Button>
-        </TableCell>
-        <TableCell>
           <div>
-            <div>{request.borrower}</div>
-            <div className="text-sm text-muted-foreground">{request.borrowerEmail}</div>
+            <div>{request.requesterName}</div>
+            <div className="text-sm text-muted-foreground">{request.requesterEmail}</div>
           </div>
         </TableCell>
-        <TableCell>{request.department}</TableCell>
+        <TableCell>{request.departmentName}</TableCell>
         <TableCell>{request.project}</TableCell>
         <TableCell>{request.loanDate || request.requestedLoanDate}</TableCell>
       </TableRow>
 
-      {expanded && (
-        <TableRow>
-          <TableCell colSpan={5} className="bg-muted/30 p-0">
-            <div>
-              <Tabs defaultValue="items">
-                <TabsList>
-                  <TabsTrigger value="items" className="cursor-pointer">Items</TabsTrigger>
-                  <TabsTrigger value="kits" className="cursor-pointer">Kits</TabsTrigger>
-                </TabsList>
+      <TableRow>
+        <TableCell colSpan={4} className="bg-muted/30 p-0">
+          <div>
+            <Tabs defaultValue="items">
+              <TabsList>
+                <TabsTrigger value="items" className="cursor-pointer">Items</TabsTrigger>
+                <TabsTrigger value="kits" className="cursor-pointer">Kits</TabsTrigger>
+              </TabsList>
 
-                <TabsContent value="items">
-                    <RegularItemsTabContent {...sharedProps} />
-                </TabsContent>
+              <TabsContent value="items">
+                  <RegularItemsTabContent {...sharedProps} />
+              </TabsContent>
 
-                <TabsContent value="kits">
-                    <KitsTabContent {...sharedProps} />
-                </TabsContent>
-              </Tabs>
-            </div>
-          </TableCell>
-        </TableRow>
-      )}
+              <TabsContent value="kits">
+                  <KitsTabContent {...sharedProps} />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </TableCell>
+      </TableRow>
     </>
   );
 };

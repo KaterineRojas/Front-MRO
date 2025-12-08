@@ -67,9 +67,9 @@ export const RegularItemsTabContent: React.FC<Props> = ({
             <tr className="text-center">
               <th>Select</th>
               <th>Image</th>
-              <th>BIN Code</th>
+              <th>Sku</th>
               <th>Name</th>
-              <th>Description</th>
+              <th>Quantity</th>
               <th>Quantity to Return</th>
               <th>Condition</th>
               <th>Type</th>
@@ -88,24 +88,24 @@ export const RegularItemsTabContent: React.FC<Props> = ({
                       <input type="checkbox" checked={isSelected}  onChange={() => handleSelectReturnItem(request.id, item.id)} className="h-4 w-4" />
                     </td>
                     <td className="flex justify-center py-1">
-                      <ImageWithFallback src={item.imageUrl || ''} alt={item.articleName} className="w-12 h-12 object-cover rounded" />
+                      <ImageWithFallback src={item.imageUrl || ''} alt={item.name} className="w-12 h-12 object-cover rounded" />
                     </td>
-                    <td className="font-mono text-sm text-center">{item.articleBinCode}</td>
-                    <td className="text-center">{item.articleName}</td>
-                    <td className="text-sm text-muted-foreground text-center">{item.articleDescription}</td>
+                    <td className="font-mono text-sm text-center">{item.sku}</td>
+                    <td className="text-center">{item.name}</td>
+                    <td className="text-sm text-muted-foreground text-center">{item.quantityFulfilled}</td>
                     <td className="text-center">
                       <div className="text-center space-x-2">
                         <Button variant="outline" size="sm" 
                         onClick={() => handleReturnQuantityChange(request.id, item.id, Math.max(1, getReturnQuantity(request.id, item.id) - 1))} 
                         disabled={!isSelected || getReturnQuantity(request.id, item.id) <= 1}>-</Button>
-                        <input type="number" min={1} max={item.quantity} 
+                        <input type="number" min={1} max={item.quantityFulfilled} 
                         value={getReturnQuantity(request.id, item.id)} 
                         onChange={(e) => handleReturnQuantityChange(request.id, item.id, parseInt(e.target.value) || 1)} 
                         className="w-20 text-center" disabled={!isSelected} />
                         <Button variant="outline" size="sm" 
-                        onClick={() => handleReturnQuantityChange(request.id, item.id, Math.min(item.quantity, getReturnQuantity(request.id, item.id) + 1))} 
-                        disabled={!isSelected || getReturnQuantity(request.id, item.id) >= item.quantity}>+</Button>
-                        <span className="text-sm text-muted-foreground">/ {item.quantity} {item.unit}</span>
+                        onClick={() => handleReturnQuantityChange(request.id, item.id, Math.min(item.quantityRequested, getReturnQuantity(request.id, item.id) + 1))} 
+                        disabled={!isSelected || getReturnQuantity(request.id, item.id) >= item.quantityRequested}>+</Button>
+                        <span className="text-sm text-muted-foreground">/ {item.quantityFulfilled} {item.unit}</span>
                       </div>
                     </td>
                     <td className="text-center">

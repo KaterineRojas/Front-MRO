@@ -68,7 +68,23 @@ export const PackingRequestRow: React.FC<Props> = ({
             toast.error(disabledMessage);
         }
     };
+// ... dentro del componente PackingRequestRow
+const isPacking = request.status === 'Packing';
+const isPending = request.status === 'Pending';
+const isSent = request.status === 'Sent';
 
+// 3. Lógica para el botón de IMPRESORA
+    const printerTitle = isPending 
+        ? 'Start Packing and Print List' 
+        : isPacking 
+            ? 'Print Packing List' 
+            : 'Request already sent or completed';
+            
+    // El botón debe estar deshabilitado solo si ya se envió la solicitud.
+    const printerDisabled = isSent; 
+    
+    // Cambiamos el color para que sea más notable cuando está 'Pending' (y se requiere acción)
+    const printerVariant = isPending ? 'default' : 'outline';
   return (
     <>
       <TableRow className="hover:bg-muted/50">
@@ -80,39 +96,41 @@ export const PackingRequestRow: React.FC<Props> = ({
         <TableCell className="font-mono">{request.requestNumber}</TableCell>
         <TableCell>
           <div>
-            <div>{request.borrower}</div>
-            <div className="text-sm text-muted-foreground">{request.borrowerEmail}</div>
+            <div>{request.requesterName}</div>
+            <div className="text-sm text-muted-foreground">{request.requesterEmail}</div>
           </div>
         </TableCell>
-        <TableCell>{request.department}</TableCell>
-        <TableCell>{request.project}</TableCell>
-        <TableCell>{request.requestedLoanDate}</TableCell>
+        <TableCell>{request.departmentId}</TableCell>
+        <TableCell>{request.projectId}</TableCell>
+        <TableCell>{request.createdAt}</TableCell>
         <TableCell>{getPriorityBadge(request.priority)}</TableCell>
         <TableCell>
           <Badge variant={isKitOrder(request) ? 'default' : 'outline'}>{isKitOrder(request) ? 'Yes' : 'No'}</Badge>
         </TableCell>
-        <TableCell>
-          <Badge variant="outline">
-            {isKitOrder(request) ? `${request.items.length}` : `${Array.from(selectedPackingItems).filter(k => k.startsWith(`${request.id}-`)).length} / ${request.items.length}`}
-          </Badge>
-        </TableCell>
+
         <TableCell>
           <div className="flex space-x-2">
             <Button 
-            variant="outline" 
-            size="sm" onClick={() => handlePrintSinglePacking(request)}>
-              <Printer className="h-4 w-4" />
-            </Button>
+                variant={printerVariant} 
+                size="sm" 
+                onClick={() => handlePrintSinglePacking(request)}
+                disabled={printerDisabled}
+                title={printerTitle}
+                >
+                <Printer className="h-4 w-4" />
+                </Button>
             <div style={{ display: 'inline-block', cursor: isValidForPacking ? 'default' : 'not-allowed' }}
-              onClick={!isValidForPacking ? showDisabledToast : undefined}>
-                  <Button
-                      variant="default"
-                      onClick={() => handleConfirmPacking(request)} 
-                      disabled={!isValidForPacking}
-                      style={{ pointerEvents: isValidForPacking ? 'auto' : 'none' }}>
-                      <Package className="mr-2 h-4 w-4" /> Confirm Packing
-                  </Button>
-            </div>
+                onClick={!isValidForPacking ? showDisabledToast : undefined}>
+                    <Button
+                        variant="default"
+                        onClick={() => handleConfirmPacking(request)} 
+                        // 🚨 MODIFICACIÓN: Deshabilitar el botón de Confirmar si ya se envió (isSent)
+                        disabled={!isValidForPacking || isSent }
+                        title={isSent ? 'Request already sent' : 'Confirm Packing'}
+                        style={{ pointerEvents: isValidForPacking && !isSent ? 'auto' : 'none' }}>
+                        <Package className="mr-2 h-4 w-4" /> Confirm Packing
+                    </Button>
+                </div>
           </div>
         </TableCell>
       </TableRow>
@@ -120,7 +138,7 @@ export const PackingRequestRow: React.FC<Props> = ({
       {expanded && (
         <TableRow>
           <TableCell colSpan={10} className="bg-muted/30 p-0">
-            <div className="p-4">
+            <div className="p-4 max-w-full overflow-hidden">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="flex items-center">
                   <Package className="h-4 w-4 mr-2" />
@@ -138,16 +156,20 @@ export const PackingRequestRow: React.FC<Props> = ({
                 </div>
               </div>
 
-              <div className="rounded-md border bg-card overflow-x-auto">
-                <table className="w-full border-collapse">
+              <div 
+                className="rounded-md border bg-card overflow-x-auto" 
+                onScroll={(e) => e.stopPropagation()}
+                style={{ isolation: 'isolate', maxWidth: '100%' }}
+              >
+                <table className="w-full border-collapse min-w-[800px]">
                   <thead>
                     <tr className='text-center'>
                       <th>Select</th>
                       <th>Image</th>
-                      <th>BIN Code</th>
+                      <th>Sku</th>
                       <th>Name</th>
-                      <th>Description</th>
-                      <th>Quantity</th>
+                      <th>Requeted quantity</th>
+                      <th>Packaged quantity</th>
                       <th>Type</th>
                     </tr>
                   </thead>
@@ -162,19 +184,19 @@ export const PackingRequestRow: React.FC<Props> = ({
                             ) : null}
                           </td>
                           <td className="flex justify-center">
-                            <ImageWithFallback src={item.imageUrl || ''} alt={item.articleName} className="w-12 h-12 object-cover rounded" />
+                            <ImageWithFallback src={item.imageUrl || ''} alt={item.name} className="w-12 h-12 object-cover rounded" />
                           </td>
-                          <td className="font-mono text-sm text-center">{item.articleBinCode}</td>
-                          <td className="text-center">{item.articleName}</td>
-                          <td className="text-sm text-muted-foreground text-center">{item.articleDescription}</td>
+                          <td className="font-mono text-sm text-center">{item.sku}</td>
+                          <td className="text-center">{item.name}</td>
+                          <td className="text-center">{item.quantityRequested}</td>
                           <td>
                             {!isKitOrder(request) ? (
                               <div className="text-center space-x-2">
-                                <input type="number" min={0} max={item.quantity} value={getPackingItemQuantity(request.id, item.id)} onChange={(e) => handlePackingQuantityChange(request.id, item.id, parseInt(e.target.value) || 0)} className="w-20" />
-                                <span className="text-sm text-muted-foreground">/ {item.quantity} {item.unit}</span>
+                                <input type="number" min={0} max={item.quantityRequested} value={getPackingItemQuantity(request.id, item.id)} onChange={(e) => handlePackingQuantityChange(request.id, item.id, parseInt(e.target.value) || 0)} className="w-20" />
+                                <span className="text-sm text-muted-foreground">/ {item.quantityRequested} {item.unit}</span>
                               </div>
                             ) : (
-                              <span>{item.quantity} {item.unit}</span>
+                              <span>{item.quantityRequested} {item.unit}</span>
                             )}
                           </td>
                           <td className="text-center">

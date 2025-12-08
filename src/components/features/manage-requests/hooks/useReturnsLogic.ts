@@ -1,15 +1,18 @@
-// src/hooks/useReturnsLogic.tsx (o el path correspondiente)
-
 import { useState, useMemo, useCallback, Dispatch, SetStateAction, useEffect } from 'react';
-import { LoanRequest, LoanItem } from '../types';
-import { getReturns, updateReturnItems } from '../services/requestManagementService';
+import { LoanRequest, LoanItem} from '../types';
+import { getEngineerReturns,uploadReturnPhoto, submitReturnLoan, ReturnItemPayload, ReturnLoanPayload} from '../services/requestManagementService';
 import { formatConditionText as utilFormatConditionText } from '../utils/requestManagementUtils';
 import { toast } from 'react-hot-toast';
 import { handlePrintMissingKitItems } from '../utils/listKitRestock';
 
 export type ConditionCounts = { good: number, revision: number, lost: number };
 
-export function useReturnsLogic() {
+interface UseReturnsLogicParams {
+  engineerId?: string;
+  warehouseId?: number;
+}
+
+export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: UseReturnsLogicParams = {}) {
   const [allReturns, setAllReturns] = useState<LoanRequest[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +29,8 @@ export function useReturnsLogic() {
   const [itemsPhotoDialogOpen, setItemsPhotoDialogOpen] = useState(false);
   const [kitPhotoDialogOpen, setKitPhotoDialogOpen] = useState(false);
   const [currentKitItem, setCurrentKitItem] = useState<{requestId: number, itemId: number} | null>(null);
-  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  //const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [itemsPhotoUrl, setItemsPhotoUrl] = useState<string | null>(null);
   const [kitPhotos, setKitPhotos] = useState<Record<string, string>>({});
   const [kitReturnDialogOpen, setKitReturnDialogOpen] = useState(false);
   const [kitReturnOption, setKitReturnOption] = useState<'restock' | 'disassemble' | ''>('');
@@ -38,13 +42,12 @@ export function useReturnsLogic() {
   const [conditionCounts, setConditionCounts] = useState<ConditionCounts>({ good: 0, revision: 0, lost: 0 });
   const [missingKitItems, setMissingKitItems] = useState<Array<{id: number, name: string, category: string, missingQuantity: number, totalQuantity: number}>>([]);
 
-  // Fetch returns from API on mount
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const data = await getReturns();
+        const data = await getEngineerReturns(engineerId, warehouseId); 
         setAllReturns(data || []);
       } catch (err) {
         console.error('Failed to load returns', err);
@@ -55,44 +58,84 @@ export function useReturnsLogic() {
       }
     };
     fetchData();
-  }, []);
+  }, [engineerId, warehouseId]);
+  const uniqueReturnBorrowers = useMemo(() => {
+    const borrowers = allReturns.map(req => req.requesterName);
+    return Array.from(new Set(borrowers)).sort();
+  }, [allReturns]);
+
+  const filteredReturns = useMemo(() => {
+    if (!selectedReturnBorrower) return [];
+    return allReturns.filter(req => req.requesterName === selectedReturnBorrower);
+  }, [allReturns, selectedReturnBorrower]);
+
+  const filteredBorrowersForSelect = useMemo(() => {
+    if (!borrowerSelectSearchTerm.trim()) return uniqueReturnBorrowers;
+    return uniqueReturnBorrowers.filter(b => b.toLowerCase().includes(borrowerSelectSearchTerm.toLowerCase()));
+  }, [uniqueReturnBorrowers, borrowerSelectSearchTerm]);
+  
+  // Getters 
+  const getReturnQuantity = useCallback((requestId: number, itemId: number) => {
+    const itemKey = `${requestId}-${itemId}`;
+    
+    if (returnQuantities[itemKey] !== undefined) {
+        return returnQuantities[itemKey];
+    }
+
+    const request = allReturns.find(r => r.id === requestId);
+    const item = request?.items.find(i => i.id === itemId);
+    
+    return item?.quantityRequested ?? 1;
+  }, [returnQuantities, allReturns]); 
+
+  const getKitItemQuantity = useCallback((requestId: number, itemId: number, kitItemId: number) => {
+    const itemKey = `${requestId}-${itemId}-${kitItemId}`;
+    
+    if (kitItemQuantities[itemKey] !== undefined) {
+        return kitItemQuantities[itemKey];
+    }
+
+    const request = allReturns.find(r => r.id === requestId);
+    const kit = request?.items.find(i => i.id === itemId);
+    const kitSubItem = kit?.kitItems?.find(i => i.id === kitItemId);
+    return kitSubItem?.quantity ?? 1;
+  }, [kitItemQuantities, allReturns]); 
+  
+  const getItemCondition = useCallback((requestId: number, itemId: number) => itemConditions[`${requestId}-${itemId}`] || 'good-condition', [itemConditions]);
+  const getKitItemCondition = useCallback((requestId: number, itemId: number, kitItemId: number) => kitItemConditions[`${requestId}-${itemId}-${kitItemId}`] || 'good-condition', [kitItemConditions]);
 
 
-  // Derived helpers
-  const uniqueReturnBorrowers = useMemo(() => {
-    const borrowers = allReturns.map(req => req.borrower);
-    return Array.from(new Set(borrowers)).sort();
-  }, [allReturns]);
+  // Handlers
+  const handleBorrowerSelect = useCallback((value: string) => { setSelectedReturnBorrower(value); setBorrowerSelectSearchTerm(''); }, []);
+  const handleToggleExpandReturns = useCallback((id: number) => { setExpandedReturns(prev => { const newExpanded = new Set(prev); if (newExpanded.has(id)) newExpanded.delete(id); else newExpanded.add(id); return newExpanded; }); }, []);
+  const handleToggleExpandKitItem = useCallback((requestId: number, itemId: number) => { const kitKey = `${requestId}-${itemId}`; setExpandedKitItems(prev => { const newExpanded = new Set(prev); if (newExpanded.has(kitKey)) newExpanded.delete(kitKey); else newExpanded.add(kitKey); return newExpanded; }); }, []);
 
-  const filteredReturns = useMemo(() => {
-    if (!selectedReturnBorrower) return [];
-    return allReturns.filter(req => req.borrower === selectedReturnBorrower);
-  }, [allReturns, selectedReturnBorrower]);
-
-  const filteredBorrowersForSelect = useMemo(() => {
-    if (!borrowerSelectSearchTerm.trim()) return uniqueReturnBorrowers;
-    return uniqueReturnBorrowers.filter(b => b.toLowerCase().includes(borrowerSelectSearchTerm.toLowerCase()));
-  }, [uniqueReturnBorrowers, borrowerSelectSearchTerm]);
-  
-  // Getters 
-  const getReturnQuantity = useCallback((requestId: number, itemId: number) => returnQuantities[`${requestId}-${itemId}`] || 1, [returnQuantities]);
-  const getKitItemQuantity = useCallback((requestId: number, itemId: number, kitItemId: number) => kitItemQuantities[`${requestId}-${itemId}-${kitItemId}`] || 1, [kitItemQuantities]);
-  const getItemCondition = useCallback((requestId: number, itemId: number) => itemConditions[`${requestId}-${itemId}`] || 'good-condition', [itemConditions]);
-  const getKitItemCondition = useCallback((requestId: number, itemId: number, kitItemId: number) => kitItemConditions[`${requestId}-${itemId}-${kitItemId}`] || 'good-condition', [kitItemConditions]);
-
-
-  // Handlers
-  const handleBorrowerSelect = useCallback((value: string) => { setSelectedReturnBorrower(value); setBorrowerSelectSearchTerm(''); }, []);
-  const handleToggleExpandReturns = useCallback((id: number) => { setExpandedReturns(prev => { const newExpanded = new Set(prev); if (newExpanded.has(id)) newExpanded.delete(id); else newExpanded.add(id); return newExpanded; }); }, []);
-  const handleToggleExpandKitItem = useCallback((requestId: number, itemId: number) => { const kitKey = `${requestId}-${itemId}`; setExpandedKitItems(prev => { const newExpanded = new Set(prev); if (newExpanded.has(kitKey)) newExpanded.delete(kitKey); else newExpanded.add(kitKey); return newExpanded; }); }, []);
-
+  // 🛑 MODIFICACIÓN: Límite de cantidad a devolver (regular item)
   const handleReturnQuantityChange = useCallback((requestId: number, itemId: number, quantity: number) => { 
       const itemKey = `${requestId}-${itemId}`; 
-      if (quantity >= 1) setReturnQuantities(prev => ({ ...prev, [itemKey]: quantity })); 
-  }, []);
+      
+      const request = allReturns.find(r => r.id === requestId);
+      const item = request?.items.find(i => i.id === itemId);
+      const maxQty = item?.quantityFulfilled ?? item?.quantityRequested ?? 1;
 
+      // La cantidad debe ser mayor o igual a 0 y menor o igual a la cantidad disponible
+      if (quantity < 0) {
+          toast.error('Quantity to Return cannot be negative.');
+          setReturnQuantities(prev => ({ ...prev, [itemKey]: 0 }));
+          return;
+      }
+      
+      if (quantity > maxQty) {
+          toast.error(`Quantity to Return (${quantity}) cannot exceed available quantity (${maxQty}).`);
+          setReturnQuantities(prev => ({ ...prev, [itemKey]: maxQty })); 
+          return;
+      }
+      
+      setReturnQuantities(prev => ({ ...prev, [itemKey]: quantity })); 
+  }, [allReturns]);  // 🛑 MODIFICACIÓN: Inicialización de returnQuantities (regular item)
   const handleSelectReturnItem = useCallback((requestId: number, itemId: number) => {
-    const itemKey = `${requestId}-${itemId}`; 
+    const itemKey = `${requestId}-${itemId}`;
+    
     setSelectedReturnItems(prev => {
         const newSelected = new Set(prev);
         if (newSelected.has(itemKey)) { 
@@ -102,88 +145,106 @@ export function useReturnsLogic() {
         } 
         else { 
             newSelected.add(itemKey); 
-            setReturnQuantities(q => ({ ...q, [itemKey]: 1 })); 
+            // Inicializar con 0 para que el usuario ingrese la cantidad
+            setReturnQuantities(q => ({ ...q, [itemKey]: 0 })); 
             setItemConditions(c => ({ ...c, [itemKey]: 'good-condition' })); 
         }
         return newSelected;
     });
-  }, []);
-  
-  const handleKitItemQuantityChange = useCallback((requestId: number, itemId: number, kitItemId: number, quantity: number) => { 
-      if (quantity >= 1) setKitItemQuantities(prev => ({ ...prev, [`${requestId}-${itemId}-${kitItemId}`]: quantity })); 
-  }, []);
-  
-  const handleSelectKitItem = useCallback((requestId: number, itemId: number, kitItemId: number) => {
-    const kitItemKey = `${requestId}-${itemId}-${kitItemId}`; 
-    setSelectedKitItems(prev => {
-        const newSelected = new Set(prev);
-        if (newSelected.has(kitItemKey)) { 
-            newSelected.delete(kitItemKey); 
-            setKitItemQuantities(q => { const { [kitItemKey]: _, ...rest } = q; return rest; }); 
-            setKitItemConditions(c => { const { [kitItemKey]: _, ...rest } = c; return rest; }); 
-        } 
-        else { 
-            newSelected.add(kitItemKey); 
-            setKitItemQuantities(q => ({ ...q, [kitItemKey]: 1 })); 
-            setKitItemConditions(c => ({ ...c, [kitItemKey]: 'good-condition' })); 
-        }
-        return newSelected;
-    });
-  }, []);
+  }, [allReturns]);  // 🛑 MODIFICACIÓN: Límite de cantidad a devolver (kit sub-item)
+  const handleKitItemQuantityChange = useCallback((requestId: number, itemId: number, kitItemId: number, quantity: number) => { 
+      const itemKey = `${requestId}-${itemId}-${kitItemId}`;
+      
+      const request = allReturns.find(r => r.id === requestId);
+      const kit = request?.items.find(i => i.id === itemId);
+      const kitSubItem = kit?.kitItems?.find(i => i.id === kitItemId);
+      const maxQty = kitSubItem?.quantity ?? 1; 
+
+      if (quantity >= 1) {
+          if (quantity > maxQty) {
+              toast.error(`Return quantity (${quantity}) cannot exceed the item's original quantity (${maxQty}). Quantity set to ${maxQty}.`);
+              setKitItemQuantities(prev => ({ ...prev, [itemKey]: maxQty }));
+              return;
+          }
+          setKitItemQuantities(prev => ({ ...prev, [itemKey]: quantity })); 
+      }
+  }, [allReturns]); 
+	
+  // 🛑 MODIFICACIÓN: Inicialización de kitItemQuantities (kit sub-item)
+  const handleSelectKitItem = useCallback((requestId: number, itemId: number, kitItemId: number) => {
+    const kitItemKey = `${requestId}-${itemId}-${kitItemId}`; 
+
+    const request = allReturns.find(r => r.id === requestId);
+    const kit = request?.items.find(i => i.id === itemId);
+    const kitSubItem = kit?.kitItems?.find(i => i.id === kitItemId);
+    const quantityRequested = kitSubItem?.quantity ?? 1;
+  	
+    setSelectedKitItems(prev => {
+        const newSelected = new Set(prev);
+        if (newSelected.has(kitItemKey)) { 
+            newSelected.delete(kitItemKey); 
+            setKitItemQuantities(q => { const { [kitItemKey]: _, ...rest } = q; return rest; }); 
+            setKitItemConditions(c => { const { [kitItemKey]: _, ...rest } = c; return rest; }); 
+        } 
+        else { 
+            newSelected.add(kitItemKey); 
+            setKitItemQuantities(q => ({ ...q, [kitItemKey]: quantityRequested })); 
+            setKitItemConditions(c => ({ ...c, [kitItemKey]: 'good-condition' })); 
+        }
+        return newSelected;
+    });
+  }, [allReturns]);
 
 
-  const handleOpenConditionDialog = useCallback((requestId: number, itemId: number, isKit: boolean, kitItemId?: number) => {
-    setCurrentConditionItem({ requestId, itemId, kitItemId, isKit });
-    const itemKey = isKit && kitItemId ? `${requestId}-${itemId}-${kitItemId}` : `${requestId}-${itemId}`;
-    const existingCondition = isKit ? kitItemConditions[itemKey] : itemConditions[itemKey];
-    
-    // Restaurar conditionCounts
-    if (existingCondition) {
-      const goodMatch = existingCondition.match(/Good: (\d+)/);
-      const revisionMatch = existingCondition.match(/Revision: (\d+)/);
-      const lostMatch = existingCondition.match(/Lost: (\d+)/);
-      setConditionCounts({ 
-        good: goodMatch ? parseInt(goodMatch[1]) : 0, 
-        revision: revisionMatch ? parseInt(revisionMatch[1]) : 0, 
-        lost: lostMatch ? parseInt(lostMatch[1]) : 0 
-      });
-    } else {
-      setConditionCounts({ good: 0, revision: 0, lost: 0 }); 
-    }
-    
-    setConditionDialogOpen(true);
-  }, [kitItemConditions, itemConditions]);
+  const handleOpenConditionDialog = useCallback((requestId: number, itemId: number, isKit: boolean, kitItemId?: number) => {
+    setCurrentConditionItem({ requestId, itemId, kitItemId, isKit });
+    const itemKey = isKit && kitItemId ? `${requestId}-${itemId}-${kitItemId}` : `${requestId}-${itemId}`;
+    const existingCondition = isKit ? kitItemConditions[itemKey] : itemConditions[itemKey];
+    
+    // Restaurar conditionCounts
+    if (existingCondition) {
+      const goodMatch = existingCondition.match(/Good: (\d+)/);
+      const revisionMatch = existingCondition.match(/Revision: (\d+)/);
+      const lostMatch = existingCondition.match(/Lost: (\d+)/);
+      setConditionCounts({ 
+        good: goodMatch ? parseInt(goodMatch[1]) : 0, 
+        revision: revisionMatch ? parseInt(revisionMatch[1]) : 0, 
+        lost: lostMatch ? parseInt(lostMatch[1]) : 0 
+      });
+    } else {
+      setConditionCounts({ good: 0, revision: 0, lost: 0 }); 
+    }
+    
+    setConditionDialogOpen(true);
+  }, [kitItemConditions, itemConditions]);
 
-  const handleSaveCondition = useCallback(() => {
+  // 🛑 MODIFICACIÓN: Validar total de condiciones EXACTAMENTE IGUAL a la cantidad a devolver
+  const handleSaveCondition = useCallback(async () => {
     if (!currentConditionItem) return;
     const { requestId, itemId, kitItemId, isKit } = currentConditionItem;
     const itemKey = isKit && kitItemId ? `${requestId}-${itemId}-${kitItemId}` : `${requestId}-${itemId}`;
     const total = conditionCounts.good + conditionCounts.revision + conditionCounts.lost;
 
-    // TOAST 1: Validar si se especificó al menos una condición
     if (total === 0) { 
       toast.error('Please specify at least one item condition.'); 
       return; 
     }
 
-    // Obtener cantidad de devolución (Return Qty)
     const returnQty = isKit && kitItemId 
       ? getKitItemQuantity(requestId, itemId, kitItemId) 
       : getReturnQuantity(requestId, itemId);
 
-    // TOAST 2: Validar que el total no exceda la cantidad devuelta
-    if (total > returnQty) { 
-      toast.error(`Total condition count (${total}) cannot exceed the return quantity (${returnQty}).`); 
-      return; 
+    // Validación EXACTA: la suma debe ser igual a Quantity to Return
+    if (total !== returnQty) {
+      toast.error(`Total condition count (${total}) must equal the Quantity to Return (${returnQty}).`);
+      return;
     }
 
-    // Formatear el string de condición (lógica restaurada)
     let conditionString = '';
     if (conditionCounts.good > 0) conditionString += `Good: ${conditionCounts.good}`;
     if (conditionCounts.revision > 0) conditionString += (conditionString ? ', ' : '') + `Revision: ${conditionCounts.revision}`;
     if (conditionCounts.lost > 0) conditionString += (conditionString ? ', ' : '') + `Lost: ${conditionCounts.lost}`;
     
-    // Guardar condición
     if (isKit) setKitItemConditions(prev => ({ ...prev, [itemKey]: conditionString })); 
     else setItemConditions(prev => ({ ...prev, [itemKey]: conditionString }));
 
@@ -191,255 +252,451 @@ export function useReturnsLogic() {
     setCurrentConditionItem(null);
     toast.success('Condition saved.');
   }, [currentConditionItem, conditionCounts, getKitItemQuantity, getReturnQuantity, setKitItemConditions, setItemConditions]);
+  const areAllRegularItemsSelected = useCallback((requestId: number, items: LoanItem[]) => { 
+    const regularItems = items.filter(i => !i.isKit); 
+    if (regularItems.length === 0) return false; 
+    return regularItems.every(item => selectedReturnItems.has(`${requestId}-${item.id}`)); 
+  }, [selectedReturnItems]);
+  
+  const handleSelectAllRegularItems = useCallback((request: LoanRequest, checked: boolean) => {
+    const newSelected = new Set(selectedReturnItems); const newQuantities = { ...returnQuantities };
+    const regularItems = request.items.filter(i => !i.isKit);
+    regularItems.forEach(item => { const itemKey = `${request.id}-${item.id}`; if (checked) { newSelected.add(itemKey); newQuantities[itemKey] = item.quantityRequested; } else { newSelected.delete(itemKey); delete newQuantities[itemKey]; } });
+    setSelectedReturnItems(newSelected); setReturnQuantities(newQuantities);
+  }, [selectedReturnItems, returnQuantities]);
 
+  const handleSelectAllReturnItems = useCallback((request: LoanRequest, checked: boolean) => {
+    const newSelected = new Set(selectedReturnItems);
+    const newQuantities = { ...returnQuantities };
+    // Iterate over all LoanItems (both regular and Kits) using their id as the selection key
+    request.items.forEach(item => {
+      const itemKey = `${request.id}-${item.id}`;
+      if (checked) {
+        newSelected.add(itemKey);
+        newQuantities[itemKey] = item.quantityRequested;
+      } else {
+        newSelected.delete(itemKey);
+        delete newQuantities[itemKey];
+      }
+    });
+    setSelectedReturnItems(newSelected);
+    setReturnQuantities(newQuantities);
+  }, [selectedReturnItems, returnQuantities]);
 
-  const areAllRegularItemsSelected = useCallback((requestId: number, items: LoanItem[]) => { 
-    const regularItems = items.filter(i => !i.isKit); 
-    if (regularItems.length === 0) return false; 
-    return regularItems.every(item => selectedReturnItems.has(`${requestId}-${item.id}`)); 
-  }, [selectedReturnItems]);
-  
-  const handleSelectAllRegularItems = useCallback((request: LoanRequest, checked: boolean) => {
-    const newSelected = new Set(selectedReturnItems); const newQuantities = { ...returnQuantities };
-    const regularItems = request.items.filter(i => !i.isKit);
-    regularItems.forEach(item => { const itemKey = `${request.id}-${item.id}`; if (checked) { newSelected.add(itemKey); newQuantities[itemKey] = item.quantity; } else { newSelected.delete(itemKey); delete newQuantities[itemKey]; } });
-    setSelectedReturnItems(newSelected); setReturnQuantities(newQuantities);
-  }, [selectedReturnItems, returnQuantities]);
+  const hasSelectedKitItems = useCallback((requestId: number, itemId: number) => Array.from(selectedKitItems).some(k => k.startsWith(`${requestId}-${itemId}`)), [selectedKitItems]);
 
-  const handleSelectAllReturnItems = useCallback((request: LoanRequest, checked: boolean) => {
-    const newSelected = new Set(selectedReturnItems);
-    const newQuantities = { ...returnQuantities };
-    // Iterate over all LoanItems (both regular and Kits) using their id as the selection key
-    request.items.forEach(item => {
-      const itemKey = `${request.id}-${item.id}`;
-      if (checked) {
-        newSelected.add(itemKey);
-        newQuantities[itemKey] = item.quantity;
-      } else {
-        newSelected.delete(itemKey);
-        delete newQuantities[itemKey];
-      }
-    });
-    setSelectedReturnItems(newSelected);
-    setReturnQuantities(newQuantities);
-  }, [selectedReturnItems, returnQuantities]);
-
-  const hasSelectedKitItems = useCallback((requestId: number, itemId: number) => Array.from(selectedKitItems).some(k => k.startsWith(`${requestId}-${itemId}`)), [selectedKitItems]);
-
-  const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
+const handleConfirmReturnItems = useCallback((request: LoanRequest) => {
     return (async () => {
-    const regularItems = request.items.filter(i => !i.isKit);
-    const selectedCount = regularItems.filter(item => selectedReturnItems.has(`${request.id}-${item.id}`)).length;
-    
-    if (selectedCount === 0) { 
-      toast.error('Please select at least one item to return'); 
-      return; 
-    }
-    
-    const itemsWithoutCondition = regularItems.filter(item => { 
-      const itemKey = `${request.id}-${item.id}`; 
-      if (!selectedReturnItems.has(itemKey)) return false; 
-      const condition = itemConditions[itemKey]; 
+        // Obtener la versión más actualizada del request desde allReturns
+        const currentRequest = allReturns.find(r => r.id === request.id);
+        if (!currentRequest) {
+            toast.error('Request not found. It may have been already processed.');
+            return;
+        }
+        
+        const regularItems = currentRequest.items.filter(i => !i.isKit);
+        const selectedCount = regularItems.filter(item => selectedReturnItems.has(`${currentRequest.id}-${item.id}`)).length;
+        
+        // 1. VALIDACIÓN INICIAL DE SELECCIÓN
+        if (selectedCount === 0) { 
+            toast.error('Please select at least one item to return'); 
+            return; 
+        }
 
-      return !condition || condition === 'good-condition'; 
-    });
-    
-    if (itemsWithoutCondition.length > 0) { 
-      toast.error('Please set the condition for all selected items before confirming return.'); 
-      return; 
-    }
-    
-    const returnedItemIds = regularItems
-      .filter(item => selectedReturnItems.has(`${request.id}-${item.id}`) && getReturnQuantity(request.id, item.id) > 0)
-      .map(i => i.id);
-      
-    // compute remaining items
-    const newAllReturns = allReturns.map(req => {
-      if (req.id === request.id) {
-        const remaining = req.items.filter(i => !returnedItemIds.includes(i.id));
-        return { ...req, items: remaining };
-      }
-      return req;
-    }).filter(r => r.items.length > 0);
+        // --- 2. VALIDACIÓN DETALLADA DE CONDICIÓN (CÓDIGO EXISTENTE) ---
+        const itemsWithoutCondition = regularItems.filter(item => { 
+            const itemKey = `${currentRequest.id}-${item.id}`; 
+            if (!selectedReturnItems.has(itemKey)) return false; 
+            const condition = itemConditions[itemKey]; 
+            const returnQty = getReturnQuantity(currentRequest.id, item.id);
+            
+            // Si la cantidad es 0, no necesita validación de condición
+            if (returnQty === 0) return false;
+            
+            // Lógica de validación:
+            if (!condition || condition === 'good-condition') {
+                return returnQty > 1; // Falla si es > 1 y solo tiene 'good-condition'
+            }
+            const goodMatch = condition.match(/Good: (\d+)/);
+            const revisionMatch = condition.match(/Revision: (\d+)/);
+            const lostMatch = condition.match(/Lost: (\d+)/);
+            const totalConditioned = (goodMatch ? parseInt(goodMatch[1]) : 0) + (revisionMatch ? parseInt(revisionMatch[1]) : 0) + (lostMatch ? parseInt(lostMatch[1]) : 0);
+            
+            return totalConditioned !== returnQty; // Falla si la suma no coincide con la cantidad a devolver
+        });
+        
+        if (itemsWithoutCondition.length > 0) { 
+            toast.error('Please set the condition for all selected items, ensuring the total count matches the return quantity.'); 
+            return; 
+        }
 
-    // Persist change to server: update the return's items
-    try {
-      const remainingItems = request.items.filter(i => !returnedItemIds.includes(i.id));
-      const ok = await updateReturnItems(request.id, remainingItems);
-      if (!ok) console.warn('Failed to persist returned items to server');
-    } catch (err) {
-      console.error('Error persisting returned items:', err);
-    }
+        // --- 3. CONSTRUIR EL PAYLOAD PARA EL ENDPOINT DE INVENTARIO ---
+        const itemsPayload: ReturnItemPayload[] = [];
+        let hasAnyItemToReturn = false;
+        const itemsWithZeroQuantity: string[] = [];
 
-    // Update local state
-    setAllReturns(newAllReturns);
+        regularItems.forEach(item => {
+            const itemKey = `${currentRequest.id}-${item.id}`; 
+            if (selectedReturnItems.has(itemKey)) { 
+                
+                const returnQty = getReturnQuantity(currentRequest.id, item.id);
+                
+                // Verificar si la cantidad es 0
+                if (returnQty === 0) {
+                    itemsWithZeroQuantity.push(item.name || `Item ${item.id}`);
+                    return; // Saltar este item
+                }
+                
+                const conditionText = itemConditions[itemKey] || 'Good: 1'; // Default si es 1
+                
+                // Extraer cantidades de la cadena de condición guardada
+                const goodMatch = conditionText.match(/Good: (\d+)/);
+                const revisionMatch = conditionText.match(/Revision: (\d+)/);
+                const lostMatch = conditionText.match(/Lost: (\d+)/);
 
-    const newSelectedItems = new Set(selectedReturnItems);
-    const newQuantities = { ...returnQuantities };
-    const newConditions = { ...itemConditions };
+                // Mapeo: Good -> Returned, Revision -> Damaged, Lost -> Lost
+                const quantityReturned = goodMatch ? parseInt(goodMatch[1]) : 0;
+                const quantityDamaged = revisionMatch ? parseInt(revisionMatch[1]) : 0;
+                const quantityLost = lostMatch ? parseInt(lostMatch[1]) : 0;
+                
+                // Asegurar que solo agregamos si hay algo que devolver
+                if (quantityReturned + quantityDamaged + quantityLost > 0) {
+                    itemsPayload.push({
+                        itemId: item.id,
+                        quantityReturned: quantityReturned,
+                        quantityDamaged: quantityDamaged,
+                        quantityLost: quantityLost,
+                        notes: conditionText // Usamos la cadena de condición como nota
+                    });
+                    hasAnyItemToReturn = true;
+                }
+            }
+        });
 
-    returnedItemIds.forEach(itemId => {
-      const itemKey = `${request.id}-${itemId}`;
-      newSelectedItems.delete(itemKey);
-      delete newQuantities[itemKey];
-      delete newConditions[itemKey];
-    });
+        // Validar que se ingresaron cantidades
+        if (itemsWithZeroQuantity.length > 0) {
+            toast.error(`Please enter a quantity greater than 0 for the selected items.`);
+            return;
+        }
 
-    setSelectedReturnItems(newSelectedItems);
-    setReturnQuantities(newQuantities);
-    setItemConditions(newConditions);
-    setCapturedPhoto(null);
-    toast.success('Items returned successfully!');
-  })();
-  }, [selectedReturnItems, getReturnQuantity, returnQuantities, itemConditions, setAllReturns, allReturns]);
+        // Doble chequeo final de seguridad
+        if (!hasAnyItemToReturn) {
+            toast.error('No items were processed for return. Please check quantities and conditions.');
+            return;
+        }
 
-  const handleSaveKitChecklist = useCallback((requestId: number, itemId: number) => {
-    return (async () => {
-    const request = filteredReturns.find(r => r.id === requestId); 
-    const kitItem = request?.items.find(i => i.id === itemId);
-    
-    if (kitItem && kitItem.kitItems) {
+        // --- 4. LLAMAR AL ENDPOINT DE DEVOLUCIÓN DE INVENTARIO (API) ---
+        const loadingToastId = toast.loading('Submitting return items to API...');
+
+        try {
+            const payload: ReturnLoanPayload = {
+                engineerId: engineerId, 
+                warehouseId: warehouseId,   
+                items: itemsPayload,
+                generalNotes: `Return submitted by Engineer ${engineerId} for Request ${currentRequest.id}.`, 
+                photoUrl: itemsPhotoUrl || '', // URL de SharePoint guardada en el estado
+            };
+            
+            await submitReturnLoan(payload);
+
+            toast.success('Items successfully submitted to Inventory API!', { id: loadingToastId });
+
+        } catch (err) {
+            // Si la llamada API falla, mostramos el error y detenemos la ejecución.
+            toast.error('Failed to submit return to Inventory API. Check console for details.', { id: loadingToastId });
+            return; 
+        }
+
+        // --- 5. ACTUALIZAR ESTADO LOCAL (SI LA API FUE EXITOSA) ---
+        
+        // Crear un mapa de cantidades devueltas por itemId
+        const returnedQuantitiesMap = new Map<number, number>();
+        itemsPayload.forEach(payload => {
+            const totalReturned = payload.quantityReturned + payload.quantityDamaged + payload.quantityLost;
+            returnedQuantitiesMap.set(payload.itemId, totalReturned);
+        });
+        
+        // Actualizar cantidades o eliminar items según corresponda
+        const newAllReturns = allReturns.map(req => {
+            if (req.id === currentRequest.id) {
+                const updatedItems = req.items.map(item => {
+                    const returnedQty = returnedQuantitiesMap.get(item.id);
+                    if (returnedQty === undefined) return item; // Item no fue devuelto
+                    
+                    const currentQty = item.quantityFulfilled ?? item.quantityRequested ?? 0;
+                    const remainingQty = currentQty - returnedQty;
+                    
+                    if (remainingQty <= 0) {
+                        // Si no queda cantidad, marcar para eliminar
+                        return null;
+                    } else {
+                        // Si queda cantidad, actualizar
+                        return {
+                            ...item,
+                            quantityFulfilled: remainingQty,
+                            quantityRequested: remainingQty
+                        };
+                    }
+                }).filter(item => item !== null) as LoanItem[]; // Filtrar items eliminados
+                
+                return { ...req, items: updatedItems };
+            }
+            return req;
+        }).filter(r => r.items.length > 0); // Eliminar requests sin items
+
+        // Update local state
+        setAllReturns(newAllReturns);
+
+        // Limpiar estados locales de los items devueltos completamente
+        const newSelectedItems = new Set(selectedReturnItems);
+        const newQuantities = { ...returnQuantities };
+        const newConditions = { ...itemConditions };
+
+        itemsPayload.forEach(payload => {
+            const itemKey = `${currentRequest.id}-${payload.itemId}`;
+            const item = currentRequest.items.find(i => i.id === payload.itemId);
+            const currentQty = item?.quantityFulfilled ?? item?.quantityRequested ?? 0;
+            const returnedQty = payload.quantityReturned + payload.quantityDamaged + payload.quantityLost;
+            
+            if (returnedQty >= currentQty) {
+                // Solo limpiar si se devolvió todo
+                newSelectedItems.delete(itemKey);
+                delete newQuantities[itemKey];
+                delete newConditions[itemKey];
+            } else {
+                // Si queda cantidad, resetear a 0 para que el usuario ingrese de nuevo
+                newQuantities[itemKey] = 0;
+                // Mantener la selección y condición
+            }
+        });
+
+        setSelectedReturnItems(newSelectedItems);
+        setReturnQuantities(newQuantities);
+        setItemConditions(newConditions);
+        // ¡LIMPIAR LA URL DE LA FOTO DESPUÉS DE USARLA!
+        setItemsPhotoUrl(null); 
+        
+        toast.success('Items successfully returned!'); // Toast de confirmación final
+    })();
+// Asegúrate de incluir la URL de la foto en las dependencias
+}, [selectedReturnItems, getReturnQuantity, returnQuantities, itemConditions, setAllReturns, allReturns, itemsPhotoUrl]);
+
+  // 🛑 MODIFICACIÓN: Validar condición vs. cantidad devuelta antes de guardar el checklist
+  const handleSaveKitChecklist = useCallback((requestId: number, itemId: number) => {
+    return (async () => {
+    const request = filteredReturns.find(r => r.id === requestId); 
+    const kitItem = request?.items.find(i => i.id === itemId);
+    
+    if (kitItem && kitItem.kitItems) {
       const itemsWithoutCondition = kitItem.kitItems.filter(item => { 
         const kitItemKey = `${requestId}-${itemId}-${item.id}`; 
         if (!selectedKitItems.has(kitItemKey)) return false; 
         const condition = kitItemConditions[kitItemKey]; 
-        return !condition || condition === 'good-condition'; 
-      });
-      
-      if (itemsWithoutCondition.length > 0) { 
-        toast.error('Please set the condition for all selected kit items before confirming return.'); 
-        return; 
-      }
-    }
-    
-    if (kitItem && kitItem.kitItems) {
-      const missing: Array<{id: number, name: string, category: string, missingQuantity: number, totalQuantity: number}> = [];
-      kitItem.kitItems.forEach(item => {
-        const kitItemKey = `${requestId}-${itemId}-${item.id}`;
-        const isSelected = selectedKitItems.has(kitItemKey);
-        const returnedQuantity = isSelected ? (kitItemQuantities[kitItemKey] || item.quantity) : 0;
-        let conditionRevision = 0;
-        let conditionLost = 0;
-        const condition = kitItemConditions[kitItemKey];
+        const returnQty = getKitItemQuantity(requestId, itemId, item.id);
 
-        if (condition) {
-          const revisionMatch = condition.match(/Revision: (\d+)/);
-          const lostMatch = condition.match(/Lost: (\d+)/);
-          if (revisionMatch) conditionRevision = parseInt(revisionMatch[1]);
-          if (lostMatch) conditionLost = parseInt(lostMatch[1]);
+        // Si la cantidad es 0, no necesita validación de condición
+        if (returnQty === 0) return false;
+
+        // 1. Si no hay condición o solo dice 'good-condition'
+        if (!condition || condition === 'good-condition') {
+          return returnQty > 1;
+        }        // 2. Si hay condición, verificar que la suma sea igual a returnQty
+        const goodMatch = condition.match(/Good: (\d+)/);
+        const revisionMatch = condition.match(/Revision: (\d+)/);
+        const lostMatch = condition.match(/Lost: (\d+)/);
+        const totalConditioned = (goodMatch ? parseInt(goodMatch[1]) : 0) + (revisionMatch ? parseInt(revisionMatch[1]) : 0) + (lostMatch ? parseInt(lostMatch[1]) : 0);
+        
+        return totalConditioned !== returnQty;
+      });
+      
+      if (itemsWithoutCondition.length > 0) { 
+        toast.error('Please set the condition for all selected kit items, ensuring the total count matches the return quantity.'); 
+        return; 
+      }
+    }
+    
+    if (kitItem && kitItem.kitItems) {
+      const missing: Array<{id: number, name: string, category: string, missingQuantity: number, totalQuantity: number}> = [];
+      kitItem.kitItems.forEach(item => {
+        const kitItemKey = `${requestId}-${itemId}-${item.id}`;
+        const isSelected = selectedKitItems.has(kitItemKey);
+        
+        // Usar getKitItemQuantity para obtener la cantidad devuelta
+        const returnedQuantity = getKitItemQuantity(requestId, itemId, item.id);
+        let conditionRevision = 0;
+        let conditionLost = 0;
+        const condition = kitItemConditions[kitItemKey];
+
+        if (condition) {
+          const revisionMatch = condition.match(/Revision: (\d+)/);
+          const lostMatch = condition.match(/Lost: (\d+)/);
+          if (revisionMatch) conditionRevision = parseInt(revisionMatch[1]);
+          if (lostMatch) conditionLost = parseInt(lostMatch[1]);
+        }
+
+        // item.quantity es la cantidad original solicitada del sub-item
+        const missingQuantity = item.quantity - returnedQuantity + conditionRevision + conditionLost;
+        
+        if (missingQuantity > 0)
+          missing.push({ id: item.id, name: item.name, category: item.category, missingQuantity, totalQuantity: item.quantity });
+      });
+      setMissingKitItems(missing);
+    }
+
+    // Persist removal of the kit item from the return on the server
+   /* try {
+      // compute new items for that request (remove the kit item)
+      const request = filteredReturns.find(r => r.id === requestId);
+      if (request) {
+        const remainingItems = request.items.filter(i => i.id !== itemId);
+        const ok = await updateReturnItems(requestId, remainingItems);
+        if (!ok) console.warn('Failed to persist kit checklist changes to server');
+        // update local state as well
+        setAllReturns(prev => prev.map(req => req.id === requestId ? { ...req, items: remainingItems } : req).filter(r => r.items.length > 0));
+      }
+    } catch (err) {
+      console.error('Error persisting kit checklist changes:', err);
+    }*/
+
+    setPendingKitReturn({ requestId, itemId });
+    setKitReturnOption('');
+    setKitReturnDialogOpen(true);
+  })();
+  }, [filteredReturns, selectedKitItems, kitItemQuantities, kitItemConditions, setAllReturns, getKitItemQuantity]);
+
+// Función auxiliar para convertir Data URL a Blob y subir
+const uploadImageFromDataUrl = useCallback(async (dataUrl: string): Promise<string | null> => {
+    const loadingToast = toast.loading('Uploading photo to server...');
+    try {
+        // 1. Convertir Data URL a Blob
+        const res = await fetch(dataUrl);
+        const photoBlob = await res.blob();
+        
+        // 2. Subir el Blob
+        const url = await uploadReturnPhoto(photoBlob); // Llama a tu servicio
+        
+        if (url) {
+            toast.success('Photo uploaded successfully!', { id: loadingToast });
+            return url;
+        } else {
+            throw new Error('Upload failed: No URL returned from server.');
+        }
+    } catch (error) {
+        console.error('Error during photo upload:', error);
+        toast.error('Failed to upload photo.', { id: loadingToast });
+        return null;
+    }
+}, []);
+
+    const handleTakePhotoItems = useCallback(() => setItemsPhotoDialogOpen(true), []);
+  //const handleCapturePhotoItems = useCallback(() => { setCapturedPhoto(`photo-items-${Date.now()}.jpg`); toast.success('Photo captured successfully!'); setItemsPhotoDialogOpen(false); }, []);
+     const handleCapturePhotoItems = useCallback(async (dataUrl: string) => {
+        setItemsPhotoDialogOpen(false); // Cerrar el modal inmediatamente
+
+        const url = await uploadImageFromDataUrl(dataUrl);
+        
+        // Almacenar la URL final del servidor
+        if (url) {
+            setItemsPhotoUrl(url); // Usando el nuevo nombre de estado
+        }
+    }, [uploadImageFromDataUrl]); 
+
+    const handleTakeKitPhoto = useCallback((requestId: number, itemId: number) => { setCurrentKitItem({ requestId, itemId }); setKitPhotoDialogOpen(true); }, []);
+  //const handleCaptureKitPhoto = useCallback(() => { if (currentKitItem) { const kitKey = `${currentKitItem.requestId}-${currentKitItem.itemId}`; setKitPhotos(prev => ({ ...prev, [kitKey]: `kit-photo-${Date.now()}.jpg` })); toast.success('Kit photo captured successfully!'); } setKitPhotoDialogOpen(false); setCurrentKitItem(null); }, [currentKitItem]);
+      const handleCaptureKitPhoto = useCallback(async (dataUrl: string) => { 
+        setKitPhotoDialogOpen(false); // Cerrar el modal inmediatamente
+
+        if (!currentKitItem) return;
+
+        const url = await uploadImageFromDataUrl(dataUrl);
+
+        // Almacenar la URL final del servidor
+        if (url) {
+            const kitKey = `${currentKitItem.requestId}-${currentKitItem.itemId}`;
+            setKitPhotos(prev => ({ ...prev, [kitKey]: url }));
         }
 
-        const missingQuantity = item.quantity - returnedQuantity + conditionRevision + conditionLost;
-
-        if (missingQuantity > 0)
-          missing.push({ id: item.id, name: item.name, category: item.category, missingQuantity, totalQuantity: item.quantity });
-      });
-      setMissingKitItems(missing);
-    }
-
-    // Persist removal of the kit item from the return on the server
-    try {
-      // compute new items for that request (remove the kit item)
-      const request = filteredReturns.find(r => r.id === requestId);
-      if (request) {
-        const remainingItems = request.items.filter(i => i.id !== itemId);
-        const ok = await updateReturnItems(requestId, remainingItems);
-        if (!ok) console.warn('Failed to persist kit checklist changes to server');
-        // update local state as well
-        setAllReturns(prev => prev.map(req => req.id === requestId ? { ...req, items: remainingItems } : req).filter(r => r.items.length > 0));
-      }
-    } catch (err) {
-      console.error('Error persisting kit checklist changes:', err);
-    }
-
-    setPendingKitReturn({ requestId, itemId });
-    setKitReturnOption('');
-    setKitReturnDialogOpen(true);
-  })();
-  }, [filteredReturns, selectedKitItems, kitItemQuantities, kitItemConditions, setAllReturns]);
-
-
-  const handleTakePhotoItems = useCallback(() => setItemsPhotoDialogOpen(true), []);
-  const handleCapturePhotoItems = useCallback(() => { setCapturedPhoto(`photo-items-${Date.now()}.jpg`); toast.success('Photo captured successfully!'); setItemsPhotoDialogOpen(false); }, []);
-  const handleTakeKitPhoto = useCallback((requestId: number, itemId: number) => { setCurrentKitItem({ requestId, itemId }); setKitPhotoDialogOpen(true); }, []);
-  const handleCaptureKitPhoto = useCallback(() => { if (currentKitItem) { const kitKey = `${currentKitItem.requestId}-${currentKitItem.itemId}`; setKitPhotos(prev => ({ ...prev, [kitKey]: `kit-photo-${Date.now()}.jpg` })); toast.success('Kit photo captured successfully!'); } setKitPhotoDialogOpen(false); setCurrentKitItem(null); }, [currentKitItem]);
+        setCurrentKitItem(null); 
+    }, [currentKitItem, uploadImageFromDataUrl]);
   const handleConfirmKitReturn = useCallback(() => { if (!pendingKitReturn || !kitReturnOption) return; const { requestId, itemId } = pendingKitReturn; const kitKey = `${requestId}-${itemId}`; const selectedCount = Array.from(selectedKitItems).filter(k => k.startsWith(kitKey)).length; setAllReturns(prev => prev.map(request => { if (request.id === requestId) return { ...request, items: request.items.filter(i => i.id !== itemId) }; return request; }).filter(r => r.items.length > 0)); setPendingKitConfirmation({ option: kitReturnOption, selectedCount }); setKitConfirmationDialogOpen(true); setKitReturnDialogOpen(false); }, [pendingKitReturn, kitReturnOption, selectedKitItems, setAllReturns]);
-  const handleFinalConfirmKitReturn = useCallback(() => { setKitConfirmationDialogOpen(false); setPendingKitConfirmation(null); setPendingKitReturn(null); setKitReturnOption(''); setMissingKitItems([]); toast.success('Kit returned and processed!'); }, []);
-  const handlePrintMissingItems = useCallback(() => { // Se llama a la función utilitaria, pasando las dependencias como argumentos
-    handlePrintMissingKitItems(
-      pendingKitReturn,
-      filteredReturns,
-      missingKitItems
-    );
-  }, [pendingKitReturn, filteredReturns, missingKitItems]);
+  const handleFinalConfirmKitReturn = useCallback(() => { setKitConfirmationDialogOpen(false); setPendingKitConfirmation(null); setPendingKitReturn(null); setKitReturnOption(''); setMissingKitItems([]); toast.success('Kit returned and processed!'); }, []);
+  const handlePrintMissingItems = useCallback(() => { // Se llama a la función utilitaria, pasando las dependencias como argumentos
+    handlePrintMissingKitItems(
+      pendingKitReturn,
+      filteredReturns,
+      missingKitItems
+    );
+  }, [pendingKitReturn, filteredReturns, missingKitItems]);
 
-  // Añadir dentro de useReturnsLogic (junto a los otros handlers)
+
 const handleSelectAllKitItems = useCallback((requestId: number, kitItem: LoanItem, checked: boolean) => {
-  setSelectedKitItems(prev => {
-    const newSelected = new Set(prev);
-    const kitItemKeys = (kitItem.kitItems || []).map(ki => `${requestId}-${kitItem.id}-${ki.id}`);
+  setSelectedKitItems(prev => {
+    const newSelected = new Set(prev);
+    const kitItemKeys = (kitItem.kitItems || []).map(ki => `${requestId}-${kitItem.id}-${ki.id}`);
+	
+  	const itemQuantities: Record<string, number> = {};
+  	kitItem.kitItems?.forEach(ki => {
+      itemQuantities[`${requestId}-${kitItem.id}-${ki.id}`] = ki.quantity;
+  	});
+  	
+    if (checked) {
+      kitItemKeys.forEach(k => newSelected.add(k));
+      const newQuantities = { ...kitItemQuantities };
+      const newConditions = { ...kitItemConditions };
+      kitItemKeys.forEach(k => {
+        if (!newQuantities[k]) newQuantities[k] = itemQuantities[k] || 1; 
+        if (!newConditions[k]) newConditions[k] = 'good-condition';
+      });
+      setKitItemQuantities(newQuantities);
+      setKitItemConditions(newConditions);
+    } else {
+      kitItemKeys.forEach(k => {
+        newSelected.delete(k);
+      });
+      setKitItemQuantities(prevQ => {
+        const copy = { ...prevQ };
+        kitItemKeys.forEach(k => delete copy[k]);
+        return copy;
+      });
+      setKitItemConditions(prevC => {
+        const copy = { ...prevC };
+        kitItemKeys.forEach(k => delete copy[k]);
+        return copy;
+      });
+    }
 
-    if (checked) {
-      kitItemKeys.forEach(k => newSelected.add(k));
-      // también inicializar cantidades/condiciones si lo deseas:
-      const newQuantities = { ...kitItemQuantities };
-      const newConditions = { ...kitItemConditions };
-      kitItemKeys.forEach(k => {
-        if (!newQuantities[k]) newQuantities[k] = 1;
-        if (!newConditions[k]) newConditions[k] = 'good-condition';
-      });
-      setKitItemQuantities(newQuantities);
-      setKitItemConditions(newConditions);
-    } else {
-      kitItemKeys.forEach(k => {
-        newSelected.delete(k);
-        // opcional: limpiar cantidades/condiciones
-      });
-      // limpiar cantidades/condiciones relacionadas
-      setKitItemQuantities(prevQ => {
-        const copy = { ...prevQ };
-        kitItemKeys.forEach(k => delete copy[k]);
-        return copy;
-      });
-      setKitItemConditions(prevC => {
-        const copy = { ...prevC };
-        kitItemKeys.forEach(k => delete copy[k]);
-        return copy;
-      });
-    }
-
-    return newSelected;
-  });
+    return newSelected;
+  });
 }, [kitItemQuantities, kitItemConditions]);
 
 
-  return {
-    // Estado y Datos Derivados
-    allReturns, isLoading, error, setAllReturns: setAllReturns as Dispatch<SetStateAction<LoanRequest[]>>, 
-    filteredReturns, selectedReturnBorrower, borrowerSelectSearchTerm, filteredBorrowersForSelect,
-    expandedReturns, expandedKitItems, selectedReturnItems, selectedKitItems,
-    itemsPhotoDialogOpen, kitPhotoDialogOpen, capturedPhoto, kitPhotos,
-    kitReturnDialogOpen, kitReturnOption, pendingKitReturn, missingKitItems,
-    kitConfirmationDialogOpen, pendingKitConfirmation,
-    conditionDialogOpen, setConditionDialogOpen, // Exportado
-    conditionCounts, setConditionCounts, 
-    returnQuantities, kitItemQuantities, itemConditions, kitItemConditions,
+  return {
+    // Estado y Datos Derivados
+    allReturns, isLoading, error, setAllReturns: setAllReturns as Dispatch<SetStateAction<LoanRequest[]>>, 
+    filteredReturns, selectedReturnBorrower, borrowerSelectSearchTerm, filteredBorrowersForSelect,
+    expandedReturns, expandedKitItems, selectedReturnItems, selectedKitItems,
+    itemsPhotoDialogOpen, kitPhotoDialogOpen, itemsPhotoUrl, kitPhotos,
+    kitReturnDialogOpen, kitReturnOption, pendingKitReturn, missingKitItems,
+    kitConfirmationDialogOpen, pendingKitConfirmation,
+    conditionDialogOpen, setConditionDialogOpen, 
+    conditionCounts, setConditionCounts, 
+    returnQuantities, kitItemQuantities, itemConditions, kitItemConditions,
 
-    // Getters
-    getReturnQuantity, getItemCondition, getKitItemQuantity, getKitItemCondition,
+    // Getters
+    getReturnQuantity, getItemCondition, getKitItemQuantity, getKitItemCondition,
 
-    // Handlers
-    handleBorrowerSelect, setBorrowerSelectSearchTerm,
-    onToggleExpandReturns: handleToggleExpandReturns, onToggleExpandKitItem: handleToggleExpandKitItem,
-    handleReturnQuantityChange, handleSelectReturnItem,
-    handleOpenConditionDialog, handleSaveCondition, // Corregido
-    areAllRegularItemsSelected, handleSelectAllRegularItems, handleSelectAllReturnItems,
-    hasSelectedKitItems, handleTakePhotoItems, handleConfirmReturnItems, // Corregido
-    handleTakeKitPhoto, handleSaveKitChecklist, // Corregido
-    handleKitItemQuantityChange, handleSelectKitItem,
-    formatConditionText: utilFormatConditionText,
-    setItemsPhotoDialogOpen, setKitPhotoDialogOpen, setKitReturnDialogOpen, setKitReturnOption, setKitConfirmationDialogOpen,
-    handleCapturePhotoItems, handleCaptureKitPhoto, handleConfirmKitReturn, handleFinalConfirmKitReturn,
-    handlePrintMissingItems,handleSelectAllKitItems,
-  };
+    // Handlers
+    handleBorrowerSelect, setBorrowerSelectSearchTerm,
+    onToggleExpandReturns: handleToggleExpandReturns, onToggleExpandKitItem: handleToggleExpandKitItem,
+    handleReturnQuantityChange, handleSelectReturnItem,
+    handleOpenConditionDialog, handleSaveCondition, 
+    areAllRegularItemsSelected, handleSelectAllRegularItems, handleSelectAllReturnItems,
+    hasSelectedKitItems, handleTakePhotoItems, handleConfirmReturnItems, 
+    handleTakeKitPhoto, handleSaveKitChecklist, 
+    handleKitItemQuantityChange, handleSelectKitItem,
+    formatConditionText: utilFormatConditionText,
+    setItemsPhotoDialogOpen, setKitPhotoDialogOpen, setKitReturnDialogOpen, setKitReturnOption, setKitConfirmationDialogOpen,
+    handleCapturePhotoItems, handleCaptureKitPhoto, handleConfirmKitReturn, handleFinalConfirmKitReturn,
+    handlePrintMissingItems,handleSelectAllKitItems,
+  };
 }

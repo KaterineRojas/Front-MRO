@@ -24,7 +24,7 @@ export const PackingConfirmDialog: React.FC<Props> = ({ open, onOpenChange, curr
         {currentPackingRequest && (
           <div className="py-4 space-y-3">
             <div className="bg-[#568FCB]/10 border-2 border-[#568FCB] rounded-lg p-4">
-              <p className="text-sm mb-2"><span className="font-semibold">Borrower:</span> {currentPackingRequest.borrower}</p>
+              <p className="text-sm mb-2"><span className="font-semibold">Borrower:</span> {currentPackingRequest.requesterName}</p>
               <p className="text-sm mb-2"><span className="font-semibold">Project:</span> {currentPackingRequest.project}</p>
               <p className="text-sm"><span className="font-semibold">Items:</span> {currentPackingRequest.items.length} item(s)</p>
             </div>

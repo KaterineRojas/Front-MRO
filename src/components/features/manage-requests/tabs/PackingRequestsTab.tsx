@@ -61,14 +61,13 @@ export const PackingRequestsTab: React.FC<Props> = (props) => {
                   <TableHead >Loan Date</TableHead>
                   <TableHead >Priority</TableHead>
                   <TableHead >Kit</TableHead>
-                  <TableHead >Items Selected</TableHead>
                   <TableHead >Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="text-left">
-                {packingRequests.map(request => (
+                {packingRequests.map((request, index) => (
                   <PackingRequestRow
-                    key={request.id}
+                    key={`${request.id}-${index}`}
                     request={request}
                     expanded={expandedPackingRequests.has(request.id)}
                     onToggleExpand={onToggleExpandPacking}

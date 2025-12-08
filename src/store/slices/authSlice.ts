@@ -7,6 +7,7 @@ interface User {
   name: string;
   role: UserRole;
   email: string;
+  employeeId?: string; // ID del empleado/ingeniero (e.g., 'amx0142')
 }
 
 interface AuthState {
@@ -19,7 +20,8 @@ const initialState: AuthState = {
     id: 1,
     name: 'John Smith',
     role: 'administrator',
-    email: 'john@company.com'
+    email: 'john@company.com',
+    employeeId: 'amx0142' // ID por defecto para desarrollo
   },
   isAuthenticated: true,
 };

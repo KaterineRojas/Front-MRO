@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { Badge } from '../../../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
+import { useAppSelector } from '../../../../store/hooks';
 
 // Importar los Custom Hooks
 import { usePackingRequestsLogic } from '../hooks/usePackingRequestsLogic'; 
@@ -32,8 +33,12 @@ const getPriorityBadge = (priority: string) => {
 export function ManageRequestsPage() {
   const [activeTab, setActiveTab] = useState<string>('packing-requests');
   
+  // Obtener el usuario autenticado
+  const user = useAppSelector(state => state.auth.user);
+  const engineerId = user?.employeeId || 'amx0142'; // Fallback al ID por defecto
+  
   // Llamar a los Custom Hooks
-  const returnsLogic = useReturnsLogic();
+  const returnsLogic = useReturnsLogic({ engineerId });
   const packingLogic = usePackingRequestsLogic();
   
   // Manejar la dependencia cruzada

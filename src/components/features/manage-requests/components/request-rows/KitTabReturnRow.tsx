@@ -59,10 +59,10 @@ export const KitsTabContent: React.FC<Props> = ({
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-4">
                     <Button variant="ghost" size="sm" onClick={() => onToggleExpandKitItem(request.id, kitItem.id)}>{isKitExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</Button>
-                    <ImageWithFallback src={kitItem.imageUrl || ''} alt={kitItem.articleName} className="w-16 h-16 object-cover rounded" />
+                    <ImageWithFallback src={kitItem.imageUrl || ''} alt={kitItem.name} className="w-16 h-16 object-cover rounded" />
                     <div>
-                      <p className="font-mono text-sm text-muted-foreground">{kitItem.articleBinCode}</p>
-                      <h5>{kitItem.articleName}</h5>
+                      <p className="font-mono text-sm text-muted-foreground">{kitItem.sku}</p>
+                      <h5>{kitItem.name}</h5>
                       <p className="text-sm text-muted-foreground">{kitItem.articleDescription}</p>
                     </div>
                   </div>
@@ -99,8 +99,7 @@ export const KitsTabContent: React.FC<Props> = ({
                             <th>Select</th>
                             <th>Image</th>
                             <th>Name</th>
-                            <th>Description</th>
-                            <th>Category</th>
+                            <th>Quantity</th>
                             <th>Quantity to Return</th>
                             <th>Condition</th>
                             <th>Type</th>
@@ -115,8 +114,7 @@ export const KitsTabContent: React.FC<Props> = ({
                                 <td><input type="checkbox" checked={isKitItemSelected} onChange={() => handleSelectKitItem(request.id, kitItem.id, item.id)} className="h-4 w-4 cursor-pointer" /></td>
                                 <td className="flex justify-center py-1"><ImageWithFallback src={item.imageUrl || ''} alt={item.name} className="w-12 h-12 object-cover rounded" /></td>
                                 <td>{item.name}</td>
-                                <td className="text-sm text-muted-foreground">{item.description}</td>
-                                <td>{item.category}</td>
+                                <td>{item.quantity}</td>
                                 <td>
                                   <div className="flex items-center space-x-2 justify-center">
                                     <Button variant="outline" size="sm" 

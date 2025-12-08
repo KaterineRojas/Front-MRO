@@ -40,9 +40,9 @@ export function handlePrintSinglePacking(request: LoanRequest, packingItemQuanti
           <div class="request-card">
             <div class="request-header">
               <h2>${request.requestNumber}</h2>
-              <p><strong>Borrower:</strong> ${request.borrower} (${request.borrowerEmail})</p>
-              <p><strong>Department:</strong> ${request.department} | <strong>Project:</strong> ${request.project}</p>
-              <p><strong>Priority:</strong> <span class="priority-${request.priority}">${request.priority.toUpperCase()}</span></p>
+              <p><strong>Borrower:</strong> ${request.requesterName} (${request.requesterEmail})</p>
+              <p><strong>Department:</strong> ${request.departmentName} | <strong>Project:</strong> ${request.project}</p>
+              <p><strong>Priority:</strong> <span class="priority-${request.priority ?? 'low'}">${(request.priority ?? 'low').toUpperCase()}</span></p>
               <p><strong>Loan Date:</strong> ${request.requestedLoanDate} | <strong>Expected Return:</strong> ${request.expectedReturnDate}</p>
             </div>
             <h3>Items Checklist:</h3>
@@ -60,13 +60,13 @@ export function handlePrintSinglePacking(request: LoanRequest, packingItemQuanti
               <tbody>
                 ${request.items.map(item => {
                   const itemKey = `${request.id}-${item.id}`;
-                  const qty = packingItemQuantities[itemKey] !== undefined ? packingItemQuantities[itemKey] : item.quantity;
+                  const qty = packingItemQuantities[itemKey] !== undefined ? packingItemQuantities[itemKey] : item.quantityRequested;
                   return `
                     <tr>
                       <td><span class="checkbox"></span></td>
-                      <td>${item.articleBinCode}</td>
+                      <td>${item.sku}</td>
                       <td>${item.articleDescription}</td>
-                      <td>${qty}${qty !== item.quantity ? ` (Original: ${item.quantity})` : ''}</td>
+                      <td>${qty}${qty !== item.quantityRequested ? ` (Original: ${item.quantityRequested})` : ''}</td>
                       <td>${item.unit}</td>
                       <td>________________</td>
                     </tr>
@@ -74,14 +74,10 @@ export function handlePrintSinglePacking(request: LoanRequest, packingItemQuanti
                 }).join('')}
               </tbody>
             </table>
-            ${request.notes ? `<div class="notes"><strong>Notes:</strong> ${request.notes}</div>` : ''}
             <div style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 15px;">
               <p><strong>Checked by:</strong> _________________________ <strong>Date:</strong> _____________</p>
               <p><strong>Signature:</strong> _________________________</p>
             </div>
-          </div>
-          <div style="text-align: center; margin-top: 30px; border-top: 2px solid #333; padding-top: 10px;">
-            <p><em>This is a computer-generated document for checking list purposes.</em></p>
           </div>
         </body>
       </html>

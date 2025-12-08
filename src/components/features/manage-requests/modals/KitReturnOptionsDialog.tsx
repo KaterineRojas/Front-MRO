@@ -28,7 +28,7 @@ export const KitReturnOptionsDialog: React.FC<Props> = ({ open, onOpenChange, pe
             {pendingKitReturn && (() => {
               const request = filteredReturns.find(r => r.id === pendingKitReturn.requestId);
               const kitItem = request?.items.find(i => i.id === pendingKitReturn.itemId);
-              return kitItem ? (<span><strong>{kitItem.articleName}</strong> ({kitItem.articleBinCode}) - Choose how you want to handle the returned kit.</span>) : 'Choose how you want to handle the returned kit.';
+              return kitItem ? (<span><strong>{kitItem.name}</strong> ({kitItem.sku}) - Choose how you want to handle the returned kit.</span>) : 'Choose how you want to handle the returned kit.';
             })()}
           </DialogDescription>
         </DialogHeader>
