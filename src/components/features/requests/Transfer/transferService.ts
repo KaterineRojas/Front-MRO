@@ -453,7 +453,7 @@ export async function getInventoryTransfer(
 }
 
 /**
- * Create a new transfer
+ * Create a new transfer - Connect to real API
  */
 export async function createTransfer(data: {
   targetEngineerId: string;
@@ -461,28 +461,62 @@ export async function createTransfer(data: {
   photo: string;
   notes?: string;
 }): Promise<{ success: boolean; transferId: string }> {
-  await delay(500);
-  
-  // Simulate validation
-  if (!data.targetEngineerId) {
-    throw new Error('Target engineer is required');
-  }
-  
-  if (!data.photo) {
-    throw new Error('Transfer photo is required');
-  }
-  
-  if (data.items.length === 0) {
-    throw new Error('At least one item must be selected');
-  }
+  try {
+    // Get current user ID from Redux
+    const senderId = getCurrentUserId();
+    
+    if (!senderId) {
+      throw new Error('Unable to get current user ID');
+    }
 
-  // Generate new transfer ID
-  const newId = `TR${String(mockTransfers.length + 1).padStart(3, '0')}`;
-  
-  return {
-    success: true,
-    transferId: newId
-  };
+    // Prepare the API payload
+    const payload = {
+      senderId: senderId,
+      recipientId: data.targetEngineerId,
+      warehouseId: 1, // TODO: Get from form state if needed
+      projectId: '', // TODO: Get from form if needed
+      imageUrl: data.photo,
+      notes: data.notes || '',
+      items: data.items.map(item => ({
+        itemId: parseInt(item.id) || 0, // Convert to number if needed
+        quantity: item.quantity
+      }))
+    };
+
+    const url = `${API_BASE_URL}/transfer-requests`;
+    console.log('Creating transfer to URL:', url);
+    console.log('Transfer payload:', payload);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Si tu backend requiere autenticación, agrega aquí el token:
+        // "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('API Error response:', errorData);
+      throw new Error(`Error creating transfer: ${response.status} - ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    console.log('Transfer created successfully:', responseData);
+
+    // Assuming the API returns the request number or ID
+    const transferId = responseData.requestNumber || responseData.id || `TR${Date.now()}`;
+
+    return {
+      success: true,
+      transferId: transferId
+    };
+  } catch (error) {
+    console.error('Error creating transfer:', error);
+    throw error;
+  }
 }
 
 /**

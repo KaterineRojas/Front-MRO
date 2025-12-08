@@ -22,8 +22,8 @@ import {
   type InventoryItem,
   type User
 } from './transferService';
-import { getWarehouses } from '../services/sharedServices';
-import type { Warehouse } from '../services/sharedServices'; 
+import { getWarehouses, getUsers } from '../services/sharedServices';
+import type { Warehouse, Employee } from '../services/sharedServices'; 
 
 
 interface TransferFormProps {
@@ -33,7 +33,7 @@ interface TransferFormProps {
 
 export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
   // Data
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<Employee[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,7 +64,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        const usersData = await getAvailableUsers();
+        const usersData = await getUsers('OPEN');
         const warehousesData = await getWarehouses();
         setUsers(usersData);
         setWarehouses(warehousesData as Warehouse[]);
@@ -263,7 +263,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
         photo: transferPhoto!
       });
 
-      const targetUser = users.find(u => u.id === targetEngineerId);
+      const targetUser = users.find(u => u.employeeId === targetEngineerId);
       toast.success(
         `Transfer initiated to ${targetUser?.name}. ${selectedItemIds.size} item${selectedItemIds.size !== 1 ? 's' : ''} selected. Requires dual approval.`
       );
@@ -427,13 +427,11 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
+                    <SelectItem key={user.employeeId} value={user.employeeId}>
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <span>{user.name} - {user.department}</span>
+                        <span>{user.employeeId}</span>
+                        <span>-</span>
+                        <span>{user.name}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -579,7 +577,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
           <div className="space-y-4">
             <p>
               Are you sure you want to transfer {selectedItemIds.size} item{selectedItemIds.size !== 1 ? 's' : ''} to{' '}
-              {users.find(u => u.id === targetEngineerId)?.name}?
+              {users.find(u => u.employeeId === targetEngineerId)?.name}?
             </p>
             <div className="bg-muted p-4 rounded-lg space-y-2">
               <div className="flex items-start gap-2">

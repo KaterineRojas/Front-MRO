@@ -69,6 +69,16 @@ export interface Project {
   updatedAt?: string;
 }
 
+export interface Employee {
+  employeeId: string;
+  name: string;
+  email: string;
+  businessCode: string;
+  departmentName: string;
+  company: string;
+  active: boolean;
+}
+
 export interface WorkOrder {
   id: string | number;
   wo: string;
@@ -269,3 +279,52 @@ export async function getWorkOrdersByProject(companyName: string, customerName: 
   });
 }
 
+export async function getUsers(status: string = 'OPEN'): Promise<Employee[]> {
+  const endpoint = `/amx/employees?status=${encodeURIComponent(status)}`;
+  const fullUrl = `${API_BASE_URL}${endpoint}`;
+  console.log('Fetching users from URL:', fullUrl);
+
+  return fetchDataWithRetry(endpoint, (data: any) => {
+    if (!Array.isArray(data)) {
+      console.error('API /amx/employees did not return an array:', data);
+      return [];
+    }
+
+    console.log('Raw API response for employees:', data);
+
+    const mappedUsers = data.map((employee: any) => ({
+      employeeId: employee.employeeId || '',
+      name: employee.name || 'Unknown User',
+      email: employee.email || '',
+      businessCode: employee.businessCode || '',
+      departmentName: employee.departmentName || '',
+      company: employee.company || '',
+      active: employee.active || false
+    }));
+
+    console.log('Mapped users:', mappedUsers);
+    return mappedUsers;
+  });
+}
+
+/**
+ * Envía una imagen al backend usando multipart/form-data
+ */
+export async function sendImage(file: File): Promise<any> {
+  const formData = new FormData();
+  formData.append("file", file); // el backend espera el campo "file"
+
+  const url = `${API_BASE_URL}/Items/upload-image`;
+  console.log('Uploading image to URL:', url);
+
+  const response = await fetch(url, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error al subir imagen: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
