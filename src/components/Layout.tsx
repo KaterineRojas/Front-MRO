@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { 
-  useAppDispatch, 
-  useAppSelector, 
-  logout, 
-  setSidebarOpen, 
-  toggleDarkMode, 
+import {
+  useAppDispatch,
+  useAppSelector,
+  logout,
+  setSidebarOpen,
+  toggleDarkMode,
   setNotificationsOpen,
-  markAllAsRead 
+  markAllAsRead
 } from '../store';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -37,7 +37,7 @@ export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
-  
+
   // Get state from Redux
   const currentUser = useAppSelector((state) => state.auth.user);
   const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);

@@ -4,14 +4,13 @@ import { Label } from '../../../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../ui/select';
 import { Textarea } from '../../../../ui/textarea';
 import { Button } from '../../../../ui/button';
-import { Badge } from '../../../../ui/badge';
 import { EntryFields } from './MovementFields/EntryFields';
 import { ExitFields } from './MovementFields/ExitFields';
 import { RelocationFields } from './MovementFields/RelocationFields';
 import { AdjustmentFields } from './MovementFields/AdjustmentFields';
 import type { Article } from '../../types';
 import type { MovementData } from './types';
-import { Package, Search, Edit, Trash2, Plus, ChevronDown, ChevronRight, TrendingDown, RotateCcw } from 'lucide-react';
+import { Package } from 'lucide-react';
 
 interface ItemMovementFormProps {
     movementData: MovementData;
@@ -22,25 +21,6 @@ interface ItemMovementFormProps {
     //setPriceOption: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const getBinPurposeBadgeClass = (purpose: string) => {
-    switch (purpose) {
-        case 'GoodCondition': return 'bg-green-600';
-        case 'OnRevision': return 'bg-yellow-600';
-        case 'Scrap': return 'bg-red-600';
-        case 'Reception': return 'bg-gray-600';
-        default: return 'bg-gray-400';
-    }
-};
-
-const getBinPurposeLabel = (purpose: string) => {
-    switch (purpose) {
-        case 'GoodCondition': return 'Good Condition';
-        case 'OnRevision': return 'On Revision';
-        case 'Scrap': return 'Scrap';
-        case 'Reception': return 'Reception';
-        default: return purpose;
-    }
-};
 
 export function ItemMovementForm({
     movementData,
@@ -208,14 +188,9 @@ export function ItemMovementForm({
                                     <SelectItem key={bin.binId} value={bin.binId.toString()}>
                                         <div className="flex items-center justify-between space-x-4 py-1">
                                             <span className="font-mono">{bin.binCode}</span>
-                                            <div className="flex items-center space-x-2">
-                                                <span className="text-sm text-muted-foreground">
-                                                    {bin.quantity} {selectedArticle.unit}
-                                                </span>
-                                                <Badge className={getBinPurposeBadgeClass(bin.binPurpose)}>
-                                                    {getBinPurposeLabel(bin.binPurpose)}
-                                                </Badge>
-                                            </div>
+                                            <span className="text-sm text-muted-foreground">
+                                                {bin.quantity} {selectedArticle.unit}
+                                            </span>
                                         </div>
                                     </SelectItem>
                                 ))
