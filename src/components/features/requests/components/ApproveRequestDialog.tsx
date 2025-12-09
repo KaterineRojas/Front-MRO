@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { type Request } from '../data/mockRequest.ts';
 import { X } from 'lucide-react';
 import { getTypeBadge } from '../../inventory/components/RequestBadges.tsx'
@@ -59,7 +59,6 @@ export default function RequestModal({
 
             <div className="relative w-full max-w-3xl p-6 bg-white rounded-lg shadow-xl dark:bg-gray-950">
 
-                {/* Cabecera (Actualizada con títulos dinámicos) */}
                 <div className="mb-4">
                     <h2 className="text-xl text-center md:text-left font-semibold text-gray-900 dark:text-gray-100">
                         {title}
@@ -98,9 +97,8 @@ export default function RequestModal({
                         </div>
                         {request.project && !isReject && (
                             <div>
-                                <label className="block text-sm font-medium text-gray-500 mb-1 fixed">Project</label>
-                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.project}
-                                </p>
+                                <label className="block text-sm font-medium text-gray-500 mb-1">Project</label>
+                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.project}</p>
                             </div>
                         )}
                         {!isReject &&

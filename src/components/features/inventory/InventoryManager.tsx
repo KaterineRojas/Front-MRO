@@ -393,7 +393,7 @@ export function InventoryManager() {
           <TabsContent value="kits" className="space-y-4">
             {/* KitsTab expects Article2[] for articles, but we have Article[]; pass empty array for now */}
             <KitsTab
-              articles={[]}
+              articles={articles}
               categories={[]}
               onCreateKit={handleCreateKit}
               onEditKit={handleEditKit as any}

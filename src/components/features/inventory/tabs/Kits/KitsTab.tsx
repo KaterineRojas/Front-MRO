@@ -9,6 +9,7 @@ import type { KitsTabProps } from './types';
 import { Button } from '../../components/Button'
 import { SearchBar } from '../../components/SearchBar'
 import { FilterSelect } from '../../components/FilterSelect'
+import { fetchArticlesFromApi } from '../../services/inventoryApi'
 
 export function KitsTab({
   articles = [],
@@ -124,7 +125,7 @@ export function KitsTab({
               options={categoryOptions}
               placeholder="All Categories"
               isLoading={loadingCategories}
-              icon={<Layers className="h-4 w-4" />} 
+              icon={<Layers className="h-4 w-4" />}
               allOptionIncluded={true}
             />
 
@@ -135,7 +136,7 @@ export function KitsTab({
               placeholder="Filter by Stock"
               icon={<Filter className="h-4 w-4" />}
             />
-            
+
           </div>
         </div>
 

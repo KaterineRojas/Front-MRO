@@ -1,11 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
     X, Minus, Plus, AlertTriangle, ArrowRight,
     PackageCheck, MapPin, Loader2, CheckCircle2, AlertCircle
 } from 'lucide-react';
-import {Badge} from '../components/Badge'
+import { Badge } from '../components/Badge'
 
 import { createPortal } from 'react-dom'
+import { AvailableBinResponse } from '../services/binsService';
+import { useReactToPrint } from 'react-to-print';
+import { Printer } from 'lucide-react';
+import { KitRequestPrintTemplate } from '../components/KitRequestPrintTemplate';
 
 interface Bin {
     id: number;
@@ -20,7 +24,7 @@ export interface InventoryArticle {
     name: string;
 }
 
-interface KitItem {
+export interface KitItem {
     articleId: number;
     articleSku: string;
     articleName: string;
@@ -33,7 +37,7 @@ interface AssembleKitModalProps {
     isOpen: boolean;
     onClose: () => void;
     kit: any;
-    availableBins: Bin[];
+    availableBins: AvailableBinResponse[];
     loadingAvailableBins: boolean;
     assemblyBinCode?: string | null;
     isBuilding: boolean;
@@ -56,6 +60,13 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
     const [selectedBinId, setSelectedBinId] = useState<number>(0);
     const [isVisible, setIsVisible] = useState(false);
     const [shouldRender, setShouldRender] = useState(false);
+    const printComponentRef = useRef<HTMLDivElement>(null);
+
+const handlePrint = useReactToPrint({
+    contentRef: printComponentRef,
+    documentTitle: `Request_${kit.sku}`,
+    onAfterPrint: () => console.log("Impresión finalizada"),
+});
 
     useEffect(() => {
         if (isOpen) {
@@ -106,7 +117,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
         });
     }, [kit, articles, quantity]);
 
-    const hasValidBin = assemblyBinCode || selectedBinId >= 0;
+    const hasValidBin = assemblyBinCode || selectedBinId > 0;
     const canConfirm = canBuildStock && hasValidBin && !isBuilding;
 
     const handleIncrement = () => setQuantity(q => Math.min(999, q + 1));
@@ -170,8 +181,8 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
 
                     {/* 2. SELECCIÓN BIN */}
                     <div className="space-y-3">
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-gray-500" />
+                        <h3 className="text-sm font-semibold  dark:text-gray-100 flex items-center gap-2 text-indigo-500">
+                            <MapPin className="w-4 h-4 text-indigo-500" />
                             Target Location
                         </h3>
                         {assemblyBinCode ? (
@@ -199,7 +210,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
                                             <option value={0}>Select a target BIN...</option>
                                             {availableBins.map((bin) => (
                                                 <option key={bin.id} value={bin.id}>
-                                                    {bin.binCode} {bin.description ? `- ${bin.description}` : ''}
+                                                    {bin.code} {bin.name ? `- ${bin.name}` : ''}
                                                 </option>
                                             ))}
                                         </select>
@@ -211,7 +222,18 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
 
                     {/* 3. TABLA REQUERIMIENTOS */}
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Resource Requirements</h3>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="...">Resource Requirements</h3>
+
+                            {/* THE PRINT BUTTON */}
+                            <button
+                                onClick={handlePrint}
+                                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                            >
+                                <Printer className="w-4 h-4" />
+                                Print Request
+                            </button>
+                        </div>
                         <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
                             <table className="w-full text-sm overflow-y-auto">
                                 <thead className="bg-gray-50 dark:bg-[#0A0A0A] text-gray-500 dark:text-gray-400 text-xs uppercase font-medium border-b border-gray-200 dark:border-gray-800">
@@ -239,7 +261,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
                                                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-200">
                                                     {item.articleName}
                                                     <div className="text-xs text-gray-400 font-mono font-normal">
-                                                        {item.articleSku}
+                                                        {kit.binCode}
                                                     </div>
                                                 </td>
 
@@ -294,6 +316,16 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
                     </button>
                 </div>
 
+            </div>
+
+
+            <div style={{ display: "none" }}>
+                <KitRequestPrintTemplate
+                    ref={printComponentRef}
+                    kit={kit}
+                    articles={articles}
+                    quantity={quantity}
+                />
             </div>
         </div>
         , document.body);

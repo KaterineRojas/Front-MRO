@@ -231,6 +231,62 @@ export function getTypeFromBinPurpose(_binPurpose: number): string {
   return 'GoodCondition';
 }
 
+
+/**
+ * GET available bins
+ * 
+ */
+export async function getAllAvailableBins(
+  warehouseId: number, 
+  isActive: boolean = true
+): Promise<AvailableBinResponse[]> {
+  
+  if (!warehouseId || warehouseId <= 0) {
+    console.warn('❌ getAllAvailableBins: Invalid warehouseId provided', warehouseId);
+    return [];
+  }
+
+  try {
+    // 2. Build Query Params strictly matching the Swagger definition
+    const params = new URLSearchParams({
+      warehouseId: warehouseId.toString(),
+      isActive: isActive.toString()
+    });
+
+    // Note: We do NOT append 'allowDifferentItems' as it wasn't in your Swagger screenshot.
+    // If you discover it is needed later, uncomment the next line:
+    // params.append('allowDifferentItems', 'false');
+
+    const url = `${API_URL}/Bin/available?${params.toString()}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Server returned ${response.status}: ${errorText}`);
+    }
+
+    const data: AvailableBinResponse[] = await response.json();
+
+    return data.map((item) => ({
+      id: item.id,
+      code: item.code,
+      name: item.name,
+      fullCode: item.fullCode,
+      allowDifferentItems: item.allowDifferentItems ?? false
+    }));
+
+  } catch (error) {
+    console.error('Error in getWarehouseAvailableBins:', error);
+    return [];
+  }
+}
+
 // ===================================================================
 // CÓDIGO ORIGINAL COMENTADO (PENDIENTE MIGRACIÓN)
 // ===================================================================
