@@ -13,6 +13,7 @@ import {
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { toast } from 'sonner';
+import { useAppSelector } from '../../../../store/hooks';
 import { getProjects, type Project } from '../../enginner/services';
 import { useTransfers } from './useTransfers';
 import { TransferForm } from './TransferForm';
@@ -56,6 +57,8 @@ export function TransferRequests() {
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [loadingWorkOrders, setLoadingWorkOrders] = useState(false);
   const [companiesLoaded, setCompaniesLoaded] = useState(false);
+
+  const currentUser = useAppSelector((state) => state.auth.user);
 
   const {
     filteredTransfers,
@@ -229,14 +232,43 @@ export function TransferRequests() {
       toast.error('Please select a project');
       return;
     }
+
+    if (!selectedCompany) {
+      toast.error('Please select a company');
+      return;
+    }
+
+    if (!selectedCustomer) {
+      toast.error('Please select a customer');
+      return;
+    }
+
+    if (!currentUser) {
+      toast.error('User information not available');
+      return;
+    }
     
     if (transferToAccept) {
       const selectedProjectData = sharedProjectsList.find(p => p.id === selectedProject);
-      await handleAccept(transferToAccept.id, selectedProject);
+      
+      // Call handleAccept with all required parameters
+      await handleAccept(
+        transferToAccept.id,
+        currentUser.id,
+        selectedCompany,
+        selectedCustomer,
+        currentUser.department,
+        selectedProject,
+        selectedWorkOrder,
+        ''
+      );
+      
       toast.success(`Items assigned to ${selectedProjectData?.name}.`);
       setConfirmTransferOpen(false);
       setTransferToAccept(null);
       setSelectedProject('');
+      setSelectedCompany('');
+      setSelectedCustomer('');
     }
   };
 
@@ -336,9 +368,8 @@ export function TransferRequests() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status ({getStatusCount('all')})</SelectItem>
-                <SelectItem value="pending-manager">Pending Manager ({getStatusCount('pending-manager')})</SelectItem>
-                <SelectItem value="pending-engineer">Pending Engineer ({getStatusCount('pending-engineer')})</SelectItem>
-                <SelectItem value="approved">Approved ({getStatusCount('approved')})</SelectItem>
+                <SelectItem value="pending">Pending ({getStatusCount('pending')})</SelectItem>
+                <SelectItem value="completed">Completed ({getStatusCount('completed')})</SelectItem>
                 <SelectItem value="rejected">Rejected ({getStatusCount('rejected')})</SelectItem>
               </SelectContent>
             </Select>
