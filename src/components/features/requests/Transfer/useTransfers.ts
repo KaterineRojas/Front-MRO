@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import {
-  getTransfers,
+  getTransfersIncoming,
+  getTransfersOutgoing,
   acceptTransfer,
   rejectTransfer,
   deleteTransfer,
@@ -22,7 +23,15 @@ interface UseTransfersReturn {
   expandedRows: Set<string>;
   toggleRow: (id: string) => void;
   handleCancel: (id: string) => Promise<void>;
-  handleAccept: (id: string, projectId: string) => Promise<void>;
+  handleAccept: (
+    id: string,
+    recipientId: string,
+    companyId: string,
+    customerId: string,
+    departmentId: string,
+    projectId: string,
+    notes?: string
+  ) => Promise<void>;
   handleReject: (id: string) => Promise<void>;
   getStatusCount: (status: string) => number;
   getTypeCount: (type: string) => number;
@@ -42,8 +51,20 @@ export function useTransfers(): UseTransfersReturn {
   const loadTransfers = async () => {
     try {
       setIsLoading(true);
-      const data = await getTransfers();
-      setTransfers(data);
+      // Load both incoming and outgoing transfers
+      const [incomingData, outgoingData] = await Promise.all([
+        getTransfersIncoming(),
+        getTransfersOutgoing()
+      ]);
+      
+      // Combine and sort by date (most recent first)
+      const allTransfers = [...incomingData, ...outgoingData].sort((a, b) => {
+        const dateA = new Date(a.requestDate).getTime();
+        const dateB = new Date(b.requestDate).getTime();
+        return dateB - dateA; // Most recent first
+      });
+      
+      setTransfers(allTransfers);
     } catch (error) {
       toast.error('Failed to load transfers');
       console.error(error);
@@ -107,9 +128,25 @@ export function useTransfers(): UseTransfersReturn {
   };
 
   // Accept transfer
-  const handleAccept = async (transferId: string, projectId: string) => {
+  const handleAccept = async (
+    transferId: string,
+    recipientId: string,
+    companyId: string,
+    customerId: string,
+    departmentId: string,
+    projectId: string,
+    notes?: string
+  ) => {
     try {
-      await acceptTransfer(transferId, projectId);
+      await acceptTransfer(
+        transferId,
+        recipientId,
+        companyId,
+        customerId,
+        departmentId,
+        projectId,
+        notes
+      );
       setTransfers(prev => prev.filter(tr => tr.id !== transferId));
       toast.success('Transfer accepted successfully');
     } catch (error: any) {

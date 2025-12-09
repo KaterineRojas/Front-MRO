@@ -15,6 +15,8 @@ export { useTransfers } from './useTransfers';
 // Services
 export {
   getTransfers,
+  getTransfersIncoming,
+  getTransfersOutgoing,
   getAvailableUsers,
   getInventoryItems,
   createTransfer,

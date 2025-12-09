@@ -10,6 +10,8 @@ export function getStatusColor(status: string): string {
   switch (status) {
     case 'active':
       return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
     case 'pending-manager':
       return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
     case 'pending-engineer':
@@ -27,6 +29,8 @@ export function getStatusText(status: string): string {
   switch (status) {
     case 'active':
       return 'Active';
+    case 'pending':
+      return 'Pending';
     case 'pending-manager':
       return 'Pending Manager';
     case 'pending-engineer':
