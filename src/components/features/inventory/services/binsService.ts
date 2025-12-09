@@ -44,15 +44,14 @@ export interface CheckItemOccupationResponse {
  * MOCK: Fetches all available bins from the API
  * ✅ REACTIVADO - Usa nueva lógica de bins jerárquicos
  */
-export async function getAvailableBins(_binPurpose?: number, isActive?: boolean): Promise<Bin[]> {
+export async function getAvailableBins(warehouseId: number = 1, isActive?: boolean): Promise<Bin[]> {
   try {
     // Construir URL con parámetros
     const params = new URLSearchParams();
+    params.append('warehouseId', warehouseId.toString());
     if (isActive !== undefined) {
       params.append('isActive', isActive.toString());
     }
-    // allowDifferentItems=false significa bins que solo aceptan un tipo de item
-    params.append('allowDifferentItems', 'false');
 
     const url = `${API_URL}/Bin/available${params.toString() ? '?' + params.toString() : ''}`;
     console.log('🔍 Fetching available bins from:', url);

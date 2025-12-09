@@ -1,7 +1,6 @@
 import React from 'react';
 import { Label } from '../../../../../ui/label';
 import { Input } from '../../../../../ui/input';
-import { Badge } from '../../../../../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../../ui/select';
 import { BinSelector } from '../../../components/BinSelector';
 import type { Article } from '../../../types';
@@ -13,31 +12,13 @@ interface RelocationFieldsProps {
   selectedItem: Article | null;
 }
 
-const getBinPurposeBadgeClass = (purpose: string) => {
-  switch (purpose) {
-    case 'GoodCondition': return 'bg-green-600';
-    case 'Reception': return 'bg-gray-600';
-    default: return 'bg-gray-400';
-  }
-};
-
-const getBinPurposeLabel = (purpose: string) => {
-  switch (purpose) {
-    case 'GoodCondition': return 'Good Condition';
-    case 'Reception': return 'Reception';
-    default: return purpose;
-  }
-};
-
 export function RelocationFields({ movementData, setMovementData, selectedItem }: RelocationFieldsProps) {
   // ✅ Buscar el bin seleccionado por ID
   const selectedBin = selectedItem?.bins?.find(bin => bin.binId === movementData.articleBinId);
   const maxStock = selectedBin?.quantity || 0;
-  
-  // ✅ Filtrar bins de Good Condition o Reception
-  const articleGoodOrReceptionBins = selectedItem?.bins?.filter(
-    bin => bin.binPurpose === 'GoodCondition' || bin.binPurpose === 'Reception'
-  ) || [];
+
+  // Get all bins for the selected item
+  const articleBins = selectedItem?.bins || [];
 
   return (
     <>
@@ -62,7 +43,7 @@ export function RelocationFields({ movementData, setMovementData, selectedItem }
       {/* New Location */}
       <div>
         <Label>New Location *</Label>
-        {articleGoodOrReceptionBins.length > 0 ? (
+        {articleBins.length > 0 ? (
           <>
             <Select
               value={movementData.newLocationBinId > 0 ? movementData.newLocationBinId.toString() : ''}
@@ -77,25 +58,20 @@ export function RelocationFields({ movementData, setMovementData, selectedItem }
                 <SelectValue placeholder="Select new location" />
               </SelectTrigger>
               <SelectContent>
-                {articleGoodOrReceptionBins.map((bin) => (
+                {articleBins.map((bin) => (
                   <SelectItem key={bin.binId} value={bin.binId.toString()}>
                     <div className="flex items-center justify-between space-x-4 py-1">
                       <span className="font-mono">{bin.binCode}</span>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-muted-foreground">
-                          {bin.quantity} {selectedItem?.unit}
-                        </span>
-                        <Badge className={getBinPurposeBadgeClass(bin.binPurpose)}>
-                          {getBinPurposeLabel(bin.binPurpose)}
-                        </Badge>
-                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {bin.quantity} {selectedItem?.unit}
+                      </span>
                     </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground mt-1">
-              Showing bins associated with this item ({articleGoodOrReceptionBins.length} bins)
+              Showing bins associated with this item ({articleBins.length} bins)
             </p>
           </>
         ) : (
