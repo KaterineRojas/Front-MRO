@@ -8,8 +8,8 @@ import { LoanRequest } from '../types';
 
 interface Props {
   packingRequests: LoanRequest[];
-  expandedPackingRequests: Set<number>;
-  onToggleExpandPacking: (id: number) => void;
+  expandedPackingRequests: Set<string>;
+  onToggleExpandPacking: (requestNumber: string) => void;
   isKitOrder: (r: LoanRequest) => boolean;
   getPriorityBadge: (p: string) => React.ReactNode;
   selectedPackingItems: Set<string>;
@@ -65,11 +65,11 @@ export const PackingRequestsTab: React.FC<Props> = (props) => {
                 </TableRow>
               </TableHeader>
               <TableBody className="text-left">
-                {packingRequests.map((request, index) => (
+                {packingRequests.map((request) => (
                   <PackingRequestRow
-                    key={`${request.id}-${index}`}
+                    key={request.requestNumber}
                     request={request}
-                    expanded={expandedPackingRequests.has(request.id)}
+                    expanded={expandedPackingRequests.has(request.requestNumber)}
                     onToggleExpand={onToggleExpandPacking}
                     isKitOrder={props.isKitOrder}
                     getPriorityBadge={props.getPriorityBadge}
