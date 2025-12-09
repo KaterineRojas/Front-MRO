@@ -156,6 +156,35 @@ export interface CreateKitRequest {
 }
 
 /**
+ * Parameters for retrieving the default bin for a kit
+ * Mapped from query parameters in GET /api/Kits/default-bin
+ */
+export interface KitDefaultBinParams {
+  kitId: number;
+  warehouseId: number;
+}
+
+/**
+ * API response format for Kit Default Bin endpoint
+ * Matches strictly the JSON schema from Swagger
+ */
+export interface KitDefaultBinResponse {
+  id: number;
+  kitId: number;
+  kitSku: string;
+  kitName: string;
+  binId: number;
+  binCode: string;
+  quantity: number;
+  quantityOnLoan: number;     
+  quantityReserved: number;
+  default: boolean;           
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
  * Fetches all kit categories from the API
  */
 export async function getKitCategories(): Promise<KitCategory[]> {
@@ -247,6 +276,8 @@ export interface CreatePhysicalKitRequest {
  * Creates physical kits (builds/assembles kits)
  */
 export async function createPhysicalKit(kitData: CreatePhysicalKitRequest): Promise<void> {
+  console.log(kitData);
+  
   const response = await fetch(`${API_URL}/Kits/create-physical`, {
     method: 'POST',
     headers: {
@@ -259,7 +290,7 @@ export async function createPhysicalKit(kitData: CreatePhysicalKitRequest): Prom
     // Backend always returns error in format: { "message": "error description" }
     let errorMessage = 'Failed to build kit';
 
-    try {
+    try { 
       const errorData = await response.json();
       errorMessage = errorData.message || 'Failed to build kit';
     } catch (parseError) {
@@ -441,3 +472,56 @@ export async function dismantleKit(kitId: number, data: DismantleKitRequest): Pr
     throw error;
   }
 }
+
+
+
+/**
+ * Fetches the default bin information for a specific kit and warehouse.
+ * Endpoint: GET /api/Kits/default-bin
+ */
+/**
+ * Obtiene el Bin por defecto. 
+ * Retorna el objeto si existe.
+ * Retorna NULL si recibe un 404 (Sin asignación).
+ * Lanza error para otros códigos (500, 401, etc).
+ */
+export const getKitDefaultBin = async (
+  params: KitDefaultBinParams,
+  signal?: AbortSignal
+): Promise<KitDefaultBinResponse | null> => {
+  
+  if (!params.kitId || !params.warehouseId) {
+    throw new Error('Parámetros insuficientes: kitId y warehouseId son requeridos');
+  }
+
+  const queryParams = new URLSearchParams({
+    kitId: params.kitId.toString(),
+    warehouseId: params.warehouseId.toString(),
+  });
+
+  try {
+    const response = await fetch(`${API_URL}/Kits/default-bin?${queryParams.toString()}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      signal,
+    });
+
+    if (response.ok) {
+      return await response.json();
+    }
+
+    if (response.status === 404) {
+      return null; 
+    }
+
+    const errorBody = await response.text();
+    throw new Error(`Error del servidor (${response.status}): ${errorBody}`);
+
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw error;
+    }
+    console.error('Error fetching default bin:', error);
+    throw error;
+  }
+};

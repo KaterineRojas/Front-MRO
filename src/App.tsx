@@ -16,7 +16,7 @@ import { OrderDetailView } from './components/features/orders/OrderDetailView';
 import { CycleCountView } from './components/features/cycle-count/CycleCountView';
 import { ReturnItemsPage } from './components/features/loans/ReturnItemsPage';
 import { ThemeProvider } from "next-themes";
-import { ManageRequests } from './components/features/manage-requests/ManageRequests';
+// import { ManageRequests } from './components/features/manage-requests/ManageRequests';
 
 // Engineer Module Imports
 import { 
@@ -178,7 +178,7 @@ function AppRoutes() {
         <Route path="orders/detail" element={<OrderDetailWrapper />} />
 
         {/* Manage Requests Route */}
-        <Route path="manage-requests" element={<ManageRequests />} />
+        {/* <Route path="manage-requests" element={<ManageRequestsPage />} /> */}
         
         {/* Request Management (Admin/Manager only) */}
         {user && ['administrator', 'manager'].includes(user.role) && (

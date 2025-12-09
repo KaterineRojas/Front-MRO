@@ -1,0 +1,224 @@
+import React from 'react';
+import { TableCell, TableRow } from '../../../../ui/table';
+import { Button } from '../../../../ui/button';
+import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
+import { Badge } from '../../../../ui/badge';
+import { ChevronDown, ChevronRight, Printer, Eye, Package } from 'lucide-react';
+import { LoanRequest, LoanItem } from '../../types';
+import { toast } from 'react-hot-toast';
+
+interface Props {
+  request: LoanRequest;
+  expanded: boolean;
+  onToggleExpand: (id: number) => void;
+  isKitOrder: (req: LoanRequest) => boolean;
+  getPriorityBadge: (priority: string) => React.ReactNode;
+  selectedPackingItems: Set<string>;
+  packingItemQuantities: Record<string, number>;
+  handleSelectPackingItem: (requestId: number, itemId: number) => void;
+  handlePackingQuantityChange: (requestId: number, itemId: number, quantity: number) => void;
+  getPackingItemQuantity: (requestId: number, itemId: number) => number;
+  areAllItemsSelected: (requestId: number, items: LoanItem[]) => boolean;
+  handleSelectAllPackingItems: (request: LoanRequest, checked: boolean) => void;
+  printedRequests: Set<number>;
+  handlePrintSinglePacking: (request: LoanRequest) => void;
+  handleConfirmPacking: (request: LoanRequest) => void;
+}
+
+export const PackingRequestRow: React.FC<Props> = ({
+  request,
+  expanded,
+  onToggleExpand,
+  isKitOrder,
+  getPriorityBadge,
+  selectedPackingItems,
+  packingItemQuantities,
+  handleSelectPackingItem,
+  handlePackingQuantityChange,
+  getPackingItemQuantity,
+  areAllItemsSelected,
+  handleSelectAllPackingItems,
+  printedRequests,
+  handlePrintSinglePacking,
+  handleConfirmPacking
+}) => {
+// 1. Lógica para determinar si el botón debe estar deshabilitado
+    const isPrinted = printedRequests.has(request.id);
+    const isKit = isKitOrder(request);
+    const areItemsSelected = selectedPackingItems.size > 0;
+
+    const isValidForPacking = isPrinted && (isKit || areItemsSelected);
+
+   const showDisabledToast = (e: React.MouseEvent) => {
+        // Solo proceder si la acción es inválida
+        if (!isValidForPacking) {
+            e.stopPropagation(); 
+            
+            let disabledMessage = '';
+            
+            // Lógica para determinar el mensaje exacto
+            if (!isPrinted) {
+                disabledMessage = 'To confirm, you must first print the packing list.';
+            } else if (!isKit && !areItemsSelected) {
+                disabledMessage = 'Please select the items and specify the quantities to pack.';
+            } else {
+                // Mensaje genérico de fallback (aunque la lógica anterior cubre todos los casos)
+                disabledMessage = 'Action blocked due to pending validations.';
+            }           
+            toast.error(disabledMessage);
+        }
+    };
+// ... dentro del componente PackingRequestRow
+const isPacking = request.status === 'Packing';
+const isPending = request.status === 'Pending';
+const isSent = request.status === 'Sent';
+
+// 3. Lógica para el botón de IMPRESORA
+    const printerTitle = isPending 
+        ? 'Start Packing and Print List' 
+        : isPacking 
+            ? 'Print Packing List' 
+            : 'Request already sent or completed';
+            
+    // El botón debe estar deshabilitado solo si ya se envió la solicitud.
+    const printerDisabled = isSent; 
+    
+    // Cambiamos el color para que sea más notable cuando está 'Pending' (y se requiere acción)
+    const printerVariant = isPending ? 'default' : 'outline';
+  return (
+    <>
+      <TableRow className="hover:bg-muted/50">
+        <TableCell>
+          <Button variant="ghost" size="sm" onClick={() => onToggleExpand(request.id)}>
+            {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </Button>
+        </TableCell>
+        <TableCell className="font-mono">{request.requestNumber}</TableCell>
+        <TableCell>
+          <div>
+            <div>{request.requesterName}</div>
+            <div className="text-sm text-muted-foreground">{request.requesterEmail}</div>
+          </div>
+        </TableCell>
+        <TableCell>{request.departmentId}</TableCell>
+        <TableCell>{request.projectId}</TableCell>
+        <TableCell>{request.createdAt}</TableCell>
+        <TableCell>{getPriorityBadge(request.priority)}</TableCell>
+        <TableCell>
+          <Badge variant={isKitOrder(request) ? 'default' : 'outline'}>{isKitOrder(request) ? 'Yes' : 'No'}</Badge>
+        </TableCell>
+
+        <TableCell>
+          <div className="flex space-x-2">
+            <Button 
+                variant={printerVariant} 
+                size="sm" 
+                onClick={() => handlePrintSinglePacking(request)}
+                disabled={printerDisabled}
+                title={printerTitle}
+                >
+                <Printer className="h-4 w-4" />
+                </Button>
+            <div style={{ display: 'inline-block', cursor: isValidForPacking ? 'default' : 'not-allowed' }}
+                onClick={!isValidForPacking ? showDisabledToast : undefined}>
+                    <Button
+                        variant="default"
+                        onClick={() => handleConfirmPacking(request)} 
+                        // 🚨 MODIFICACIÓN: Deshabilitar el botón de Confirmar si ya se envió (isSent)
+                        disabled={!isValidForPacking || isSent }
+                        title={isSent ? 'Request already sent' : 'Confirm Packing'}
+                        style={{ pointerEvents: isValidForPacking && !isSent ? 'auto' : 'none' }}>
+                        <Package className="mr-2 h-4 w-4" /> Confirm Packing
+                    </Button>
+                </div>
+          </div>
+        </TableCell>
+      </TableRow>
+
+      {expanded && (
+        <TableRow>
+          <TableCell colSpan={10} className="bg-muted/30 p-0">
+            <div className="p-4 max-w-full overflow-hidden">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="flex items-center">
+                  <Package className="h-4 w-4 mr-2" />
+                  Items in this request
+                </h4>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`select-all-packing-${request.id}`}
+                    checked={areAllItemsSelected(request.id, request.items)}
+                    onChange={(e) => handleSelectAllPackingItems(request, e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  <label htmlFor={`select-all-packing-${request.id}`} className="text-sm cursor-pointer">Select All Items</label>
+                </div>
+              </div>
+
+              <div 
+                className="rounded-md border bg-card overflow-x-auto" 
+                onScroll={(e) => e.stopPropagation()}
+                style={{ isolation: 'isolate', maxWidth: '100%' }}
+              >
+                <table className="w-full border-collapse min-w-[800px]">
+                  <thead>
+                    <tr className='text-center'>
+                      <th>Select</th>
+                      <th>Image</th>
+                      <th>Sku</th>
+                      <th>Name</th>
+                      <th>Requeted quantity</th>
+                      <th>Packaged quantity</th>
+                      <th>Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {request.items.map(item => {
+                      const itemKey = `${request.id}-${item.id}`;
+                      return (
+                        <tr key={item.id}>
+                          <td className="text-center">
+                            {!isKitOrder(request) ? (
+                              <input type="checkbox" checked={selectedPackingItems.has(itemKey)} onChange={() => handleSelectPackingItem(request.id, item.id)} className="h-4 w-4" />
+                            ) : null}
+                          </td>
+                          <td className="flex justify-center">
+                            <ImageWithFallback src={item.imageUrl || ''} alt={item.name} className="w-12 h-12 object-cover rounded" />
+                          </td>
+                          <td className="font-mono text-sm text-center">{item.sku}</td>
+                          <td className="text-center">{item.name}</td>
+                          <td className="text-center">{item.quantityRequested}</td>
+                          <td>
+                            {!isKitOrder(request) ? (
+                              <div className="text-center space-x-2">
+                                <input type="number" min={0} max={item.quantityRequested} 
+                                value={getPackingItemQuantity(request.id, item.id)} 
+                                onChange={(e) => handlePackingQuantityChange(request.id, item.id, parseInt(e.target.value) || 0)} 
+                                className="w-20" />
+                                <span className="text-sm text-muted-foreground">/ {item.quantityRequested} {item.unit}</span>
+                              </div>
+                            ) : (
+                              <span>{item.quantityRequested} {item.unit}</span>
+                            )}
+                          </td>
+                          <td className="text-center">
+                            <Badge variant={item.articleType === 'consumable' ? 'secondary' : 'outline'}>
+                              {item.articleType === 'consumable' ? 'Consumable' : 'Non-Consumable'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </TableCell>
+        </TableRow>
+      )}
+    </>
+  );
+};
+
+export default PackingRequestRow;

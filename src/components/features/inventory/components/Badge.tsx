@@ -28,7 +28,7 @@ const VARIANTS = {
     
     "info-soft": "border-transparent bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
     
-    "critical-soft": "border-transparent bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+    "critical-soft": "border-transparent bg-red-100 text-red-500 dark:bg-red-900/30 dark:text-red-400",
     
     "neutral-soft": "border-black bg-gray-900 text-white dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700",
     
