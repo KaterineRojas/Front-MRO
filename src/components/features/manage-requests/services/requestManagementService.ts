@@ -37,13 +37,13 @@ async function getPagedData<T>(
     }
 }
 
-const PACKING_ALLOWED_STATUSES = ['Pending', 'Packing'];
+const PACKING_ALLOWED_STATUSES = ['Approved', 'Packing'];
 
 export async function getPackingRequests(): Promise<LoanRequest[]> {
   try {
-    const pending = await getPagedData<LoanRequest>(
+    const approved = await getPagedData<LoanRequest>(
       'loan-requests',
-      'Pending',
+      'Approved',
       DEFAULT_WAREHOUSE_ID
     );
     const packing = await getPagedData<LoanRequest>(
@@ -51,7 +51,7 @@ export async function getPackingRequests(): Promise<LoanRequest[]> {
       'Packing',
       DEFAULT_WAREHOUSE_ID
     );
-    const combined = [...pending, ...packing];
+    const combined = [...approved, ...packing];
     
     // Debug: ver estructura de datos
     console.log('🔍 Packing Requests from API:', combined);

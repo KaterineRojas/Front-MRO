@@ -346,7 +346,7 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                                           }
                                           occs.forEach((o, i) => props.handleReturnQuantityChange(o.requestId, o.itemId, distributed[i]));
                                         }}
-                                        className="w-20 text-center border rounded px-2 py-1"
+                                        className="w-20 text-center border rounded px-2 py-1  bg-green-50 border border-grey-300"
                                       />
                                     </td>
                                     <td className="text-center px-4 py-2">
@@ -355,7 +355,7 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                                           const first = occs[0];
                                           if (first) props.handleOpenConditionDialog(first.requestId, first.itemId, false);
                                         }}
-                                        className="px-3 py-1 bg-gray-100 border border-gray-300 rounded text-sm hover:bg-gray-200"
+                                        className="px-3 py-1 bg-green-100 border border-green-300 rounded text-sm hover:bg-green-200"
                                       >
                                         Select Condition
                                       </button>

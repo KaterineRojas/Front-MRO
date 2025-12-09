@@ -73,11 +73,11 @@ export const PackingRequestRow: React.FC<Props> = ({
     };
 // ... dentro del componente PackingRequestRow
 const isPacking = request.status === 'Packing';
-const isPending = request.status === 'Pending';
+const isApproved = request.status === 'Approved';
 const isSent = request.status === 'Sent';
 
 // 3. Lógica para el botón de IMPRESORA
-    const printerTitle = isPending 
+    const printerTitle = isApproved 
         ? 'Start Packing and Print List' 
         : isPacking 
             ? 'Print Packing List' 
@@ -86,8 +86,8 @@ const isSent = request.status === 'Sent';
     // El botón debe estar deshabilitado solo si ya se envió la solicitud.
     const printerDisabled = isSent; 
     
-    // Cambiamos el color para que sea más notable cuando está 'Pending' (y se requiere acción)
-    const printerVariant = isPending ? 'default' : 'outline';
+    // Cambiamos el color para que sea más notable cuando está 'Approved' (y se requiere acción)
+    const printerVariant = isApproved ? 'default' : 'outline';
   return (
     <>
       <TableRow className="hover:bg-muted/50">
@@ -204,10 +204,15 @@ const isSent = request.status === 'Sent';
                           <td>
                             {!isKitOrder(request) ? (
                               <div className="text-center space-x-2">
-                                <input type="number" min={0} max={item.quantityRequested} 
-                                value={getPackingItemQuantity(request.id, item.id)} 
-                                onChange={(e) => handlePackingQuantityChange(request.id, item.id, parseInt(e.target.value) || 0)} 
-                                className="w-20" />
+                                <input 
+                                  type="number" 
+                                  min={0} 
+                                  max={item.quantityRequested} 
+                                  value={getPackingItemQuantity(request.id, item.id)} 
+                                  onChange={(e) => handlePackingQuantityChange(request.id, item.id, parseInt(e.target.value) || 0)}
+                                  onFocus={(e) => e.target.select()}
+                                  className={`w-20 ${getPackingItemQuantity(request.id, item.id) === 0 ? 'border-2 text-center border rounded px-2 py-1 border-black-400 bg-green-50' : 'border border-gray-300'}`}
+                                />
                                 <span className="text-sm text-muted-foreground">/ {item.quantityRequested} {item.unit}</span>
                               </div>
                             ) : (

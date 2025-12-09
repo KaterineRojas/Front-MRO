@@ -261,8 +261,7 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
       setKitItemQuantities(prev => ({ ...prev, [itemKey]: total }));
     } else {
       setItemConditions(prev => ({ ...prev, [itemKey]: conditionString }));
-      // Actualizar returnQuantities con el total para asegurar que no sea 0
-      setReturnQuantities(prev => ({ ...prev, [itemKey]: total }));
+      // NO sobrescribir returnQuantities - el usuario ya lo configuró en el input
     }
 
     setConditionDialogOpen(false); 
