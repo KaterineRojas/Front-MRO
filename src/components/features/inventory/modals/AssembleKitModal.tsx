@@ -8,7 +8,7 @@ import { Badge } from '../components/Badge'
 import { createPortal } from 'react-dom'
 import { AvailableBinResponse } from '../services/binsService';
 import { useReactToPrint } from 'react-to-print';
-import { Printer } from 'lucide-react'; // Your icon
+import { Printer } from 'lucide-react';
 import { KitRequestPrintTemplate } from '../components/KitRequestPrintTemplate';
 
 interface Bin {
@@ -24,7 +24,7 @@ export interface InventoryArticle {
     name: string;
 }
 
-interface KitItem {
+export interface KitItem {
     articleId: number;
     articleSku: string;
     articleName: string;
@@ -62,11 +62,11 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
     const [shouldRender, setShouldRender] = useState(false);
     const printComponentRef = useRef<HTMLDivElement>(null);
 
-    const handlePrint = useReactToPrint({
-        content: () => printComponentRef.current,
-        documentTitle: `Request_${kit.sku}_${new Date().toISOString()}`,
-        onAfterPrint: () => console.log("Print successful"), // Optional logging
-    });
+const handlePrint = useReactToPrint({
+    contentRef: printComponentRef,
+    documentTitle: `Request_${kit.sku}`,
+    onAfterPrint: () => console.log("Impresión finalizada"),
+});
 
     useEffect(() => {
         if (isOpen) {

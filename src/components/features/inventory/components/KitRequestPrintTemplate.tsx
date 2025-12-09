@@ -1,43 +1,62 @@
 import React from 'react';
-import { KitItem, Kit } from '../types'; // Import your types
+import { Kit } from '../types';
+import {InventoryArticle, KitItem} from '../modals/AssembleKitModal'
 
 interface PrintTemplateProps {
-    kit: Kit; // Replace with your Kit Type
-    articles: any[]; // Replace with your Article Type
+    kit: Kit;
+    articles: InventoryArticle[];
     quantity: number;
 }
 
-// We use forwardRef so the parent can trigger the print on this specific DOM element
 export const KitRequestPrintTemplate = React.forwardRef<HTMLDivElement, PrintTemplateProps>(
     ({ kit, articles, quantity }, ref) => {
 
         const today = new Date().toLocaleDateString();
 
         return (
-            <div ref={ref} className="p-8 bg-white text-black print-container">
+            <div ref={ref} style={{
+                padding: '32px',
+                backgroundColor: 'white',
+                color: 'black',
+                fontFamily: 'Arial, sans-serif',
+                width: '100%',
+                minHeight: '100vh'
+            }}>
 
                 {/* 1. PRINT HEADER */}
-                <div className="mb-8 border-b pb-4">
-                    <div className="flex justify-between items-end">
+                <div style={{ marginBottom: '32px', borderBottom: '1px solid #000', paddingBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                         <div>
-                            <h1 className="text-2xl font-bold uppercase tracking-wider">Material Request Form</h1>
-                            <p className="text-sm text-gray-500 mt-1">Request ID: #{kit.id} | SKU: {kit.sku}</p>
+                            <h1 style={{ fontSize: '24px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                                Material Request Form
+                            </h1>
+                            <p style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>
+                                Request ID: #{kit.id} | SKU: {kit.sku}
+                            </p>
                         </div>
-                        <div className="text-right">
-                            <h2 className="text-xl font-semibold text-gray-800">{kit.name}</h2>
-                            <p className="text-sm text-gray-500">Requested Qty: {quantity}</p>
+                        <div style={{ textAlign: 'right' }}>
+                            <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#333' }}>{kit.name}</h2>
+                            <p style={{ fontSize: '14px', color: '#666' }}>Requested Qty: {quantity}</p>
                         </div>
                     </div>
                 </div>
 
-                {/* 2. THE TABLE (Styled specifically for high contrast printing) */}
-                <table className="w-full text-sm border-collapse mb-8">
+                {/* 2. THE TABLE */}
+                <table style={{ width: '100%', fontSize: '14px', borderCollapse: 'collapse', marginBottom: '32px' }}>
                     <thead>
-                        <tr className="border-b-2 border-black">
-                            <th className="py-2 text-left font-bold uppercase text-xs">Item</th>
-                            <th className="py-2 text-center font-bold uppercase text-xs">Bin Location</th>
-                            <th className="py-2 text-center font-bold uppercase text-xs">Qty Needed</th>
-                            <th className="py-2 text-right font-bold uppercase text-xs">Stock Status</th>
+                        <tr style={{ borderBottom: '2px solid #000' }}>
+                            <th style={{ padding: '8px 0', textAlign: 'left', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '12px' }}>
+                                Item
+                            </th>
+                            <th style={{ padding: '8px 0', textAlign: 'center', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '12px' }}>
+                                Bin Location
+                            </th>
+                            <th style={{ padding: '8px 0', textAlign: 'center', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '12px' }}>
+                                Qty Needed
+                            </th>
+                            <th style={{ padding: '8px 0', textAlign: 'right', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '12px' }}>
+                                Stock Status
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -48,24 +67,24 @@ export const KitRequestPrintTemplate = React.forwardRef<HTMLDivElement, PrintTem
                             const hasStock = currentStock >= required;
 
                             return (
-                                <tr key={idx} className="border-b border-gray-300">
-                                    <td className="py-3 pr-2">
-                                        <span className="font-semibold block">{item.articleName}</span>
-                                        <span className="text-xs text-gray-500">{item.articleSku}</span>
+                                <tr key={idx} style={{ borderBottom: '1px solid #ccc' }}>
+                                    <td style={{ padding: '12px 8px 12px 0' }}>
+                                        <span style={{ fontWeight: '600', display: 'block' }}>{item.articleName}</span>
+                                        <span style={{ fontSize: '12px', color: '#666' }}>{item.articleSku}</span>
                                     </td>
-                                    <td className="py-3 text-center text-gray-600 font-mono">
+                                    <td style={{ padding: '12px 0', textAlign: 'center', color: '#666', fontFamily: 'monospace' }}>
                                         {kit.binCode || 'N/A'}
                                     </td>
-                                    <td className="py-3 text-center font-bold">
+                                    <td style={{ padding: '12px 0', textAlign: 'center', fontWeight: 'bold' }}>
                                         {required}
                                     </td>
-                                    <td className="py-3 text-right">
+                                    <td style={{ padding: '12px 0', textAlign: 'right' }}>
                                         {hasStock ? (
-                                            <span className="flex items-center justify-end text-green-700 font-medium">
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', color: '#16a34a', fontWeight: '500' }}>
                                                 ✓ Available ({currentStock})
                                             </span>
                                         ) : (
-                                            <span className="flex items-center justify-end text-red-700 font-bold">
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', color: '#dc2626', fontWeight: 'bold' }}>
                                                 ⚠ Low Stock ({currentStock})
                                             </span>
                                         )}
@@ -77,28 +96,32 @@ export const KitRequestPrintTemplate = React.forwardRef<HTMLDivElement, PrintTem
                 </table>
 
                 {/* 3. FOOTER & SIGNATURES */}
-                <div className="mt-12 pt-8 border-t-2 border-gray-100">
-                    <div className="grid grid-cols-2 gap-12">
+                <div style={{ marginTop: '48px', paddingTop: '32px', borderTop: '2px solid #e5e7eb' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px' }}>
 
                         {/* Requested By */}
                         <div>
-                            <p className="text-xs font-bold uppercase text-gray-500 mb-8">Requested By:</p>
-                            <div className="border-t border-black w-3/4"></div>
-                            <p className="mt-2 text-sm">Signature</p>
-                            <p className="text-xs text-gray-500 mt-1">Date: {today}</p>
+                            <p style={{ fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', color: '#666', marginBottom: '32px' }}>
+                                Requested By:
+                            </p>
+                            <div style={{ borderTop: '1px solid #000', width: '75%' }}></div>
+                            <p style={{ marginTop: '8px', fontSize: '14px' }}>Signature</p>
+                            <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>Date: {today}</p>
                         </div>
 
                         {/* Approved By */}
                         <div>
-                            <p className="text-xs font-bold uppercase text-gray-500 mb-8">Approved By:</p>
-                            <div className="border-t border-black w-3/4"></div>
-                            <p className="mt-2 text-sm">Manager Signature</p>
-                            <p className="text-xs text-gray-500 mt-1">Date: ______________</p>
+                            <p style={{ fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', color: '#666', marginBottom: '32px' }}>
+                                Approved By:
+                            </p>
+                            <div style={{ borderTop: '1px solid #000', width: '75%' }}></div>
+                            <p style={{ marginTop: '8px', fontSize: '14px' }}>Manager Signature</p>
+                            <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>Date: ______________</p>
                         </div>
 
                     </div>
 
-                    <div className="mt-8 text-center text-[10px] text-gray-400">
+                    <div style={{ marginTop: '32px', textAlign: 'center', fontSize: '10px', color: '#999' }}>
                         System generated document. Internal use only.
                     </div>
                 </div>
