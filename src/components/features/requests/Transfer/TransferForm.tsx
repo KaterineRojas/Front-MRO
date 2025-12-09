@@ -14,13 +14,17 @@ import {
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { toast } from 'sonner';
+import { store } from '../../../../store/store';
 import { 
   getAvailableUsers, 
-  getInventoryItems,
   createTransfer,
+  getInventoryTransfer,
   type InventoryItem,
   type User
-} from './transferService'; 
+} from './transferService';
+import { getWarehouses, getUsers, sendImage } from '../services/sharedServices';
+import type { Warehouse, Employee } from '../services/sharedServices'; 
+
 
 interface TransferFormProps {
   onBack: () => void;
@@ -29,7 +33,8 @@ interface TransferFormProps {
 
 export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
   // Data
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<Employee[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,11 +43,13 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
   const [transferQuantities, setTransferQuantities] = useState<Record<string, number>>({});
   const [targetEngineerId, setTargetEngineerId] = useState('');
   const [transferPhoto, setTransferPhoto] = useState<string | null>(null);
+  const [validatedImageUrl, setValidatedImageUrl] = useState<string | null>(null);
+  const [isValidatingPhoto, setIsValidatingPhoto] = useState(false);
   
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [projectFilter, setProjectFilter] = useState('all');
-  const [warehouseFilter, setWarehouseFilter] = useState('all');
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
   
   // Dialog state
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -59,12 +66,13 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        const [usersData, itemsData] = await Promise.all([
-          getAvailableUsers(),
-          getInventoryItems()
-        ]);
+        const usersData = await getUsers('OPEN');
+        const warehousesData = await getWarehouses();
         setUsers(usersData);
-        setInventoryItems(itemsData);
+        setWarehouses(warehousesData as Warehouse[]);
+        if (warehousesData.length > 0) {
+          setSelectedWarehouse(warehousesData[0].id);
+        }
       } catch (error) {
         toast.error('Failed to load transfer data');
       } finally {
@@ -74,17 +82,45 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
     loadData();
   }, []);
 
+  // Load items when warehouse changes
+  useEffect(() => {
+    const loadItems = async () => {
+      if (selectedWarehouse) {
+        try {
+          // Get current user ID from Redux
+          const state = store.getState();
+          const currentUserId = state.auth?.user?.id || '';
+          
+          if (!currentUserId) {
+            toast.error('Unable to load user information');
+            return;
+          }
+          
+          console.log(`Loading inventory for user: ${currentUserId}, warehouse: ${selectedWarehouse}`);
+          const data = await getInventoryTransfer(currentUserId, selectedWarehouse);
+          setInventoryItems(data);
+        } catch (error) {
+          toast.error('Failed to load items');
+        }
+      }
+    };
+    loadItems();
+  }, [selectedWarehouse]);
+
+  // Clear selected items when warehouse changes
+  useEffect(() => {
+    if (selectedItemIds.size > 0) {
+      setSelectedItemIds(new Set());
+      setTransferQuantities({});
+      toast.info('Selected items cleared - warehouse changed');
+    }
+  }, [selectedWarehouse]);
+
   // Computed values
   const uniqueProjects = useMemo(() => {
     const projects = new Set<string>();
     inventoryItems.forEach(item => projects.add(item.project));
     return Array.from(projects).sort();
-  }, [inventoryItems]);
-
-  const uniqueWarehouses = useMemo(() => {
-    const warehouses = new Set<string>();
-    inventoryItems.forEach(item => item.warehouse && warehouses.add(item.warehouse));
-    return Array.from(warehouses).filter(w => w).sort();
   }, [inventoryItems]);
 
   const filteredInventoryItems = useMemo(() => {
@@ -95,17 +131,16 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
         (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()));
       
       const matchesProject = projectFilter === 'all' || item.project === projectFilter;
-      const matchesWarehouse = warehouseFilter === 'all' || item.warehouse === warehouseFilter;
       
-      return matchesSearch && matchesProject && matchesWarehouse;
+      return matchesSearch && matchesProject;
     });
-  }, [inventoryItems, searchTerm, projectFilter, warehouseFilter]);
+  }, [inventoryItems, searchTerm, projectFilter]);
 
   const selectedItems = useMemo(() => {
     return inventoryItems.filter(item => selectedItemIds.has(item.id));
   }, [inventoryItems, selectedItemIds]);
 
-  const canTransfer = targetEngineerId && transferPhoto && selectedItemIds.size > 0;
+  const canTransfer = targetEngineerId && validatedImageUrl && selectedItemIds.size > 0;
 
   // Handlers
   const handleItemSelection = (itemId: string, checked: boolean) => {
@@ -196,6 +231,44 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
     }
   };
 
+  const validatePhoto = async () => {
+    if (!transferPhoto) {
+      toast.error('Please capture or upload a photo first');
+      return;
+    }
+
+    try {
+      setIsValidatingPhoto(true);
+      
+      // Convert base64 to File object
+      const base64Data = transferPhoto.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const file = new File([byteArray], `transfer-photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+      // Upload to server
+      console.log('Validating photo, uploading to server...');
+      const response = await sendImage(file);
+      console.log('Photo validation response:', response);
+
+      if (response.url) {
+        setValidatedImageUrl(response.url);
+        toast.success('Photograph validated successfully');
+      } else {
+        toast.error('Failed to validate photograph');
+      }
+    } catch (error: any) {
+      console.error('Error validating photo:', error);
+      toast.error(error.message || 'Failed to validate photograph');
+    } finally {
+      setIsValidatingPhoto(false);
+    }
+  };
+
   const handleTransferClick = () => {
     if (!targetEngineerId) {
       toast.error('Please select a target engineer');
@@ -227,10 +300,10 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
       await createTransfer({
         targetEngineerId,
         items,
-        photo: transferPhoto!
+        photo: validatedImageUrl!
       });
 
-      const targetUser = users.find(u => u.id === targetEngineerId);
+      const targetUser = users.find(u => u.employeeId === targetEngineerId);
       toast.success(
         `Transfer initiated to ${targetUser?.name}. ${selectedItemIds.size} item${selectedItemIds.size !== 1 ? 's' : ''} selected. Requires dual approval.`
       );
@@ -246,6 +319,8 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
 
   const handleCancel = () => {
     closeCamera();
+    setTransferPhoto(null);
+    setValidatedImageUrl(null);
     onBack();
   };
 
@@ -304,6 +379,18 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                 />
               </div>
               <div className="flex gap-2">
+                <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select Warehouse" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {warehouses.map((wh) => (
+                      <SelectItem key={wh.id} value={wh.id}>
+                        {wh.name} ({wh.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={projectFilter} onValueChange={setProjectFilter}>
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="All Projects" />
@@ -313,19 +400,6 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                     {uniqueProjects.map((project) => (
                       <SelectItem key={project} value={project}>
                         {project}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="All Warehouses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Warehouses</SelectItem>
-                    {uniqueWarehouses.map((warehouse) => (
-                      <SelectItem key={warehouse} value={warehouse}>
-                        {warehouse}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -395,13 +469,11 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
+                    <SelectItem key={user.employeeId} value={user.employeeId}>
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <span>{user.name} - {user.department}</span>
+                        <span>{user.employeeId}</span>
+                        <span>-</span>
+                        <span>{user.name}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -413,20 +485,54 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
             <div>
               <Label>Photograph (Required)</Label>
               <div className="mt-2">
-                {transferPhoto ? (
-                  <div className="relative">
-                    <img
-                      src={transferPhoto}
-                      alt="Transfer evidence"
-                      className="w-full h-32 object-cover rounded border"
-                    />
+                {validatedImageUrl ? (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <img
+                        src={transferPhoto || ''}
+                        alt="Transfer evidence"
+                        className="w-full h-32 object-cover rounded border"
+                      />
+                      <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold">
+                        ✓ Photograph Validated
+                      </div>
+                    </div>
                     <Button
                       size="sm"
-                      variant="destructive"
-                      className="absolute top-2 right-2"
-                      onClick={() => setTransferPhoto(null)}
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setTransferPhoto(null);
+                        setValidatedImageUrl(null);
+                      }}
                     >
-                      <X className="h-4 w-4" />
+                      Change Photo
+                    </Button>
+                  </div>
+                ) : transferPhoto ? (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <img
+                        src={transferPhoto}
+                        alt="Transfer evidence"
+                        className="w-full h-32 object-cover rounded border"
+                      />
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="absolute top-2 right-2"
+                        onClick={() => setTransferPhoto(null)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Button
+                      onClick={validatePhoto}
+                      disabled={isValidatingPhoto}
+                      className="w-full"
+                      size="sm"
+                    >
+                      {isValidatingPhoto ? 'Validating...' : 'Validate Photograph'}
                     </Button>
                   </div>
                 ) : cameraOpen ? (
@@ -547,7 +653,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
           <div className="space-y-4">
             <p>
               Are you sure you want to transfer {selectedItemIds.size} item{selectedItemIds.size !== 1 ? 's' : ''} to{' '}
-              {users.find(u => u.id === targetEngineerId)?.name}?
+              {users.find(u => u.employeeId === targetEngineerId)?.name}?
             </p>
             <div className="bg-muted p-4 rounded-lg space-y-2">
               <div className="flex items-start gap-2">

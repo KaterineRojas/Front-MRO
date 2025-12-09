@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import {
   getTransfers,
-  cancelTransfer,
   acceptTransfer,
   rejectTransfer,
+  deleteTransfer,
   type Transfer
 } from './transferService';
  
@@ -98,11 +98,11 @@ export function useTransfers(): UseTransfersReturn {
   // Cancel transfer
   const handleCancel = async (transferId: string) => {
     try {
-      await cancelTransfer(transferId);
+      await deleteTransfer(transferId);
       setTransfers(prev => prev.filter(tr => tr.id !== transferId));
-      toast.success('Transfer cancelled successfully');
+      toast.success('Transfer deleted successfully');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to cancel transfer');
+      toast.error(error.message || 'Failed to delete transfer');
     }
   };
 

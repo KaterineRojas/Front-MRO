@@ -21,9 +21,6 @@ export * from '../../requests/services/requestService';
 // Inventory Service (Items & Kits)
 export * from './inventoryService';
 
-// Transfer Service
-export * from './transferService';
-
 // History Service
 export * from './historyService';
 

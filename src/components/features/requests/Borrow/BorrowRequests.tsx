@@ -215,7 +215,6 @@ export function BorrowRequests() {
                         Requested: {formatDate(request.createdAt || '')}
                       </p>
                       <p>Project: {request.projectId}</p>
-                      <p>Department: {request.departmentId || '-'}</p>
                       <p>Return: {formatDate(request.expectedReturnDate)}</p>
                     </div>
                     {request.notes && (
@@ -293,7 +292,6 @@ export function BorrowRequests() {
                     <TableHead className="text-center">Project</TableHead>
                     <TableHead className="text-center">Return Date</TableHead>
                     <TableHead className="text-center">Status</TableHead>
-                    <TableHead className="text-center">Department</TableHead>
                     <TableHead className="text-center">Notes</TableHead>
                     <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
@@ -327,9 +325,6 @@ export function BorrowRequests() {
                           >
                             {getStatusText(request.status)}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <p className="text-sm">{request.departmentId || '-'}</p>
                         </TableCell>
                         <TableCell className="text-center">
                           <p className="text-sm text-muted-foreground truncate max-w-[200px] mx-auto" title={request.notes}>
