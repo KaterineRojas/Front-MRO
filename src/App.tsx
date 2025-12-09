@@ -1,6 +1,11 @@
 import { Provider } from 'react-redux';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { store, useAppSelector } from './store';
+import { useEffect } from 'react';
+import { useMsal, useIsAuthenticated } from '@azure/msal-react';
+import { InteractionStatus } from '@azure/msal-browser';
+import { store, useAppSelector, useAppDispatch } from './store';
+import { setAuth, setLoading } from './store/slices/authSlice';
+import { loginRequest } from './authConfig';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/features/dashboard/Dashboard';
 import { InventoryManager } from './components/features/inventory/InventoryManager';
@@ -17,6 +22,7 @@ import { CycleCountView } from './components/features/cycle-count/CycleCountView
 import { ReturnItemsPage } from './components/features/loans/ReturnItemsPage';
 import { ThemeProvider } from "next-themes";
 import { ManageRequests } from './components/features/manage-requests/ManageRequests';
+import { Login, ProtectedRoute } from './components/features/auth';
 
 // Engineer Module Imports
 import { 
@@ -26,6 +32,65 @@ import {
   RequestOrders as EngineerRequestOrders
 } from './components/features/enginner';
 import { EngineerModuleWrapper } from './components/features/enginner/EngineerModuleWrapper';
+
+// Auth Handler Component
+function AuthHandler() {
+  const { instance, accounts, inProgress } = useMsal();
+  const isAuthenticated = useIsAuthenticated();
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    const initAuth = async () => {
+      // Wait for MSAL to finish initialization
+      if (inProgress !== InteractionStatus.None) {
+        return;
+      }
+
+      // If user is authenticated, get token and update Redux store
+      if (isAuthenticated && accounts.length > 0) {
+        try {
+          const request = {
+            ...loginRequest,
+            account: accounts[0],
+          };
+
+          // Acquire token silently
+          const response = await instance.acquireTokenSilent(request);
+
+          // Extract user info from token claims
+          const account = response.account;
+          const user = {
+            id: account.localAccountId || '1',
+            name: account.name || 'Unknown User',
+            email: account.username || '',
+            role: 'user' as const, // Default role, can be updated from backend
+            department: 'Engineering', // Default department
+          };
+
+          // Update Redux store
+          dispatch(
+            setAuth({
+              user,
+              accessToken: response.accessToken,
+            })
+          );
+
+          console.log('✅ User authenticated:', user.email);
+        } catch (error) {
+          console.error('Error acquiring token:', error);
+          dispatch(setLoading(false));
+        }
+      } else {
+        // User not authenticated
+        dispatch(setLoading(false));
+      }
+    };
+
+    initAuth();
+  }, [isAuthenticated, accounts, inProgress, instance, dispatch]);
+
+  return null; // This component doesn't render anything
+}
 
 // Wrapper components for route navigation
 function CycleCountWrapper() {
@@ -154,10 +219,21 @@ function EngineerRequestOrdersWrapper() {
 function AppRoutes() {
   // Get user from Redux store
   const user = useAppSelector((state) => state.auth.user);
-  
+
   return (
     <Routes>
-      <Route path="/" element={<Layout />}>
+      {/* Public Login Route */}
+      <Route path="/login" element={<Login />} />
+
+      {/* Protected Routes */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
         {/* Main Routes */}
         <Route index element={<Dashboard />} />
         <Route path="inventory" element={<InventoryManager />} />
@@ -208,6 +284,7 @@ export default function App() {
     // <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <Provider store={store}>
         <BrowserRouter>
+          <AuthHandler />
           <AppRoutes />
         </BrowserRouter>
       </Provider>

@@ -13,17 +13,15 @@ interface User {
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  accessToken: string | null;
+  isLoading: boolean;
 }
 
 const initialState: AuthState = {
-  user: {
-    id: '1',
-    name: 'John Smith',
-    role: 'administrator',
-    email: 'john@company.com',
-    department: 'Engineering'
-  },
-  isAuthenticated: true,
+  user: null,
+  isAuthenticated: false,
+  accessToken: null,
+  isLoading: true, // true initially while checking authentication
 };
 
 const authSlice = createSlice({
@@ -34,9 +32,23 @@ const authSlice = createSlice({
       state.user = action.payload;
       state.isAuthenticated = true;
     },
+    setAccessToken: (state, action: PayloadAction<string>) => {
+      state.accessToken = action.payload;
+    },
+    setAuth: (state, action: PayloadAction<{ user: User; accessToken: string }>) => {
+      state.user = action.payload.user;
+      state.accessToken = action.payload.accessToken;
+      state.isAuthenticated = true;
+      state.isLoading = false;
+    },
     logout: (state) => {
       state.user = null;
+      state.accessToken = null;
       state.isAuthenticated = false;
+      state.isLoading = false;
+    },
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.isLoading = action.payload;
     },
     updateUserRole: (state, action: PayloadAction<UserRole>) => {
       if (state.user) {
@@ -46,5 +58,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUser, logout, updateUserRole } = authSlice.actions;
+export const { setUser, setAccessToken, setAuth, logout, setLoading, updateUserRole } = authSlice.actions;
 export default authSlice.reducer;
