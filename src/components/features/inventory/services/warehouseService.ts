@@ -295,8 +295,10 @@ export class WarehouseService {
     const newBin: BinV2 = {
       id: `b${Date.now()}`,
       code: binData.code || this.generateBinCode(warehouseId, zoneId, rackId, levelId),
-      description: binData.description || '',
       createdAt: new Date(),
+      name: '',
+      allowDifferentItems: false,
+      quantity: 0
     };
 
     this.warehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex].bins.push(newBin);
