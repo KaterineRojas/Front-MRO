@@ -192,7 +192,7 @@ export function CreateBinModal({
             <Switch
               id="allowDifferentItems"
               checked={formData.allowDifferentItems}
-              onCheckedChange={(checked) => onFormDataChange({ ...formData, allowDifferentItems: checked })}
+              onCheckedChange={(checked: any) => onFormDataChange({ ...formData, allowDifferentItems: checked })}
             />
           </div>
 

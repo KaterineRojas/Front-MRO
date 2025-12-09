@@ -20,16 +20,16 @@ export function ItemImageSection({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 pb-2 border-b">
-        <ImageIcon className="h-4 w-4 text-primary" />
-        <h3 className="font-semibold text-sm">Item Image</h3>
+      <div className="flex items-center gap-2 pb-1 border-b">
+        <ImageIcon className="h-3 w-3 text-primary" />
+        <h3 className="font-semibold text-xs">Item Image</h3>
       </div>
 
       <div className="space-y-3">
         <div className="flex items-start gap-4">
           {/* Image Preview */}
           {imageUrl ? (
-            <div className="relative w-32 h-32 border-2 border-dashed border-primary/20 rounded-lg overflow-hidden bg-muted/30 flex-shrink-0">
+            <div className="relative w-28 h-28 border border-dashed border-primary/20 rounded-md overflow-hidden bg-muted/30 flex-shrink-0">
               <img
                 src={imageUrl}
                 alt="Preview"
@@ -38,27 +38,27 @@ export function ItemImageSection({
               <button
                 type="button"
                 onClick={onImageRemove}
-                className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1.5 hover:bg-destructive/90 transition-colors shadow-lg"
+                className="absolute top-1.5 right-1.5 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 transition-colors shadow"
                 title="Remove image"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3 w-3" />
               </button>
             </div>
           ) : (
-            <div className="w-32 h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center bg-muted/30 flex-shrink-0">
-              <ImageIcon className="h-12 w-12 text-muted-foreground/40" />
+            <div className="w-28 h-28 border border-dashed border-muted-foreground/25 rounded-md flex items-center justify-center bg-muted/30 flex-shrink-0">
+              <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
             </div>
           )}
 
           {/* Upload Input */}
           <div className="flex-1 space-y-2">
             <Label htmlFor="image-upload" className="cursor-pointer">
-              <div className="border-2 border-dashed rounded-lg p-4 hover:border-primary/50 hover:bg-muted/50 transition-colors">
-                <div className="flex flex-col items-center gap-2 text-center">
-                  <ImageIcon className="h-8 w-8 text-muted-foreground" />
+              <div className="border border-dashed rounded-md p-3 hover:border-primary/50 hover:bg-muted/50 transition-colors">
+                <div className="flex flex-col items-center gap-1.5 text-center">
+                  <ImageIcon className="h-6 w-6 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium">Click to upload image</p>
-                    <p className="text-xs text-muted-foreground">PNG, JPG up to 10MB</p>
+                    <p className="text-xs font-medium">Click to upload image</p>
+                    <p className="text-[11px] text-muted-foreground">PNG, JPG up to 10MB</p>
                   </div>
                 </div>
               </div>

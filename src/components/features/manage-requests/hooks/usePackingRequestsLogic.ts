@@ -17,10 +17,10 @@ export function usePackingRequestsLogic() {
   const [packingRequests, setPackingRequests] = useState<LoanRequest[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [expandedPackingRequests, setExpandedPackingRequests] = useState<Set<number>>(new Set());
+  const [expandedPackingRequests, setExpandedPackingRequests] = useState<Set<string>>(new Set());
   const [selectedPackingItems, setSelectedPackingItems] = useState<Set<string>>(new Set());
   const [packingItemQuantities, setPackingItemQuantities] = useState<Record<string, number>>({});
-  const [printedRequests, setPrintedRequests] = useState<Set<number>>(new Set());
+  const [printedRequests, setPrintedRequests] = useState<Set<string>>(new Set());
   const [packingConfirmDialogOpen, setPackingConfirmDialogOpen] = useState(false);
   const [currentPackingRequest, setCurrentPackingRequest] = useState<LoanRequest | null>(null);
 
@@ -30,38 +30,48 @@ export function usePackingRequestsLogic() {
   const MOCK_REQUESTER_ID = 1;
 
 
-  // Fetch packing requests from API on mount
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await getPackingRequests();
-        setPackingRequests(data || []);
-      } catch (err) {
-        console.error('Failed to load packing requests', err);
-        setError('Failed to load packing requests');
-        setPackingRequests([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-
+  // Fetch packing requests from API on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await getPackingRequests();
+        console.log('📦 Packing requests received:', data);
+        if (data && data.length > 0) {
+          console.log('📦 First request:', data[0]);
+          console.log('📦 First request keys:', Object.keys(data[0]));
+          console.log('📦 First request id field:', data[0].id);
+        }
+        setPackingRequests(data || []);
+      } catch (err) {
+        console.error('Failed to load packing requests', err);
+        setError('Failed to load packing requests');
+        setPackingRequests([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
   const isKitOrder = useCallback((request: LoanRequest) => request.requestNumber.startsWith('KIT-'), []);
 
-  const handleToggleExpandPacking = useCallback((id: number) => {
-    setExpandedPackingRequests(prev => {
-      const newExpanded = new Set(prev);
-      if (newExpanded.has(id)) newExpanded.delete(id);
-      else newExpanded.add(id);
-      return newExpanded;
-    });
-  }, []);
-
-  const handleSelectPackingItem = useCallback((requestId: number, itemId: number) => {
+  const handleToggleExpandPacking = useCallback((requestNumber: string) => {
+    console.log('Toggle expand for requestNumber:', requestNumber);
+    setExpandedPackingRequests(prev => {
+      const newExpanded = new Set(prev);
+      console.log('Before toggle, expanded requestNumbers:', Array.from(prev));
+      if (newExpanded.has(requestNumber)) {
+        newExpanded.delete(requestNumber);
+        console.log('Removed requestNumber:', requestNumber);
+      } else {
+        newExpanded.add(requestNumber);
+        console.log('Added requestNumber:', requestNumber);
+      }
+      console.log('After toggle, expanded requestNumbers:', Array.from(newExpanded));
+      return newExpanded;
+    });
+  }, []);  const handleSelectPackingItem = useCallback((requestId: number, itemId: number) => {
     const itemKey = `${requestId}-${itemId}`;
     setSelectedPackingItems(prev => {
       const newSelected = new Set(prev);
@@ -210,21 +220,21 @@ const handlePrintAllPacking = useCallback(async () => { // Ya no necesita setAll
     let successfulUpdates = 0;
     
     const updatePromises = packingRequests.map(async (request) => {
-        // Solo llamar a startPacking si la solicitud está en estado 'Pending'
-        if (request.status === 'Pending') {
+        // Solo llamar a startPacking si la solicitud está en estado 'Approved'
+        if (request.status === 'Approved') {
             try {
                 const updatedRequest = await startPacking(request.requestNumber, MOCK_KEEPER_EMPLOYEE_ID);
                 if (updatedRequest) {
                     successfulUpdates++;
-                    setPrintedRequests(prev => new Set(prev).add(request.id));
+                    setPrintedRequests(prev => new Set(prev).add(request.requestNumber));
                     return true;
                 }
             } catch (error) {
                 console.error(`Error starting packing for request ${request.requestNumber}:`, error);
             }
         } else {
-            // Si ya está en Packed, solo marcar como impresa
-            setPrintedRequests(prev => new Set(prev).add(request.id));
+            // Si ya está en Packing, solo marcar como impresa
+            setPrintedRequests(prev => new Set(prev).add(request.requestNumber));
         }
         return false;
     });
@@ -245,29 +255,27 @@ const handlePrintAllPacking = useCallback(async () => { // Ya no necesita setAll
     setPrintedRequests
 ]);
 
-  const handlePrintSinglePacking = useCallback(async (request: LoanRequest) => { 
-    const printed = utilPrintSingle(request, packingItemQuantities);   
-    if (printed) {
-      setPrintedRequests(prev => new Set(prev).add(request.id));
-      if (request.status === 'Pending') {
-        try {
-          const updatedRequest = await startPacking(request.requestNumber, MOCK_KEEPER_EMPLOYEE_ID);          
-          if (updatedRequest) {
-            toast.success(`Request ${request.requestNumber} status updated to Packed.`);
-          } else {
-            toast.error('Failed to update status to Packed after printing.');
-          }
-        } catch (error) {
-          console.error('Error starting packing:', error);
-          toast.error('Error updating status after printing.');
-        }
-      } else {
-        toast.success(`Packing list for ${request.requestNumber} printed.`);
-      }
-    }
-  }, [packingItemQuantities]);
-
-
+  const handlePrintSinglePacking = useCallback(async (request: LoanRequest) => { 
+    const printed = utilPrintSingle(request, packingItemQuantities);   
+    if (printed) {
+      setPrintedRequests(prev => new Set(prev).add(request.requestNumber));
+      if (request.status === 'Approved') {
+        try {
+          const updatedRequest = await startPacking(request.requestNumber, MOCK_KEEPER_EMPLOYEE_ID);          
+          if (updatedRequest) {
+            toast.success(`Request ${request.requestNumber} status updated to Packing.`);
+          } else {
+            toast.error('Failed to update status to Packing after printing.');
+          }
+        } catch (error) {
+          console.error('Error starting packing:', error);
+          toast.error('Error updating status after printing.');
+        }
+      } else {
+        toast.success(`Packing list for ${request.requestNumber} printed.`);
+      }
+    }
+  }, [packingItemQuantities]);
   const areAllItemsSelected = useCallback((requestId: number, items: LoanItem[]) => 
     items.every(item => selectedPackingItems.has(`${requestId}-${item.id}`)), [selectedPackingItems]);
 
