@@ -447,23 +447,20 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
 
         // --- 5. ACTUALIZAR ESTADO LOCAL (SI LA API FUE EXITOSA) ---
         
-        // Crear un mapa de cantidades devueltas por itemId
-        const returnedQuantitiesMap = new Map<number, number>();
-        itemsPayload.forEach(payload => {
-            const totalReturned = payload.quantityReturned + payload.quantityDamaged + payload.quantityLost;
-            returnedQuantitiesMap.set(payload.itemId, totalReturned);
-        });
-        
         // Actualizar cantidades o eliminar items según corresponda usando setter funcional
         setAllReturns(prevReturns => {
             const newAllReturns = prevReturns.map(req => {
                 if (req.id === validatedRequest.id) {
                     const updatedItems = req.items.map(item => {
-                        const returnedQty = returnedQuantitiesMap.get(item.id);
-                        if (returnedQty === undefined) return item; // Item no fue devuelto
+                        const itemKey = `${req.id}-${item.id}`;
+                        if (!selectedReturnItems.has(itemKey)) return item; // Item no fue seleccionado
+                        
+                        // Obtener la cantidad configurada para devolver de ESTA ocurrencia específica
+                        const returnQtyForThisItem = getReturnQuantity(req.id, item.id);
+                        if (returnQtyForThisItem === 0) return item;
                         
                         const currentQty = item.quantityFulfilled ?? item.quantityRequested ?? 0;
-                        const remainingQty = currentQty - returnedQty;
+                        const remainingQty = currentQty - returnQtyForThisItem;
                         
                         if (remainingQty <= 0) {
                             // Si no queda cantidad, marcar para eliminar
@@ -486,32 +483,10 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
             return newAllReturns;
         });
 
-        // Limpiar estados locales de los items devueltos completamente
-        const newSelectedItems = new Set(selectedReturnItems);
-        const newQuantities = { ...returnQuantities };
-        const newConditions = { ...itemConditions };
-
-        itemsPayload.forEach(payload => {
-            const itemKey = `${validatedRequest.id}-${payload.itemId}`;
-            const item = validatedRequest.items.find(i => i.id === payload.itemId);
-            const currentQty = item?.quantityFulfilled ?? item?.quantityRequested ?? 0;
-            const returnedQty = payload.quantityReturned + payload.quantityDamaged + payload.quantityLost;
-            
-            if (returnedQty >= currentQty) {
-                // Solo limpiar si se devolvió todo
-                newSelectedItems.delete(itemKey);
-                delete newQuantities[itemKey];
-                delete newConditions[itemKey];
-            } else {
-                // Si queda cantidad, resetear a 0 para que el usuario ingrese de nuevo
-                newQuantities[itemKey] = 0;
-                // Mantener la selección y condición
-            }
-        });
-
-        setSelectedReturnItems(newSelectedItems);
-        setReturnQuantities(newQuantities);
-        setItemConditions(newConditions);
+        // Limpiar TODOS los estados locales después de un retorno exitoso
+        setSelectedReturnItems(new Set());
+        setReturnQuantities({});
+        setItemConditions({});
         // ¡LIMPIAR LA URL DE LA FOTO DESPUÉS DE USARLA!
         setItemsPhotoUrl(null); 
         
