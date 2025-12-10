@@ -7,6 +7,7 @@ import TabsGroup from './components/Tabs'
 import SearchBar, { SelectOption } from './components/SearchBar'
 import RequestsTable from './components/DataTable';
 import RequestModal from './components/ApproveRequestDialog';
+import {API_URL} from '../../../url'
 
 
 export function RequestManagement() {
@@ -26,7 +27,7 @@ export function RequestManagement() {
     const fetchRequests = async () => {
       setLoading(true)
       try {
-        const response = await fetch('http://localhost:3001/requests');
+        const response = await fetch(`${API_URL}/requests`);
 
         if (!response.ok) throw new Error('Error fetching data');
 

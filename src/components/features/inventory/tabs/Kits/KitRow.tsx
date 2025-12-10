@@ -3,7 +3,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import type { KitRowProps } from './types';
-import { getAvailableBins, checkKitOccupation, type Bin, getAllAvailableBins, AvailableBinResponse } from '../../services/binsService';
+import { checkKitOccupation, type Bin, getAllAvailableBins, AvailableBinResponse } from '../../services/binsService';
 import { getKitCurrentBin, createPhysicalKit, deleteKit as deleteKitService, dismantleKit, getKitDefaultBin } from '../../services/kitService';
 import { DismantleKitModal } from '../../modals/DismantleKitModal';
 import { ActionButton } from '../../components/ActionButton'
