@@ -14,15 +14,14 @@ export { useTransfers } from './useTransfers';
 
 // Services
 export {
-  getTransfers,
   getTransfersIncoming,
   getTransfersOutgoing,
-  getAvailableUsers,
-  getInventoryItems,
+  getTransferId,
+  getInventoryTransfer,
   createTransfer,
   acceptTransfer,
   rejectTransfer,
-  cancelTransfer
+  deleteTransfer
 } from './transferService';
 
 // Types

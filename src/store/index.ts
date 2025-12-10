@@ -9,7 +9,7 @@ export { useAppDispatch, useAppSelector } from './hooks';
 export * from './selectors';
 
 // Auth slice
-export { setUser, logout, updateUserRole } from './slices/authSlice';
+export { setUser, setAccessToken, setAuth, logout, setLoading, updateUserRole } from './slices/authSlice';
 export type { UserRole } from './slices/authSlice';
 
 // UI slice

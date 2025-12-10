@@ -1,8 +1,5 @@
-import { API_BASE_URL } from "../services/api";
+import { API_URL } from "../../../../url";
 import { store } from "../../../../store/store";
-
-// Simulate API delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Types
 export interface Transfer {
@@ -53,244 +50,43 @@ export interface User {
   avatar: string;
 }
 
-// Mock Data
-const mockUsers: User[] = [
-  { id: '2', name: 'Ana Martínez', department: 'Development', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana' },
-  { id: '3', name: 'Luis González', department: 'Design', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Luis' },
-  { id: '4', name: 'María Rodriguez', department: 'Marketing', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria' },
-  { id: '5', name: 'Juan Pérez', department: 'Engineering', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Juan' }
-];
 
-const mockInventoryItems: InventoryItem[] = [
-  {
-    id: 'inv-1',
-    itemId: 'hammer-001',
-    name: 'Hammer',
-    description: 'Professional grade hammer',
-    image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400',
-    project: 'Proyecto Amazonas',
-    projectCode: 'AMZ-2024',
-    quantity: 4,
-    sku: 'HAM-001',
-    warehouse: 'Amax',
-    warehouseCode: 'AMAX'
-  },
-  {
-    id: 'inv-2',
-    itemId: 'hammer-001',
-    name: 'Hammer',
-    description: 'Professional grade hammer',
-    image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400',
-    project: 'Proyecto Innova',
-    projectCode: 'INN-2024',
-    quantity: 6,
-    sku: 'HAM-001',
-    warehouse: 'Best',
-    warehouseCode: 'BEST'
-  },
-  {
-    id: 'inv-3',
-    itemId: 'keyboard-001',
-    name: 'Mechanical Keyboard RGB2',
-    description: 'Gaming keyboard with RGB lighting',
-    image: 'https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?w=400',
-    project: 'Proyecto Web',
-    projectCode: 'WEB-2024',
-    quantity: 2,
-    sku: 'MECH-KB-001',
-    warehouse: 'Central',
-    warehouseCode: 'CENT'
-  },
-  {
-    id: 'inv-4',
-    itemId: 'monitor-001',
-    name: 'Samsung 27" Monitor',
-    description: 'Full HD display',
-    image: 'https://images.unsplash.com/photo-1758598497364-544a0cdbc950?w=400',
-    project: 'Proyecto Web',
-    projectCode: 'WEB-2024',
-    quantity: 1,
-    sku: 'SAM-003',
-    warehouse: 'Amax',
-    warehouseCode: 'AMAX'
-  },
-  {
-    id: 'inv-5',
-    itemId: 'drill-001',
-    name: 'Power Drill',
-    description: 'Cordless drill with battery',
-    image: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400',
-    project: 'Proyecto Construcción',
-    projectCode: 'CONS-2024',
-    quantity: 3,
-    sku: 'DRL-001',
-    warehouse: 'Best',
-    warehouseCode: 'BEST'
-  }
-];
 
-const mockTransfers: Transfer[] = [
-  {
-    id: 'TR003',
-    type: 'outgoing',
-    toUser: 'Luis González',
-    toUserId: '3',
-    items: [
-      {
-        itemId: '1',
-        itemName: 'Mechanical Keyboard RGB',
-        code: 'MECH-KB-001',
-        quantity: 1,
-        image: 'https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?w=100',
-        description: 'Gaming keyboard',
-        warehouse: 'Central',
-        warehouseCode: 'CENT'
-      }
-    ],
-    notes: 'Transferring for their project',
-    requestDate: '2024-01-17',
-    status: 'pending',
-    transferPhoto: 'https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?w=400'
-  },
-  {
-    id: 'TR001',
-    type: 'incoming',
-    fromUser: 'Juan Pérez',
-    fromUserId: '5',
-    items: [
-      {
-        itemId: '3',
-        itemName: 'Samsung 27" Monitor',
-        code: 'SAM-003',
-        quantity: 1,
-        image: 'https://images.unsplash.com/photo-1758598497364-544a0cdbc950?w=100',
-        description: 'Full HD display',
-        warehouse: 'Amax',
-        warehouseCode: 'AMAX'
-      }
-    ],
-    notes: 'Additional monitor for development project',
-    requestDate: '2024-01-16',
-    status: 'pending',
-    transferPhoto: 'https://images.unsplash.com/photo-1758598497364-544a0cdbc950?w=400'
-  },
-  {
-    id: 'TR004',
-    type: 'outgoing',
-    toUser: 'Ana Martínez',
-    toUserId: '2',
-    items: [
-      {
-        itemId: '1',
-        itemName: 'Hammer',
-        code: 'IT-HT-NC-2025001',
-        quantity: 2,
-        image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=100',
-        description: 'Professional grade hammer',
-        warehouse: 'Amax',
-        warehouseCode: 'AMAX'
-      },
-      {
-        itemId: '1',
-        itemName: 'Hammer',
-        code: 'IT-HT-NC-2025001',
-        quantity: 3,
-        image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=100',
-        description: 'Professional grade hammer',
-        warehouse: 'Best',
-        warehouseCode: 'BEST'
-      },
-      {
-        itemId: '2',
-        itemName: 'Power Drill',
-        code: 'DRL-001',
-        quantity: 1,
-        image: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=100',
-        description: 'Cordless drill',
-        warehouse: 'Central',
-        warehouseCode: 'CENT'
-      }
-    ],
-    notes: 'Multiple items from different warehouses for construction project',
-    requestDate: '2024-01-18',
-    status: 'pending',
-    transferPhoto: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400'
-  },
-  {
-    id: 'TR005',
-    type: 'incoming',
-    fromUser: 'María Rodriguez',
-    fromUserId: '4',
-    items: [
-      {
-        itemId: '4',
-        itemName: 'Screwdriver Set',
-        code: 'HT-NC-002',
-        quantity: 1,
-        image: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=100',
-        description: '5-piece Phillips set',
-        warehouse: 'Best',
-        warehouseCode: 'BEST'
-      },
-      {
-        itemId: '5',
-        itemName: 'Safety Goggles',
-        code: 'SG-002',
-        quantity: 5,
-        image: 'https://images.unsplash.com/photo-1577760258779-e787a1733016?w=100',
-        description: 'Clear protective safety goggles',
-        warehouse: 'Best',
-        warehouseCode: 'BEST'
-      },
-      {
-        itemId: '6',
-        itemName: 'Webcam 1080p',
-        code: 'WEB-001',
-        quantity: 1,
-        image: 'https://images.unsplash.com/photo-1614624532983-4ce03382d63d?w=100',
-        description: 'High definition webcam',
-        warehouse: 'Central',
-        warehouseCode: 'CENT'
-      }
-    ],
-    notes: 'Safety equipment and webcam from different warehouses',
-    requestDate: '2024-01-15',
-    status: 'completed',
-    transferPhoto: 'https://images.unsplash.com/photo-1577760258779-e787a1733016?w=400'
-  }
-];
-
-// API Simulation Functions
+// Transfer API Functions
 
 export async function getTransfersIncoming(): Promise<Transfer[]> {
   try {
     const recipientId = getCurrentUserId();
-    const url = `${API_BASE_URL}/transfer-requests?recipientId=${recipientId}&status=Pending&pageNumber=1&pageSize=20`;
-    console.log('Fetching transfers from URL incoming:', url);
+    
+    const url = `${API_URL}/transfer-requests?recipientId=${recipientId}&status=Pending&pageNumber=1&pageSize=20`;
     
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        // Si tu backend requiere autenticación, aquí se añade el token:
-        // "Authorization": `Bearer ${token}`
       },
     });
-
+    
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error fetching incoming transfers:', errorText);
       throw new Error(`Error al obtener transferencias: ${response.statusText}`);
     }
 
     const responseData = await response.json();
     
-    // Mapear la respuesta del backend a nuestro formato Transfer
+    if (!responseData.data) {
+      return [];
+    }
+
+    if (!Array.isArray(responseData.data)) {
+      return [];
+    }
+
     const currentUserId = getCurrentUserId();
-    console.log('Current User ID:', currentUserId);
-    console.log('Backend Response:', responseData.data);
     
     const transfers: Transfer[] = responseData.data.map((item: any) => {
-      const type = item.senderId === currentUserId ? 'outgoing' : 'incoming';
-      console.log(`Transfer ${item.requestNumber}: senderId=${item.senderId}, currentUserId=${currentUserId}, type=${type}`);
+      const type = 'incoming';
       return {
         id: item.requestNumber,
         type: type,
@@ -307,7 +103,7 @@ export async function getTransfersIncoming(): Promise<Transfer[]> {
           description: '',
           warehouse: item.warehouseName,
           warehouseCode: ''
-        })), // Aquí irán los items reales cuando la API los envíe
+        })),
         notes: '',
         requestDate: item.createdAt,
         status: mapBackendStatusToLocal(item.status),
@@ -318,7 +114,7 @@ export async function getTransfersIncoming(): Promise<Transfer[]> {
 
     return transfers;
   } catch (error) {
-    console.error('Error fetching transfers:', error);
+    console.error('Error in getTransfersIncoming:', error);
     throw error;
   }
 }
@@ -329,32 +125,36 @@ export async function getTransfersIncoming(): Promise<Transfer[]> {
 export async function getTransfersOutgoing(): Promise<Transfer[]> {
   try {
     const senderId = getCurrentUserId();
-    const url = `${API_BASE_URL}/transfer-requests?senderId=${senderId}&pageNumber=1&pageSize=20`;
-    console.log('Fetching outgoing transfers from URL:', url);
+    
+    const url = `${API_URL}/transfer-requests?senderId=${senderId}&status=PENDING&pageNumber=1&pageSize=20`;
     
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        // Si tu backend requiere autenticación, aquí se añade el token:
-        // "Authorization": `Bearer ${token}`
       },
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error fetching outgoing transfers:', errorText);
       throw new Error(`Error al obtener transferencias: ${response.statusText}`);
     }
 
     const responseData = await response.json();
     
-    // Mapear la respuesta del backend a nuestro formato Transfer
+    if (!responseData.data) {
+      return [];
+    }
+
+    if (!Array.isArray(responseData.data)) {
+      return [];
+    }
+
     const currentUserId = getCurrentUserId();
-    console.log('Current User ID:', currentUserId);
-    console.log('Backend Response:', responseData.data);
     
     const transfers: Transfer[] = responseData.data.map((item: any) => {
-      const type = item.senderId === currentUserId ? 'outgoing' : 'incoming';
-      console.log(`Transfer ${item.requestNumber}: senderId=${item.senderId}, currentUserId=${currentUserId}, type=${type}`);
+      const type = 'outgoing';
       return {
         id: item.requestNumber,
         type: type,
@@ -371,7 +171,7 @@ export async function getTransfersOutgoing(): Promise<Transfer[]> {
           description: '',
           warehouse: item.warehouseName,
           warehouseCode: ''
-        })), // Aquí irán los items reales cuando la API los envíe
+        })),
         notes: '',
         requestDate: item.createdAt,
         status: mapBackendStatusToLocal(item.status),
@@ -382,7 +182,7 @@ export async function getTransfersOutgoing(): Promise<Transfer[]> {
 
     return transfers;
   } catch (error) {
-    console.error('Error fetching outgoing transfers:', error);
+    console.error('Error in getTransfersOutgoing:', error);
     throw error;
   }
 }
@@ -392,8 +192,7 @@ export async function getTransfersOutgoing(): Promise<Transfer[]> {
  */
 export async function getTransferId(transferId: string): Promise<Transfer> {
   try {
-    const url = `${API_BASE_URL}/transfer-requests/${transferId}`;
-    console.log('Fetching transfer details from URL:', url);
+    const url = `${API_URL}/transfer-requests/${transferId}`;
     
     const response = await fetch(url, {
       method: "GET",
@@ -407,9 +206,7 @@ export async function getTransferId(transferId: string): Promise<Transfer> {
     }
 
     const responseData = await response.json();
-    console.log('Transfer details response:', responseData);
 
-    // Mapear la respuesta del backend a nuestro formato Transfer
     const currentUserId = getCurrentUserId();
     const type = responseData.senderId === currentUserId ? 'outgoing' : 'incoming';
     
@@ -445,68 +242,6 @@ export async function getTransferId(transferId: string): Promise<Transfer> {
   }
 }
 
-export async function getTransfers2(): Promise<Transfer[]> {
-  try {
-    const senderId = getCurrentUserId();
-    const url = `${API_BASE_URL}/transfer-requests?senderId=${senderId}&pageNumber=1&pageSize=20`;
-    console.log('Fetching transfers from URL:', url);
-    
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        // Si tu backend requiere autenticación, aquí se añade el token:
-        // "Authorization": `Bearer ${token}`
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error al obtener transferencias: ${response.statusText}`);
-    }
-
-    const responseData = await response.json();
-    
-    // Mapear la respuesta del backend a nuestro formato Transfer
-    const currentUserId = getCurrentUserId();
-    console.log('Current User ID:', currentUserId);
-    console.log('Backend Response:', responseData.data);
-    
-    const transfers: Transfer[] = responseData.data.map((item: any) => {
-      const type = item.senderId === currentUserId ? 'outgoing' : 'incoming';
-      console.log(`Transfer ${item.requestNumber}: senderId=${item.senderId}, currentUserId=${currentUserId}, type=${type}`);
-      return {
-        id: item.requestNumber,
-        type: type,
-        fromUser: item.senderName,
-        toUser: item.recipientName,
-        fromUserId: item.senderId,
-        toUserId: item.recipientId,
-        items: Array(item.totalItems).fill(null).map((_, idx) => ({
-          itemId: `item-${idx}`,
-          itemName: `Item ${idx + 1}`,
-          code: '',
-          quantity: 1,
-          image: '',
-          description: '',
-          warehouse: item.warehouseName,
-          warehouseCode: ''
-        })), // Aquí irán los items reales cuando la API los envíe
-        notes: '',
-        requestDate: item.createdAt,
-        status: mapBackendStatusToLocal(item.status),
-        transferPhoto: item.hasImage ? `${API_BASE_URL}/transfer-requests/${item.requestNumber}/image` : undefined,
-      };
-    });
-
-    return transfers;
-  } catch (error) {
-    console.error('Error fetching transfers:', error);
-    // Fallback a mock data en caso de error
-    await delay(300);
-    return [...mockTransfers];
-  }
-}
-
 /**
  * Mapear estado del backend al estado local
  */
@@ -525,32 +260,24 @@ function mapBackendStatusToLocal(backendStatus: string): 'pending' | 'completed'
 function getCurrentUserId(): string {
   try {
     const state = store.getState();
-    // Obtener del authSlice - la estructura es state.auth.user.id
     const userId = state.auth?.user?.id;
-    console.log('Redux auth state:', state.auth);
-    console.log('Retrieved userId from Redux:', userId);
-    return userId || '';
+    
+    if (!userId) {
+      const localStorageId = localStorage.getItem('userId');
+      return localStorageId || '';
+    }
+    
+    return userId;
   } catch (error) {
-    console.error('Error getting user ID from Redux:', error);
-    return localStorage.getItem('userId') || '';
+    console.error('Error getting user ID:', error);
+    const fallbackId = localStorage.getItem('userId') || '';
+    return fallbackId;
   }
 }
 
-/**
- * Get available users for transfer
- */
-export async function getAvailableUsers(): Promise<User[]> {
-  await delay(200);
-  return [...mockUsers];
-}
 
-/**
- * Get inventory items available for transfer
- */
-export async function getInventoryItems(): Promise<InventoryItem[]> {
-  await delay(400);
-  return [...mockInventoryItems];
-}
+
+
 
 /**
  * Get inventory items for a specific engineer and warehouse
@@ -561,7 +288,7 @@ export async function getInventoryTransfer(
   warehouseId: string
 ): Promise<InventoryItem[]> {
   try {
-    const url = `${API_BASE_URL}/engineer-holdings/${engineerId}?warehouseId=${warehouseId}`;
+    const url = `${API_URL}/engineer-holdings/${engineerId}?warehouseId=${warehouseId}`;
     console.log(`Fetching transfer inventory for engineer: ${engineerId}, warehouse: ${warehouseId}`);
     console.log(`API URL: ${url}`);
 
@@ -628,9 +355,7 @@ export async function getInventoryTransfer(
     return items;
   } catch (error) {
     console.error('Error fetching transfer inventory:', error);
-    // Fallback a mock data en caso de error
-    await delay(300);
-    return [...mockInventoryItems];
+    throw error;
   }
 }
 
@@ -665,7 +390,7 @@ export async function createTransfer(data: {
       }))
     };
 
-    const url = `${API_BASE_URL}/transfer-requests`;
+    const url = `${API_URL}/transfer-requests`;
     console.log('Creating transfer to URL:', url);
     console.log('Transfer payload:', payload);
 
@@ -740,7 +465,7 @@ export async function acceptTransfer(
   };
 
   // Build URL with transfer ID and recipient ID as query parameter
-  const url = `${API_BASE_URL}/transfer-requests/${transferId}/accept?recipientId=${recipientId}`;
+  const url = `${API_URL}/transfer-requests/${transferId}/accept?recipientId=${recipientId}`;
   
   console.log('Accepting transfer to URL:', url);
   console.log('Accept payload:', payload);
@@ -768,49 +493,44 @@ export async function acceptTransfer(
 }
 
 /**
- * Reject an incoming transfer
+ * Reject an incoming transfer using the API
  */
-export async function rejectTransfer(transferId: string): Promise<{ success: boolean }> {
-  await delay(300);
-  
-  const transfer = mockTransfers.find(t => t.id === transferId);
-  
-  if (!transfer) {
-    throw new Error('Transfer not found');
-  }
+export async function rejectTransfer(
+  transferId: string
+): Promise<{ success: boolean }> {
+  try {
+    const url = `${API_URL}/transfer-requests/${transferId}`;
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    });
 
-  return {
-    success: true
-  };
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Transfer not found');
+      }
+      throw new Error(`Error rejecting transfer: ${response.status}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
 }
 
-/**
- * Cancel an outgoing transfer
- */
-export async function cancelTransfer(transferId: string): Promise<{ success: boolean }> {
-  await delay(300);
-  
-  const transfer = mockTransfers.find(t => t.id === transferId);
-  
-  if (!transfer) {
-    throw new Error('Transfer not found');
-  }
-  
-  if (transfer.type !== 'outgoing') {
-    throw new Error('Only outgoing transfers can be cancelled');
-  }
 
-  return {
-    success: true
-  };
-}
+
 
 /**
  * Delete a transfer by ID
  */
 export async function deleteTransfer(transferId: string): Promise<{ success: boolean; message: string }> {
   try {
-    const url = `${API_BASE_URL}/transfer-requests/${transferId}`;
+    const url = `${API_URL}/transfer-requests/${transferId}`;
     console.log('Deleting transfer from URL:', url);
     
     const response = await fetch(url, {
@@ -826,8 +546,22 @@ export async function deleteTransfer(transferId: string): Promise<{ success: boo
       throw new Error(`Error al eliminar transferencia: ${response.statusText}`);
     }
 
-    const responseData = await response.json();
-    console.log('Delete response:', responseData);
+    // Try to parse JSON response, but handle empty responses
+    let responseData;
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        responseData = await response.json();
+        console.log('Delete response:', responseData);
+      } catch (e) {
+        console.log('Response is not valid JSON, but DELETE was successful');
+        responseData = null;
+      }
+    } else {
+      console.log('Response is not JSON content type, but DELETE was successful');
+      responseData = null;
+    }
 
     return {
       success: true,

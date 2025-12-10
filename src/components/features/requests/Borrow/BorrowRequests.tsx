@@ -5,12 +5,14 @@ import { Badge } from '../../../ui/badge';
 import { Input } from '../../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../ui/tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Package, Plus, ChevronDown, ChevronRight, Trash2, Calendar } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { LoanForm } from './LoanForm';
 import { ConfirmModal } from '../../../ui/confirm-modal';
 import type { User } from '../../enginner/types';
+import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
 
 import { useBorrowRequests } from './useBorrowRequests';
 import { getStatusColor, getStatusText, formatDate, hasActiveFilters, getStatusStyle } from './borrowUtils';
@@ -88,6 +90,7 @@ export function BorrowRequests() {
   // Main UI
   return (
     <div className="space-y-6">
+      <style>{actionButtonAnimationStyles}</style>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -188,22 +191,34 @@ export function BorrowRequests() {
                     </div>
                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                       {canReturnAll(request) && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleReturnAll(request.requestNumber)}
-                        >
-                          Return
-                        </Button>
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                className="action-btn-enhance btn-accept gap-2 h-auto py-2 px-4"
+                                onClick={() => handleReturnAll(request.requestNumber)}
+                              >
+                                Return
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent sideOffset={8}>Return items</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                       {canCancelBorrowRequest(request) && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleCancelBorrowRequest(request.requestNumber)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                className="action-btn-enhance btn-cancel p-2 h-auto"
+                                onClick={() => handleCancelBorrowRequest(request.requestNumber)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent sideOffset={8}>Cancel request</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </div>
                   </div>
@@ -334,28 +349,40 @@ export function BorrowRequests() {
                         <TableCell>
                           <div className="flex items-center justify-center gap-2">
                             {canReturnAll(request) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                  e.stopPropagation();
-                                  handleReturnAll(request.requestNumber);
-                                }}
-                              >
-                                Return
-                              </Button>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      className="action-btn-enhance btn-accept gap-2 h-auto py-2 px-4"
+                                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                        e.stopPropagation();
+                                        handleReturnAll(request.requestNumber);
+                                      }}
+                                    >
+                                      Return
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={8}>Return items</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                             {canCancelBorrowRequest(request) && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                  e.stopPropagation();
-                                  handleCancelBorrowRequest(request.requestNumber);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      className="action-btn-enhance btn-cancel p-2 h-auto"
+                                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                        e.stopPropagation();
+                                        handleCancelBorrowRequest(request.requestNumber);
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={8}>Cancel request</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                           </div>
                         </TableCell>

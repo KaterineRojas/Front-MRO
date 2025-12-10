@@ -15,8 +15,8 @@ const cartSlice = createSlice({
   name: 'engineerCart',
   initialState,
   reducers: {
-    addToCart: (state, action: PayloadAction<{ item: InventoryItem; quantity: number }>) => {
-      const { item, quantity } = action.payload;
+    addToCart: (state, action: PayloadAction<{ item: InventoryItem; quantity: number; warehouseId?: string; warehouseName?: string }>) => {
+      const { item, quantity, warehouseId, warehouseName } = action.payload;
       const existingItem = state.items.find(cartItem => cartItem.item.id === item.id);
       
       // Validar que la cantidad no exceda el stock disponible
@@ -29,7 +29,7 @@ const cartSlice = createSlice({
       if (existingItem) {
         existingItem.quantity += quantity;
       } else {
-        state.items.push({ item, quantity });
+        state.items.push({ item, quantity, warehouseId, warehouseName });
       }
       state.lastAction = 'added';
     },
