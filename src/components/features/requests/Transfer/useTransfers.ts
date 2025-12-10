@@ -30,6 +30,7 @@ interface UseTransfersReturn {
     customerId: string,
     departmentId: string,
     projectId: string,
+    workOrderId: string,
     notes?: string
   ) => Promise<void>;
   handleReject: (id: string) => Promise<void>;
@@ -51,18 +52,20 @@ export function useTransfers(): UseTransfersReturn {
   const loadTransfers = async () => {
     try {
       setIsLoading(true);
-      // Load both incoming and outgoing transfers
+      // Load both incoming and outgoing transfers in parallel
       const [incomingData, outgoingData] = await Promise.all([
         getTransfersIncoming(),
         getTransfersOutgoing()
       ]);
       
-      // Combine and sort by date (most recent first)
-      const allTransfers = [...incomingData, ...outgoingData].sort((a, b) => {
-        const dateA = new Date(a.requestDate).getTime();
-        const dateB = new Date(b.requestDate).getTime();
-        return dateB - dateA; // Most recent first
-      });
+      // Combine both arrays and sort by date (most recent first)
+      const allTransfers = [...incomingData, ...outgoingData]
+        .filter(transfer => transfer.status === 'pending') // Only show pending transfers
+        .sort((a, b) => {
+          const dateA = new Date(a.requestDate).getTime();
+          const dateB = new Date(b.requestDate).getTime();
+          return dateB - dateA; // Most recent first
+        });
       
       setTransfers(allTransfers);
     } catch (error) {
@@ -135,6 +138,7 @@ export function useTransfers(): UseTransfersReturn {
     customerId: string,
     departmentId: string,
     projectId: string,
+    workOrderId: string,
     notes?: string
   ) => {
     try {
@@ -145,6 +149,7 @@ export function useTransfers(): UseTransfersReturn {
         customerId,
         departmentId,
         projectId,
+        workOrderId,
         notes
       );
       setTransfers(prev => prev.filter(tr => tr.id !== transferId));
@@ -179,8 +184,7 @@ export function useTransfers(): UseTransfersReturn {
 
   // Check if transfer can be cancelled
   const canCancelTransfer = (transfer: Transfer): boolean => {
-    return transfer.type === 'outgoing' && 
-           (transfer.status === 'pending-manager' || transfer.status === 'pending-engineer');
+    return transfer.type === 'outgoing' && transfer.status === 'pending';
   };
 
   return {

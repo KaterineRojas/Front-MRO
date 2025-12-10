@@ -10,6 +10,8 @@ import { KitsTabContent } from '../components/request-rows/KitTabReturnRow';
 
 interface Props {
   filteredReturns: LoanRequest[];
+  allReturns: LoanRequest[];
+  getCurrentRequest: (requestId: number) => LoanRequest | undefined;
   selectedReturnBorrower: string;
   handleBorrowerSelect: (value: string) => void;
   borrowerSelectSearchTerm: string;
@@ -209,13 +211,21 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                           </button>
                           <button 
                             onClick={async () => {
-                              // Procesar todos los requests que tienen items seleccionados SECUENCIALMENTE
-                              for (const request of filteredReturns) {
-                                const hasSelectedItems = request.items.some(item => 
-                                  props.selectedReturnItems.has(`${request.id}-${item.id}`)
-                                );
-                                if (hasSelectedItems) {
-                                  await props.handleConfirmReturnItems(request);
+                              // Recopilar los IDs de requests que tienen items seleccionados
+                              const requestIdsToProcess = filteredReturns
+                                .filter(request => 
+                                  request.items.some(item => 
+                                    props.selectedReturnItems.has(`${request.id}-${item.id}`)
+                                  )
+                                )
+                                .map(request => request.id);
+                              
+                              // Procesar cada request por ID (buscando el request actualizado cada vez)
+                              for (const requestId of requestIdsToProcess) {
+                                // Buscar el request actualizado usando getCurrentRequest
+                                const currentRequest = props.getCurrentRequest(requestId);
+                                if (currentRequest) {
+                                  await props.handleConfirmReturnItems(currentRequest);
                                 }
                               }
                             }}
@@ -315,6 +325,7 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                                         min={0}
                                         max={item.quantityFulfilled}
                                         defaultValue={0}
+                                        onFocus={(e) => e.target.select()}
                                         onChange={(e) => {
                                           const raw = parseInt(e.target.value || '0', 10) || 0;
                                           const clamped = Math.max(0, Math.min(raw, item.quantityFulfilled));
@@ -335,7 +346,7 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                                           }
                                           occs.forEach((o, i) => props.handleReturnQuantityChange(o.requestId, o.itemId, distributed[i]));
                                         }}
-                                        className="w-20 text-center border rounded px-2 py-1"
+                                        className="w-20 text-center border rounded px-2 py-1  bg-green-50 border border-grey-300"
                                       />
                                     </td>
                                     <td className="text-center px-4 py-2">
@@ -344,7 +355,7 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                                           const first = occs[0];
                                           if (first) props.handleOpenConditionDialog(first.requestId, first.itemId, false);
                                         }}
-                                        className="px-3 py-1 bg-gray-100 border border-gray-300 rounded text-sm hover:bg-gray-200"
+                                        className="px-3 py-1 bg-green-100 border border-green-300 rounded text-sm hover:bg-green-200"
                                       >
                                         Select Condition
                                       </button>

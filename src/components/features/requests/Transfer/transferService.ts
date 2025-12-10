@@ -15,7 +15,7 @@ export interface Transfer {
   items: TransferItem[];
   notes: string;
   requestDate: string;
-  status: 'pending' | 'pending-manager' | 'pending-engineer' | 'approved' | 'rejected';
+  status: 'pending' | 'completed' | 'rejected';
   transferPhoto?: string;
   imageUrl?: string;
   warehouseName?: string;
@@ -149,7 +149,7 @@ const mockTransfers: Transfer[] = [
     ],
     notes: 'Transferring for their project',
     requestDate: '2024-01-17',
-    status: 'pending-manager',
+    status: 'pending',
     transferPhoto: 'https://images.unsplash.com/photo-1656711081969-9d16ebc2d210?w=400'
   },
   {
@@ -171,7 +171,7 @@ const mockTransfers: Transfer[] = [
     ],
     notes: 'Additional monitor for development project',
     requestDate: '2024-01-16',
-    status: 'pending-engineer',
+    status: 'pending',
     transferPhoto: 'https://images.unsplash.com/photo-1758598497364-544a0cdbc950?w=400'
   },
   {
@@ -213,7 +213,7 @@ const mockTransfers: Transfer[] = [
     ],
     notes: 'Multiple items from different warehouses for construction project',
     requestDate: '2024-01-18',
-    status: 'pending-engineer',
+    status: 'pending',
     transferPhoto: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400'
   },
   {
@@ -255,21 +255,18 @@ const mockTransfers: Transfer[] = [
     ],
     notes: 'Safety equipment and webcam from different warehouses',
     requestDate: '2024-01-15',
-    status: 'approved',
+    status: 'completed',
     transferPhoto: 'https://images.unsplash.com/photo-1577760258779-e787a1733016?w=400'
   }
 ];
 
 // API Simulation Functions
 
-/**
- * Get all transfers desde el backend
- */
-export async function getTransfers(): Promise<Transfer[]> {
+export async function getTransfersIncoming(): Promise<Transfer[]> {
   try {
-    const senderId = getCurrentUserId();
-    const url = `${API_BASE_URL}/transfer-requests?senderId=${senderId}&pageNumber=1&pageSize=20`;
-    console.log('Fetching transfers from URL:', url);
+    const recipientId = getCurrentUserId();
+    const url = `${API_BASE_URL}/transfer-requests?recipientId=${recipientId}&status=Pending&pageNumber=1&pageSize=20`;
+    console.log('Fetching transfers from URL incoming:', url);
     
     const response = await fetch(url, {
       method: "GET",
@@ -292,7 +289,7 @@ export async function getTransfers(): Promise<Transfer[]> {
     console.log('Backend Response:', responseData.data);
     
     const transfers: Transfer[] = responseData.data.map((item: any) => {
-      const type = item.senderId === currentUserId ? 'outgoing' :  'incoming';
+      const type = item.senderId === currentUserId ? 'outgoing' : 'incoming';
       console.log(`Transfer ${item.requestNumber}: senderId=${item.senderId}, currentUserId=${currentUserId}, type=${type}`);
       return {
         id: item.requestNumber,
@@ -314,7 +311,7 @@ export async function getTransfers(): Promise<Transfer[]> {
         notes: '',
         requestDate: item.createdAt,
         status: mapBackendStatusToLocal(item.status),
-        transferPhoto: item.hasImage ? `${API_BASE_URL}/transfer-requests/${item.requestNumber}/image` : undefined,
+        transferPhoto: undefined,
         warehouseName: item.warehouseName,
       };
     });
@@ -322,9 +319,71 @@ export async function getTransfers(): Promise<Transfer[]> {
     return transfers;
   } catch (error) {
     console.error('Error fetching transfers:', error);
-    // Fallback a mock data en caso de error
-    await delay(300);
-    return [...mockTransfers];
+    throw error;
+  }
+}
+
+/**
+ * Get outgoing transfers (sent by current user)
+ */
+export async function getTransfersOutgoing(): Promise<Transfer[]> {
+  try {
+    const senderId = getCurrentUserId();
+    const url = `${API_BASE_URL}/transfer-requests?senderId=${senderId}&pageNumber=1&pageSize=20`;
+    console.log('Fetching outgoing transfers from URL:', url);
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        // Si tu backend requiere autenticación, aquí se añade el token:
+        // "Authorization": `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener transferencias: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    
+    // Mapear la respuesta del backend a nuestro formato Transfer
+    const currentUserId = getCurrentUserId();
+    console.log('Current User ID:', currentUserId);
+    console.log('Backend Response:', responseData.data);
+    
+    const transfers: Transfer[] = responseData.data.map((item: any) => {
+      const type = item.senderId === currentUserId ? 'outgoing' : 'incoming';
+      console.log(`Transfer ${item.requestNumber}: senderId=${item.senderId}, currentUserId=${currentUserId}, type=${type}`);
+      return {
+        id: item.requestNumber,
+        type: type,
+        fromUser: item.senderName,
+        toUser: item.recipientName,
+        fromUserId: item.senderId,
+        toUserId: item.recipientId,
+        items: Array(item.totalItems).fill(null).map((_, idx) => ({
+          itemId: `item-${idx}`,
+          itemName: `Item ${idx + 1}`,
+          code: '',
+          quantity: 1,
+          image: '',
+          description: '',
+          warehouse: item.warehouseName,
+          warehouseCode: ''
+        })), // Aquí irán los items reales cuando la API los envíe
+        notes: '',
+        requestDate: item.createdAt,
+        status: mapBackendStatusToLocal(item.status),
+        transferPhoto: undefined,
+        warehouseName: item.warehouseName,
+      };
+    });
+
+    return transfers;
+  } catch (error) {
+    console.error('Error fetching outgoing transfers:', error);
+    throw error;
   }
 }
 
@@ -577,10 +636,10 @@ export async function getTransfers2(): Promise<Transfer[]> {
 /**
  * Mapear estado del backend al estado local
  */
-function mapBackendStatusToLocal(backendStatus: string): 'pending' | 'pending-manager' | 'pending-engineer' | 'approved' | 'rejected' {
-  const statusMap: Record<string, 'pending' | 'pending-manager' | 'pending-engineer' | 'approved' | 'rejected'> = {
+function mapBackendStatusToLocal(backendStatus: string): 'pending' | 'completed' | 'rejected' {
+  const statusMap: Record<string, 'pending' | 'completed' | 'rejected'> = {
     'Pending': 'pending',
-    'Approved': 'approved',
+    'Completed': 'completed',
     'Rejected': 'rejected',
   };
   return statusMap[backendStatus] || 'pending';
@@ -785,6 +844,7 @@ export async function acceptTransfer(
   customerId: string,
   departmentId: string,
   projectId: string,
+  workOrderId: string,
   notes?: string
 ): Promise<any> {
   if (!recipientId) {
@@ -801,6 +861,7 @@ export async function acceptTransfer(
     customerId,
     departmentId,
     projectId,
+    workOrderId,
     notes: notes || ''
   };
 

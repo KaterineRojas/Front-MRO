@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../../ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../ui/tabs';
+import { Tabs, TabsContent } from '../../../../ui/tabs';
 import { Label } from '../../../../ui/label';
 import { Input } from '../../../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../ui/select';
@@ -31,6 +31,7 @@ interface RecordMovementModalProps {
   onOpenChange: (open: boolean) => void;
   articles: Article[];
   kits?: Kit[]; // Optional list of kits
+  warehouseId?: number; // Warehouse ID for fetching available bins (default: 1)
   onRecordTransaction: (transaction: TransactionFormData) => void;
   onSuccess?: () => void; // Callback to refresh data after successful transaction
 }
@@ -108,6 +109,7 @@ export function RecordMovementModal({
   onOpenChange,
   articles,
   kits = [],
+  warehouseId = 1,
   onRecordTransaction,
   onSuccess
 }: RecordMovementModalProps) {
@@ -139,7 +141,7 @@ export function RecordMovementModal({
     const loadAvailableBins = async () => {
       if (entityType === 'kit' || currentOption.transactionType === 0) { // Kit or Entry
         try {
-          const bins = await getAvailableBins(0, true); // binPurpose=0 (GoodCondition), isActive=true
+          const bins = await getAvailableBins(warehouseId, true); // warehouseId, isActive=true
           setAllBins(bins.map(bin => ({
             id: bin.id,
             fullCode: bin.binCode,
@@ -151,13 +153,11 @@ export function RecordMovementModal({
           const bins = new Set<{ id: number; fullCode: string; name: string }>();
           articles.forEach(article => {
             article.bins.forEach(bin => {
-              if (bin.binPurpose === 'GoodCondition') {
-                bins.add({
-                  id: bin.binId,
-                  fullCode: bin.binCode,
-                  name: bin.binCode // En formato antiguo no tenemos name, usamos code
-                });
-              }
+              bins.add({
+                id: bin.binId,
+                fullCode: bin.binCode,
+                name: bin.binCode // En formato antiguo no tenemos name, usamos code
+              });
             });
           });
           setAllBins(Array.from(bins));
@@ -179,7 +179,7 @@ export function RecordMovementModal({
     };
 
     loadAvailableBins();
-  }, [articles, currentOption.transactionType, entityType]);
+  }, [articles, currentOption.transactionType, entityType, warehouseId]);
 
   // Auto-select fromBin for Kit relocations
   useEffect(() => {
@@ -220,7 +220,7 @@ export function RecordMovementModal({
             setFormData(prev => ({ ...prev, toBinId: undefined }));
 
             try {
-              const bins = await getAvailableBins(0, true); // binPurpose=0 (GoodCondition), isActive=true
+              const bins = await getAvailableBins(warehouseId, true); // warehouseId, isActive=true
               setAllBins(bins.map(bin => ({
                 id: bin.id,
                 fullCode: bin.binCode, // binCode ya viene transformado desde el servicio (fullCode del API)
@@ -240,7 +240,7 @@ export function RecordMovementModal({
     };
 
     checkAndAutoSelectBin();
-  }, [formData.itemId, currentOption.value, entityType]);
+  }, [formData.itemId, currentOption.value, entityType, warehouseId]);
 
   // Reset form when entity type changes
   useEffect(() => {
@@ -567,7 +567,7 @@ export function RecordMovementModal({
                     <SelectContent>
                       {fromBins.map((bin, index) => (
                         <SelectItem key={`from-bin-${bin.binId}-${index}`} value={bin.binId.toString()}>
-                          {bin.binCode} ({bin.binPurpose}) - Qty: {bin.quantity}
+                          {bin.binCode} - Qty: {bin.quantity}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -604,7 +604,7 @@ export function RecordMovementModal({
                       // For warehouse transfers, use valid destination bins
                       validDestinationBins.map((bin, index) => (
                         <SelectItem key={`to-bin-${bin.binId}-${index}`} value={bin.binId.toString()}>
-                          {bin.binCode} ({bin.binPurpose}) - {bin.description}
+                          {bin.binCode} - {bin.description}
                         </SelectItem>
                       ))
                     ) : currentOption.value !== 'relocation-transfer' ? (

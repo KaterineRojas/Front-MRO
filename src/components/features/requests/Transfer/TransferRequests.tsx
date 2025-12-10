@@ -13,8 +13,7 @@ import {
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { toast } from 'sonner';
-import { useAppSelector } from '../../../../store';
-
+import { useAppSelector } from '../../../../store/hooks';
 import { getProjects, type Project } from '../../enginner/services';
 import { useTransfers } from './useTransfers';
 import { TransferForm } from './TransferForm';
@@ -253,7 +252,6 @@ export function TransferRequests() {
       const selectedProjectData = sharedProjectsList.find(p => p.id === selectedProject);
       
       // Call handleAccept with all required parameters
-      // matching the API requirements: companyId, customerId, departmentId, projectId
       await handleAccept(
         transferToAccept.id,
         currentUser.id,
@@ -261,6 +259,7 @@ export function TransferRequests() {
         selectedCustomer,
         currentUser.department,
         selectedProject,
+        selectedWorkOrder,
         ''
       );
       
@@ -369,9 +368,8 @@ export function TransferRequests() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status ({getStatusCount('all')})</SelectItem>
-                <SelectItem value="pending-manager">Pending Manager ({getStatusCount('pending-manager')})</SelectItem>
-                <SelectItem value="pending-engineer">Pending Engineer ({getStatusCount('pending-engineer')})</SelectItem>
-                <SelectItem value="approved">Approved ({getStatusCount('approved')})</SelectItem>
+                <SelectItem value="pending">Pending ({getStatusCount('pending')})</SelectItem>
+                <SelectItem value="completed">Completed ({getStatusCount('completed')})</SelectItem>
                 <SelectItem value="rejected">Rejected ({getStatusCount('rejected')})</SelectItem>
               </SelectContent>
             </Select>
