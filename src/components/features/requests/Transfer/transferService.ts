@@ -523,6 +523,8 @@ export async function rejectTransfer(
 }
 
 
+
+
 /**
  * Delete a transfer by ID
  */
@@ -544,8 +546,22 @@ export async function deleteTransfer(transferId: string): Promise<{ success: boo
       throw new Error(`Error al eliminar transferencia: ${response.statusText}`);
     }
 
-    const responseData = await response.json();
-    console.log('Delete response:', responseData);
+    // Try to parse JSON response, but handle empty responses
+    let responseData;
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        responseData = await response.json();
+        console.log('Delete response:', responseData);
+      } catch (e) {
+        console.log('Response is not valid JSON, but DELETE was successful');
+        responseData = null;
+      }
+    } else {
+      console.log('Response is not JSON content type, but DELETE was successful');
+      responseData = null;
+    }
 
     return {
       success: true,

@@ -123,8 +123,9 @@ export function useTransfers(): UseTransfersReturn {
   const handleCancel = async (transferId: string) => {
     try {
       await deleteTransfer(transferId);
-      setTransfers(prev => prev.filter(tr => tr.id !== transferId));
       toast.success('Transfer deleted successfully');
+      // Reload transfers after successful cancel
+      await loadTransfers();
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete transfer');
     }
@@ -152,8 +153,9 @@ export function useTransfers(): UseTransfersReturn {
         workOrderId,
         notes
       );
-      setTransfers(prev => prev.filter(tr => tr.id !== transferId));
       toast.success('Transfer accepted successfully');
+      // Reload transfers after successful accept
+      await loadTransfers();
     } catch (error: any) {
       toast.error(error.message || 'Failed to accept transfer');
     }
@@ -163,8 +165,9 @@ export function useTransfers(): UseTransfersReturn {
   const handleReject = async (transferId: string) => {
     try {
       await rejectTransfer(transferId);
-      setTransfers(prev => prev.filter(tr => tr.id !== transferId));
       toast.success('Transfer rejected successfully');
+      // Reload transfers after successful reject
+      await loadTransfers();
     } catch (error: any) {
       toast.error(error.message || 'Failed to reject transfer');
     }
