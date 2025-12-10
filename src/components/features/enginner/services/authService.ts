@@ -91,7 +91,7 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
         const response: AuthResponse = {
           token: `mock_jwt_token_${Date.now()}`,
           user: {
-            id: 'amx0142',
+            id: 'amx0143',
             name: 'John Smith',
             email: credentials.email,
             department: 'IT-Bolivia'

@@ -25,7 +25,7 @@ const getInitialState = (): UserState => {
     // Si no usa tokens, usuario siempre autenticado
     return {
       currentUser: {
-        id: 'amx0142',
+        id: 'amx0143',
         name: 'John Smith',
         email: 'john@company.com',
         department: 'IT-Bolivia'

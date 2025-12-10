@@ -18,7 +18,7 @@ import { getProjects, type Project } from '../../enginner/services';
 import { useTransfers } from './useTransfers';
 import { TransferForm } from './TransferForm';
 import { formatDate, getStatusColor, getStatusText } from './transferUtils';
-import { getAvailableUsers, getTransferId, type Transfer, type User } from './transferService';
+import { getTransferId, type Transfer } from './transferService';
 import {
   getCompanies,
   getCustomersByCompany,
@@ -36,7 +36,7 @@ export function TransferRequests() {
   const [isMobile, setIsMobile] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [sharedProjectsList, setSharedProjectsList] = useState<SharedProject[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [transferToAccept, setTransferToAccept] = useState<Transfer | null>(null);
   const [confirmTransferOpen, setConfirmTransferOpen] = useState(false);
@@ -80,16 +80,12 @@ export function TransferRequests() {
     refreshTransfers
   } = useTransfers();
 
-  // Load projects and users
+  // Load projects
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [projectsData, usersData] = await Promise.all([
-          getProjects(),
-          getAvailableUsers()
-        ]);
+        const projectsData = await getProjects();
         setProjects(projectsData);
-        setUsers(usersData);
       } catch (error) {
         toast.error('Failed to load data');
       }
@@ -663,7 +659,6 @@ export function TransferRequests() {
                   <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
                     <Avatar className="h-16 w-16">
                       <AvatarImage 
-                        src={users.find(u => u.id === transferToAccept.fromUserId)?.avatar} 
                         alt={transferToAccept.fromUser} 
                       />
                       <AvatarFallback>
@@ -673,9 +668,6 @@ export function TransferRequests() {
                     <div>
                       <p>From</p>
                       <p className="text-muted-foreground">{transferToAccept.fromUser}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {users.find(u => u.id === transferToAccept.fromUserId)?.department}
-                      </p>
                     </div>
                   </div>
 
