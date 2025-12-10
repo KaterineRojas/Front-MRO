@@ -40,7 +40,7 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
   const [kitConfirmationDialogOpen, setKitConfirmationDialogOpen] = useState(false);
   const [pendingKitConfirmation, setPendingKitConfirmation] = useState<{option: 'restock' | 'disassemble', selectedCount: number} | null>(null);
   const [conditionDialogOpen, setConditionDialogOpen] = useState(false);
-  const [currentConditionItem, setCurrentConditionItem] = useState<{requestId: number, itemId: number, kitItemId?: number, isKit: boolean} | null>(null);
+  const [currentConditionItem, setCurrentConditionItem] = useState<{ requestId: number; itemId: number; kitItemId?: number; isKit: boolean; occurrences?: Array<{requestId: number; itemId: number}> } | null>(null);
   const [conditionCounts, setConditionCounts] = useState<ConditionCounts>({ good: 0, revision: 0, lost: 0 });
   const [missingKitItems, setMissingKitItems] = useState<Array<{id: number, name: string, category: string, missingQuantity: number, totalQuantity: number}>>([]);
 
@@ -207,12 +207,10 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
   }, [allReturns]);
 
 
-  const handleOpenConditionDialog = useCallback((requestId: number, itemId: number, isKit: boolean, kitItemId?: number) => {
-    setCurrentConditionItem({ requestId, itemId, kitItemId, isKit });
-    const itemKey = isKit && kitItemId ? `${requestId}-${itemId}-${kitItemId}` : `${requestId}-${itemId}`;
-    const existingCondition = isKit ? kitItemConditions[itemKey] : itemConditions[itemKey];
-    
-    // Restaurar conditionCounts
+  const handleOpenConditionDialog = useCallback((requestId: number, itemId: number, isKit: boolean, kitItemId?: number, occurrences?: Array<{requestId: number; itemId: number}>) => {
+    setCurrentConditionItem({ requestId, itemId, kitItemId, isKit, occurrences });
+    const itemKey = isKit && kitItemId ? `${requestId}-${itemId}-${kitItemId}` : `${requestId}-${itemId}`;
+    const existingCondition = isKit ? kitItemConditions[itemKey] : itemConditions[itemKey];    // Restaurar conditionCounts
     if (existingCondition) {
       const goodMatch = existingCondition.match(/Good: (\d+)/);
       const revisionMatch = existingCondition.match(/Revision: (\d+)/);
@@ -232,7 +230,7 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
   // 🛑 MODIFICACIÓN: Validar total de condiciones EXACTAMENTE IGUAL a la cantidad a devolver
   const handleSaveCondition = useCallback(async () => {
     if (!currentConditionItem) return;
-    const { requestId, itemId, kitItemId, isKit } = currentConditionItem;
+    const { requestId, itemId, kitItemId, isKit, occurrences } = currentConditionItem;
     const itemKey = isKit && kitItemId ? `${requestId}-${itemId}-${kitItemId}` : `${requestId}-${itemId}`;
     const total = conditionCounts.good + conditionCounts.revision + conditionCounts.lost;
 
@@ -241,9 +239,15 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
       return; 
     }
 
-    const returnQty = isKit && kitItemId 
-      ? getKitItemQuantity(requestId, itemId, kitItemId) 
-      : getReturnQuantity(requestId, itemId);
+    // Si hay múltiples occurrences (item agregado), sumar todas las returnQuantities
+    let returnQty: number;
+    if (occurrences && occurrences.length > 0) {
+      returnQty = occurrences.reduce((sum, occ) => sum + getReturnQuantity(occ.requestId, occ.itemId), 0);
+    } else if (isKit && kitItemId) {
+      returnQty = getKitItemQuantity(requestId, itemId, kitItemId);
+    } else {
+      returnQty = getReturnQuantity(requestId, itemId);
+    }
 
     // Validación EXACTA: la suma debe ser igual a Quantity to Return
     if (total !== returnQty) {
@@ -260,7 +264,19 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
       setKitItemConditions(prev => ({ ...prev, [itemKey]: conditionString }));
       setKitItemQuantities(prev => ({ ...prev, [itemKey]: total }));
     } else {
-      setItemConditions(prev => ({ ...prev, [itemKey]: conditionString }));
+      // Si hay múltiples occurrences, guardar la condición para TODAS
+      if (occurrences && occurrences.length > 0) {
+        setItemConditions(prev => {
+          const updated = { ...prev };
+          occurrences.forEach(occ => {
+            const key = `${occ.requestId}-${occ.itemId}`;
+            updated[key] = conditionString;
+          });
+          return updated;
+        });
+      } else {
+        setItemConditions(prev => ({ ...prev, [itemKey]: conditionString }));
+      }
       // NO sobrescribir returnQuantities - el usuario ya lo configuró en el input
     }
 
@@ -333,16 +349,15 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
             // Si la cantidad es 0, no necesita validación de condición
             if (returnQty === 0) return false;
             
-            // Lógica de validación:
+            // Si returnQty es > 0 pero no hay condición guardada, falla
             if (!condition) {
-                return returnQty > 1; // Falla si es > 1 y no tiene condición guardada
+                return true; // Requiere condición
             }
-            const goodMatch = condition.match(/Good: (\d+)/);
-            const revisionMatch = condition.match(/Revision: (\d+)/);
-            const lostMatch = condition.match(/Lost: (\d+)/);
-            const totalConditioned = (goodMatch ? parseInt(goodMatch[1]) : 0) + (revisionMatch ? parseInt(revisionMatch[1]) : 0) + (lostMatch ? parseInt(lostMatch[1]) : 0);
             
-            return totalConditioned !== returnQty; // Falla si la suma no coincide con la cantidad a devolver
+            // Si hay condición guardada, confiar en que handleSaveCondition ya validó correctamente
+            // (Esto es especialmente importante para items con múltiples occurrences donde la
+            // condición total puede no coincidir con la qty de una occurrence individual)
+            return false;
         });
         
         if (itemsWithoutCondition.length > 0) { 
@@ -444,43 +459,16 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
             return; 
         }
 
-        // --- 5. ACTUALIZAR ESTADO LOCAL (SI LA API FUE EXITOSA) ---
+        // --- 5. RECARGAR DATOS DESDE EL API (EN LUGAR DE ACTUALIZAR MANUALMENTE) ---
         
-        // Actualizar cantidades o eliminar items según corresponda usando setter funcional
-        setAllReturns(prevReturns => {
-            const newAllReturns = prevReturns.map(req => {
-                if (req.id === validatedRequest.id) {
-                    const updatedItems = req.items.map(item => {
-                        const itemKey = `${req.id}-${item.id}`;
-                        if (!selectedReturnItems.has(itemKey)) return item; // Item no fue seleccionado
-                        
-                        // Obtener la cantidad configurada para devolver de ESTA ocurrencia específica
-                        const returnQtyForThisItem = getReturnQuantity(req.id, item.id);
-                        if (returnQtyForThisItem === 0) return item;
-                        
-                        const currentQty = item.quantityFulfilled ?? item.quantityRequested ?? 0;
-                        const remainingQty = currentQty - returnQtyForThisItem;
-                        
-                        if (remainingQty <= 0) {
-                            // Si no queda cantidad, marcar para eliminar
-                            return null;
-                        } else {
-                            // Si queda cantidad, actualizar
-                            return {
-                                ...item,
-                                quantityFulfilled: remainingQty,
-                                quantityRequested: remainingQty
-                            };
-                        }
-                    }).filter(item => item !== null) as LoanItem[]; // Filtrar items eliminados
-                    
-                    return { ...req, items: updatedItems };
-                }
-                return req;
-            }).filter(r => r.items.length > 0); // Eliminar requests sin items
-            
-            return newAllReturns;
-        });
+        try {
+            // Recargar los holdings actualizados desde el backend
+            const freshData = await getEngineerReturns(engineerId, warehouseId);
+            setAllReturns(freshData || []);
+        } catch (err) {
+            console.error('Error reloading returns after successful submission:', err);
+            // Aunque falle la recarga, el return fue exitoso, así que no mostramos error crítico
+        }
 
         // Limpiar TODOS los estados locales después de un retorno exitoso
         setSelectedReturnItems(new Set());
@@ -707,7 +695,7 @@ const handleSelectAllKitItems = useCallback((requestId: number, kitItem: LoanIte
     handleKitItemQuantityChange, handleSelectKitItem,
     formatConditionText: utilFormatConditionText,
     setItemsPhotoDialogOpen, setKitPhotoDialogOpen, setKitReturnDialogOpen, setKitReturnOption, setKitConfirmationDialogOpen,
-    handleCapturePhotoItems, handleCaptureKitPhoto, handleConfirmKitReturn, handleFinalConfirmKitReturn,
-    handlePrintMissingItems,handleSelectAllKitItems,
-  };
+    handleCapturePhotoItems, handleCaptureKitPhoto, handleConfirmKitReturn, handleFinalConfirmKitReturn,
+    handlePrintMissingItems,handleSelectAllKitItems,
+  };
 }
