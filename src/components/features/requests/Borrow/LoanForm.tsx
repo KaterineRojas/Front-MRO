@@ -64,6 +64,9 @@ const formatWorkOrderDate = (value?: string) => {
 
 
 export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCreated }: LoanFormProps) {
+  // Obtener el warehouse ID del carrito si existe
+  const cartWarehouseId = cartItems.length > 0 ? cartItems[0].warehouseId : '';
+  
   const [formData, setFormData] = useState<LoanFormData>({
     items: cartItems.map(item => ({
       itemId: item.item.id,
@@ -73,7 +76,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
     department: currentUser.department || '',
     returnDate: '',
     notes: '',
-    warehouseId: '',
+    warehouseId: cartWarehouseId || '',
     company: '',
     customer: '',
     project: '',
@@ -81,10 +84,18 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
   });
 
   const [cartItemsCount] = useState(cartItems.length);
-  const [itemSearches, setItemSearches] = useState<{ [key: number]: string }>({});
+  const [itemSearches, setItemSearches] = useState<{ [key: number]: string }>(() => {
+    // Inicializar con los nombres de los items del carrito
+    const searches: { [key: number]: string } = {};
+    cartItems.forEach((item, index) => {
+      searches[index] = item.item.name;
+    });
+    return searches;
+  });
   const [filteredItems, setFilteredItems] = useState<{ [key: number]: CatalogItem[] }>({});
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState<{ [key: number]: boolean }>({});
+  const isInitialWarehouseFromCart = useRef(!!cartWarehouseId);
   const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const recomputeFilteredItems = (itemsList: { itemId: string }[]) => {
     const selectedItemIds = itemsList
@@ -702,7 +713,8 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                     onValueChange={(newWarehouseId: string) => {
 
                       // LÓGICA DE RESETEO DE ITEMS AL CAMBIAR DE WAREHOUSE
-                      if (newWarehouseId !== formData.warehouseId) {
+                      // No resetear si este es el warehouse inicial del carrito
+                      if (newWarehouseId !== formData.warehouseId && !isInitialWarehouseFromCart.current) {
 
                         setFormData(prev => ({
                           ...prev,
@@ -719,9 +731,30 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                         if (formData.items.length > 0) {
                           toast.warning('The list of items was reset because you changed the warehouse.');
                         }
+                      } else if (newWarehouseId !== formData.warehouseId) {
+                        // Si fue warehouse inicial del carrito pero ahora se está cambiando
+                        isInitialWarehouseFromCart.current = false;
+                        setFormData(prev => ({
+                          ...prev,
+                          warehouseId: newWarehouseId,
+                          // Vaciar la lista de ítems y dejar solo un ítem vacío para empezar de nuevo
+                          items: [{ itemId: '', itemName: '', quantity: 1 }]
+                        }));
+
+                        // Resetear los estados de búsqueda de ítems
+                        setItemSearches({});
+                        setFilteredItems({});
+
+                        // Notificación al usuario
+                        if (formData.items.length > 0) {
+                          toast.warning('The list of items was reset because you changed the warehouse.');
+                        }
                       } else {
                         // Solo actualiza el ID si es necesario (aunque el Select ya lo maneja)
                         setFormData(prev => ({ ...prev, warehouseId: newWarehouseId }));
+                        if (isInitialWarehouseFromCart.current) {
+                          isInitialWarehouseFromCart.current = false;
+                        }
                       }
                     }}
                   >
