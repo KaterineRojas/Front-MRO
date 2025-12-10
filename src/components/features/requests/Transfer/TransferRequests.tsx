@@ -32,6 +32,11 @@ import {
 } from '../services/sharedServices';
 import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
 
+const typeBadgeClassNames: Record<Transfer['type'], string> = {
+  outgoing: 'bg-amber-200 text-amber-950 border-amber-300 dark:bg-amber-900/50 dark:text-amber-50 dark:border-amber-800',
+  incoming: 'bg-sky-200 text-sky-950 border-sky-300 dark:bg-sky-900/50 dark:text-sky-50 dark:border-sky-800'
+};
+
 export function TransferRequests() {
   const [showTransferMode, setShowTransferMode] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -70,8 +75,6 @@ export function TransferRequests() {
     isLoading,
     searchTerm,
     setSearchTerm,
-    statusFilter,
-    setStatusFilter,
     typeFilter,
     setTypeFilter,
     expandedRows,
@@ -79,7 +82,6 @@ export function TransferRequests() {
     handleCancel,
     handleAccept,
     handleReject,
-    getStatusCount,
     getTypeCount,
     canCancelTransfer,
     refreshTransfers
@@ -374,7 +376,7 @@ export function TransferRequests() {
       {/* Search and Filter Bar */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Input
               placeholder="Search by user, items, notes..."
               value={searchTerm}
@@ -388,17 +390,6 @@ export function TransferRequests() {
                 <SelectItem value="all">All ({getTypeCount('all')})</SelectItem>
                 <SelectItem value="outgoing">Outgoing ({getTypeCount('outgoing')})</SelectItem>
                 <SelectItem value="incoming">Incoming ({getTypeCount('incoming')})</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status ({getStatusCount('all')})</SelectItem>
-                <SelectItem value="pending">Pending ({getStatusCount('pending')})</SelectItem>
-                <SelectItem value="completed">Completed ({getStatusCount('completed')})</SelectItem>
-                <SelectItem value="rejected">Rejected ({getStatusCount('rejected')})</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -418,7 +409,7 @@ export function TransferRequests() {
             <ArrowLeftRight className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
             <h3>No transfers found</h3>
             <p className="text-sm text-muted-foreground">
-              {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
+              {searchTerm || typeFilter !== 'all'
                 ? 'Try adjusting your search or filters' 
                 : 'Your transfers will appear here'}
             </p>
@@ -446,7 +437,7 @@ export function TransferRequests() {
                         )}
                       </h3>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <Badge variant="outline">
+                        <Badge className={typeBadgeClassNames[transfer.type]}>
                           {transfer.type === 'outgoing' ? 'Outgoing' : 'Incoming'}
                         </Badge>
                         <Badge className={getStatusColor(transfer.status)} variant="secondary">
@@ -557,11 +548,11 @@ export function TransferRequests() {
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
                   <TableHead>Transfer ID</TableHead>
-                  <TableHead>Type</TableHead>
                   <TableHead>User</TableHead>
                   <TableHead>Items</TableHead>
                   <TableHead>Warehouse</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -582,11 +573,6 @@ export function TransferRequests() {
                       </TableCell>
                       <TableCell>#{transfer.id}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">
-                          {transfer.type === 'outgoing' ? 'Outgoing' : 'Incoming'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
                         {transfer.type === 'outgoing' ? transfer.toUser : transfer.fromUser}
                       </TableCell>
                       <TableCell>
@@ -596,6 +582,11 @@ export function TransferRequests() {
                         {transfer.warehouseName || 'N/A'}
                       </TableCell>
                       <TableCell>{formatDate(transfer.requestDate)}</TableCell>
+                      <TableCell>
+                        <Badge className={typeBadgeClassNames[transfer.type]}>
+                          {transfer.type === 'outgoing' ? 'Outgoing' : 'Incoming'}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(transfer.status)} variant="secondary">
                           {getStatusText(transfer.status)}

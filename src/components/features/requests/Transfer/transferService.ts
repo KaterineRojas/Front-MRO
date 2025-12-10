@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../services/api";
+import { API_URL } from "../../../../url";
 import { store } from "../../../../store/store";
 
 // Types
@@ -58,7 +58,7 @@ export async function getTransfersIncoming(): Promise<Transfer[]> {
   try {
     const recipientId = getCurrentUserId();
     
-    const url = `${API_BASE_URL}/transfer-requests?recipientId=${recipientId}&status=Pending&pageNumber=1&pageSize=20`;
+    const url = `${API_URL}/transfer-requests?recipientId=${recipientId}&status=Pending&pageNumber=1&pageSize=20`;
     
     const response = await fetch(url, {
       method: "GET",
@@ -126,7 +126,7 @@ export async function getTransfersOutgoing(): Promise<Transfer[]> {
   try {
     const senderId = getCurrentUserId();
     
-    const url = `${API_BASE_URL}/transfer-requests?senderId=${senderId}&status=PENDING&pageNumber=1&pageSize=20`;
+    const url = `${API_URL}/transfer-requests?senderId=${senderId}&status=PENDING&pageNumber=1&pageSize=20`;
     
     const response = await fetch(url, {
       method: "GET",
@@ -192,7 +192,7 @@ export async function getTransfersOutgoing(): Promise<Transfer[]> {
  */
 export async function getTransferId(transferId: string): Promise<Transfer> {
   try {
-    const url = `${API_BASE_URL}/transfer-requests/${transferId}`;
+    const url = `${API_URL}/transfer-requests/${transferId}`;
     
     const response = await fetch(url, {
       method: "GET",
@@ -288,7 +288,7 @@ export async function getInventoryTransfer(
   warehouseId: string
 ): Promise<InventoryItem[]> {
   try {
-    const url = `${API_BASE_URL}/engineer-holdings/${engineerId}?warehouseId=${warehouseId}`;
+    const url = `${API_URL}/engineer-holdings/${engineerId}?warehouseId=${warehouseId}`;
     console.log(`Fetching transfer inventory for engineer: ${engineerId}, warehouse: ${warehouseId}`);
     console.log(`API URL: ${url}`);
 
@@ -390,7 +390,7 @@ export async function createTransfer(data: {
       }))
     };
 
-    const url = `${API_BASE_URL}/transfer-requests`;
+    const url = `${API_URL}/transfer-requests`;
     console.log('Creating transfer to URL:', url);
     console.log('Transfer payload:', payload);
 
@@ -465,7 +465,7 @@ export async function acceptTransfer(
   };
 
   // Build URL with transfer ID and recipient ID as query parameter
-  const url = `${API_BASE_URL}/transfer-requests/${transferId}/accept?recipientId=${recipientId}`;
+  const url = `${API_URL}/transfer-requests/${transferId}/accept?recipientId=${recipientId}`;
   
   console.log('Accepting transfer to URL:', url);
   console.log('Accept payload:', payload);
@@ -499,7 +499,7 @@ export async function rejectTransfer(
   transferId: string
 ): Promise<{ success: boolean }> {
   try {
-    const url = `${API_BASE_URL}/transfer-requests/${transferId}`;
+    const url = `${API_URL}/transfer-requests/${transferId}`;
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {
@@ -530,7 +530,7 @@ export async function rejectTransfer(
  */
 export async function deleteTransfer(transferId: string): Promise<{ success: boolean; message: string }> {
   try {
-    const url = `${API_BASE_URL}/transfer-requests/${transferId}`;
+    const url = `${API_URL}/transfer-requests/${transferId}`;
     console.log('Deleting transfer from URL:', url);
     
     const response = await fetch(url, {

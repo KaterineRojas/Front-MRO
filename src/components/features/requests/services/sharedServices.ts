@@ -1,4 +1,5 @@
-import { API_BASE_URL } from "./api";
+//import { API_BASE_URL } from "./api";
+import { API_URL } from "../../../../url";
 import { withRetry, classifyFetchError, handleError } from "../../enginner/services/errorHandler";
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -112,7 +113,7 @@ async function fetchDataWithRetry<T>(
   dataMapper: (data: any) => T,
 ): Promise<T> {
   const apiFunction = async () => {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${API_URL}${endpoint}`;
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -165,7 +166,7 @@ export async function getStatuses(): Promise<Status[]> {
 
 export async function getDepartments(companyName: string): Promise<Department[]> {
   const endpoint = `/amx/departments/${encodeURIComponent(companyName)}`;
-  const fullUrl = `${API_BASE_URL}${endpoint}`;
+  const fullUrl = `${API_URL}${endpoint}`;
   console.log("Fetching departments from URL:", fullUrl);
 
   return fetchDataWithRetry(endpoint, (data: any) => {
@@ -257,7 +258,7 @@ export async function getProjectsByCustomer(companyName: string, customerName: s
 }
 
 export async function getWorkOrdersByProject(companyName: string, customerName: string, projectName: string): Promise<WorkOrder[]> {
-  const endpoint = `/amx/workorders/${encodeURIComponent(companyName)}/${encodeURIComponent(customerName)}/${encodeURIComponent(projectName)}`;
+  const endpoint = `/amx/workorders/${encodeURIComponent(companyName)}/${encodeURIComponent(customerName)}/${encodeURIComponent(projectName)}?status=OPEN`;
   return fetchDataWithRetry(endpoint, (data: any) => {
     if (!Array.isArray(data)) {
       console.error("API /workorders did not return an array:", data);
@@ -280,8 +281,8 @@ export async function getWorkOrdersByProject(companyName: string, customerName: 
 }
 
 export async function getUsers(status: string = 'OPEN'): Promise<Employee[]> {
-  const endpoint = `/amx/employees?status=${encodeURIComponent(status)}`;
-  const fullUrl = `${API_BASE_URL}${endpoint}`;
+  const endpoint = `/amx/employees?status=${encodeURIComponent(status)}?status=active`;
+  const fullUrl = `${API_URL}${endpoint}`;
   console.log('Fetching users from URL:', fullUrl);
 
   return fetchDataWithRetry(endpoint, (data: any) => {
@@ -314,7 +315,7 @@ export async function sendImage(file: File): Promise<any> {
   const formData = new FormData();
   formData.append("file", file); // el backend espera el campo "file"
 
-  const url = `${API_BASE_URL}/Items/upload-image`;
+  const url = `${API_URL}/Items/upload-image`;
   console.log('Uploading image to URL:', url);
 
   const response = await fetch(url, {

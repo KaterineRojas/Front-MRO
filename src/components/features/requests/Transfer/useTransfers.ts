@@ -16,8 +16,6 @@ interface UseTransfersReturn {
   isLoading: boolean;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  statusFilter: string;
-  setStatusFilter: (status: string) => void;
   typeFilter: string;
   setTypeFilter: (type: string) => void;
   expandedRows: Set<string>;
@@ -34,7 +32,6 @@ interface UseTransfersReturn {
     notes?: string
   ) => Promise<void>;
   handleReject: (id: string) => Promise<void>;
-  getStatusCount: (status: string) => number;
   getTypeCount: (type: string) => number;
   canCancelTransfer: (transfer: Transfer) => boolean;
   refreshTransfers: () => Promise<void>;
@@ -44,7 +41,6 @@ export function useTransfers(): UseTransfersReturn {
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
@@ -95,16 +91,12 @@ export function useTransfers(): UseTransfersReturn {
       );
     }
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(transfer => transfer.status === statusFilter);
-    }
-
     if (typeFilter !== 'all') {
       filtered = filtered.filter(transfer => transfer.type === typeFilter);
     }
 
     return filtered;
-  }, [transfers, searchTerm, statusFilter, typeFilter]);
+  }, [transfers, searchTerm, typeFilter]);
 
   // Toggle row expansion
   const toggleRow = (transferId: string) => {
@@ -174,11 +166,6 @@ export function useTransfers(): UseTransfersReturn {
   };
 
   // Get status count
-  const getStatusCount = (status: string): number => {
-    if (status === 'all') return transfers.length;
-    return transfers.filter(tr => tr.status === status).length;
-  };
-
   // Get type count
   const getTypeCount = (type: string): number => {
     if (type === 'all') return transfers.length;
@@ -196,8 +183,6 @@ export function useTransfers(): UseTransfersReturn {
     isLoading,
     searchTerm,
     setSearchTerm,
-    statusFilter,
-    setStatusFilter,
     typeFilter,
     setTypeFilter,
     expandedRows,
@@ -205,7 +190,6 @@ export function useTransfers(): UseTransfersReturn {
     handleCancel,
     handleAccept,
     handleReject,
-    getStatusCount,
     getTypeCount,
     canCancelTransfer,
     refreshTransfers: loadTransfers
