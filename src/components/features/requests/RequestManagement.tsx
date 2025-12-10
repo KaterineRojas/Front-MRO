@@ -7,127 +7,203 @@ import TabsGroup from './components/Tabs'
 import SearchBar, { SelectOption } from './components/SearchBar'
 import RequestsTable from './components/DataTable';
 import RequestModal from './components/ApproveRequestDialog';
-import {API_URL} from '../../../url'
+import { API_URL } from '../../../url'
+import { LoanRequestItem, LoanRequest, PaginatedLoanRequestResponse } from './types/loanTypes'
+import { approveLoanRequest, rejectLoanRequest } from './services/requestService'
 
 
 export function RequestManagement() {
 
-  const [requests, setRequests] = useState<Request[]>([]);
+  const [requests, setRequests] = useState<LoanRequest[]>([]);
   const [activeTab, setActiveTab] = useState<string>('pending');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
-  const [expandedRequests, setExpandedRequests] = useState<Set<number>>(new Set());
+  const [selectedRequest, setSelectedRequest] = useState<LoanRequest | null>(null);
+  const [expandedRequests, setExpandedRequests] = useState<Set<string>>(new Set());
   const [rejectNotes, setRejectNotes] = useState('');
   const [modalType, setModalType] = useState('approve')
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(false)
+  const WAREHOUSE_ID = 1;
+  const currentEmployeeId = "amx0142";
+
+
+  const [pagination, setPagination] = useState({
+    pageNumber: 1,
+    pageSize: 20,
+    totalCount: 0,
+    totalPages: 0
+  });
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchRequests = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
-        const response = await fetch(`${API_URL}/requests`);
+        const params = new URLSearchParams({
+          warehouseId: "1",
+          pageNumber: pagination.pageNumber.toString(),
+          pageSize: pagination.pageSize.toString()
+        });
 
-        if (!response.ok) throw new Error('Error fetching data');
+        const response = await fetch(`${API_URL}/loan-requests?${params}`, {
+          signal: controller.signal
+        });
 
-        const data = await response.json();
-        setRequests(data);
+        if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
+
+        const result: PaginatedLoanRequestResponse = await response.json();
+
+        console.log('API Response:', result);
+
+        setRequests(result.data);
+
+        setPagination(prev => ({
+          ...prev,
+          totalCount: result.totalCount,
+          totalPages: result.totalPages
+        }));
+
       } catch (error) {
-        console.error(error);
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error("Fetch error:", error);
+        }
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     };
 
     fetchRequests();
-  }, []);
 
-  const requestTypeOptions: SelectOption[] = [
-    { value: "all", label: "All Types" },
-    { value: "transfer-on-site", label: "Transfer on Site" },
-    { value: "purchase", label: "Purchase" },
-    { value: "purchase-on-site", label: "Purchase on Site" },
-  ];
+    return () => controller.abort(); // Cleanup
+
+    // Agregamos dependencias si quieres que se refresque al cambiar de página
+  }, [pagination.pageNumber, pagination.pageSize]);
 
 
-  const handleToggleExpand = (requestId: number) => {
-    setExpandedRequests(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(requestId)) {
-        newSet.delete(requestId);
-      } else {
-        newSet.add(requestId);
-      }
-      return newSet;
-    });
+
+
+  const handleToggleExpand = (reqNumber: string) => {
+    const newSet = new Set(expandedRequests);
+    if (newSet.has(reqNumber)) {
+      newSet.delete(reqNumber);
+    } else {
+      newSet.add(reqNumber);
+    }
+    setExpandedRequests(newSet);
   };
 
-  const getFilteredRequests = (status?: string) => {
+
+  // corregir esto cuando el backend devuelva type
+  // type: 'purchase' | 'purchase-on-site' | 'transfer-on-site';
+  const getFilteredRequests = (activeTabStatus?: string) => {
     return requests.filter(request => {
-      const matchesStatus = !status || status === 'all' || request.status === status;
-      const matchesType = typeFilter === 'all' || request.type === typeFilter;
+
+      let filterStatus = activeTabStatus?.toLowerCase() || 'all';
+
+      if (filterStatus === 'pending') {
+        filterStatus = 'sent';
+      }
+
+      const currentStatus = request.status?.toLowerCase() || '';
+      const matchesStatus = filterStatus === 'all' || currentStatus === filterStatus;
+      const matchesType = typeFilter === 'all' || true;
+
+      const term = searchTerm.toLowerCase();
+
       const matchesSearch =
-        request.requestNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.requestedBy.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.requestNumber.toLowerCase().includes(term) ||
+        request.requesterName.toLowerCase().includes(term) ||
+        request.departmentId?.toLowerCase().includes(term) ||
         request.items.some(item =>
-          item.articleCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.articleDescription.toLowerCase().includes(searchTerm.toLowerCase())
+          item.sku.toLowerCase().includes(term) ||
+          item.name.toLowerCase().includes(term) 
         );
 
       return matchesStatus && matchesType && matchesSearch;
     });
   };
 
-  const handleApprove = () => {
+
+
+
+
+  const handleApprove = async () => {
     if (!selectedRequest) return;
 
-    const updatedRequest: Request = {
-      ...selectedRequest,
-      status: 'approved',
-      reviewedBy: 'insert current user here',
-      reviewDate: new Date().toISOString().split('T')[0],
-      reviewNotes: 'Approved'
-    };
+    try {
 
-    setRequests(requests.map(request =>
-      request.id === selectedRequest.id ? updatedRequest : request
-    ));
+      // 2. LLAMADA AL SERVICIO (Actualizada)
+      await approveLoanRequest(selectedRequest.requestNumber, currentEmployeeId);
 
-    setSelectedRequest(null);
+      const updatedRequest = {
+        ...selectedRequest,
+        status: 'approved',
+        // ...responseData 
+      };
+
+      setRequests(prev => prev.map(req =>
+        req.requestNumber === selectedRequest.requestNumber ? updatedRequest : req
+      ));
+
+      setSelectedRequest(null);
+      console.log("Request approved successfully");
+
+    } catch (error) {
+      console.error("Error approving request:", error);
+      alert("No se pudo aprobar la solicitud. Revisa la consola.");
+    }
   };
+
+
+
 
   const handleCancelApprove = () => {
     setSelectedRequest(null);
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!selectedRequest) return;
 
-    const updatedRequest: Request = {
-      ...selectedRequest,
-      status: 'rejected',
-      reviewedBy: 'Insert current user here',
-      reviewDate: new Date().toISOString().split('T')[0],
-      reviewNotes: rejectNotes
-    };
+    if (!rejectNotes.trim()) {
+      alert("Please provide a rejection reason.");
+      return;
+    }
 
-    setRequests(requests.map(request =>
-      request.id === selectedRequest.id ? updatedRequest : request
-    ));
+    try {
+      await rejectLoanRequest(
+        selectedRequest.requestNumber,
+        currentEmployeeId,
+        rejectNotes
+      );
 
-    setSelectedRequest(null);
-    setRejectNotes('');
+      setRequests(prev => prev.map(req =>
+        req.requestNumber === selectedRequest.requestNumber
+          ? {
+            ...req,
+            status: 'rejected',
+          }
+          : req
+      ));
+
+      setSelectedRequest(null);
+      setRejectNotes('');
+      // toast.success("Request rejected");
+
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      alert("Failed to reject request.");
+    }
   };
 
-  
 
-  const pendingCount = requests.filter(r => r.status === 'pending').length;
+
+  const pendingCount = requests.filter(r => r.status === 'Pending').length;
   const approvedCount = requests.filter(r => r.status === 'approved').length;
   const rejectedCount = requests.filter(r => r.status === 'rejected').length;
   const completedCount = requests.filter(r => r.status === 'completed').length;
-  const urgentCount = requests.filter(r => r.status === 'pending' && r.urgency === 'urgent').length;
+  // const urgentCount = requests.filter(r => r.status === 'pending' && r.urgency === 'urgent').length;
 
   const calculateTotalCost = (request: Request) => {
     return request.items.reduce((total, item) => {
@@ -146,7 +222,7 @@ export function RequestManagement() {
         </div>
 
         {/* pending items alert */}
-        {pendingCount > 0 && (
+        {/* {pendingCount > 0 && (
           <div className="flex items-center space-x-2">
             <AlertTriangle className="h-4 w-4 text-orange-600" />
             <span className="text-sm">
@@ -158,7 +234,7 @@ export function RequestManagement() {
               )}
             </span>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Summary Cards */}
@@ -216,7 +292,8 @@ export function RequestManagement() {
           setSearchQuery={setSearchTerm}
           selectedType={typeFilter}
           setSelectedType={setTypeFilter}
-          typesOptions={requestTypeOptions}
+          // insert new type options here
+          typesOptions={[/*requestTypeOptions*/]}
         />
 
         {/** dinamic data table */}
@@ -234,9 +311,6 @@ export function RequestManagement() {
             <RequestsTable
               requests={getFilteredRequests(activeTab)}
               expandedRequests={expandedRequests}
-
-              calculateTotalCost={calculateTotalCost}
-
               handleToggleExpand={handleToggleExpand}
               setSelectedRequest={setSelectedRequest}
               setShowModal={setShowModal}

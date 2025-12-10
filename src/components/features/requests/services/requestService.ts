@@ -1,6 +1,7 @@
 // services/requestService.ts
 import { apiCall } from '../../enginner/services/errorHandler';
 import { API_BASE_URL } from '../../enginner/services/api';
+import {API_URL} from '../../../../url'
 
 export interface RequestItem {
   id: number;
@@ -320,3 +321,76 @@ export const updatePurchaseRequestPriority = async (
     return await response.json();
   });
 };
+
+
+// loanRequestService.ts
+
+/**
+ * Approves a loan request.
+ * Endpoint: PUT /api/loan-requests/{requestNumber}/approve
+ */
+export async function approveLoanRequest(
+  requestNumber: string, 
+  approvedByEmployeeId: string 
+): Promise<void> {
+  
+  // Validaciones defensivas
+  if (!requestNumber) throw new Error("Request number is required");
+  if (!approvedByEmployeeId) throw new Error("Employee ID is required for approval");
+
+  const params = new URLSearchParams({
+    approvedByEmployeeId: approvedByEmployeeId
+  });
+
+  const url = `${API_URL}/loan-requests/${requestNumber}/approve?${params.toString()}`;
+
+  const response = await fetch(url, {
+    method: 'PUT', 
+    headers: {
+      'Content-Type': 'application/json',
+      // 'Authorization': `Bearer ${token}` 
+    }
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to approve request: ${errorText}`);
+  }
+}
+
+
+// loanRequestService.ts
+
+/**
+ * Rejects a loan request.
+ * Endpoint: PUT /api/loan-requests/{requestNumber}/reject
+ */
+export async function rejectLoanRequest(
+  requestNumber: string,
+  rejectedByEmployeeId: string,
+  rejectionReason: string
+): Promise<void> {
+  
+  if (!requestNumber) throw new Error("Request number is required");
+  if (!rejectedByEmployeeId) throw new Error("Employee ID is required");
+  if (!rejectionReason) throw new Error("Rejection reason is required");
+
+  const params = new URLSearchParams({
+    rejectedByEmployeeId: rejectedByEmployeeId,
+    rejectionReason: rejectionReason
+  });
+
+  const url = `${API_URL}/loan-requests/${requestNumber}/reject?${params.toString()}`;
+
+  const response = await fetch(url, {
+    method: 'PUT', 
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to reject request: ${errorText}`);
+  }
+}

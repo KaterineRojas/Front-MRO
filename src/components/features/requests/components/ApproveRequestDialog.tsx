@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
-import { type Request } from '../data/mockRequest.ts';
-import { X } from 'lucide-react';
-import { getTypeBadge } from '../../inventory/components/RequestBadges.tsx'
+import { X, User, Building, Briefcase, Calendar } from 'lucide-react';
 import { useSelector } from 'react-redux';
-
+import { LoanRequest } from '../types/loanTypes.ts';
 
 interface RequestActionDialogProps {
     show: boolean;
     variant: 'approve' | 'reject';
-    request: Request | null;
+    request: LoanRequest | null;
     onCancel: () => void;
-    onConfirm: () => void;
+    onConfirm: (reason: string) => void;
 }
 
 export default function RequestModal({
@@ -22,14 +20,14 @@ export default function RequestModal({
 }: RequestActionDialogProps) {
 
     const darkMode = useSelector((state: any) => state.ui.darkMode);
-
     const [reason, setReason] = useState("");
     const isReject = variant === 'reject';
 
     const title = isReject ? "Reject Request" : "Approve Request";
+
     const description = isReject
-        ? "Please provide a reason for rejecting this request."
-        : "Are you sure you want to approve this request?";
+        ? `You are about to reject request #${request?.requestNumber}. This action cannot be undone.`
+        : `Are you sure you want to approve request #${request?.requestNumber}?`;
 
     const confirmText = isReject ? "Reject Request" : "Approve Request";
 
@@ -40,145 +38,137 @@ export default function RequestModal({
     const isConfirmDisabled = isReject && reason.trim() === "";
 
     useEffect(() => {
-        if (!show) {
+        if (show) {
             setReason("");
         }
     }, [show]);
-
 
     if (!show || !request) {
         return null;
     }
 
+    const formattedDate = new Date(request.createdAt).toLocaleDateString();
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/60 backdrop-blur-[3px]"
+                className="fixed inset-0 bg-black/60 backdrop-blur-[2px] transition-opacity"
                 onClick={onCancel}
             ></div>
 
-            <div className="relative w-full max-w-3xl p-6 bg-white rounded-lg shadow-xl dark:bg-gray-950">
+            {/* Modal Content */}
+            <div className="relative w-full max-w-2xl p-6 bg-white rounded-xl shadow-2xl dark:bg-[#121212] border border-gray-200 dark:border-gray-800 transform transition-all">
 
-                <div className="mb-4">
-                    <h2 className="text-xl text-center md:text-left font-semibold text-gray-900 dark:text-gray-100">
-                        {title}
-                    </h2>
-                    <p className="text-sm text-center md:text-left text-gray-500 dark:text-gray-400">
-                        {description}
-                    </p>
-
-                    <X className='h-6 w-6 absolute right-0 top-0 m-4 text-gray-400 hover:text-red-500 hover:rotate-90 transition duration-300'
+                {/* Header */}
+                <div className="mb-6 flex justify-between items-start">
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                            {title}
+                        </h2>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            {description}
+                        </p>
+                    </div>
+                    <button
                         onClick={onCancel}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
+                </div>
+
+                {/* Resumen de la Solicitud */}
+                <div className="mb-6 bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-100 dark:border-gray-800">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        {/* Requester */}
+                        <div className="flex items-start gap-3">
+                            <User className="w-4 h-4 text-gray-400 mt-1" />
+                            <div>
+                                <p className="text-xs font-bold text-gray-500 uppercase">Requested By</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{request.requesterName}</p>
+                                <p className="text-xs text-gray-500">{request.requesterId}</p>
+                            </div>
+                        </div>
+
+                        {/* Department */}
+                        <div className="flex items-start gap-3">
+                            <Building className="w-4 h-4 text-gray-400 mt-1" />
+                            <div>
+                                <p className="text-xs font-bold text-gray-500 uppercase">Department</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{request.departmentId}</p>
+                            </div>
+                        </div>
+
+                        {/* Project */}
+                        {request.projectId && (
+                            <div className="flex items-start gap-3">
+                                <Briefcase className="w-4 h-4 text-gray-400 mt-1" />
+                                <div>
+                                    <p className="text-xs font-bold text-gray-500 uppercase">Project</p>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{request.projectId}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Date */}
+                        <div className="flex items-start gap-3">
+                            <Calendar className="w-4 h-4 text-gray-400 mt-1" />
+                            <div>
+                                <p className="text-xs font-bold text-gray-500 uppercase">Date</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{formattedDate}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Área de Texto  */}
+                <div className="mb-6">
+                    <label
+                        htmlFor="action-reason"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
+                        {isReject ? "Rejection Reason (Required)" : "Approval Notes (Optional)"}
+                    </label>
+                    <textarea
+                        id="action-reason"
+                        rows={3}
+                        className={`w-full rounded-lg border shadow-sm focus:ring-2 focus:ring-opacity-50 text-sm p-3
+              ${isReject && !reason.trim()
+                                ? 'border-red-300 focus:border-red-500 focus:ring-red-200'
+                                : 'border-gray-300 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-200'}
+              bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100
+            `}
+                        placeholder={isReject ? "Explain why this request is being rejected..." : "Add any comments for the record..."}
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
                     />
                 </div>
 
-                {/* Cuerpo con Detalles */}
-                <div className="space-y-4">
-                    <div className="rounded-md border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+                {/* Footer Buttons */}
+                <div className="flex justify-end gap-3 pt-2">
+                    <button
+                        type="button"
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors"
+                        onClick={onCancel}
+                    >
+                        Cancel
+                    </button>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-500 mb-1">Request Number</label>
-                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.requestNumber}</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-500 mb-1">Type</label>
-                                {getTypeBadge(request.type, darkMode ? 'outline' : 'soft')}
-                            </div>
-                            <div className='overflow-x-auto'>
-                                <label className="block text-sm font-medium text-gray-500 mb-1">Requested By</label>
-                                <p className="text-sm text-gray-900 dark:text-gray-100">{request.requestedBy}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{request.requestedByEmail}</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-500 mb-1">Department</label>
-                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.department}</p>
-                            </div>
-                        </div>
-                        {request.project && !isReject && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-500 mb-1">Project</label>
-                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.project}</p>
-                            </div>
-                        )}
-                        {!isReject &&
-                            <div className='max-h-[150px] overflow-auto'>
-                                <label className="block text-sm font-medium text-gray-500 mb-1">Reason</label>
-                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.reason}</p>
-                            </div>
-
-                        }
-                        <div>
-                            <label className="block text-sm font-medium text-gray-500 mb-1">
-                                Items ({request.items.length})
-                            </label>
-                            <div className="mt-2 grid gap-4 grid-cols-1 md:grid-cols-2 max-h-[200px] overflow-auto">
-                                {request.items.map((item) => (
-                                    <div key={item.id} className="flex items-start space-x-3 p-2 border border-gray-200 dark:border-gray-700 rounded">
-                                        <img
-                                            src={item.imageUrl || 'https://via.placeholder.com/150'}
-                                            alt={item.articleDescription}
-                                            className="w-16 h-16 object-cover rounded"
-                                        />
-                                        <div className="flex-1">
-                                            <p className="font-mono text-sm text-gray-700 dark:text-gray-300">{item.articleCode}</p>
-                                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{item.articleDescription}</p>
-                                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                                                <span className="text-xs font-medium bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-200">
-                                                    {item.quantity} {item.unit}
-                                                </span>
-                                                {item.estimatedCost && (
-                                                    <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full dark:bg-green-800 dark:text-green-100">
-                                                        ${(item.estimatedCost * item.quantity).toFixed(2)}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {isReject && (
-                        <div>
-                            <label htmlFor="rejectionReason" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Rejection Reason <span className="text-red-500">*</span>
-                            </label>
-                            <textarea
-                                id="rejectionReason"
-                                rows={3}
-                                className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 
-                                shadow-sm bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 
-                                focus:ring-2 focus:ring-blue-500 p-2 max-h-[100px]"
-                                placeholder="Explain why this request is being rejected..."
-                                value={reason}
-                                onChange={(e) => setReason(e.target.value)}
-                            />
-                        </div>
-                    )}
-
-                    <div className="flex justify-end space-x-2">
-                        <button
-                            type="button"
-                            className="rounded-md text-sm font-medium h-9 px-4 py-2 border border-gray-300 bg-white text-gray-800 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors"
-                            onClick={onCancel}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            className={`rounded-md text-sm font-medium h-9 px-4 py-2 transition-colors
-                                ${confirmButtonClass}
-                                ${isConfirmDisabled ? 'opacity-50 cursor-not-allowed' : ''}
-                            `}
-                            onClick={onConfirm}
-                            disabled={isConfirmDisabled}
-                        >
-                            {confirmText}
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        className={`px-4 py-2 text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2
+              ${confirmButtonClass}
+              ${isConfirmDisabled ? 'opacity-50 cursor-not-allowed' : ''}
+            `}
+                        onClick={() => onConfirm(reason)} 
+                        disabled={isConfirmDisabled}
+                    >
+                        {confirmText}
+                    </button>
                 </div>
+
             </div>
         </div>
     );
