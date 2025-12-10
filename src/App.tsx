@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import { useEffect } from 'react';
 import { useMsal, useIsAuthenticated } from '@azure/msal-react';
 import { InteractionStatus } from '@azure/msal-browser';
-import { store, useAppSelector, useAppDispatch } from './store';
+import { store, useAppDispatch } from './store';
 import { setAuth, setLoading, setUserPhoto } from './store/slices/authSlice';
 import { loginRequest } from './authConfig';
 import { getUserProfileWithPhoto } from './services/graphService';
@@ -248,8 +248,6 @@ function EngineerRequestOrdersWrapper() {
 }
 
 function AppRoutes() {
-  // Get user from Redux store
-  const user = useAppSelector((state) => state.auth.user);
 
   return (
     <Routes>
@@ -287,15 +285,11 @@ function AppRoutes() {
         {/* Manage Requests Route */}
         <Route path="manage-requests" element={<ManageRequestsPage />} />
         
-        {/* Request Management (Admin/Manager only) */}
-        {user && ['administrator', 'manager'].includes(user.role) && (
-          <Route path="requests" element={<RequestManagement />} />
-        )}
+        {/* Request Management (temporarily open) */}
+        <Route path="requests" element={<RequestManagement />} />
         
-        {/* User Management (Admin only) */}
-        {user && user.role === 'administrator' && (
-          <Route path="users" element={<UserManagement />} />
-        )}
+        {/* User Management (temporarily open) */}
+        <Route path="users" element={<UserManagement />} />
         
         {/* Engineer Modules - Nuevos módulos integrados */}
         <Route path="engineer/catalog" element={<EngineerModuleWrapper><EngineerCatalog /></EngineerModuleWrapper>} />
