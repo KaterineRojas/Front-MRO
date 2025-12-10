@@ -23,8 +23,19 @@ import {
   type User
 } from './transferService';
 import { getWarehouses, getUsers, sendImage } from '../services/sharedServices';
-import type { Warehouse, Employee } from '../services/sharedServices'; 
+import type { Warehouse, Employee } from '../services/sharedServices';
 
+// Add styles for blinking animation
+const styles = `
+  @keyframes blink-animation {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+  }
+  .validate-btn-blink {
+    animation: blink-animation 1s infinite;
+  }
+`;
 
 interface TransferFormProps {
   onBack: () => void;
@@ -336,21 +347,12 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
 
   return (
     <div className="space-y-6">
+      <style>{styles}</style>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={handleCancel} className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Requests
-          </Button>
-        </div>
-        <Button 
-          onClick={handleTransferClick}
-          disabled={!canTransfer}
-          className="gap-2"
-        >
-          <ArrowLeftRight className="h-4 w-4" />
-          Transfer ({selectedItemIds.size})
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" onClick={handleCancel} className="gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Requests
         </Button>
       </div>
 
@@ -529,10 +531,22 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                     <Button
                       onClick={validatePhoto}
                       disabled={isValidatingPhoto}
-                      className="w-full"
+                      className={`w-full font-semibold bg-blue-600 hover:bg-blue-700 text-white py-5 text-base ${
+                        !validatedImageUrl ? 'validate-btn-blink' : ''
+                      }`}
                       size="sm"
                     >
-                      {isValidatingPhoto ? 'Validating...' : 'Validate Photograph'}
+                      {isValidatingPhoto ? (
+                        <span className="flex items-center gap-2">
+                          <span className="inline-block animate-spin">⏳</span>
+                          Validating...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <span>✓</span>
+                          Validate Photograph
+                        </span>
+                      )}
                     </Button>
                   </div>
                 ) : cameraOpen ? (
@@ -642,6 +656,18 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Transfer Button - Below Transfer Details - Centered */}
+      <div className="flex justify-center w-full">
+        <Button 
+          onClick={handleTransferClick}
+          disabled={!canTransfer}
+          className="gap-2 py-6 px-12 text-lg font-semibold bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ArrowLeftRight className="h-5 w-5" />
+          Proceed with Transfer ({selectedItemIds.size} items)
+        </Button>
       </div>
 
       {/* Confirm Transfer Dialog */}
