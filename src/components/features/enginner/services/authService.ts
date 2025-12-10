@@ -90,8 +90,9 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
       if (credentials.email && credentials.password.length >= 4) {
         const response: AuthResponse = {
           token: `mock_jwt_token_${Date.now()}`,
+          //no se esta usando este usuario para las pruebas
           user: {
-            id: 'amx0143',
+            id: 'amx0142',
             name: 'John Smith',
             email: credentials.email,
             department: 'IT-Bolivia'

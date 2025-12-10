@@ -23,6 +23,7 @@ const getInitialState = (): UserState => {
     };
   } else {
     // Si no usa tokens, usuario siempre autenticado
+    //borrow
     return {
       currentUser: {
         id: 'amx0143',

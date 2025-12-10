@@ -14,7 +14,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
 }
-//se esta usando este usuario para las pruebas
+//se esta usando este usuario para las pruebas en transfer
 // User ID: amx014* (Engineer user)
 const initialState: AuthState = {
   user: {

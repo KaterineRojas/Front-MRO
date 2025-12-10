@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { PurchaseForm } from './PurchaseForm';
+import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
 //import { toast } from 'sonner';
 import { useAppSelector } from '../../../../store';
 import { selectCurrentUser } from '../../../../store';
@@ -156,6 +157,7 @@ export function PurchaseRequests() {
   // Main purchase requests list view
   return (
     <div className="space-y-6">
+      <style>{actionButtonAnimationStyles}</style>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1>Purchase Requests</h1>
@@ -261,20 +263,19 @@ export function PurchaseRequests() {
                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                       {canConfirmBought(request) && (
                         <Button
-                          size="sm"
-                          variant="outline"
+                          className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
                           onClick={() => handleAlreadyBought(request)}
                         >
                           <CheckCircle className="h-4 w-4" />
+                          Confirm
                         </Button>
                       )}
                       {canCancelRequest(request) && (
                         <Button
-                          size="sm"
-                          variant="ghost"
+                          className="action-btn-enhance btn-cancel p-2 h-auto"
                           onClick={() => handleCancelPurchaseRequest(request.requestId)}
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
@@ -371,8 +372,7 @@ export function PurchaseRequests() {
                           <div className="flex items-center justify-end gap-2">
                             {canConfirmBought(request) && (
                               <Button
-                                size="sm"
-                                variant="outline"
+                                className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
                                 onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                   e.stopPropagation();
                                   handleAlreadyBought(request);
@@ -384,14 +384,13 @@ export function PurchaseRequests() {
                             )}
                             {canCancelRequest(request) && (
                               <Button
-                                size="sm"
-                                variant="ghost"
+                                className="action-btn-enhance btn-cancel p-2 h-auto"
                                 onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                   e.stopPropagation();
                                   handleCancelPurchaseRequest(request.requestId);
                                 }}
                               >
-                                <Trash2 className="h-4 w-4 text-destructive" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             )}
                           </div>

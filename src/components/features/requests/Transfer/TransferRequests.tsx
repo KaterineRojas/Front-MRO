@@ -4,6 +4,7 @@ import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
 import { Input } from '../../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Label } from '../../../ui/label';
@@ -29,7 +30,7 @@ import {
   type WorkOrder,
   type Project as SharedProject
 } from '../services/sharedServices';
-
+import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
 
 export function TransferRequests() {
   const [showTransferMode, setShowTransferMode] = useState(false);
@@ -40,6 +41,10 @@ export function TransferRequests() {
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [transferToAccept, setTransferToAccept] = useState<Transfer | null>(null);
   const [confirmTransferOpen, setConfirmTransferOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [transferToRejectId, setTransferToRejectId] = useState<string | null>(null);
+  const [transferToCancelId, setTransferToCancelId] = useState<string | null>(null);
   const [expandedTransferDetails, setExpandedTransferDetails] = useState<Record<string, Transfer>>({});
   const [loadingTransferIds, setLoadingTransferIds] = useState<Set<string>>(new Set());
 
@@ -268,10 +273,36 @@ export function TransferRequests() {
     }
   };
 
+  const handleRejectClick = (transferId: string) => {
+    setTransferToRejectId(transferId);
+    setRejectDialogOpen(true);
+  };
+
+  const closeRejectDialog = () => {
+    setRejectDialogOpen(false);
+    setTransferToRejectId(null);
+  };
+
+  const confirmRejectTransfer = async () => {
+    if (!transferToRejectId) return;
+    await handleReject(transferToRejectId);
+    closeRejectDialog();
+  };
+
   const handleCancelClick = (transferId: string) => {
-    if (window.confirm('Are you sure you want to cancel this transfer?')) {
-      handleCancel(transferId);
-    }
+    setTransferToCancelId(transferId);
+    setCancelDialogOpen(true);
+  };
+
+  const closeCancelDialog = () => {
+    setCancelDialogOpen(false);
+    setTransferToCancelId(null);
+  };
+
+  const confirmCancelTransfer = async () => {
+    if (!transferToCancelId) return;
+    await handleCancel(transferToCancelId);
+    closeCancelDialog();
   };
 
   const handleExpandTransfer = async (transferId: string) => {
@@ -326,6 +357,7 @@ export function TransferRequests() {
   // Main transfers list view
   return (
     <div className="space-y-6">
+      <style>{actionButtonAnimationStyles}</style>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1>Transfers</h1>
@@ -425,30 +457,48 @@ export function TransferRequests() {
                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                       {transfer.type === 'incoming' && (
                         <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleTransferAcceptStart(transfer)}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleReject(transfer.id)}
-                          >
-                            <X className="h-4 w-4 text-destructive" />
-                          </Button>
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  className="action-btn-enhance btn-accept h-auto py-2 px-4"
+                                  onClick={() => handleTransferAcceptStart(transfer)}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent sideOffset={8}>Accept transfer</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  className="action-btn-enhance btn-reject p-2 h-auto"
+                                      onClick={() => handleRejectClick(transfer.id)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent sideOffset={8}>Reject transfer</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </>
                       )}
                       {canCancelTransfer(transfer) && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleCancelClick(transfer.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                className="action-btn-enhance btn-cancel p-2 h-auto"
+                                onClick={() => handleCancelClick(transfer.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent sideOffset={8}>Delete transfer</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </div>
                   </div>
@@ -555,31 +605,50 @@ export function TransferRequests() {
                         <div className="flex justify-end gap-2">
                           {transfer.type === 'incoming' && (
                             <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleTransferAcceptStart(transfer)}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Accept
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleReject(transfer.id)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      className="action-btn-enhance btn-accept gap-2 h-auto py-2 px-4"
+                                      onClick={() => handleTransferAcceptStart(transfer)}
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                      
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={8}>Accept transfer</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      className="action-btn-enhance btn-reject p-2 h-auto"
+                                      onClick={() => handleRejectClick(transfer.id)}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={8}>Reject transfer</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </>
                           )}
                           {canCancelTransfer(transfer) && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleCancelClick(transfer.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    className="action-btn-enhance btn-cancel gap-2 h-auto py-2 px-4"
+                                    onClick={() => handleCancelClick(transfer.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    Cancel
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent sideOffset={8}>Delete transfer</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           )}
                         </div>
                       </TableCell>
@@ -808,6 +877,58 @@ export function TransferRequests() {
             </Button>
             <Button onClick={confirmTransferAccept} disabled={!selectedProject}>
               Accept Transfer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Transfer Confirmation Dialog */}
+      <Dialog
+        open={rejectDialogOpen}
+        onOpenChange={(open) => (open ? setRejectDialogOpen(true) : closeRejectDialog())}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Transfer</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to reject this transfer request?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={closeRejectDialog}>
+              Cancel
+            </Button>
+            <Button
+              className="action-btn-enhance btn-reject gap-2 h-auto py-2 px-4"
+              onClick={confirmRejectTransfer}
+            >
+              Confirm Reject
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Transfer Confirmation Dialog */}
+      <Dialog
+        open={cancelDialogOpen}
+        onOpenChange={(open) => (open ? setCancelDialogOpen(true) : closeCancelDialog())}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Transfer</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this transfer request?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={closeCancelDialog}>
+              Cancel
+            </Button>
+            <Button
+              className="action-btn-enhance btn-cancel gap-2 h-auto py-2 px-4"
+              onClick={confirmCancelTransfer}
+            >
+              Confirm Cancel
             </Button>
           </div>
         </DialogContent>
