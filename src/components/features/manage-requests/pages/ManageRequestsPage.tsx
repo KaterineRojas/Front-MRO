@@ -35,17 +35,18 @@ export function ManageRequestsPage() {
   
   // Obtener el usuario autenticado
   const user = useAppSelector(state => state.auth.user);
-  const engineerId = user?.employeeId || 'amx0142'; // Fallback al ID por defecto
+  const engineerId = user?.id || 'amx0142'; // Fallback al ID por defecto
+  const warehouseId = 1; // Warehouse ID (puedes parametrizarlo si es necesario)
   
   // Llamar a los Custom Hooks
-  const returnsLogic = useReturnsLogic({ engineerId });
+  const returnsLogic = useReturnsLogic({ engineerId, warehouseId });
   const packingLogic = usePackingRequestsLogic();
   
   // Manejar la dependencia cruzada
   const handleConfirmPackingDialog = useCallback(() => {
     // Pasa el setter de returnsLogic a la función de packingLogic
-    packingLogic.handleConfirmPackingDialog(returnsLogic.setAllReturns);
-  }, [packingLogic, returnsLogic.setAllReturns]);
+    packingLogic.handleConfirmPackingDialog(returnsLogic.setAllReturns, engineerId, warehouseId);
+  }, [packingLogic, returnsLogic.setAllReturns, engineerId, warehouseId]);
   
   return (
     <div className="space-y-6">

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 // 🚨 CORRECCIÓN: Definición local de la interfaz del DTO de Envío para evitar errores de importación.
 import { LoanRequest, LoanItem, CreateLoanRequestDto } from '../types'; 
-import { getPackingRequests, updateLoanRequestStatus, startPacking, sendLoanRequest } from '../services/requestManagementService';
+import { getPackingRequests, updateLoanRequestStatus, startPacking, sendLoanRequest, getEngineerReturns } from '../services/requestManagementService';
 import { handlePrintSinglePacking as utilPrintSingle } from '../utils/requestManagementUtils';
 import { toast } from 'react-hot-toast';
 
@@ -298,6 +298,8 @@ const handlePrintAllPacking = useCallback(async () => { // Ya no necesita setAll
         try {
           const updatedRequest = await startPacking(request.requestNumber, MOCK_KEEPER_EMPLOYEE_ID);          
           if (updatedRequest) {
+            // Recargar la lista para reflejar el cambio de estado
+            await reloadPackingRequests();
             toast.success(`Request ${request.requestNumber} status updated to Packing.`);
           } else {
             toast.error('Failed to update status to Packing after printing.');
@@ -310,7 +312,7 @@ const handlePrintAllPacking = useCallback(async () => { // Ya no necesita setAll
         toast.success(`Packing list for ${request.requestNumber} printed.`);
       }
     }
-  }, [packingItemQuantities]);
+  }, [packingItemQuantities, reloadPackingRequests]);
   const areAllItemsSelected = useCallback((requestId: number, items: LoanItem[]) => 
     items.every(item => selectedPackingItems.has(`${requestId}-${item.id}`)), [selectedPackingItems]);
 
@@ -332,7 +334,11 @@ const handlePrintAllPacking = useCallback(async () => { // Ya no necesita setAll
   
 
   // Manejador de confirmación con dependencia cruzada (necesita el setter de Returns)
-const handleConfirmPackingDialog = useCallback((setAllReturns: React.Dispatch<React.SetStateAction<LoanRequest[]>>) => {
+const handleConfirmPackingDialog = useCallback((
+    setAllReturns: React.Dispatch<React.SetStateAction<LoanRequest[]>>,
+    engineerId?: string,
+    warehouseId?: number
+) => {
     return (async () => {
       if (!currentPackingRequest) return;
       
@@ -381,15 +387,14 @@ const handleConfirmPackingDialog = useCallback((setAllReturns: React.Dispatch<Re
         setPackingConfirmDialogOpen(false);
         setCurrentPackingRequest(null);
         
-        // 4. Actualización del estado de Returns
-        setAllReturns(prev => {
-                const exists = prev.some(req => req.requestNumber === sentRequest.requestNumber);
-                if (!exists) {
-                    // Agregamos la solicitud actualizada (en estado 'Sent')
-                    return [...prev, sentRequest];
-                }
-                return prev;
-            });
+        // 4. Recargar Returns desde el API en lugar de actualización manual
+        try {
+            const freshData = await getEngineerReturns(engineerId || 'amx0142', warehouseId || 1);
+            setAllReturns(freshData || []);
+        } catch (err) {
+            console.error('Error reloading returns after packing confirmation:', err);
+        }
+        
         toast.success(`Packing confirmed! Request ${currentPackingRequest.requestNumber} sent.`);
       } catch (err) {
         console.error('Error confirming packing and moving to returns', err);
