@@ -20,12 +20,10 @@ import {
 } from 'lucide-react';
 import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
-import { useAppSelector } from '../../store/hooks';
-import { selectCurrentUser } from '../../store/selectors';
 import { getCompleteHistory, getWarehouses, type HistoryRecord, type Warehouse } from '../../services';
+//import { getWarehouses } from '../../../requests/services/sharedServices';
 
 export function CompleteHistory() {
-  const currentUser = useAppSelector(selectCurrentUser);
   const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [expandedRecords, setExpandedRecords] = useState<Set<string>>(new Set());
