@@ -5,6 +5,8 @@ import { Input } from '../../../ui/input';
 import { Label } from '../../../ui/label';
 import { Textarea } from '../../../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '../../../ui/hover-card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Badge } from '../../../ui/badge';
 import { ArrowLeft, Plus, Minus, X, Calendar, Package, Building, User, FolderOpen, Hash, WifiOff } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
@@ -48,6 +50,17 @@ interface LoanFormData {
   project: string;
   workOrder: string;
 }
+
+const formatWorkOrderDate = (value?: string) => {
+  if (!value) return 'No date provided';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Invalid date';
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
 
 
 export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCreated }: LoanFormProps) {
@@ -96,6 +109,8 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [selectedWorkOrderDetails, setSelectedWorkOrderDetails] = useState<WorkOrder | null>(null);
+  const [workOrderModalOpen, setWorkOrderModalOpen] = useState(false);
 
   // Loading states
   const [loadingCompanies, setLoadingCompanies] = useState(false);
@@ -1004,7 +1019,14 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                   </Label>
                   <Select
                     value={formData.workOrder}
-                    onValueChange={(value: string) => setFormData(prev => ({ ...prev, workOrder: value }))}
+                    onValueChange={(value: string) => {
+                      setFormData(prev => ({ ...prev, workOrder: value }));
+                      const details = workOrders.find(wo => wo.wo === value);
+                      if (details) {
+                        setSelectedWorkOrderDetails(details);
+                        setWorkOrderModalOpen(true);
+                      }
+                    }}
                     disabled={!formData.project || loadingWorkOrders || offlineMode}
                   >
                     <SelectTrigger id="workOrder">
@@ -1016,9 +1038,39 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                     </SelectTrigger>
                     <SelectContent>
                       {workOrders.map((wo) => (
-                        <SelectItem key={wo.id} value={wo.wo}>
-                          {wo.wo} - {wo.serviceDesc}
-                        </SelectItem>
+                        <HoverCard key={wo.id ?? wo.wo} openDelay={150} closeDelay={100}>
+                          <HoverCardTrigger asChild>
+                            <SelectItem
+                              value={wo.wo}
+                              className="flex flex-col items-start gap-0.5"
+                            >
+                              <span className="font-medium">{wo.wo}</span>
+                              {wo.serviceDesc && (
+                                <span className="text-xs text-muted-foreground line-clamp-1">
+                                  {wo.serviceDesc}
+                                </span>
+                              )}
+                            </SelectItem>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="space-y-2 text-sm">
+                            <div>
+                              <p className="font-semibold">{wo.wo}</p>
+                              {wo.serviceDesc && (
+                                <p className="text-xs text-muted-foreground">{wo.serviceDesc}</p>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                              <div>
+                                <p className="text-muted-foreground">Start</p>
+                                <p>{formatWorkOrderDate(wo.startDate)}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">End</p>
+                                <p>{formatWorkOrderDate(wo.endDate)}</p>
+                              </div>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
                       ))}
                     </SelectContent>
                   </Select>
@@ -1055,6 +1107,52 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
           </div>
         </form>
       </div>
+
+      <Dialog open={workOrderModalOpen && !!selectedWorkOrderDetails} onOpenChange={setWorkOrderModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Work Order Details</DialogTitle>
+            <DialogDescription>
+              Review the information for the selected work order.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedWorkOrderDetails && (
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-muted-foreground text-xs">Work Order</p>
+                <p className="font-semibold">{selectedWorkOrderDetails.wo}</p>
+              </div>
+              {selectedWorkOrderDetails.serviceDesc && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Description</p>
+                  <p>{selectedWorkOrderDetails.serviceDesc}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-muted-foreground text-xs">Start Date</p>
+                  <p>{formatWorkOrderDate(selectedWorkOrderDetails.startDate)}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">End Date</p>
+                  <p>{formatWorkOrderDate(selectedWorkOrderDetails.endDate)}</p>
+                </div>
+              </div>
+              {selectedWorkOrderDetails.status && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Status</p>
+                  <p className="uppercase tracking-wide text-sm">{selectedWorkOrderDetails.status}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setWorkOrderModalOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Error/Confirm Modal */}
       <ConfirmModal

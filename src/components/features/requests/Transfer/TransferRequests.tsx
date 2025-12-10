@@ -37,6 +37,17 @@ const typeBadgeClassNames: Record<Transfer['type'], string> = {
   incoming: 'bg-sky-200 text-sky-950 border-sky-300 dark:bg-sky-900/50 dark:text-sky-50 dark:border-sky-800'
 };
 
+const formatWorkOrderDate = (value?: string) => {
+  if (!value) return 'No date provided';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Invalid date';
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
 export function TransferRequests() {
   const [showTransferMode, setShowTransferMode] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -60,6 +71,8 @@ export function TransferRequests() {
   const [selectedCustomer, setSelectedCustomer] = useState<string>('');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string>('');
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [selectedWorkOrderDetails, setSelectedWorkOrderDetails] = useState<WorkOrder | null>(null);
+  const [workOrderDetailModalOpen, setWorkOrderDetailModalOpen] = useState(false);
 
   // Loading states for cascading selects
   const [loadingCompanies, setLoadingCompanies] = useState(false);
@@ -116,6 +129,8 @@ export function TransferRequests() {
     setSelectedCompany('');
     setSelectedCustomer('');
     setSelectedWorkOrder('');
+    setSelectedWorkOrderDetails(null);
+    setWorkOrderDetailModalOpen(false);
     setConfirmTransferOpen(true);
     
     // Load companies when opening modal
@@ -839,7 +854,18 @@ export function TransferRequests() {
                     <Label htmlFor="workorder-select">Work Order</Label>
                     <Select 
                       value={selectedWorkOrder} 
-                      onValueChange={setSelectedWorkOrder}
+                      onValueChange={(value: string) => {
+                        setSelectedWorkOrder(value);
+                        if (!value) {
+                          setSelectedWorkOrderDetails(null);
+                          return;
+                        }
+                        const details = workOrders.find((wo) => String(wo.id) === value);
+                        if (details) {
+                          setSelectedWorkOrderDetails(details);
+                          setWorkOrderDetailModalOpen(true);
+                        }
+                      }}
                       disabled={!selectedProject || loadingWorkOrders}
                     >
                       <SelectTrigger id="workorder-select" className="mt-2">
@@ -851,7 +877,7 @@ export function TransferRequests() {
                       </SelectTrigger>
                       <SelectContent>
                         {workOrders.map((wo) => (
-                          <SelectItem key={wo.id} value={wo.id}>
+                          <SelectItem key={wo.id} value={String(wo.id)}>
                             {wo.orderNumber} - {wo.description}
                           </SelectItem>
                         ))}
@@ -868,6 +894,65 @@ export function TransferRequests() {
             </Button>
             <Button onClick={confirmTransferAccept} disabled={!selectedProject}>
               Accept Transfer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={workOrderDetailModalOpen && !!selectedWorkOrderDetails}
+        onOpenChange={setWorkOrderDetailModalOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Work Order Details</DialogTitle>
+            <DialogDescription>
+              Review the selected work order before assigning the transfer.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedWorkOrderDetails && (
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-muted-foreground text-xs">Order Number</p>
+                <p className="font-semibold">
+                  {selectedWorkOrderDetails.orderNumber || selectedWorkOrderDetails.wo}
+                </p>
+              </div>
+              {selectedWorkOrderDetails.description && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Description</p>
+                  <p>{selectedWorkOrderDetails.description}</p>
+                </div>
+              )}
+              {selectedWorkOrderDetails.serviceDesc && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Service Description</p>
+                  <p>{selectedWorkOrderDetails.serviceDesc}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-muted-foreground text-xs">Start Date</p>
+                  <p>{formatWorkOrderDate(selectedWorkOrderDetails.startDate)}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">End Date</p>
+                  <p>{formatWorkOrderDate(selectedWorkOrderDetails.endDate)}</p>
+                </div>
+              </div>
+              {selectedWorkOrderDetails.status && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Status</p>
+                  <p className="uppercase tracking-wide text-sm">
+                    {selectedWorkOrderDetails.status}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setWorkOrderDetailModalOpen(false)}>
+              Close
             </Button>
           </div>
         </DialogContent>
