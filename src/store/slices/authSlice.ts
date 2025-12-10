@@ -14,14 +14,14 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
 }
-
-// User ID: amx0142 (Engineer user)
+//se esta usando este usuario para las pruebas en transfer
+// User ID: amx014* (Engineer user)
 const initialState: AuthState = {
   user: {
-    id: 'amx0142',
+    id: 'amx0143',
     name: 'Orlando Lopez',
     role: 'administrator',
-    email: 'john@company.com',
+    email: 'orlando.lopez@company.com',
     department: 'IT-Bolivia'
   },
   isAuthenticated: true,
