@@ -872,16 +872,14 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                           {item.itemId && !validateStock(item.itemId, item.quantity) && (
                             <Badge variant="destructive">Insufficient stock</Badge>
                           )}
-                          {!isFromCartItem && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => removeItem(index)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          )}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => removeItem(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
                         </div>
                       </div>
                     </div>
