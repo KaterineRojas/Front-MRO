@@ -4,8 +4,9 @@ import { useEffect } from 'react';
 import { useMsal, useIsAuthenticated } from '@azure/msal-react';
 import { InteractionStatus } from '@azure/msal-browser';
 import { store, useAppSelector, useAppDispatch } from './store';
-import { setAuth, setLoading } from './store/slices/authSlice';
+import { setAuth, setLoading, setUserPhoto } from './store/slices/authSlice';
 import { loginRequest } from './authConfig';
+import { getUserProfileWithPhoto } from './services/graphService';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/features/dashboard/Dashboard';
 import { InventoryManager } from './components/features/inventory/InventoryManager';
@@ -49,33 +50,62 @@ function AuthHandler() {
       // If user is authenticated, get token and update Redux store
       if (isAuthenticated && accounts.length > 0) {
         try {
-          const request = {
+          // 1. Get token for backend API
+          const apiTokenRequest = {
             ...loginRequest,
             account: accounts[0],
           };
+          const apiTokenResponse = await instance.acquireTokenSilent(apiTokenRequest);
 
-          // Acquire token silently
-          const response = await instance.acquireTokenSilent(request);
+          // 2. Get separate token for Microsoft Graph API
+          let graphProfile = null;
+          let graphPhotoUrl = null;
 
-          // Extract user info from token claims
-          const account = response.account;
+          try {
+            const graphTokenRequest = {
+              scopes: ['User.Read'],
+              account: accounts[0],
+            };
+            const graphTokenResponse = await instance.acquireTokenSilent(graphTokenRequest);
+
+            // Fetch user profile and photo from Microsoft Graph using Graph token
+            const { profile, photoUrl } = await getUserProfileWithPhoto(graphTokenResponse.accessToken);
+            graphProfile = profile;
+            graphPhotoUrl = photoUrl;
+          } catch (graphError) {
+            console.warn('⚠️ Could not fetch Graph API data:', graphError);
+            // Continue without Graph data - will use basic info from token
+          }
+
+          // Extract user info from token claims and Graph API
+          const account = apiTokenResponse.account;
           const user = {
-            id: account.localAccountId || '1',
-            name: account.name || 'Unknown User',
-            email: account.username || '',
+            id: account.localAccountId || graphProfile?.id || '1',
+            name: graphProfile?.displayName || account.name || 'Unknown User',
+            email: graphProfile?.mail || graphProfile?.userPrincipalName || account.username || '',
             role: 'user' as const, // Default role, can be updated from backend
-            department: 'Engineering', // Default department
+            department: graphProfile?.department || 'Engineering',
+            jobTitle: graphProfile?.jobTitle,
+            mobilePhone: graphProfile?.mobilePhone,
+            officeLocation: graphProfile?.officeLocation,
+            photoUrl: graphPhotoUrl || undefined,
           };
 
-          // Update Redux store
+          // Update Redux store with API token (not Graph token)
           dispatch(
             setAuth({
               user,
-              accessToken: response.accessToken,
+              accessToken: apiTokenResponse.accessToken,
             })
           );
 
           console.log('✅ User authenticated:', user.email);
+          console.log('✅ User profile loaded:', {
+            name: user.name,
+            department: user.department,
+            jobTitle: user.jobTitle,
+            hasPhoto: !!user.photoUrl,
+          });
         } catch (error) {
           console.error('Error acquiring token:', error);
           dispatch(setLoading(false));

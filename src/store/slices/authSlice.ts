@@ -8,6 +8,10 @@ interface User {
   role: UserRole;
   email: string;
   department: string;
+  photoUrl?: string;
+  jobTitle?: string;
+  mobilePhone?: string;
+  officeLocation?: string;
 }
 
 interface AuthState {
@@ -41,6 +45,11 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.isLoading = false;
     },
+    setUserPhoto: (state, action: PayloadAction<string>) => {
+      if (state.user) {
+        state.user.photoUrl = action.payload;
+      }
+    },
     logout: (state) => {
       state.user = null;
       state.accessToken = null;
@@ -58,5 +67,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUser, setAccessToken, setAuth, logout, setLoading, updateUserRole } = authSlice.actions;
+export const { setUser, setAccessToken, setAuth, logout, setLoading, updateUserRole, setUserPhoto } = authSlice.actions;
 export default authSlice.reducer;
