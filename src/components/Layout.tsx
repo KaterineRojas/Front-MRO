@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { useMsal } from '@azure/msal-react';
+import { useMsal, useIsAuthenticated } from '@azure/msal-react';
+import { authService } from '../services/authService';
 import {
   useAppDispatch,
   useAppSelector,
@@ -43,6 +44,7 @@ export function Layout() {
 
   // Get state from Redux
   const currentUser = useAppSelector((state) => state.auth.user);
+  const authType = useAppSelector((state) => state.auth.authType);
   const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
   const darkMode = useAppSelector((state) => state.ui.darkMode);
   const notificationsOpen = useAppSelector((state) => state.ui.notificationsOpen);
@@ -69,19 +71,32 @@ export function Layout() {
 
   const handleLogout = async () => {
     try {
-      // Clear Redux state
-      dispatch(logout());
+      console.log("Logging out user with authType:", authType);
 
-      // Logout from Azure AD
-      await instance.logoutRedirect({
-        postLogoutRedirectUri: 'https://localhost:3000/login',
-      });
+      dispatch(logout());
+      authService.removeToken();
+
+      // Only redirect to Azure logout if user authenticated with Azure
+      if (authType === 'azure') {
+        try { localStorage.setItem('mro_just_logged_out', 'true'); } catch {}
+
+        // Use MSAL's logoutRedirect to properly clear the cache
+        await instance.logoutRedirect({
+          postLogoutRedirectUri: `${window.location.origin}/login`,
+        });
+        return;
+      }
+
+      // For local auth, just navigate to login
+      navigate("/login", { replace: true });
     } catch (error) {
-      console.error('Error during logout:', error);
-      // Fallback to local logout
-      navigate('/login');
+      console.error("Error during logout:", error);
+      authService.removeToken();
+      dispatch(logout());
+      navigate("/login", { replace: true });
     }
   };
+
 
   const getNotificationIcon = (type: 'info' | 'warning' | 'success' | 'error') => {
     switch (type) {
