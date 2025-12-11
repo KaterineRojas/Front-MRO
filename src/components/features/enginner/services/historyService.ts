@@ -21,7 +21,7 @@ export interface HistoryRecord {
   completionDate: string;
   items: HistoryItem[];
   department: string;
-  project: string;
+  projectId: string;
   priority?: 'low' | 'medium' | 'urgent';
   totalCost?: number;
   selfPurchase?: boolean;
@@ -57,6 +57,8 @@ export interface Transfer {
   transferPhoto?: string;
   imageUrl?: string;
   warehouseName?: string;
+  projectId?: string;
+  projectName?: string;
 }
 
 // Datos mock
@@ -88,7 +90,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'IT',
-    project: 'Hardware Upgrade 2024',
+    projectId: 'Hardware Upgrade 2024',
     priority: 'urgent',
     totalCost: 2700,
     selfPurchase: false
@@ -112,7 +114,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'HR',
-    project: 'Office Ergonomics',
+    projectId: 'Office Ergonomics',
     priority: 'low',
     totalCost: 3000,
     selfPurchase: false,
@@ -153,7 +155,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Development',
-    project: 'Workstation Improvements',
+    projectId: 'Workstation Improvements',
     priority: 'medium',
     totalCost: 220,
     selfPurchase: false
@@ -177,7 +179,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Development',
-    project: 'Ergonomic Improvements',
+    projectId: 'Ergonomic Improvements',
     priority: 'low',
     totalCost: 500,
     selfPurchase: false,
@@ -208,7 +210,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Design',
-    project: 'UI/UX Redesign',
+    projectId: 'UI/UX Redesign',
     transferTo: 'Ana Martínez'
   },
   {
@@ -229,7 +231,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Marketing',
-    project: 'Content Creation',
+    projectId: 'Content Creation',
     transferTo: 'Carlos Rodríguez',
     rejectionReason: 'Destination engineer already has similar equipment assigned'
   },
@@ -260,7 +262,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Engineering',
-    project: 'Proyecto Construcción',
+    projectId: 'Proyecto Construcción',
     priority: 'urgent',
     totalCost: 375,
     selfPurchase: true
@@ -284,7 +286,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Design',
-    project: 'Workspace Optimization',
+    projectId: 'Workspace Optimization',
     priority: 'low',
     totalCost: 135,
     selfPurchase: false,
@@ -309,7 +311,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Administration',
-    project: 'Office Refurbishment',
+    projectId: 'Office Refurbishment',
     priority: 'medium',
     totalCost: 2000,
     selfPurchase: false
@@ -332,7 +334,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Sales',
-    project: 'Client Presentations',
+    projectId: 'Client Presentations',
     transferTo: 'Juan Pérez'
   }
 ];
@@ -365,7 +367,7 @@ export const getCompleteHistory = async (): Promise<HistoryRecord[]> => {
         description: item.description
       })),
       department: '', // No disponible en Transfer
-      project: '', // No disponible en Transfer
+      projectId: transfer.projectId || '', // Usar projectId del transfer
       warehouseId: '', // No disponible en Transfer
       warehouseName: transfer.warehouseName || ''
     }));
@@ -411,7 +413,7 @@ export const getHistoryByStatus = async (status: HistoryRecord['status']): Promi
 export const getHistoryByProject = async (project: string): Promise<HistoryRecord[]> => {
   return apiCall(async () => {
     await simulateNetworkDelay();
-    return mockHistoryRecords.filter(rec => rec.project === project);
+    return mockHistoryRecords.filter(rec => rec.projectId === project);
   });
 };
 
@@ -584,6 +586,8 @@ export async function getTransfersOutgoing(): Promise<Transfer[]> {
         status: mapBackendStatusToLocal(item.status),
         transferPhoto: undefined,
         warehouseName: item.warehouseName,
+        projectId: item.projectId,
+        projectName: item.projectName,
       };
     });
 
