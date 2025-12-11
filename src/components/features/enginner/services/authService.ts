@@ -92,7 +92,7 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
           token: `mock_jwt_token_${Date.now()}`,
           //no se esta usando este usuario para las pruebas
           user: {
-            id: 'amx0142',
+            id: 'amx',
             name: 'John Smith',
             email: credentials.email,
             department: 'IT-Bolivia'

@@ -97,6 +97,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
   const [dropdownOpen, setDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const isInitialWarehouseFromCart = useRef(!!cartWarehouseId);
   const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const itemsContainerRef = useRef<HTMLDivElement | null>(null);
   const recomputeFilteredItems = (itemsList: { itemId: string }[]) => {
     const selectedItemIds = itemsList
       .map(i => i.itemId)
@@ -131,6 +132,10 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
 
   // Track if data has been loaded
   const [companiesLoaded, setCompaniesLoaded] = useState(false);
+
+  // Quantity editing state
+  const [editingQuantityIndex, setEditingQuantityIndex] = useState<number | null>(null);
+  const [editingQuantityValue, setEditingQuantityValue] = useState<string>('');
 
   // Error handling
   const { modalState, showConfirm, hideModal, setModalOpen } = useConfirmModal();
@@ -462,12 +467,15 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
     if (value.length >= 2) {
       const filtered = catalogItems
         .filter(item =>
-          item.name.toLowerCase().includes(value.toLowerCase())
+          item.name.toLowerCase().includes(value.toLowerCase()) ||
+          item.description.toLowerCase().includes(value.toLowerCase())
         )
         .filter(item => !selectedItemIds.includes(item.id));
       setFilteredItems(prev => ({ ...prev, [index]: filtered }));
     } else {
-      setFilteredItems(prev => ({ ...prev, [index]: catalogItems }));
+      // Si no hay búsqueda, mostrar todos los items excepto los ya seleccionados
+      const allAvailable = catalogItems.filter(item => !selectedItemIds.includes(item.id));
+      setFilteredItems(prev => ({ ...prev, [index]: allAvailable }));
     }
 
     setDropdownOpen(prev => ({ ...prev, [index]: true }));
@@ -528,6 +536,13 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
     }));
     setItemSearches(prev => ({ ...prev, [newIndex]: '' }));
     setDropdownOpen(prev => ({ ...prev, [newIndex]: false }));
+    
+    // Scroll to the new item after render
+    setTimeout(() => {
+      if (itemsContainerRef.current) {
+        itemsContainerRef.current.scrollTop = itemsContainerRef.current.scrollHeight;
+      }
+    }, 0);
   };
 
   const removeItem = (index: number) => {
@@ -570,6 +585,34 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
   const validateStock = (itemId: string, quantity: number) => {
     const item = catalogItems.find(i => i.id === itemId);
     return item ? quantity <= item.availableQuantity : false;
+  };
+
+  const handleQuantityEdit = (index: number, currentQuantity: number) => {
+    setEditingQuantityIndex(index);
+    setEditingQuantityValue(currentQuantity.toString());
+  };
+
+  const handleQuantityInputChange = (value: string) => {
+    const numValue = parseInt(value) || 0;
+    setEditingQuantityValue(numValue.toString());
+  };
+
+  const handleQuantityInputBlur = (index: number) => {
+    const item = formData.items[index];
+    const maxQuantity = catalogItems.find(ci => ci.id === item.itemId)?.availableQuantity || 999;
+    const newQuantity = Math.max(1, Math.min(parseInt(editingQuantityValue) || 1, maxQuantity));
+    updateItem(index, 'quantity', newQuantity);
+    setEditingQuantityIndex(null);
+    setEditingQuantityValue('');
+  };
+
+  const handleQuantityInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Enter') {
+      handleQuantityInputBlur(index);
+    } else if (e.key === 'Escape') {
+      setEditingQuantityIndex(null);
+      setEditingQuantityValue('');
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -695,12 +738,14 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Items to Request</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Two Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column - Items Selection */}
+            <Card className="flex flex-col h-[calc(100vh-16rem)]">
+              <CardHeader>
+                <CardTitle>Items to Request</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
                 <div>
                   <Label htmlFor="warehouse">
                     <div className="flex items-center gap-2 mb-1.5">
@@ -771,139 +816,157 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                   </Select>
                 </div>
 
+                {/* Items List */}
+                <div className="flex-1 overflow-y-auto space-y-3 -mx-6 px-6" ref={itemsContainerRef}>
+                  {formData.items.map((item, index) => {
+                    const selectedItemData = item.itemId ? catalogItems.find(i => i.id === item.itemId) : null;
+                    const isFromCartItem = index < cartItemsCount;
+                    const itemImage = isFromCartItem && cartItems[index] ? cartItems[index].item.image : selectedItemData?.image;
+                    const maxQuantity = selectedItemData ? selectedItemData.availableQuantity : 999;
 
-              </div>
-
-              {formData.items.map((item, index) => {
-                const selectedItemData = item.itemId ? catalogItems.find(i => i.id === item.itemId) : null;
-                const isFromCartItem = index < cartItemsCount;
-                const itemImage = isFromCartItem && cartItems[index] ? cartItems[index].item.image : selectedItemData?.image;
-                const maxQuantity = selectedItemData ? selectedItemData.availableQuantity : 999;
-
-                return (
-                  <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
-                    {itemImage && (
-
-                      <ImageWithFallback
-                        src={itemImage}
-                        alt={item.itemName}
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                    )}
-                    <div className="flex-1 space-y-2">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                        <div>
-                          <Label>Item</Label>
-                          {isFromCartItem ? (
-                            <Input value={item.itemName} disabled />
-                          ) : (
-                            <div className="space-y-2 relative" ref={(el) => { if (el) dropdownRefs.current[index] = el; }}>
-                              <Input
-                                placeholder={item.itemId ? "Click to change selection..." : "Type to search items..."}
-                                value={itemSearches[index] || ''}
-                                onChange={(e) => handleItemSearch(index, e.target.value)}
-                                onClick={() => toggleDropdown(index)}
-                                readOnly={!!item.itemId}
-                                className={item.itemId ? "cursor-pointer" : ""}
-                              />
-                              {dropdownOpen[index] && (
-                                <div className="absolute z-10 w-full border rounded-md bg-background shadow-lg max-h-40 overflow-y-auto">
-                                  {catalogItems.length === 0 ? (
-                                    <div className="px-3 py-2 text-sm text-muted-foreground">
-                                      No items available
+                    return (
+                      <div key={index} className="flex gap-4 p-3 rounded-lg border bg-card">
+                        {itemImage && (
+                          <ImageWithFallback
+                            src={itemImage}
+                            alt={item.itemName}
+                            className="w-20 h-20 object-cover rounded"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium truncate">{item.itemName}</h4>
+                              {isFromCartItem ? (
+                                <p className="text-xs text-muted-foreground">
+                                  {cartItems[index]?.item.sku || 'N/A'}
+                                </p>
+                              ) : (
+                                <div className="space-y-2" ref={(el) => { if (el) dropdownRefs.current[index] = el; }}>
+                                  <Input
+                                    placeholder={item.itemId ? "Click to change selection..." : "Type to search items..."}
+                                    value={itemSearches[index] || ''}
+                                    onChange={(e) => handleItemSearch(index, e.target.value)}
+                                    onClick={() => toggleDropdown(index)}
+                                    readOnly={!!item.itemId}
+                                    className={`text-xs ${item.itemId ? "cursor-pointer" : ""}`}
+                                  />
+                                  {dropdownOpen[index] && (
+                                    <div className="fixed z-50 border rounded-md bg-background shadow-xl max-h-80 overflow-y-auto" 
+                                         style={{
+                                           width: dropdownRefs.current[index]?.offsetWidth || '100%',
+                                           top: (dropdownRefs.current[index]?.getBoundingClientRect().top ?? 0) - 10,
+                                           left: dropdownRefs.current[index]?.getBoundingClientRect().left,
+                                           transform: 'translateY(-100%)',
+                                         }}>
+                                      {(filteredItems[index] || catalogItems).length === 0 ? (
+                                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                                          No items available
+                                        </div>
+                                      ) : (
+                                        (filteredItems[index] || catalogItems).map((mockItem) => (
+                                          <button
+                                            key={mockItem.id}
+                                            type="button"
+                                            className={`w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center gap-2 ${item.itemId === mockItem.id ? 'bg-accent' : ''
+                                              }`}
+                                            onClick={() => selectItem(index, mockItem)}
+                                          >
+                                            <ImageWithFallback
+                                              src={mockItem.image}
+                                              alt={mockItem.name}
+                                              className="w-8 h-8 object-cover rounded"
+                                            />
+                                            <span>{mockItem.name} (Available: {mockItem.availableQuantity})</span>
+                                          </button>
+                                        ))
+                                      )}
                                     </div>
-                                  ) : (
-                                    catalogItems.map((mockItem) => (
-                                      <button
-                                        key={mockItem.id}
-                                        type="button"
-                                        className={`w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center gap-2 ${item.itemId === mockItem.id ? 'bg-accent' : ''
-                                          }`}
-                                        onClick={() => selectItem(index, mockItem)}
-                                      >
-                                        <ImageWithFallback
-                                          src={mockItem.image}
-                                          alt={mockItem.name}
-                                          className="w-8 h-8 object-cover rounded"
-                                        />
-                                        <span>{mockItem.name} (Available: {mockItem.availableQuantity})</span>
-                                      </button>
-                                    ))
                                   )}
                                 </div>
                               )}
                             </div>
-                          )}
-                        </div>
-                        <div>
-                          <Label>Quantity</Label>
-                          <div className="flex items-center gap-1">
                             <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => updateItem(index, 'quantity', Math.max(1, item.quantity - 1))}
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-destructive"
+                              onClick={() => removeItem(index)}
                             >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <Input
-                              type="number"
-                              min="1"
-                              max={maxQuantity}
-                              value={item.quantity}
-                              onChange={(e) => {
-                                const newVal = parseInt(e.target.value) || 1;
-                                updateItem(index, 'quantity', Math.min(newVal, maxQuantity));
-                              }}
-                              className="w-20 text-center"
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => updateItem(index, 'quantity', Math.min(item.quantity + 1, maxQuantity))}
-                              disabled={item.quantity >= maxQuantity}
-                            >
-                              <Plus className="h-3 w-3" />
+                              <X className="h-3 w-3" />
                             </Button>
                           </div>
-                        </div>
-                        <div className="flex items-end gap-2">
-                          {item.itemId && !validateStock(item.itemId, item.quantity) && (
-                            <Badge variant="destructive">Insufficient stock</Badge>
-                          )}
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => removeItem(index)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => updateItem(index, 'quantity', Math.max(1, item.quantity - 1))}
+                                disabled={item.quantity <= 1}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              {editingQuantityIndex === index ? (
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  max={maxQuantity}
+                                  value={editingQuantityValue}
+                                  onChange={(e) => handleQuantityInputChange(e.target.value)}
+                                  onBlur={() => handleQuantityInputBlur(index)}
+                                  onKeyDown={(e) => handleQuantityInputKeyDown(e, index)}
+                                  autoFocus
+                                  className="text-sm font-medium w-8 text-center h-7 p-1"
+                                />
+                              ) : (
+                                <span 
+                                  className="text-sm font-medium w-8 text-center cursor-pointer hover:bg-accent rounded px-1 py-0.5"
+                                  onClick={() => handleQuantityEdit(index, item.quantity)}
+                                >
+                                  {item.quantity}
+                                </span>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => updateItem(index, 'quantity', Math.min(item.quantity + 1, maxQuantity))}
+                                disabled={item.quantity >= maxQuantity}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {item.itemId && !validateStock(item.itemId, item.quantity) && (
+                                <Badge variant="destructive" className="text-xs">Insufficient stock</Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                Max: {maxQuantity}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
 
-              <Button type="button" variant="outline" onClick={addNewItem} disabled={!formData.warehouseId}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Item
-              </Button>
-              {!formData.warehouseId && (
-                <p className="text-sm text-muted-foreground mt-2">Select a Warehouse to add items.</p>
-              )}
-            </CardContent>
-          </Card>{/*  */}
+                <Button type="button" variant="outline" onClick={addNewItem} disabled={!formData.warehouseId} className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Item
+                </Button>
+                {!formData.warehouseId && (
+                  <p className="text-sm text-muted-foreground">Select a Warehouse to add items.</p>
+                )}
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
+            {/* Right Column - Project Details */}
+            <Card className="flex flex-col h-[calc(100vh-16rem)]">
+              <CardHeader>
+                <CardTitle>Project Details</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col gap-4 overflow-y-auto space-y-4">
                 <div>
                   <Label htmlFor="department">
                     <div className="flex items-center gap-2 mb-1.5">
@@ -936,7 +999,6 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                     <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   </div>
                 </div>
-
 
                 <div>
                   <Label htmlFor="company">
@@ -1007,9 +1069,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="project">
                     <div className="flex items-center gap-2 mb-1.5">
@@ -1106,20 +1166,20 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div>
-                <Label htmlFor="notes">Additional Notes (optional)</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Additional information about the borrow request..."
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
+                <div>
+                  <Label htmlFor="notes">Additional Notes (optional)</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Additional information about the borrow request..."
+                    value={formData.notes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    rows={3}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           <div className="flex gap-4">
             <Button type="button" variant="outline" onClick={onBack}>

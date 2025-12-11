@@ -21,6 +21,8 @@ export interface InventoryItem {
 export interface CartItem {
   item: InventoryItem;
   quantity: number;
+  warehouseId?: string;
+  warehouseName?: string;
 }
 
 export interface BorrowRequest {

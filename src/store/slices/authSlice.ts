@@ -18,7 +18,7 @@ interface AuthState {
 // User ID: amx014* (Engineer user)
 const initialState: AuthState = {
   user: {
-    id: 'amx0144',
+    id: 'amx0142',
     name: 'Orlando Lopez',
     role: 'administrator',
     email: 'orlando.lopez@company.com',
