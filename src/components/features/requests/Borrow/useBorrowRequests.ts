@@ -119,6 +119,15 @@ export function useBorrowRequests() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Check if should open borrow form from catalog
+  useEffect(() => {
+    const shouldOpenBorrowForm = sessionStorage.getItem('openBorrowForm');
+    if (shouldOpenBorrowForm === 'true') {
+      setShowBorrowForm(true);
+      sessionStorage.removeItem('openBorrowForm');
+    }
+  }, []);
+
   //  3. Reemplazar el useEffect de filtrado por useMemo
   // Esto recalcula filteredBorrowRequests SOLO cuando cambian sus dependencias.
   const filteredBorrowRequests = useMemo(() => {

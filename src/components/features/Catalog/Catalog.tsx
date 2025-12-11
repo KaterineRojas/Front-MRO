@@ -402,7 +402,9 @@ export function Catalog() {
   };
 
   const onNavigateToRequest = () => {
-    navigate('/borrow');
+    setCartOpen(false);
+    sessionStorage.setItem('openBorrowForm', 'true');
+    navigate('/engineer/requests');
   };
 
   const handleAICameraError = (error: AppError) => {
