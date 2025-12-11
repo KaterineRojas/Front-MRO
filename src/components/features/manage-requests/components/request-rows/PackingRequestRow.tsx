@@ -182,7 +182,7 @@ const isSent = request.status === 'Sent';
                       <th>Name</th>
                       <th>Requeted quantity</th>
                       <th>Packaged quantity</th>
-                      <th>Type</th>
+                      <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -220,8 +220,20 @@ const isSent = request.status === 'Sent';
                             )}
                           </td>
                           <td className="text-center">
-                            <Badge variant={item.articleType === 'consumable' ? 'secondary' : 'outline'}>
-                              {item.articleType === 'consumable' ? 'Consumable' : 'Non-Consumable'}
+                            <Badge 
+                              variant={
+                                request.status === 'Approved' ? 'default' : 
+                                request.status === 'Packing' ? 'secondary' : 
+                                'outline'
+                              }
+                              className={
+                                request.status === 'Approved' ? 'bg-blue-500 text-white' :
+                                request.status === 'Packing' ? 'bg-yellow-500 text-white' :
+                                request.status === 'Sent' ? 'bg-green-500 text-white' :
+                                ''
+                              }
+                            >
+                              {request.status}
                             </Badge>
                           </td>
                         </tr>
