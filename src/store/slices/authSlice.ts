@@ -23,7 +23,7 @@ interface AuthState {
 //se esta usando este usuario para las pruebas en transfer
 // User ID: amx014* (Engineer user)
 const initialState: AuthState = {
-<<<<<<< HEAD
+  
   user: {
     id: 'amx0144',
     name: 'Orlando Lopez',
@@ -32,12 +32,9 @@ const initialState: AuthState = {
     department: 'IT-Bolivia'
   },
   isAuthenticated: true,
-=======
-  user: null,
-  isAuthenticated: false,
-  accessToken: null,
-  isLoading: true, // true initially while checking authentication
->>>>>>> 28da26693e53982caf95935cb33323bde5ddc430
+  //********
+  accessToken: 'token-de-prueba-simulado', // O null, pero un string evita errores si tu app verifica longitud
+  isLoading: false
 };
 
 const authSlice = createSlice({
