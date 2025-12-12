@@ -14,6 +14,8 @@ export interface LoanRequest {
     requestNumber: string; // e.g., "BT-2025000001"
     requesterId: string;
     requesterName: string; // Old: requestedBy
+    typeRequestName: string;
+    typeRequest: number;
     warehouseName: string;
     companyId: string;
     customerId: string;

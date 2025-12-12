@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Badge } from '../../ui/badge';
 import { Check, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { mockRequests, type Request } from './data/mockRequest'
@@ -97,33 +97,46 @@ export function RequestManagement() {
 
   // corregir esto cuando el backend devuelva type
   // type: 'purchase' | 'purchase-on-site' | 'transfer-on-site';
-  const getFilteredRequests = (activeTabStatus?: string) => {
-    return requests.filter(request => {
 
-      let filterStatus = activeTabStatus?.toLowerCase() || 'all';
 
-      if (filterStatus === 'pending') {
-        filterStatus = 'sent';
-      }
+const filteredRequests = useMemo(() => {
+  return requests.filter((request) => {
+    
+    // ------------------------------------------------------------
+    // 1. STATUS FILTER
+    // ---------------------------------------------------------
+    // We convert everything to lowercase to be safe (e.g., "Pending" matches "pending")
+    const currentStatus = request.status?.toLowerCase() || '';
+    const targetStatus = activeTab?.toLowerCase() || '';
 
-      const currentStatus = request.status?.toLowerCase() || '';
-      const matchesStatus = filterStatus === 'all' || currentStatus === filterStatus;
-      const matchesType = typeFilter === 'all' || true;
+    // If the tab is NOT 'all', the status must match exactly.
+    // (e.g. Tab 'pending' only shows requests with status 'pending')
+    if (targetStatus !== 'all' && currentStatus !== targetStatus) {
+      return false;
+    }
 
-      const term = searchTerm.toLowerCase();
+    // ------------------------------------------------------------
+    // 2. SEARCH FILTER
+    // ---------------------------------------------------------
+    // If there is no search term, we keep the item (since status matched)
+    if (!searchTerm) return true;
 
-      const matchesSearch =
-        request.requestNumber.toLowerCase().includes(term) ||
-        request.requesterName.toLowerCase().includes(term) ||
-        request.departmentId?.toLowerCase().includes(term) ||
-        request.items.some(item =>
-          item.sku.toLowerCase().includes(term) ||
-          item.name.toLowerCase().includes(term) 
-        );
+    const term = searchTerm.toLowerCase();
 
-      return matchesStatus && matchesType && matchesSearch;
-    });
-  };
+    // Check top-level fields
+    const matchesTopLevel = 
+      request.requestNumber.toLowerCase().includes(term) ||
+      request.requesterName.toLowerCase().includes(term) ||
+      (request.departmentId && request.departmentId.toLowerCase().includes(term));
+
+    if (matchesTopLevel) return true;
+
+    return request.items.some((item) => 
+      item.sku.toLowerCase().includes(term) ||
+      item.name.toLowerCase().includes(term)
+    );
+  });
+}, [requests, activeTab, searchTerm]);
 
 
 
@@ -134,7 +147,7 @@ export function RequestManagement() {
 
     try {
 
-      // 2. LLAMADA AL SERVICIO (Actualizada)
+      // 2. LLAMADA AL SERVICIO 
       await approveLoanRequest(selectedRequest.requestNumber, currentEmployeeId);
 
       const updatedRequest = {
@@ -303,13 +316,13 @@ export function RequestManagement() {
             {/* <Check />
             <XCircle /> */}
             {/* <Clock className="h-5 w-5 text-gray-500 dark:text-gray-400" /> */}
-            <span>{activeTab[0].toUpperCase() + activeTab.slice(1)} Requests ({getFilteredRequests(activeTab).length})</span>
+            <span>{activeTab[0].toUpperCase() + activeTab.slice(1)} Requests ({filteredRequests.length})</span>
           </h2>
 
           <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden dark:bg-gray-900 dark:border-gray-800">
 
             <RequestsTable
-              requests={getFilteredRequests(activeTab)}
+              requests={filteredRequests}
               expandedRequests={expandedRequests}
               handleToggleExpand={handleToggleExpand}
               setSelectedRequest={setSelectedRequest}
