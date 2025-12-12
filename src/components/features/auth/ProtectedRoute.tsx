@@ -7,7 +7,8 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const isAuthenticated = useIsAuthenticated();
+  const isAuthenticatedWithAzure = useIsAuthenticated();
+  const isAuthenticatedInRedux = useAppSelector((state) => state.auth.isAuthenticated);
   const isLoading = useAppSelector((state) => state.auth.isLoading);
 
   // Show loading state while checking authentication
@@ -22,8 +23,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
+  // Redirect to login if not authenticated (check both Azure and Redux)
+  if (!isAuthenticatedWithAzure && !isAuthenticatedInRedux) {
     return <Navigate to="/login" replace />;
   }
 
