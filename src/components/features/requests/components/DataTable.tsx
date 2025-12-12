@@ -1,27 +1,24 @@
 import React from 'react';
-import { ChevronRight, Package, } from 'lucide-react';
-import { type Request } from '../data/mockRequest.ts';
+import { ChevronRight, Package } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import {getStatusBadge, getTypeBadge, getUrgencyBadge} from '../../inventory/components/RequestBadges.tsx'
-
-
+import { getStatusBadge, getTypeBadge } from '../../inventory/components/RequestBadges.tsx';
+import { LoanRequest } from '../types/loanTypes.ts';
 
 interface RequestsTableProps {
-  requests: Request[];
-  expandedRequests: Set<number>;
-  calculateTotalCost: (request: Request) => number;
-  handleToggleExpand: (id: number) => void;
-  setSelectedRequest: (request: Request) => void;
+  requests: LoanRequest[];
+  expandedRequests: Set<string>; // ✅ AHORA ES STRING (requestNumber)
+  // calculateTotalCost: (request: any) => number; -
+  handleToggleExpand: (requestNumber: string) => void; // ✅ RECIBE STRING
+  setSelectedRequest: (request: LoanRequest) => void;
   setShowModal: (open: boolean) => void;
   setModalType: (value: string) => void;
   loading: boolean;
 }
 
-
 export default function RequestsTable({
   requests,
   expandedRequests,
-  calculateTotalCost,
+  // calculateTotalCost,
   handleToggleExpand,
   setSelectedRequest,
   setShowModal,
@@ -31,11 +28,37 @@ export default function RequestsTable({
 
   const darkMode = useSelector((state: any) => state.ui.darkMode);
 
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    });
+  };
+
+  const getTimelineColor = (startDate: string, endDate: string) => {
+    if (!startDate || !endDate) return "text-gray-500";
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Calculate difference in days
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 2) {
+      // Critical (Urgent/Short term)
+      return "text-green-600 dark:text-green-400 font-medium";
+    } else if (diffDays <= 7) {
+      // Warning (Medium term)
+      return "text-yellow-600 dark:text-yellow-400 font-medium";
+    } else {
+      // Safe (Long term / Planned)
+      return "text-red-600 dark:text-red-400 font-bold";
+    }
+  };
+
   return (
-
-    // <div className="rounded-md border"> (Este era el wrapper de <Table>)
     <div className="w-full overflow-auto rounded-md border">
-
       <table className="w-full caption-bottom text-sm">
         <thead className="[&_tr]:border-b">
           <tr className="border-b transition-colors bg-white dark:bg-[#0A0A0A]">
@@ -46,78 +69,116 @@ export default function RequestsTable({
             <th className="h-12 px-8 align-middle font-medium">Requested By</th>
             <th className="h-12 px-8 align-middle font-medium">Department</th>
             <th className="h-12 px-8 align-middle font-medium">Project</th>
-            <th className="h-12 px-8 align-middle font-medium">Urgency</th>
-            <th className="h-12 px-8 align-middle font-medium">Request Date</th>
+            {/* <th className="h-12 px-8 align-middle font-medium">Request Date</th> */}
+            <th className="h-12 px-8 align-middle font-medium">Timeline</th>
             <th className="h-12 px-8 align-middle font-medium">Actions</th>
           </tr>
         </thead>
-        <tbody className="[&_tr:last-child]:border-0 bg-white dark:bg-[#0A0A0A]">
 
+        <tbody className="[&_tr:last-child]:border-0 bg-white dark:bg-[#0A0A0A]">
           {requests.map((request) => {
-            const totalCost = calculateTotalCost(request);            
+            // const totalCost = calculateTotalCost ? calculateTotalCost(request) : 0;
+
             return (
-              <React.Fragment key={request.id}>
+              <React.Fragment key={request.requestNumber}> {/* ✅ KEY ES REQUESTNUMBER */}
                 <tr className={`border-b transition-colors hover:bg-[#F5F5F7] dark:hover:bg-gray-400/10
-                    ${expandedRequests.has(request.id) ? 'dark:!bg-gray-800' : ''}
+                    ${expandedRequests.has(request.requestNumber) ? 'dark:!bg-gray-800' : ''}
                     `}>
+
+                  {/* TOGGLE BUTTON */}
                   <td className="p-3 align-middle text-center">
                     <button
-                      onClick={() => handleToggleExpand(request.id)}
+                      onClick={() => handleToggleExpand(request.requestNumber)}
                       className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 w-10
-                      hover:bg-gray-200 dark:text-white dark:bg-[#1f1f1f] dark:hover:bg-white dark:hover:text-black
-                      "
+                      hover:bg-gray-200 dark:text-white dark:bg-[#1f1f1f] dark:hover:bg-white dark:hover:text-black"
                     >
                       <ChevronRight className={`h-4 w-4 transition duration-200
-                            ${expandedRequests.has(request.id) ? 'rotate-90' : 'rotate-0'}
+                            ${expandedRequests.has(request.requestNumber) ? 'rotate-90' : 'rotate-0'}
                           `}
                       />
                     </button>
                   </td>
+
+                  {/* REQUEST NUMBER & COST */}
                   <td className="px-2 align-middle font-mono ">
                     <div>
                       <p>{request.requestNumber}</p>
-                      {(request.type === 'purchase' || request.type === 'purchase-on-site' || request.type === 'transfer-on-site') && totalCost > 0 && (
+                      {/* {totalCost > 0 && (
                         <p className="text-xs text-green-600 font-mono">
                           ${totalCost.toFixed(2)}
                         </p>
-                      )}
+                      )} */}
                     </div>
                   </td>
+
+                  {/* STATUS */}
                   <td className="px-4 align-middle">
                     <div className="flex items-center space-x-2 ">
                       {getStatusBadge(request.status, darkMode ? 'outline' : 'soft')}
                     </div>
                   </td>
-                  <td className="px-4 align-middle ">{getTypeBadge(request.type, darkMode ? 'outline' : 'soft')}</td>
+
+                  {/* TYPE COLUMN (Added back) */}
+                  <td className="px-4 align-middle">
+                    {getTypeBadge(request.typeRequest, darkMode ? 'outline' : 'soft')}
+                  </td>
+
+                  {/* REQUESTED BY (Updated fields) */}
                   <td className="px-4 align-middle">
                     <div>
-                      <p>{request.requestedBy}</p>
-                      <p className="text-xs text-gray-500">{request.requestedByEmail}</p>
+                      <p>{request.requesterName}</p>
+                      <p className="text-xs text-gray-500">{request.requesterId}</p>
                     </div>
                   </td>
-                  <td className="px-4 align-middle">{request.department}</td>
+
+                  {/* DEPARTMENT (Updated field) */}
+                  <td className="px-4 align-middle">{request.departmentId}</td>
+
+                  {/* PROJECT */}
                   <td className="px-4 align-middle">
-                    {request.project ? (
-                      <p className="text-sm">{request.project}</p>
+                    {request.projectId ? (
+                      <p className="text-sm">{request.projectId}</p>
                     ) : (
                       <p className="text-xs text-gray-500">-</p>
                     )}
                   </td>
-                  <td className="px-4 align-middle">{getUrgencyBadge(request.urgency, darkMode ? 'outline' : 'soft')}</td>
-                  <td className="px-0 align-middle">
+
+                  {/* DATE */}
+                  {/* <td className="px-0 align-middle">
                     <div>
-                      <p className="text-sm">{request.requestDate}</p>
-                      {request.requiredDate && (
+                      <p className="text-sm">{formatDate(request.createdAt)}</p>
+                      {request.expectedReturnDate && (
                         <p className="text-xs text-gray-500">
-                          Need by: {request.requiredDate}
+                          Return: {formatDate(request.expectedReturnDate)}
                         </p>
                       )}
                     </div>
+                  </td> */}
+
+                  {/* TIMELINE COLUMN (Modified) */}
+                  <td className="px-0 align-middle">
+                    <div className="flex flex-col gap-0.5">
+                      {/* Created Date */}
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        <span className="w-4"> In:</span>
+                        <span>{formatDate(request.createdAt)}</span>
+                      </div>
+
+                      {/* Return Date (Highlighted) */}
+                      {request.expectedReturnDate && (
+                        /**${getTimelineColor(request.createdAt, request.expectedReturnDate)}    for highlighting dates */
+                        <div className={`flex items-center gap-3.5 text-xs `}>
+                          <span className="w-4">Due:</span>
+                          <span>{formatDate(request.expectedReturnDate)}</span>
+                        </div>
+                      )}
+                    </div>
                   </td>
+
+                  {/* ACTIONS */}
                   <td className="px-4 align-middle">
-                    {request.status === 'pending' ? (
+                    {request.status.toLowerCase() === 'pending' ? (
                       <div className="flex space-x-2">
-                        {/* Este es el <Button variant="outline"> */}
                         <button
                           onClick={() => {
                             setModalType('approve')
@@ -130,7 +191,6 @@ export default function RequestsTable({
                             ${darkMode ? 'bg-[#1F1F1F]' : 'bg-white'}
                             ${darkMode ? 'text-white' : 'text-black'}
                           `}
-
                         >
                           Approve
                         </button>
@@ -151,20 +211,15 @@ export default function RequestsTable({
                         </button>
                       </div>
                     ) : (
-                      <div className="text-xs text-gray-500">
-                        {request.reviewedBy && (
-                          <p>By: {request.reviewedBy}</p>
-                        )}
-                        {request.reviewDate && (
-                          <p>{request.reviewDate}</p>
-                        )}
+                      <div className="text-xs text-gray-500 italic">
+                        No actions available
                       </div>
                     )}
                   </td>
                 </tr>
 
                 {/* Expanded Item Details Section */}
-                {expandedRequests.has(request.id) && (
+                {expandedRequests.has(request.requestNumber) && (
                   <tr className="border-b transition-colors" data-state="open">
                     <td colSpan={10} className="p-0 bg-[#F2F2F4] dark:bg-gray-900/50 transition duration-300">
                       <div className="p-6">
@@ -173,28 +228,26 @@ export default function RequestsTable({
                           Request Details
                         </h4>
 
-                        {/* --- Reason Layout and Date --- */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-                          {/* Return date */}
-                          {request.returnDate && (
+                          {/* Work Order (NUEVO CAMPO) */}
+                          {request.workOrderId && (
                             <div>
                               <label className="block text-sm font-medium text-gray-500 mb-1">
-                                Return Date
+                                Work Order
                               </label>
                               <p className="text-lg text-gray-900 dark:text-gray-100">
-                                {request.returnDate}
+                                {request.workOrderId}
                               </p>
                             </div>
                           )}
 
-                          {/* Reason */}
+                          {/* Notes (Antes Reason) */}
                           <div>
                             <label className="block text-sm font-medium text-gray-500 mb-1">
-                              Reason
+                              Notes / Reason
                             </label>
                             <p className="text-lg text-gray-900 dark:text-gray-100">
-                              {request.reason}
+                              {request.notes || 'No notes provided'}
                             </p>
                           </div>
                         </div>
@@ -205,60 +258,45 @@ export default function RequestsTable({
                           </h5>
 
                           <div className="grid grid-cols-3 gap-3">
-                            {request.items.map(item => (
+                            {request.items.map((item) => (
                               <div
-                                key={item.id}
+                                key={item.id} // item.id numérico del backend está bien aquí
                                 className="flex items-center p-3 bg-white dark:bg-gray-800/30 border dark:border-gray-700 rounded-lg shadow-sm
-                   justify-self-center md:justify-self-stretch" // <-- Mantuve esta corrección de la que hablamos
+                                  justify-self-center md:justify-self-stretch"
                               >
-
                                 {/* Imagen */}
                                 <img
                                   src={item.imageUrl || 'https://via.placeholder.com/150'}
-                                  alt={item.articleDescription}
+                                  alt={item.name}
                                   className="h-20 w-20 object-cover rounded-md mr-4"
                                 />
 
-                                {/* Detalles del Item (CON BADGES CORREGIDOS) */}
+                                {/* Detalles del Item */}
                                 <div className="flex-grow">
                                   <span className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                                    {item.articleCode}
+                                    {item.sku} {/* Antes articleCode */}
                                   </span>
                                   <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                    {item.articleDescription}
+                                    {item.name} {/* Antes articleDescription */}
                                   </p>
+                                  <p className="text-xs text-gray-500">{item.description}</p>
 
-                                  {/* --- ESTA ES LA PARTE CORREGIDA --- */}
-                                  {/* Contenedor Flex para los badges */}
                                   <div className="flex flex-wrap items-center gap-2 mt-1">
-
-                                    {/* 1. Etiqueta de cantidad (la que tenías) */}
+                                    {/* Cantidad Solicitada */}
                                     <span className="text-xs font-medium text-blue-700 bg-blue-100 dark:text-blue-200 dark:bg-blue-800/50 px-2 py-0.5 rounded-full">
-                                      {item.quantity} {item.unit}
+                                      Qty: {item.quantityRequested}
                                     </span>
 
-                                    {/* 2. Badge de Precio por Unidad (NUEVO) */}
-                                    {item.estimatedCost && (
-                                      <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full dark:bg-green-800 dark:text-green-100">
-                                        ${item.estimatedCost.toFixed(2)} each
-                                      </span>
-                                    )}
-
-                                    {/* 3. Badge de Costo Total (NUEVO) */}
-                                    {item.estimatedCost && (
-                                      <span className="text-xs font-semibold bg-gray-800 text-white px-2 py-0.5 rounded-full dark:bg-gray-200 dark:text-gray-900">
-                                        Total: ${(item.estimatedCost * item.quantity).toFixed(2)}
-                                      </span>
-                                    )}
+                                    {/* Costos (Si la interfaz los soportara, aquí irían) */}
+                                    {/* <span className="text-xs font-semibold bg-gray-800 text-white px-2 py-0.5 rounded-full dark:bg-gray-200 dark:text-gray-900">
+                                        Total: $...
+                                      </span> 
+                                    */}
                                   </div>
-                                  {/* --- FIN DE LA PARTE CORREGIDA --- */}
-
                                 </div>
-
                               </div>
                             ))}
                           </div>
-
                         </div>
 
                       </div>
@@ -271,22 +309,19 @@ export default function RequestsTable({
         </tbody>
       </table>
 
-      {requests.length === 0 && !loading &&
-        <div className='p-8 text-red-500 text-center flex justify-center items-center bg-white dark:bg-[#0A0A0A]'>
-          <h3>Not found</h3>
+      {requests.length === 0 && !loading && (
+        <div className="p-12 text-center">
+          <Package className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">No requests found</h3>
+          <p className="text-gray-500 text-sm">Try adjusting your search or filters.</p>
         </div>
-      }
+      )}
 
-      {
-        loading && (
-          <div className="flex justify-center items-center py-10 bg-white dark:bg-[#0A0A0A]">
-            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        )
-      }
+      {loading && (
+        <div className="flex justify-center items-center py-10 bg-white dark:bg-[#0A0A0A]">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
     </div>
-
-
-
   );
 }
