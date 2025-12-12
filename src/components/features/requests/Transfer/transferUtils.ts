@@ -8,14 +8,10 @@ export function formatDate(dateString: string): string {
 
 export function getStatusColor(status: string): string {
   switch (status) {
-    case 'active':
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+    case 'completed':
       return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-    case 'pending-manager':
-      return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
-    case 'pending-engineer':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
-    case 'approved':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
     case 'rejected':
       return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
     default:
@@ -25,14 +21,10 @@ export function getStatusColor(status: string): string {
 
 export function getStatusText(status: string): string {
   switch (status) {
-    case 'active':
-      return 'Active';
-    case 'pending-manager':
-      return 'Pending Manager';
-    case 'pending-engineer':
-      return 'Pending Engineer';
-    case 'approved':
-      return 'Approved';
+    case 'pending':
+      return 'Pending';
+    case 'completed':
+      return 'Completed';
     case 'rejected':
       return 'Rejected';
     default:

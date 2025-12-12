@@ -10,7 +10,7 @@ import { toast } from 'react-hot-toast';
 interface Props {
   request: LoanRequest;
   expanded: boolean;
-  onToggleExpand: (id: number) => void;
+  onToggleExpand: (requestNumber: string) => void;
   isKitOrder: (req: LoanRequest) => boolean;
   getPriorityBadge: (priority: string) => React.ReactNode;
   selectedPackingItems: Set<string>;
@@ -42,8 +42,11 @@ export const PackingRequestRow: React.FC<Props> = ({
   handlePrintSinglePacking,
   handleConfirmPacking
 }) => {
+  // Debug logging
+  console.log(`🔄 Rendering PackingRequestRow - RequestNumber: ${request.requestNumber}, Expanded: ${expanded}`);
+  
 // 1. Lógica para determinar si el botón debe estar deshabilitado
-    const isPrinted = printedRequests.has(request.id);
+    const isPrinted = printedRequests.has(request.requestNumber);
     const isKit = isKitOrder(request);
     const areItemsSelected = selectedPackingItems.size > 0;
 
@@ -70,11 +73,11 @@ export const PackingRequestRow: React.FC<Props> = ({
     };
 // ... dentro del componente PackingRequestRow
 const isPacking = request.status === 'Packing';
-const isPending = request.status === 'Pending';
+const isApproved = request.status === 'Approved';
 const isSent = request.status === 'Sent';
 
 // 3. Lógica para el botón de IMPRESORA
-    const printerTitle = isPending 
+    const printerTitle = isApproved 
         ? 'Start Packing and Print List' 
         : isPacking 
             ? 'Print Packing List' 
@@ -83,13 +86,22 @@ const isSent = request.status === 'Sent';
     // El botón debe estar deshabilitado solo si ya se envió la solicitud.
     const printerDisabled = isSent; 
     
-    // Cambiamos el color para que sea más notable cuando está 'Pending' (y se requiere acción)
-    const printerVariant = isPending ? 'default' : 'outline';
+    // Cambiamos el color para que sea más notable cuando está 'Approved' (y se requiere acción)
+    const printerVariant = isApproved ? 'default' : 'outline';
   return (
     <>
       <TableRow className="hover:bg-muted/50">
         <TableCell>
-          <Button variant="ghost" size="sm" onClick={() => onToggleExpand(request.id)}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => {
+              console.log('=== CLICK EN FLECHA ===');
+              console.log('Request Number:', request.requestNumber);
+              console.log('Expanded antes:', expanded);
+              onToggleExpand(request.requestNumber);
+            }}
+          >
             {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
         </TableCell>
@@ -170,7 +182,7 @@ const isSent = request.status === 'Sent';
                       <th>Name</th>
                       <th>Requeted quantity</th>
                       <th>Packaged quantity</th>
-                      <th>Type</th>
+                      <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -192,10 +204,15 @@ const isSent = request.status === 'Sent';
                           <td>
                             {!isKitOrder(request) ? (
                               <div className="text-center space-x-2">
-                                <input type="number" min={0} max={item.quantityRequested} 
-                                value={getPackingItemQuantity(request.id, item.id)} 
-                                onChange={(e) => handlePackingQuantityChange(request.id, item.id, parseInt(e.target.value) || 0)} 
-                                className="w-20" />
+                                <input 
+                                  type="number" 
+                                  min={0} 
+                                  max={item.quantityRequested} 
+                                  value={getPackingItemQuantity(request.id, item.id)} 
+                                  onChange={(e) => handlePackingQuantityChange(request.id, item.id, parseInt(e.target.value) || 0)}
+                                  onFocus={(e) => e.target.select()}
+                                  className={`w-20 ${getPackingItemQuantity(request.id, item.id) === 0 ? 'border-2 text-center border rounded px-2 py-1 border-black-400 bg-green-50' : 'border border-gray-300'}`}
+                                />
                                 <span className="text-sm text-muted-foreground">/ {item.quantityRequested} {item.unit}</span>
                               </div>
                             ) : (
@@ -203,8 +220,20 @@ const isSent = request.status === 'Sent';
                             )}
                           </td>
                           <td className="text-center">
-                            <Badge variant={item.articleType === 'consumable' ? 'secondary' : 'outline'}>
-                              {item.articleType === 'consumable' ? 'Consumable' : 'Non-Consumable'}
+                            <Badge 
+                              variant={
+                                request.status === 'Approved' ? 'default' : 
+                                request.status === 'Packing' ? 'secondary' : 
+                                'outline'
+                              }
+                              className={
+                                request.status === 'Approved' ? 'bg-blue-500 text-white' :
+                                request.status === 'Packing' ? 'bg-yellow-500 text-white' :
+                                request.status === 'Sent' ? 'bg-green-500 text-white' :
+                                ''
+                              }
+                            >
+                              {request.status}
                             </Badge>
                           </td>
                         </tr>

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 // 🚨 CORRECCIÓN: Definición local de la interfaz del DTO de Envío para evitar errores de importación.
 import { LoanRequest, LoanItem, CreateLoanRequestDto } from '../types'; 
-import { getPackingRequests, updateLoanRequestStatus, startPacking, sendLoanRequest } from '../services/requestManagementService';
+import { getPackingRequests, updateLoanRequestStatus, startPacking, sendLoanRequest, getEngineerReturns } from '../services/requestManagementService';
 import { handlePrintSinglePacking as utilPrintSingle } from '../utils/requestManagementUtils';
 import { toast } from 'react-hot-toast';
 
@@ -13,55 +13,100 @@ interface SendLoanRequestDto {
     }>;
 }
 
-export function usePackingRequestsLogic() {
-  const [packingRequests, setPackingRequests] = useState<LoanRequest[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [expandedPackingRequests, setExpandedPackingRequests] = useState<Set<number>>(new Set());
-  const [selectedPackingItems, setSelectedPackingItems] = useState<Set<string>>(new Set());
-  const [packingItemQuantities, setPackingItemQuantities] = useState<Record<string, number>>({});
-  const [printedRequests, setPrintedRequests] = useState<Set<number>>(new Set());
-  const [packingConfirmDialogOpen, setPackingConfirmDialogOpen] = useState(false);
-  const [currentPackingRequest, setCurrentPackingRequest] = useState<LoanRequest | null>(null);
+const PRINTED_REQUESTS_KEY = 'packing_printed_requests';
 
-  const MOCK_KEEPER_EMPLOYEE_ID = "amx0093";
+export function usePackingRequestsLogic() {
+  const [packingRequests, setPackingRequests] = useState<LoanRequest[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedPackingRequests, setExpandedPackingRequests] = useState<Set<string>>(new Set());
+  const [selectedPackingItems, setSelectedPackingItems] = useState<Set<string>>(new Set());
+  const [packingItemQuantities, setPackingItemQuantities] = useState<Record<string, number>>({});
+  
+  // Inicializar printedRequests desde localStorage
+  const [printedRequests, setPrintedRequests] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem(PRINTED_REQUESTS_KEY);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  
+  const [packingConfirmDialogOpen, setPackingConfirmDialogOpen] = useState(false);
+  const [currentPackingRequest, setCurrentPackingRequest] = useState<LoanRequest | null>(null);  const MOCK_KEEPER_EMPLOYEE_ID = "amx0093";
   const MOCK_WAREHOUSE_ID = 1; 
   const MOCK_DEPARTMENT_ID = 1;
   const MOCK_REQUESTER_ID = 1;
 
 
-  // Fetch packing requests from API on mount
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await getPackingRequests();
-        setPackingRequests(data || []);
-      } catch (err) {
-        console.error('Failed to load packing requests', err);
-        setError('Failed to load packing requests');
-        setPackingRequests([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-
-  const isKitOrder = useCallback((request: LoanRequest) => request.requestNumber.startsWith('KIT-'), []);
-
-  const handleToggleExpandPacking = useCallback((id: number) => {
-    setExpandedPackingRequests(prev => {
-      const newExpanded = new Set(prev);
-      if (newExpanded.has(id)) newExpanded.delete(id);
-      else newExpanded.add(id);
-      return newExpanded;
-    });
-  }, []);
-
-  const handleSelectPackingItem = useCallback((requestId: number, itemId: number) => {
+  // Fetch packing requests from API on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await getPackingRequests();
+        console.log('📦 Packing requests received:', data);
+        if (data && data.length > 0) {
+          console.log('📦 First request:', data[0]);
+          console.log('📦 First request keys:', Object.keys(data[0]));
+          console.log('📦 First request id field:', data[0].id);
+        }
+        setPackingRequests(data || []);
+        
+        // Marcar automáticamente requests en estado 'Packing' como impresos
+        const packingStatusRequests = data.filter(req => req.status === 'Packing').map(req => req.requestNumber);
+        if (packingStatusRequests.length > 0) {
+          setPrintedRequests(prev => {
+            const updated = new Set(prev);
+            packingStatusRequests.forEach(reqNum => updated.add(reqNum));
+            return updated;
+          });
+        }
+        
+        // Limpiar del localStorage requests que ya no existen (fueron confirmados)
+        const currentRequestNumbers = new Set(data.map(req => req.requestNumber));
+        setPrintedRequests(prev => {
+          const cleaned = new Set(Array.from(prev).filter(reqNum => currentRequestNumbers.has(reqNum)));
+          return cleaned;
+        });
+      } catch (err) {
+        console.error('Failed to load packing requests', err);
+        setError('Failed to load packing requests');
+        setPackingRequests([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+  
+  // Persistir printedRequests en localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(PRINTED_REQUESTS_KEY, JSON.stringify(Array.from(printedRequests)));
+    } catch (err) {
+      console.error('Error saving printed requests to localStorage:', err);
+    }
+  }, [printedRequests]);
+  
+  const isKitOrder = useCallback((request: LoanRequest) => request.requestNumber.startsWith('KIT-'), []);  const handleToggleExpandPacking = useCallback((requestNumber: string) => {
+    console.log('Toggle expand for requestNumber:', requestNumber);
+    setExpandedPackingRequests(prev => {
+      const newExpanded = new Set(prev);
+      console.log('Before toggle, expanded requestNumbers:', Array.from(prev));
+      if (newExpanded.has(requestNumber)) {
+        newExpanded.delete(requestNumber);
+        console.log('Removed requestNumber:', requestNumber);
+      } else {
+        newExpanded.add(requestNumber);
+        console.log('Added requestNumber:', requestNumber);
+      }
+      console.log('After toggle, expanded requestNumbers:', Array.from(newExpanded));
+      return newExpanded;
+    });
+  }, []);  const handleSelectPackingItem = useCallback((requestId: number, itemId: number) => {
     const itemKey = `${requestId}-${itemId}`;
     setSelectedPackingItems(prev => {
       const newSelected = new Set(prev);
@@ -210,21 +255,21 @@ const handlePrintAllPacking = useCallback(async () => { // Ya no necesita setAll
     let successfulUpdates = 0;
     
     const updatePromises = packingRequests.map(async (request) => {
-        // Solo llamar a startPacking si la solicitud está en estado 'Pending'
-        if (request.status === 'Pending') {
+        // Solo llamar a startPacking si la solicitud está en estado 'Approved'
+        if (request.status === 'Approved') {
             try {
                 const updatedRequest = await startPacking(request.requestNumber, MOCK_KEEPER_EMPLOYEE_ID);
                 if (updatedRequest) {
                     successfulUpdates++;
-                    setPrintedRequests(prev => new Set(prev).add(request.id));
+                    setPrintedRequests(prev => new Set(prev).add(request.requestNumber));
                     return true;
                 }
             } catch (error) {
                 console.error(`Error starting packing for request ${request.requestNumber}:`, error);
             }
         } else {
-            // Si ya está en Packed, solo marcar como impresa
-            setPrintedRequests(prev => new Set(prev).add(request.id));
+            // Si ya está en Packing, solo marcar como impresa
+            setPrintedRequests(prev => new Set(prev).add(request.requestNumber));
         }
         return false;
     });
@@ -245,29 +290,29 @@ const handlePrintAllPacking = useCallback(async () => { // Ya no necesita setAll
     setPrintedRequests
 ]);
 
-  const handlePrintSinglePacking = useCallback(async (request: LoanRequest) => { 
-    const printed = utilPrintSingle(request, packingItemQuantities);   
-    if (printed) {
-      setPrintedRequests(prev => new Set(prev).add(request.id));
-      if (request.status === 'Pending') {
-        try {
-          const updatedRequest = await startPacking(request.requestNumber, MOCK_KEEPER_EMPLOYEE_ID);          
-          if (updatedRequest) {
-            toast.success(`Request ${request.requestNumber} status updated to Packed.`);
-          } else {
-            toast.error('Failed to update status to Packed after printing.');
-          }
-        } catch (error) {
-          console.error('Error starting packing:', error);
-          toast.error('Error updating status after printing.');
-        }
-      } else {
-        toast.success(`Packing list for ${request.requestNumber} printed.`);
-      }
-    }
-  }, [packingItemQuantities]);
-
-
+  const handlePrintSinglePacking = useCallback(async (request: LoanRequest) => { 
+    const printed = utilPrintSingle(request, packingItemQuantities);   
+    if (printed) {
+      setPrintedRequests(prev => new Set(prev).add(request.requestNumber));
+      if (request.status === 'Approved') {
+        try {
+          const updatedRequest = await startPacking(request.requestNumber, MOCK_KEEPER_EMPLOYEE_ID);          
+          if (updatedRequest) {
+            // Recargar la lista para reflejar el cambio de estado
+            await reloadPackingRequests();
+            toast.success(`Request ${request.requestNumber} status updated to Packing.`);
+          } else {
+            toast.error('Failed to update status to Packing after printing.');
+          }
+        } catch (error) {
+          console.error('Error starting packing:', error);
+          toast.error('Error updating status after printing.');
+        }
+      } else {
+        toast.success(`Packing list for ${request.requestNumber} printed.`);
+      }
+    }
+  }, [packingItemQuantities, reloadPackingRequests]);
   const areAllItemsSelected = useCallback((requestId: number, items: LoanItem[]) => 
     items.every(item => selectedPackingItems.has(`${requestId}-${item.id}`)), [selectedPackingItems]);
 
@@ -286,74 +331,77 @@ const handlePrintAllPacking = useCallback(async () => { // Ya no necesita setAll
   }, [selectedPackingItems]);
   
 
-  // Manejador de confirmación con dependencia cruzada (necesita el setter de Returns)
-const handleConfirmPackingDialog = useCallback((setAllReturns: React.Dispatch<React.SetStateAction<LoanRequest[]>>) => {
-    return (async () => {
-      if (!currentPackingRequest) return;
-      
-      // 1. Preparar los ítems para el DTO de envío
-      const itemsToMove = currentPackingRequest.items.filter(item => {
-        const itemKey = `${currentPackingRequest.id}-${item.id}`;
-        if (item.id <= 0) {
-            console.warn(`Skipping item with invalid ID: ${item.id}`);
-            return false;
-        }
-        // Filtra solo si es un Kit (se asume que se empaca todo) o si el ítem fue seleccionado
-        return isKitOrder(currentPackingRequest) || selectedPackingItems.has(itemKey);
-      }).map(item => {
-        const itemKey = `${currentPackingRequest.id}-${item.id}`;
-        const qty = packingItemQuantities[itemKey] !== undefined ? packingItemQuantities[itemKey] : item.quantityRequested;
-        // Mapear al formato temporal para 'itemsToMove'
-        return { ...item, quantity: qty, status: 'active' as const }; 
-      });
+  
 
-      const sendItemsForApi = itemsToMove.map(item => ({
-            // Usamos 'loanRequestItemId' (minúscula)
-            loanRequestItemId: item.id, 
-            // 🚨 CORRECCIÓN CLAVE: Usamos 'quantityFulfilled' que espera el API
-            quantityFulfilled: item.quantity, 
-        })) as unknown as SendLoanRequestDto['items']; // Uso de la interfaz definida localmente
-      
-      try {
+  // Manejador de confirmación con dependencia cruzada (necesita el setter de Returns)
+const handleConfirmPackingDialog = useCallback((
+    setAllReturns: React.Dispatch<React.SetStateAction<LoanRequest[]>>,
+    engineerId?: string,
+    warehouseId?: number
+) => {
+    return (async () => {
+      if (!currentPackingRequest) return;
+      
+      // 1. Preparar los ítems para el DTO de envío
+      const itemsToMove = currentPackingRequest.items.filter(item => {
+        const itemKey = `${currentPackingRequest.id}-${item.id}`;
+        if (item.id <= 0) {
+            console.warn(`Skipping item with invalid ID: ${item.id}`);
+            return false;
+        }
+        // Filtra solo si es un Kit (se asume que se empaca todo) o si el ítem fue seleccionado
+        return isKitOrder(currentPackingRequest) || selectedPackingItems.has(itemKey);
+      }).map(item => {
+        const itemKey = `${currentPackingRequest.id}-${item.id}`;
+        const qty = packingItemQuantities[itemKey] !== undefined ? packingItemQuantities[itemKey] : item.quantityRequested;
+        // Mapear al formato temporal para 'itemsToMove'
+        return { ...item, quantity: qty, status: 'active' as const }; 
+      });
 
-        const sendDto = { items: sendItemsForApi };
-        console.log('DTO being sent to /send:', sendDto);
-        // 2. Llamada al API (PUT /send -> estado 'Sent')
-        const sentRequest = await sendLoanRequest(currentPackingRequest.requestNumber, MOCK_KEEPER_EMPLOYEE_ID, sendDto);
+      const sendItemsForApi = itemsToMove.map(item => ({
+            // Usamos 'loanRequestItemId' (minúscula)
+            loanRequestItemId: item.id, 
+            // 🚨 CORRECCIÓN CLAVE: Usamos 'quantityFulfilled' que espera el API
+            quantityFulfilled: item.quantity, 
+        })) as unknown as SendLoanRequestDto['items']; // Uso de la interfaz definida localmente
+      
+      try {
 
-        if (!sentRequest) {
-              toast.error(`Error: Failed to change status of ${currentPackingRequest.requestNumber} to Sent.`);
-              return; // Detener la limpieza si el paso crítico falla
-          }
-        
-        // 3. Limpieza de la UI
-        await reloadPackingRequests();
-        
-        const newSelectedItems = new Set(selectedPackingItems);
-        currentPackingRequest.items.forEach(item => { const itemKey = `${currentPackingRequest.id}-${item.id}`; newSelectedItems.delete(itemKey); });
-        setSelectedPackingItems(newSelectedItems);
-        setPackingItemQuantities({});
-        setPackingConfirmDialogOpen(false);
-        setCurrentPackingRequest(null);
-        
-        // 4. Actualización del estado de Returns
-        setAllReturns(prev => {
-                const exists = prev.some(req => req.requestNumber === sentRequest.requestNumber);
-                if (!exists) {
-                    // Agregamos la solicitud actualizada (en estado 'Sent')
-                    return [...prev, sentRequest];
-                }
-                return prev;
-            });
-        toast.success(`Packing confirmed! Request ${currentPackingRequest.requestNumber} sent.`);
-      } catch (err) {
-        console.error('Error confirming packing and moving to returns', err);
-        toast.error('Error confirming packing. Please try again.');
-      }
-    })();
-  }, [currentPackingRequest, isKitOrder, packingItemQuantities, selectedPackingItems, reloadPackingRequests]);
+        const sendDto = { items: sendItemsForApi };
+        console.log('DTO being sent to /send:', sendDto);
+        // 2. Llamada al API (PUT /send -> estado 'Sent')
+        const sentRequest = await sendLoanRequest(currentPackingRequest.requestNumber, MOCK_KEEPER_EMPLOYEE_ID, sendDto);
 
-
+        if (!sentRequest) {
+              toast.error(`Error: Failed to change status of ${currentPackingRequest.requestNumber} to Sent.`);
+              return; // Detener la limpieza si el paso crítico falla
+          }
+        
+        // 3. Limpieza de la UI
+        await reloadPackingRequests();
+        
+        const newSelectedItems = new Set(selectedPackingItems);
+        currentPackingRequest.items.forEach(item => { const itemKey = `${currentPackingRequest.id}-${item.id}`; newSelectedItems.delete(itemKey); });
+        setSelectedPackingItems(newSelectedItems);
+        setPackingItemQuantities({});
+        setPackingConfirmDialogOpen(false);
+        setCurrentPackingRequest(null);
+        
+        // 4. Recargar Returns desde el API en lugar de actualización manual
+        try {
+            const freshData = await getEngineerReturns(engineerId || 'amx0142', warehouseId || 1);
+            setAllReturns(freshData || []);
+        } catch (err) {
+            console.error('Error reloading returns after packing confirmation:', err);
+        }
+        
+        toast.success(`Packing confirmed! Request ${currentPackingRequest.requestNumber} sent.`);
+      } catch (err) {
+        console.error('Error confirming packing and moving to returns', err);
+        toast.error('Error confirming packing. Please try again.');
+      }
+    })();
+  }, [currentPackingRequest, isKitOrder, packingItemQuantities, selectedPackingItems, reloadPackingRequests]);
   return {
     packingRequests, isLoading, error, expandedPackingRequests, selectedPackingItems, packingItemQuantities, printedRequests,
     packingConfirmDialogOpen, currentPackingRequest, setPackingConfirmDialogOpen,

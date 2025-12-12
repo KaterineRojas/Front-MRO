@@ -4,6 +4,7 @@ import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
 import { Input } from '../../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Label } from '../../../ui/label';
@@ -13,11 +14,12 @@ import {
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { toast } from 'sonner';
+import { useAppSelector } from '../../../../store/hooks';
 import { getProjects, type Project } from '../../enginner/services';
 import { useTransfers } from './useTransfers';
 import { TransferForm } from './TransferForm';
 import { formatDate, getStatusColor, getStatusText } from './transferUtils';
-import { getAvailableUsers, getTransferId, type Transfer, type User } from './transferService';
+import { getTransferId, type Transfer } from './transferService';
 import {
   getCompanies,
   getCustomersByCompany,
@@ -28,17 +30,37 @@ import {
   type WorkOrder,
   type Project as SharedProject
 } from '../services/sharedServices';
+import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
 
+const typeBadgeClassNames: Record<Transfer['type'], string> = {
+  outgoing: 'bg-amber-200 text-amber-950 border-amber-300 dark:bg-amber-900/50 dark:text-amber-50 dark:border-amber-800',
+  incoming: 'bg-sky-200 text-sky-950 border-sky-300 dark:bg-sky-900/50 dark:text-sky-50 dark:border-sky-800'
+};
+
+const formatWorkOrderDate = (value?: string) => {
+  if (!value) return 'No date provided';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Invalid date';
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
 
 export function TransferRequests() {
   const [showTransferMode, setShowTransferMode] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [sharedProjectsList, setSharedProjectsList] = useState<SharedProject[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [transferToAccept, setTransferToAccept] = useState<Transfer | null>(null);
   const [confirmTransferOpen, setConfirmTransferOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [transferToRejectId, setTransferToRejectId] = useState<string | null>(null);
+  const [transferToCancelId, setTransferToCancelId] = useState<string | null>(null);
   const [expandedTransferDetails, setExpandedTransferDetails] = useState<Record<string, Transfer>>({});
   const [loadingTransferIds, setLoadingTransferIds] = useState<Set<string>>(new Set());
 
@@ -49,6 +71,8 @@ export function TransferRequests() {
   const [selectedCustomer, setSelectedCustomer] = useState<string>('');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string>('');
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [selectedWorkOrderDetails, setSelectedWorkOrderDetails] = useState<WorkOrder | null>(null);
+  const [workOrderDetailModalOpen, setWorkOrderDetailModalOpen] = useState(false);
 
   // Loading states for cascading selects
   const [loadingCompanies, setLoadingCompanies] = useState(false);
@@ -57,13 +81,13 @@ export function TransferRequests() {
   const [loadingWorkOrders, setLoadingWorkOrders] = useState(false);
   const [companiesLoaded, setCompaniesLoaded] = useState(false);
 
+  const currentUser = useAppSelector((state) => state.auth.user);
+
   const {
     filteredTransfers,
     isLoading,
     searchTerm,
     setSearchTerm,
-    statusFilter,
-    setStatusFilter,
     typeFilter,
     setTypeFilter,
     expandedRows,
@@ -71,22 +95,17 @@ export function TransferRequests() {
     handleCancel,
     handleAccept,
     handleReject,
-    getStatusCount,
     getTypeCount,
     canCancelTransfer,
     refreshTransfers
   } = useTransfers();
 
-  // Load projects and users
+  // Load projects
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [projectsData, usersData] = await Promise.all([
-          getProjects(),
-          getAvailableUsers()
-        ]);
+        const projectsData = await getProjects();
         setProjects(projectsData);
-        setUsers(usersData);
       } catch (error) {
         toast.error('Failed to load data');
       }
@@ -110,6 +129,8 @@ export function TransferRequests() {
     setSelectedCompany('');
     setSelectedCustomer('');
     setSelectedWorkOrder('');
+    setSelectedWorkOrderDetails(null);
+    setWorkOrderDetailModalOpen(false);
     setConfirmTransferOpen(true);
     
     // Load companies when opening modal
@@ -229,21 +250,76 @@ export function TransferRequests() {
       toast.error('Please select a project');
       return;
     }
+
+    if (!selectedCompany) {
+      toast.error('Please select a company');
+      return;
+    }
+
+    if (!selectedCustomer) {
+      toast.error('Please select a customer');
+      return;
+    }
+
+    if (!currentUser) {
+      toast.error('User information not available');
+      return;
+    }
     
     if (transferToAccept) {
       const selectedProjectData = sharedProjectsList.find(p => p.id === selectedProject);
-      await handleAccept(transferToAccept.id, selectedProject);
+      
+      // Call handleAccept with all required parameters
+      await handleAccept(
+        transferToAccept.id,
+        currentUser.id,
+        selectedCompany,
+        selectedCustomer,
+        currentUser.department,
+        selectedProject,
+        selectedWorkOrder,
+        ''
+      );
+      
       toast.success(`Items assigned to ${selectedProjectData?.name}.`);
       setConfirmTransferOpen(false);
       setTransferToAccept(null);
       setSelectedProject('');
+      setSelectedCompany('');
+      setSelectedCustomer('');
     }
   };
 
+  const handleRejectClick = (transferId: string) => {
+    setTransferToRejectId(transferId);
+    setRejectDialogOpen(true);
+  };
+
+  const closeRejectDialog = () => {
+    setRejectDialogOpen(false);
+    setTransferToRejectId(null);
+  };
+
+  const confirmRejectTransfer = async () => {
+    if (!transferToRejectId) return;
+    await handleReject(transferToRejectId);
+    closeRejectDialog();
+  };
+
   const handleCancelClick = (transferId: string) => {
-    if (window.confirm('Are you sure you want to cancel this transfer?')) {
-      handleCancel(transferId);
-    }
+    setTransferToCancelId(transferId);
+    setCancelDialogOpen(true);
+  };
+
+  const closeCancelDialog = () => {
+    setCancelDialogOpen(false);
+    setTransferToCancelId(null);
+  };
+
+  const confirmCancelTransfer = async () => {
+    if (!transferToCancelId) return;
+    await handleCancel(transferToCancelId);
+    closeCancelDialog();
   };
 
   const handleExpandTransfer = async (transferId: string) => {
@@ -298,6 +374,7 @@ export function TransferRequests() {
   // Main transfers list view
   return (
     <div className="space-y-6">
+      <style>{actionButtonAnimationStyles}</style>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1>Transfers</h1>
@@ -314,7 +391,7 @@ export function TransferRequests() {
       {/* Search and Filter Bar */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Input
               placeholder="Search by user, items, notes..."
               value={searchTerm}
@@ -328,18 +405,6 @@ export function TransferRequests() {
                 <SelectItem value="all">All ({getTypeCount('all')})</SelectItem>
                 <SelectItem value="outgoing">Outgoing ({getTypeCount('outgoing')})</SelectItem>
                 <SelectItem value="incoming">Incoming ({getTypeCount('incoming')})</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status ({getStatusCount('all')})</SelectItem>
-                <SelectItem value="pending-manager">Pending Manager ({getStatusCount('pending-manager')})</SelectItem>
-                <SelectItem value="pending-engineer">Pending Engineer ({getStatusCount('pending-engineer')})</SelectItem>
-                <SelectItem value="approved">Approved ({getStatusCount('approved')})</SelectItem>
-                <SelectItem value="rejected">Rejected ({getStatusCount('rejected')})</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -359,7 +424,7 @@ export function TransferRequests() {
             <ArrowLeftRight className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
             <h3>No transfers found</h3>
             <p className="text-sm text-muted-foreground">
-              {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
+              {searchTerm || typeFilter !== 'all'
                 ? 'Try adjusting your search or filters' 
                 : 'Your transfers will appear here'}
             </p>
@@ -387,7 +452,7 @@ export function TransferRequests() {
                         )}
                       </h3>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <Badge variant="outline">
+                        <Badge className={typeBadgeClassNames[transfer.type]}>
                           {transfer.type === 'outgoing' ? 'Outgoing' : 'Incoming'}
                         </Badge>
                         <Badge className={getStatusColor(transfer.status)} variant="secondary">
@@ -398,30 +463,48 @@ export function TransferRequests() {
                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                       {transfer.type === 'incoming' && (
                         <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleTransferAcceptStart(transfer)}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleReject(transfer.id)}
-                          >
-                            <X className="h-4 w-4 text-destructive" />
-                          </Button>
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  className="action-btn-enhance btn-accept h-auto py-2 px-4"
+                                  onClick={() => handleTransferAcceptStart(transfer)}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent sideOffset={8}>Accept transfer</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  className="action-btn-enhance btn-reject p-2 h-auto"
+                                      onClick={() => handleRejectClick(transfer.id)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent sideOffset={8}>Reject transfer</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </>
                       )}
                       {canCancelTransfer(transfer) && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleCancelClick(transfer.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                className="action-btn-enhance btn-cancel p-2 h-auto"
+                                onClick={() => handleCancelClick(transfer.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent sideOffset={8}>Delete transfer</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </div>
                   </div>
@@ -480,11 +563,11 @@ export function TransferRequests() {
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
                   <TableHead>Transfer ID</TableHead>
-                  <TableHead>Type</TableHead>
                   <TableHead>User</TableHead>
                   <TableHead>Items</TableHead>
                   <TableHead>Warehouse</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -505,11 +588,6 @@ export function TransferRequests() {
                       </TableCell>
                       <TableCell>#{transfer.id}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">
-                          {transfer.type === 'outgoing' ? 'Outgoing' : 'Incoming'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
                         {transfer.type === 'outgoing' ? transfer.toUser : transfer.fromUser}
                       </TableCell>
                       <TableCell>
@@ -520,6 +598,11 @@ export function TransferRequests() {
                       </TableCell>
                       <TableCell>{formatDate(transfer.requestDate)}</TableCell>
                       <TableCell>
+                        <Badge className={typeBadgeClassNames[transfer.type]}>
+                          {transfer.type === 'outgoing' ? 'Outgoing' : 'Incoming'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <Badge className={getStatusColor(transfer.status)} variant="secondary">
                           {getStatusText(transfer.status)}
                         </Badge>
@@ -528,31 +611,50 @@ export function TransferRequests() {
                         <div className="flex justify-end gap-2">
                           {transfer.type === 'incoming' && (
                             <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleTransferAcceptStart(transfer)}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Accept
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleReject(transfer.id)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      className="action-btn-enhance btn-accept gap-2 h-auto py-2 px-4"
+                                      onClick={() => handleTransferAcceptStart(transfer)}
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                      
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={8}>Accept transfer</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      className="action-btn-enhance btn-reject p-2 h-auto"
+                                      onClick={() => handleRejectClick(transfer.id)}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={8}>Reject transfer</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </>
                           )}
                           {canCancelTransfer(transfer) && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleCancelClick(transfer.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    className="action-btn-enhance btn-cancel gap-2 h-auto py-2 px-4"
+                                    onClick={() => handleCancelClick(transfer.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    Cancel
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent sideOffset={8}>Delete transfer</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           )}
                         </div>
                       </TableCell>
@@ -632,7 +734,6 @@ export function TransferRequests() {
                   <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
                     <Avatar className="h-16 w-16">
                       <AvatarImage 
-                        src={users.find(u => u.id === transferToAccept.fromUserId)?.avatar} 
                         alt={transferToAccept.fromUser} 
                       />
                       <AvatarFallback>
@@ -642,9 +743,6 @@ export function TransferRequests() {
                     <div>
                       <p>From</p>
                       <p className="text-muted-foreground">{transferToAccept.fromUser}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {users.find(u => u.id === transferToAccept.fromUserId)?.department}
-                      </p>
                     </div>
                   </div>
 
@@ -756,7 +854,18 @@ export function TransferRequests() {
                     <Label htmlFor="workorder-select">Work Order</Label>
                     <Select 
                       value={selectedWorkOrder} 
-                      onValueChange={setSelectedWorkOrder}
+                      onValueChange={(value: string) => {
+                        setSelectedWorkOrder(value);
+                        if (!value) {
+                          setSelectedWorkOrderDetails(null);
+                          return;
+                        }
+                        const details = workOrders.find((wo) => String(wo.id) === value);
+                        if (details) {
+                          setSelectedWorkOrderDetails(details);
+                          setWorkOrderDetailModalOpen(true);
+                        }
+                      }}
                       disabled={!selectedProject || loadingWorkOrders}
                     >
                       <SelectTrigger id="workorder-select" className="mt-2">
@@ -768,7 +877,7 @@ export function TransferRequests() {
                       </SelectTrigger>
                       <SelectContent>
                         {workOrders.map((wo) => (
-                          <SelectItem key={wo.id} value={wo.id}>
+                          <SelectItem key={wo.id} value={String(wo.id)}>
                             {wo.orderNumber} - {wo.description}
                           </SelectItem>
                         ))}
@@ -785,6 +894,117 @@ export function TransferRequests() {
             </Button>
             <Button onClick={confirmTransferAccept} disabled={!selectedProject}>
               Accept Transfer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={workOrderDetailModalOpen && !!selectedWorkOrderDetails}
+        onOpenChange={setWorkOrderDetailModalOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Work Order Details</DialogTitle>
+            <DialogDescription>
+              Review the selected work order before assigning the transfer.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedWorkOrderDetails && (
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-muted-foreground text-xs">Order Number</p>
+                <p className="font-semibold">
+                  {selectedWorkOrderDetails.orderNumber || selectedWorkOrderDetails.wo}
+                </p>
+              </div>
+              {selectedWorkOrderDetails.description && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Description</p>
+                  <p>{selectedWorkOrderDetails.description}</p>
+                </div>
+              )}
+              {selectedWorkOrderDetails.serviceDesc && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Service Description</p>
+                  <p>{selectedWorkOrderDetails.serviceDesc}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-muted-foreground text-xs">Start Date</p>
+                  <p>{formatWorkOrderDate(selectedWorkOrderDetails.startDate)}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">End Date</p>
+                  <p>{formatWorkOrderDate(selectedWorkOrderDetails.endDate)}</p>
+                </div>
+              </div>
+              {selectedWorkOrderDetails.status && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Status</p>
+                  <p className="uppercase tracking-wide text-sm">
+                    {selectedWorkOrderDetails.status}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setWorkOrderDetailModalOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Transfer Confirmation Dialog */}
+      <Dialog
+        open={rejectDialogOpen}
+        onOpenChange={(open) => (open ? setRejectDialogOpen(true) : closeRejectDialog())}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Transfer</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to reject this transfer request?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={closeRejectDialog}>
+              Cancel
+            </Button>
+            <Button
+              className="action-btn-enhance btn-reject gap-2 h-auto py-2 px-4"
+              onClick={confirmRejectTransfer}
+            >
+              Confirm Reject
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Transfer Confirmation Dialog */}
+      <Dialog
+        open={cancelDialogOpen}
+        onOpenChange={(open) => (open ? setCancelDialogOpen(true) : closeCancelDialog())}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Transfer</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this transfer request?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={closeCancelDialog}>
+              Cancel
+            </Button>
+            <Button
+              className="action-btn-enhance btn-cancel gap-2 h-auto py-2 px-4"
+              onClick={confirmCancelTransfer}
+            >
+              Confirm Cancel
             </Button>
           </div>
         </DialogContent>

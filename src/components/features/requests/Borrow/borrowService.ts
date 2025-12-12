@@ -1,5 +1,4 @@
-import { API_BASE_URL } from "../services/api";
-
+import { API_URL } from "../../../../url";
 
 // Types
 export interface BorrowItem {
@@ -129,7 +128,7 @@ export async function getBorrowRequests(
   const page = pageNumber ?? 1;
   const size = pageSize ?? 20;
 
-  const url = `${API_BASE_URL}/loan-requests?requesterId=${encodeURIComponent(
+  const url = `${API_URL}/loan-requests?requesterId=${encodeURIComponent(
     requesterId
   )}&pageNumber=${page}&pageSize=${size}`;
 
@@ -181,7 +180,7 @@ export async function getBorrowRequests(
  */
 export async function getBorrowRequestById(requestId: string, requesterId: string): Promise<BorrowRequest | null> {
   try {
-    const url = `${API_BASE_URL}/loan-requests/${requestId}?requesterId=${encodeURIComponent(requesterId)}`;
+    const url = `${API_URL}/loan-requests/${requestId}?requesterId=${encodeURIComponent(requesterId)}`;
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -236,7 +235,7 @@ export async function createBorrowRequest(payload: {
       // requesterId comes from payload (from currentUser.id in LoanForm)
     };
 
-    const url = `${API_BASE_URL}/loan-requests`;
+    const url = `${API_URL}/loan-requests`;
     console.log('===== CREANDO BORROW REQUEST =====');
     console.log('POST URL:', url);
     console.log('Enviando solicitud de préstamo:', apiPayload);
@@ -296,7 +295,7 @@ export async function updateBorrowRequestStatus(
   status: BorrowRequest['status']
 ): Promise<BorrowRequest | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/loan-requests/${requestId}/status`, {
+    const response = await fetch(`${API_URL}/loan-requests/${requestId}/status`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -347,7 +346,7 @@ export async function deleteBorrow(
     signal?: AbortSignal;
   }
 ): Promise<{ success: boolean; message?: string; status: number }> {
-  const url = `${API_BASE_URL}/loan-requests/${requestNumber}`;
+  const url = `${API_URL}/loan-requests/${requestNumber}`;
 
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -393,7 +392,7 @@ export async function returnBorrowedItems(
   requestId: string
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/loan-requests/${requestId}/return`, {
+    const response = await fetch(`${API_URL}/loan-requests/${requestId}/return`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

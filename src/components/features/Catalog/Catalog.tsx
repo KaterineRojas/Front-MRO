@@ -307,6 +307,46 @@ export function Catalog() {
 
   const handleAddToCart = (item: CatalogItem, quantity: number) => {
     const existingItem = cartItems.find(ci => ci.item.id === item.itemId.toString());
+    const selectedWarehouseObj = warehouses.find(w => w.id === selectedWarehouse);
+    
+    // Validar que no haya items de otro warehouse en el carrito
+    const cartHasDifferentWarehouse = cartItems.length > 0 && 
+      cartItems[0].warehouseId && 
+      cartItems[0].warehouseId !== selectedWarehouse;
+    
+    if (cartHasDifferentWarehouse) {
+      showConfirm({
+        title: 'Different Warehouse',
+        description: `Your cart contains items from "${cartItems[0].warehouseName}". Adding items from a different warehouse will clear your cart. Continue?`,
+        type: 'warning',
+        confirmText: 'Clear & Continue',
+        cancelText: 'Cancel',
+        showCancel: true,
+        onConfirm: () => {
+          hideModal();
+          dispatch(clearCart());
+          // Add the new item after clearing
+          const cartItem = {
+            item: {
+              id: item.itemId.toString(),
+              name: item.itemName,
+              code: item.itemSku,
+              description: item.itemDescription,
+              image: item.imageUrl,
+              availableQuantity: item.totalQuantity || 0,
+              totalQuantity: item.totalQuantity || 0,
+              category: item.itemCategory
+            },
+            quantity,
+            warehouseId: selectedWarehouse,
+            warehouseName: selectedWarehouseObj?.name || ''
+          };
+          dispatch(addToCart(cartItem));
+          toast.success(`${item.itemName} added to cart`);
+        }
+      });
+      return;
+    }
 
     if (existingItem) {
       dispatch(updateCartItem({ itemId: item.itemId.toString(), quantity: existingItem.quantity + quantity }));
@@ -322,7 +362,9 @@ export function Catalog() {
           totalQuantity: item.totalQuantity || 0,
           category: item.itemCategory
         },
-        quantity
+        quantity,
+        warehouseId: selectedWarehouse,
+        warehouseName: selectedWarehouseObj?.name || ''
       };
       dispatch(addToCart(cartItem));
     }

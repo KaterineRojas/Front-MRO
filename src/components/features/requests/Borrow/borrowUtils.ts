@@ -88,7 +88,8 @@ export function canCancelBorrowRequest(request: LoanRequest): boolean {
  * Determina si se pueden devolver todos los items
  */
 export function canReturnAll(request: LoanRequest): boolean {
-return  request.status === 'Approved';
+  // Return actions are currently disabled for all statuses
+  return false;
 }
 
 /**

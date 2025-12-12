@@ -8,23 +8,29 @@ interface User {
   role: UserRole;
   email: string;
   department: string;
+  photoUrl?: string;
+  jobTitle?: string;
+  mobilePhone?: string;
+  officeLocation?: string;
 }
+
+export type AuthType = 'local' | 'azure' | null;
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  accessToken: string | null;
+  isLoading: boolean;
+  authType: AuthType; // Track how the user authenticated
 }
-
-// User ID: amx0142 (Engineer user)
+//se esta usando este usuario para las pruebas en transfer
+// User ID: amx014* (Engineer user)
 const initialState: AuthState = {
-  user: {
-    id: 'amx0142',
-    name: 'John Smith',
-    role: 'administrator',
-    email: 'john@company.com',
-    department: 'IT-Bolivia'
-  },
-  isAuthenticated: true,
+  user: null,
+  isAuthenticated: false,
+  accessToken: null,
+  isLoading: true, // true initially while checking authentication
+  authType: null,
 };
 
 const authSlice = createSlice({
@@ -35,9 +41,30 @@ const authSlice = createSlice({
       state.user = action.payload;
       state.isAuthenticated = true;
     },
+    setAccessToken: (state, action: PayloadAction<string>) => {
+      state.accessToken = action.payload;
+    },
+    setAuth: (state, action: PayloadAction<{ user: User; accessToken: string; authType: AuthType }>) => {
+      state.user = action.payload.user;
+      state.accessToken = action.payload.accessToken;
+      state.authType = action.payload.authType;
+      state.isAuthenticated = true;
+      state.isLoading = false;
+    },
+    setUserPhoto: (state, action: PayloadAction<string>) => {
+      if (state.user) {
+        state.user.photoUrl = action.payload;
+      }
+    },
     logout: (state) => {
       state.user = null;
+      state.accessToken = null;
       state.isAuthenticated = false;
+      state.isLoading = false;
+      state.authType = null;
+    },
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.isLoading = action.payload;
     },
     updateUserRole: (state, action: PayloadAction<UserRole>) => {
       if (state.user) {
@@ -47,5 +74,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUser, logout, updateUserRole } = authSlice.actions;
+export const { setUser, setAccessToken, setAuth, logout, setLoading, updateUserRole, setUserPhoto } = authSlice.actions;
 export default authSlice.reducer;

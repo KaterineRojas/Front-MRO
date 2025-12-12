@@ -1,17 +1,20 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { 
-  useAppDispatch, 
-  useAppSelector, 
-  logout, 
-  setSidebarOpen, 
-  toggleDarkMode, 
+import { useMsal, useIsAuthenticated } from '@azure/msal-react';
+import { authService } from '../services/authService';
+import {
+  useAppDispatch,
+  useAppSelector,
+  logout,
+  setSidebarOpen,
+  toggleDarkMode,
   setNotificationsOpen,
-  markAllAsRead 
+  markAllAsRead
 } from '../store';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from './ui/dropdown-menu';
 import { ScrollArea } from './ui/scroll-area';
 import {
   LayoutDashboard,
@@ -37,9 +40,11 @@ export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
-  
+  const { instance } = useMsal();
+
   // Get state from Redux
   const currentUser = useAppSelector((state) => state.auth.user);
+  const authType = useAppSelector((state) => state.auth.authType);
   const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
   const darkMode = useAppSelector((state) => state.ui.darkMode);
   const notificationsOpen = useAppSelector((state) => state.ui.notificationsOpen);
@@ -64,11 +69,34 @@ export function Layout() {
     }
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    alert('Logging out...');
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      console.log("Logging out user with authType:", authType);
+
+      dispatch(logout());
+      authService.removeToken();
+
+      // Only redirect to Azure logout if user authenticated with Azure
+      if (authType === 'azure') {
+        try { localStorage.setItem('mro_just_logged_out', 'true'); } catch {}
+
+        // Use MSAL's logoutRedirect to properly clear the cache
+        await instance.logoutRedirect({
+          postLogoutRedirectUri: `${window.location.origin}/login`,
+        });
+        return;
+      }
+
+      // For local auth, just navigate to login
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Error during logout:", error);
+      authService.removeToken();
+      dispatch(logout());
+      navigate("/login", { replace: true });
+    }
   };
+
 
   const getNotificationIcon = (type: 'info' | 'warning' | 'success' | 'error') => {
     switch (type) {
@@ -91,9 +119,9 @@ export function Layout() {
     { id: 'cyclecount', label: 'Cycle Count', icon: Calculator, path: '/cycle-count', disabled: false },
     { id: 'quickfind', label: 'Quick Find', icon: Search, path: '/quick-find', disabled: false },
     { id: 'managerequests', label: 'Manage Requests', icon: Package, path: '/manage-requests', disabled: false },
-    ...(['administrator', 'manager'].includes(currentUser.role) ? [{ id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests', disabled: false }] : []),
+    { id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests', disabled: false },
     { id: 'reports', label: 'Reports', icon: FileText, path: '/reports', disabled: false },
-    ...(currentUser.role === 'administrator' ? [{ id: 'users', label: 'User Management', icon: Users, path: '/users', disabled: false }] : []),
+    { id: 'users', label: 'User Management', icon: Users, path: '/users', disabled: false },
     // Engineer Modules - Nuevos módulos integrados
     { id: 'engineer-catalog', label: 'Engineer Catalog', icon: Package, path: '/engineer/catalog', disabled: false },
     { id: 'engineer-requests', label: 'Request Orders', icon: FileText, path: '/engineer/requests', disabled: false },
@@ -162,8 +190,13 @@ export function Layout() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full justify-start p-0 h-auto hover:bg-muted/50">
                   <div className="flex items-center space-x-2 w-full p-2 rounded">
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm relative">
-                      {currentUser.name.charAt(0)}
+                    <div className="relative">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={currentUser.photoUrl} alt={currentUser.name} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                          {currentUser.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       {unreadCount > 0 && (
                         <Badge
                           variant="destructive"
@@ -174,15 +207,43 @@ export function Layout() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm truncate">{currentUser.name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{currentUser.role}</p>
+                      <p className="text-sm font-medium truncate">{currentUser.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {currentUser.jobTitle || currentUser.role}
+                      </p>
                     </div>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="top" className="w-64 mb-2">
+              <DropdownMenuContent align="end" side="top" className="w-72 mb-2">
+                {/* User Info Section */}
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex items-start space-x-3 py-2">
+                    <Avatar className="w-12 h-12">
+                      <AvatarImage src={currentUser.photoUrl} alt={currentUser.name} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                        {currentUser.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <p className="text-sm font-semibold truncate">{currentUser.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{currentUser.email}</p>
+                      {currentUser.jobTitle && (
+                        <p className="text-xs text-muted-foreground truncate">{currentUser.jobTitle}</p>
+                      )}
+                      {currentUser.department && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {currentUser.department}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+
+                <DropdownMenuSeparator />
+
                 <DropdownMenuItem
-                  onClick={(e) => {
+                  onClick={(e: { preventDefault: () => void; }) => {
                     e.preventDefault();
                     handleNotificationsOpen(!notificationsOpen);
                   }}
@@ -201,7 +262,9 @@ export function Layout() {
                   <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
                 </DropdownMenuItem>
 
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log Out</span>
                 </DropdownMenuItem>

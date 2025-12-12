@@ -35,6 +35,8 @@ export interface CatalogItem {
 export interface CartItem {
   item: InventoryItem;
   quantity: number;
+  warehouseId?: string;
+  warehouseName?: string;
 }
 
 export interface Notification {
