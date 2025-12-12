@@ -14,11 +14,14 @@ interface User {
   officeLocation?: string;
 }
 
+export type AuthType = 'local' | 'azure' | null;
+
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   accessToken: string | null;
   isLoading: boolean;
+  authType: AuthType; // Track how the user authenticated
 }
 //se esta usando este usuario para las pruebas en transfer
 // User ID: amx014* (Engineer user)
@@ -27,6 +30,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   accessToken: null,
   isLoading: true, // true initially while checking authentication
+  authType: null,
 };
 
 const authSlice = createSlice({
@@ -40,9 +44,10 @@ const authSlice = createSlice({
     setAccessToken: (state, action: PayloadAction<string>) => {
       state.accessToken = action.payload;
     },
-    setAuth: (state, action: PayloadAction<{ user: User; accessToken: string }>) => {
+    setAuth: (state, action: PayloadAction<{ user: User; accessToken: string; authType: AuthType }>) => {
       state.user = action.payload.user;
       state.accessToken = action.payload.accessToken;
+      state.authType = action.payload.authType;
       state.isAuthenticated = true;
       state.isLoading = false;
     },
@@ -56,6 +61,7 @@ const authSlice = createSlice({
       state.accessToken = null;
       state.isAuthenticated = false;
       state.isLoading = false;
+      state.authType = null;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;

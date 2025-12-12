@@ -4,13 +4,156 @@ export interface AzureUser {
   email: string;
   name: string;
   objectId: string;
+  employeeId?: string;
 }
 
 export interface BackendUser {
-  userId: number;
+  id: number;
+  name: string;
   email: string;
-  role: 'administrator' | 'user' | 'purchasing' | 'auditor' | 'manager';
+  employeeId?: string;
+  role: number;
+  roleName: string;
+  authType: number;
+  departmentId?: number;
+  warehouseId?: number;
 }
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+export interface AzureLoginRequest {
+  azureToken: string;
+  userInfo: {
+    objectId: string;
+    email: string;
+    name: string;
+    employeeId?: string;
+  };
+}
+
+export interface AuthResponse {
+  token: string;
+  expiresIn: number;
+  user: BackendUser;
+}
+
+export const authService = {
+  /**
+   * Login local con email y contraseña
+   */
+  async loginLocal(data: LoginRequest): Promise<AuthResponse> {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al iniciar sesión');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Registro de nuevo usuario
+   */
+  async register(data: RegisterRequest): Promise<AuthResponse> {
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al registrar usuario');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Login con Azure AD
+   */
+  async loginWithAzure(data: AzureLoginRequest): Promise<AuthResponse> {
+    const response = await fetch(`${API_URL}/auth/azure-login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al iniciar sesión con Azure');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Obtener información del usuario actual
+   */
+  async getCurrentUser(token: string): Promise<BackendUser> {
+    const response = await fetch(`${API_URL}/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al obtener información del usuario');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Guardar token en localStorage
+   */
+  saveToken(token: string): void {
+    localStorage.setItem('auth_token', token);
+  },
+
+  /**
+   * Obtener token de localStorage
+   */
+  getToken(): string | null {
+    return localStorage.getItem('auth_token');
+  },
+
+  /**
+   * Eliminar token de localStorage
+   */
+  removeToken(): void {
+    localStorage.removeItem('auth_token');
+  },
+
+  /**
+   * Verificar si el usuario está autenticado
+   */
+  isAuthenticated(): boolean {
+    return !!this.getToken();
+  },
+};
 
 /**
  * Test backend authentication endpoints
@@ -43,23 +186,23 @@ export async function testProtectedEndpoint(accessToken: string): Promise<any> {
 
 /**
  * Create or get user from backend based on Azure AD authentication
- * This can be implemented later when backend has a user sync endpoint
  */
 export async function syncUserWithBackend(
   accessToken: string,
   azureUser: AzureUser
 ): Promise<BackendUser> {
-  // TODO: Implement backend endpoint to sync/create user
-  // For now, return a mock response
-  console.log('Syncing user with backend:', azureUser);
+  const response = await authService.loginWithAzure({
+    azureToken: accessToken,
+    userInfo: {
+      objectId: azureUser.objectId,
+      email: azureUser.email,
+      name: azureUser.name,
+      employeeId: azureUser.employeeId,
+    },
+  });
 
-  // This would call something like:
-  // POST /api/auth/sync-user
-  // with the Azure user info and token
+  // Guardar token
+  authService.saveToken(response.token);
 
-  return {
-    userId: 1,
-    email: azureUser.email,
-    role: 'user', // Default role, backend should determine this
-  };
+  return response.user;
 }
