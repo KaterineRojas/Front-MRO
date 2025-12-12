@@ -27,7 +27,7 @@ interface Props {
   handleSelectReturnItem: (requestId: number, itemId: number) => void;
   handleReturnQuantityChange: (requestId: number, itemId: number, quantity: number) => void;
   getItemCondition: (requestId: number, itemId: number) => string;
-  handleOpenConditionDialog: (requestId: number, itemId: number, isKit: boolean, kitItemId?: number) => void;
+  handleOpenConditionDialog: (requestId: number, itemId: number, isKit: boolean, kitItemId?: number, occurrences?: Array<{requestId: number; itemId: number}>) => void;
   areAllRegularItemsSelected: (requestId: number, items: any[]) => boolean;
   handleSelectAllRegularItems: (request: LoanRequest, checked: boolean) => void;
   hasSelectedKitItems: (requestId: number, itemId: number) => boolean;
@@ -353,7 +353,7 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                                       <button
                                         onClick={() => {
                                           const first = occs[0];
-                                          if (first) props.handleOpenConditionDialog(first.requestId, first.itemId, false);
+                                          if (first) props.handleOpenConditionDialog(first.requestId, first.itemId, false, undefined, occs);
                                         }}
                                         className="px-3 py-1 bg-green-100 border border-green-300 rounded text-sm hover:bg-green-200"
                                       >

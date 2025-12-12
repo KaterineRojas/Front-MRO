@@ -102,6 +102,9 @@ export async function getEngineerReturns(engineerId: string, warehouseId: number
             const requestsMap = new Map<string, Partial<LoanRequest> & { items: any[] }>();
 
             holding.items.forEach((item: EngineerHoldingItem) => {
+                // Guardar el itemId del catálogo (consistente para todas las sources)
+                const catalogItemId = item.itemId;
+                
                 item.sources.forEach((source: HoldingSource) => {
                     const requestNumber = source.sourceRequestNumber;
                     const dateReceived = source.dateReceived;
@@ -133,7 +136,7 @@ export async function getEngineerReturns(engineerId: string, warehouseId: number
                     const loanRequest = requestsMap.get(requestNumber)!;
                 
                     loanRequest.items.push({
-                        id: item.itemId,
+                        id: catalogItemId, // ← Usar el itemId del catálogo (consistente)
                         sku: item.sku, 
                         name: item.name, 
                         articleDescription: item.description || '',
