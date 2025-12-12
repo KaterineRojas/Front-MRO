@@ -69,7 +69,7 @@ export default function RequestsTable({
             <th className="h-12 px-8 align-middle font-medium">Requested By</th>
             <th className="h-12 px-8 align-middle font-medium">Department</th>
             <th className="h-12 px-8 align-middle font-medium">Project</th>
-            <th className="h-12 px-8 align-middle font-medium">Request Date</th>
+            {/* <th className="h-12 px-8 align-middle font-medium">Request Date</th> */}
             <th className="h-12 px-8 align-middle font-medium">Timeline</th>
             <th className="h-12 px-8 align-middle font-medium">Actions</th>
           </tr>
@@ -144,7 +144,7 @@ export default function RequestsTable({
                   </td>
 
                   {/* DATE */}
-                  <td className="px-0 align-middle">
+                  {/* <td className="px-0 align-middle">
                     <div>
                       <p className="text-sm">{formatDate(request.createdAt)}</p>
                       {request.expectedReturnDate && (
@@ -153,20 +153,21 @@ export default function RequestsTable({
                         </p>
                       )}
                     </div>
-                  </td>
+                  </td> */}
 
                   {/* TIMELINE COLUMN (Modified) */}
                   <td className="px-0 align-middle">
                     <div className="flex flex-col gap-0.5">
                       {/* Created Date */}
                       <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                        <span className="w-4">In:</span>
+                        <span className="w-4"> In:</span>
                         <span>{formatDate(request.createdAt)}</span>
                       </div>
 
                       {/* Return Date (Highlighted) */}
                       {request.expectedReturnDate && (
-                        <div className={`flex items-center gap-3.5 text-xs ${getTimelineColor(request.createdAt, request.expectedReturnDate)}`}>
+                        /**${getTimelineColor(request.createdAt, request.expectedReturnDate)}    for highlighting dates */
+                        <div className={`flex items-center gap-3.5 text-xs `}>
                           <span className="w-4">Due:</span>
                           <span>{formatDate(request.expectedReturnDate)}</span>
                         </div>

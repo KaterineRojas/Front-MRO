@@ -86,7 +86,6 @@ export function RequestManagement() {
 
     return () => controller.abort(); // Cleanup
 
-    // Agregamos dependencias si quieres que se refresque al cambiar de página
   }, [pagination.pageNumber, pagination.pageSize]);
 
 
@@ -106,10 +105,6 @@ export function RequestManagement() {
   // corregir esto cuando el backend devuelva type
   // type: 'purchase' | 'purchase-on-site' | 'transfer-on-site';
 
-
-
-  // ... inside your component
-
   const filteredRequests = useMemo(() => {
     return requests.filter((request) => {
 
@@ -124,7 +119,7 @@ export function RequestManagement() {
       }
 
       // ------------------------------------------------------------
-      // 2. TYPE FILTER (✅ NEW)
+      // 2. TYPE FILTER 
       // ------------------------------------------------------------
       // We compare strings to numbers safely using toString()
       // Assuming 'typeFilter' is state holding "all", "1", "2", etc.
@@ -157,7 +152,7 @@ export function RequestManagement() {
         item.name.toLowerCase().includes(term)
       );
     });
-  }, [requests, activeTab, searchTerm, typeFilter]); // ✅ Added typeFilter dependency
+  }, [requests, activeTab, searchTerm, typeFilter]); 
 
 
 
@@ -239,16 +234,9 @@ export function RequestManagement() {
 
 
   const pendingCount = requests.filter(r => r.status === 'Pending').length;
-  const approvedCount = requests.filter(r => r.status === 'approved').length;
-  const rejectedCount = requests.filter(r => r.status === 'rejected').length;
-  const completedCount = requests.filter(r => r.status === 'completed').length;
-  // const urgentCount = requests.filter(r => r.status === 'pending' && r.urgency === 'urgent').length;
+  const approvedCount = requests.filter(r => r.status === 'Approved').length;
+  const rejectedCount = requests.filter(r => r.status === 'Rejected').length;
 
-  const calculateTotalCost = (request: Request) => {
-    return request.items.reduce((total, item) => {
-      return total + ((item.estimatedCost || 0) * item.quantity);
-    }, 0);
-  };
 
   return (
     <div className="space-y-6">
@@ -259,21 +247,6 @@ export function RequestManagement() {
             Review and approve inventory requests from team members
           </p>
         </div>
-
-        {/* pending items alert */}
-        {/* {pendingCount > 0 && (
-          <div className="flex items-center space-x-2">
-            <AlertTriangle className="h-4 w-4 text-orange-600" />
-            <span className="text-sm">
-              {pendingCount} pending request{pendingCount !== 1 ? 's' : ''}
-              {urgentCount > 0 && (
-                <span className="text-red-600 ml-1">
-                  ({urgentCount} urgent)
-                </span>
-              )}
-            </span>
-          </div>
-        )} */}
       </div>
 
       {/* Summary Cards */}
@@ -284,6 +257,7 @@ export function RequestManagement() {
           value={pendingCount}
           description='Need to Review'
           mainColor='yellow'
+          loading={loading}
         />
 
         <CardRequest
@@ -292,6 +266,7 @@ export function RequestManagement() {
           value={approvedCount}
           description='Approved'
           mainColor='green'
+          loading={loading}
         />
 
         <CardRequest
@@ -300,6 +275,7 @@ export function RequestManagement() {
           value={rejectedCount}
           description='Rejected'
           mainColor='red'
+          loading={loading}
         />
       </div>
 
