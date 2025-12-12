@@ -1,5 +1,17 @@
 import { useState, useEffect } from 'react';
-import { X, User, Building, Briefcase, Calendar } from 'lucide-react';
+import {
+    X,
+    Loader2,
+    Hash,
+    FileText,
+    User,
+    Building,
+    Briefcase,
+    StickyNote,
+    Package,
+    AlertCircle
+} from 'lucide-react';
+import { getTypeBadge } from '../../inventory/components/RequestBadges.tsx';
 import { useSelector } from 'react-redux';
 import { LoanRequest } from '../types/loanTypes.ts';
 
@@ -7,6 +19,7 @@ interface RequestActionDialogProps {
     show: boolean;
     variant: 'approve' | 'reject';
     request: LoanRequest | null;
+    loading: boolean;
     onCancel: () => void;
     onConfirm: (reason: string) => void;
 }
@@ -15,160 +28,185 @@ export default function RequestModal({
     show,
     variant,
     request,
+    loading,
     onCancel,
     onConfirm,
 }: RequestActionDialogProps) {
 
     const darkMode = useSelector((state: any) => state.ui.darkMode);
+
     const [reason, setReason] = useState("");
     const isReject = variant === 'reject';
 
     const title = isReject ? "Reject Request" : "Approve Request";
-
     const description = isReject
-        ? `You are about to reject request #${request?.requestNumber}. This action cannot be undone.`
-        : `Are you sure you want to approve request #${request?.requestNumber}?`;
+        ? "Please provide a reason for rejecting this request."
+        : "Are you sure you want to approve this request?";
 
     const confirmText = isReject ? "Reject Request" : "Approve Request";
 
-    const confirmButtonClass = isReject
-        ? "bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
-        : "bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600";
+    const confirmButtonBaseClass = isReject
+        ? "bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+        : "bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600";
 
-    const isConfirmDisabled = isReject && reason.trim() === "";
+    const isConfirmDisabled = loading || (isReject && reason.trim() === "");
+
+    // Helper for label styling with icons
+    const LabelWithIcon = ({ icon: Icon, children }: { icon: any, children: React.ReactNode }) => (
+        <label className="flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <Icon className="w-4 h-4" />
+            {children}
+        </label>
+    );
+
 
     useEffect(() => {
-        if (show) {
+        if (!show) {
             setReason("");
         }
     }, [show]);
+
 
     if (!show || !request) {
         return null;
     }
 
-    const formattedDate = new Date(request.createdAt).toLocaleDateString();
-
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/60 backdrop-blur-[2px] transition-opacity"
-                onClick={onCancel}
+                className="fixed inset-0 bg-black/60 backdrop-blur-[3px]"
+                onClick={loading ? undefined : onCancel}
             ></div>
 
-            {/* Modal Content */}
-            <div className="relative w-full max-w-2xl p-6 bg-white rounded-xl shadow-2xl dark:bg-[#121212] border border-gray-200 dark:border-gray-800 transform transition-all">
+            <div className="relative w-full max-w-3xl p-6 bg-white rounded-lg shadow-xl dark:bg-gray-950">
 
-                {/* Header */}
-                <div className="mb-6 flex justify-between items-start">
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                            {title}
-                        </h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            {description}
-                        </p>
-                    </div>
-                    <button
-                        onClick={onCancel}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    >
-                        <X className="h-5 w-5" />
-                    </button>
+                <div className="mb-4">
+                    <h2 className="text-xl text-center md:text-left font-semibold text-gray-900 dark:text-gray-100">
+                        {title}
+                    </h2>
+                    <p className="text-sm text-center md:text-left text-gray-500 dark:text-gray-400">
+                        {description}
+                    </p>
+
+                    {!loading && (
+                        <X className='h-6 w-6 absolute right-0 top-0 m-4 text-gray-400 hover:text-red-500 hover:rotate-90 transition duration-300 cursor-pointer'
+                            onClick={onCancel}
+                        />
+                    )}
                 </div>
 
-                {/* Resumen de la Solicitud */}
-                <div className="mb-6 bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-100 dark:border-gray-800">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Cuerpo con Detalles */}
+                <div className="space-y-4">
+                    <div className="rounded-md border border-gray-200 dark:border-gray-700 p-4 space-y-4">
 
-                        {/* Requester */}
-                        <div className="flex items-start gap-3">
-                            <User className="w-4 h-4 text-gray-400 mt-1" />
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <p className="text-xs font-bold text-gray-500 uppercase">Requested By</p>
-                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{request.requesterName}</p>
-                                <p className="text-xs text-gray-500">{request.requesterId}</p>
+                                <LabelWithIcon icon={Hash}>Request Number</LabelWithIcon>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 font-mono">{request.requestNumber}</p>
+                            </div>
+                            <div>
+                                <LabelWithIcon icon={FileText}>Type</LabelWithIcon>
+                                {getTypeBadge(request.typeRequest, darkMode ? 'outline' : 'soft')}
+                            </div>
+                            <div className='overflow-x-auto'>
+                                <LabelWithIcon icon={User}>Requested By</LabelWithIcon>
+                                <p className="text-sm text-gray-900 dark:text-gray-100">{request.requesterName}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{request.requesterId}</p>
+                            </div>
+                            <div>
+                                <LabelWithIcon icon={Building}>Department</LabelWithIcon>
+                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.departmentId}</p>
                             </div>
                         </div>
 
-                        {/* Department */}
-                        <div className="flex items-start gap-3">
-                            <Building className="w-4 h-4 text-gray-400 mt-1" />
+                        {request.projectId && !isReject && (
                             <div>
-                                <p className="text-xs font-bold text-gray-500 uppercase">Department</p>
-                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{request.departmentId}</p>
-                            </div>
-                        </div>
-
-                        {/* Project */}
-                        {request.projectId && (
-                            <div className="flex items-start gap-3">
-                                <Briefcase className="w-4 h-4 text-gray-400 mt-1" />
-                                <div>
-                                    <p className="text-xs font-bold text-gray-500 uppercase">Project</p>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{request.projectId}</p>
-                                </div>
+                                <LabelWithIcon icon={Briefcase}>Project</LabelWithIcon>
+                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.projectId}</p>
                             </div>
                         )}
 
-                        {/* Date */}
-                        <div className="flex items-start gap-3">
-                            <Calendar className="w-4 h-4 text-gray-400 mt-1" />
-                            <div>
-                                <p className="text-xs font-bold text-gray-500 uppercase">Date</p>
-                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{formattedDate}</p>
+                        {!isReject && request.notes && (
+                            <div className='max-h-[150px] overflow-auto'>
+                                <LabelWithIcon icon={StickyNote}>Notes / Reason</LabelWithIcon>
+                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.notes}</p>
+                            </div>
+                        )}
+
+                        <div>
+                            <LabelWithIcon icon={Package}>Items ({request.items.length})</LabelWithIcon>
+                            <div className="mt-2 grid gap-4 grid-cols-1 md:grid-cols-2 max-h-[200px] overflow-auto">
+                                {request.items.map((item) => (
+                                    <div key={item.id} className="flex items-start space-x-3 p-2 border border-gray-200 dark:border-gray-700 rounded">
+                                        <img
+                                            src={item.imageUrl || 'https://via.placeholder.com/150'}
+                                            alt={item.name}
+                                            className="w-16 h-16 object-cover rounded"
+                                        />
+                                        <div className="flex-1">
+                                            <p className="font-mono text-sm text-gray-700 dark:text-gray-300">{item.sku}</p>
+                                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{item.name}</p>
+                                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                <span className="text-xs font-medium bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-200">
+                                                    {item.quantityRequested} units
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
+
+                    {isReject && (
+                        <div>
+                            <label htmlFor="rejectionReason" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <AlertCircle className="w-4 h-4 text-red-500" />
+                                Rejection Reason <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                                id="rejectionReason"
+                                rows={3}
+                                disabled={loading}
+                                className={`mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 
+                                    shadow-sm bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 
+                                    p-2 max-h-[100px]
+                                    focus:border-red-500 focus:ring-red-600 focus:ring-1 focus:outline-none
+                                    ${loading ? 'opacity-50 cursor-not-allowed' : ''}
+                                `}
+
+                                placeholder="Explain why this request is being rejected..."
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                            />
+                        </div>
+                    )}
+
+                    <div className="flex justify-end space-x-2 pt-2">
+                        <button
+                            type="button"
+                            disabled={loading}
+                            className={`rounded-md text-sm font-medium h-10 px-4 py-2 border border-gray-300 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 transition-colors
+                                ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}
+                            `}
+                            onClick={onCancel}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            disabled={isConfirmDisabled}
+                            className={`inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 transition-colors text-white
+                                ${confirmButtonBaseClass}
+                                ${isConfirmDisabled ? 'opacity-50 cursor-not-allowed' : ''}
+                            `}
+                            onClick={() => onConfirm(reason)}
+                        >
+                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {loading ? 'Processing...' : confirmText}
+                        </button>
+                    </div>
                 </div>
-
-                {/* Área de Texto  */}
-                <div className="mb-6">
-                    <label
-                        htmlFor="action-reason"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                    >
-                        {isReject ? "Rejection Reason (Required)" : "Approval Notes (Optional)"}
-                    </label>
-                    <textarea
-                        id="action-reason"
-                        rows={3}
-                        className={`w-full rounded-lg border shadow-sm focus:ring-2 focus:ring-opacity-50 text-sm p-3
-              ${isReject && !reason.trim()
-                                ? 'border-red-300 focus:border-red-500 focus:ring-red-200'
-                                : 'border-gray-300 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-200'}
-              bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100
-            `}
-                        placeholder={isReject ? "Explain why this request is being rejected..." : "Add any comments for the record..."}
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                    />
-                </div>
-
-                {/* Footer Buttons */}
-                <div className="flex justify-end gap-3 pt-2">
-                    <button
-                        type="button"
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors"
-                        onClick={onCancel}
-                    >
-                        Cancel
-                    </button>
-
-                    <button
-                        type="button"
-                        className={`px-4 py-2 text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2
-              ${confirmButtonClass}
-              ${isConfirmDisabled ? 'opacity-50 cursor-not-allowed' : ''}
-            `}
-                        onClick={() => onConfirm(reason)} 
-                        disabled={isConfirmDisabled}
-                    >
-                        {confirmText}
-                    </button>
-                </div>
-
             </div>
         </div>
     );

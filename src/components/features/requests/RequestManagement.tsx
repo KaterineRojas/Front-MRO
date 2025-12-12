@@ -24,6 +24,7 @@ export function RequestManagement() {
   const [modalType, setModalType] = useState('approve')
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [loadingModal, setLoadingModal] = useState(false)
   const WAREHOUSE_ID = 1;
   const currentEmployeeId = "amx0142";
 
@@ -144,6 +145,7 @@ const filteredRequests = useMemo(() => {
 
   const handleApprove = async () => {
     if (!selectedRequest) return;
+    setLoadingModal(true)
 
     try {
 
@@ -166,6 +168,8 @@ const filteredRequests = useMemo(() => {
     } catch (error) {
       console.error("Error approving request:", error);
       alert("No se pudo aprobar la solicitud. Revisa la consola.");
+    }finally{
+    setLoadingModal(false)
     }
   };
 
@@ -176,10 +180,12 @@ const filteredRequests = useMemo(() => {
     setSelectedRequest(null);
   };
 
-  const handleReject = async () => {
+  const handleReject = async (reason: string) => {
     if (!selectedRequest) return;
+    setLoadingModal(true)
 
-    if (!rejectNotes.trim()) {
+
+    if (!reason.trim()) {
       alert("Please provide a rejection reason.");
       return;
     }
@@ -188,7 +194,7 @@ const filteredRequests = useMemo(() => {
       await rejectLoanRequest(
         selectedRequest.requestNumber,
         currentEmployeeId,
-        rejectNotes
+        reason
       );
 
       setRequests(prev => prev.map(req =>
@@ -201,12 +207,13 @@ const filteredRequests = useMemo(() => {
       ));
 
       setSelectedRequest(null);
-      setRejectNotes('');
       // toast.success("Request rejected");
 
     } catch (error) {
       console.error("Error rejecting request:", error);
       alert("Failed to reject request.");
+    }finally{
+    setLoadingModal(false)
     }
   };
 
@@ -343,6 +350,7 @@ const filteredRequests = useMemo(() => {
         onConfirm={modalType === 'approve' ? handleApprove : handleReject}
         onCancel={handleCancelApprove}
         variant={modalType === 'approve' ? 'approve' : 'reject'}
+        loading={loadingModal}
       />
 
     </div>
