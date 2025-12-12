@@ -368,7 +368,6 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
         // --- 3. CONSTRUIR EL PAYLOAD PARA EL ENDPOINT DE INVENTARIO ---
         const itemsPayload: ReturnItemPayload[] = [];
         let hasAnyItemToReturn = false;
-        const itemsWithZeroQuantity: string[] = [];
 
         regularItems.forEach(item => {
             const itemKey = `${validatedRequest.id}-${item.id}`; 
@@ -386,22 +385,42 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
                 // Verificar si la cantidad es 0
                 if (returnQty === 0) {
                     console.log(`⚠️ Item ${item.name} has quantity 0, skipping...`);
-                    itemsWithZeroQuantity.push(item.name || `Item ${item.id}`);
                     return; // Saltar este item
                 }
                 
-                // Usar condición guardada o default dinámico basado en returnQty
+                // Usar condición guardada para determinar la PROPORCIÓN de cada tipo
                 const conditionText = itemConditions[itemKey] || `Good: ${returnQty}`;
                 
-                // Extraer cantidades de la cadena de condición guardada
+                // Extraer cantidades de la condición (valores totales agregados)
                 const goodMatch = conditionText.match(/Good: (\d+)/);
                 const revisionMatch = conditionText.match(/Revision: (\d+)/);
                 const lostMatch = conditionText.match(/Lost: (\d+)/);
 
-                // Mapeo: Good -> Returned, Revision -> Damaged, Lost -> Lost
-                const quantityReturned = goodMatch ? parseInt(goodMatch[1]) : 0;
-                const quantityDamaged = revisionMatch ? parseInt(revisionMatch[1]) : 0;
-                const quantityLost = lostMatch ? parseInt(lostMatch[1]) : 0;
+                const condGood = goodMatch ? parseInt(goodMatch[1]) : 0;
+                const condRevision = revisionMatch ? parseInt(revisionMatch[1]) : 0;
+                const condLost = lostMatch ? parseInt(lostMatch[1]) : 0;
+                const condTotal = condGood + condRevision + condLost;
+
+                // Calcular cantidades proporcionalmente según returnQty de esta occurrence
+                let quantityReturned = 0;
+                let quantityDamaged = 0;
+                let quantityLost = 0;
+
+                if (condTotal > 0) {
+                    // Distribuir proporcionalmente
+                    quantityReturned = Math.round((condGood / condTotal) * returnQty);
+                    quantityDamaged = Math.round((condRevision / condTotal) * returnQty);
+                    quantityLost = Math.round((condLost / condTotal) * returnQty);
+                    
+                    // Ajustar por redondeo para que sume exactamente returnQty
+                    const total = quantityReturned + quantityDamaged + quantityLost;
+                    if (total !== returnQty) {
+                        quantityReturned += (returnQty - total);
+                    }
+                } else {
+                    // Si no hay condición, asumir todo Good
+                    quantityReturned = returnQty;
+                }
                 
                 // Asegurar que solo agregamos si hay algo que devolver
                 if (quantityReturned + quantityDamaged + quantityLost > 0) {
