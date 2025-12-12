@@ -27,6 +27,13 @@ export function RequestManagement() {
   const [loadingModal, setLoadingModal] = useState(false)
   const WAREHOUSE_ID = 1;
   const currentEmployeeId = "amx0142";
+  const requestTypeOptions = [
+    { value: 'all', label: 'All Types' },
+    { value: '1', label: 'Loan Request' },
+    { value: '2', label: 'Purchase' },
+    { value: '3', label: 'Purchase On Site' },
+    { value: '4', label: 'Transfer On Site' },
+  ];
 
 
   const [pagination, setPagination] = useState({
@@ -100,45 +107,57 @@ export function RequestManagement() {
   // type: 'purchase' | 'purchase-on-site' | 'transfer-on-site';
 
 
-const filteredRequests = useMemo(() => {
-  return requests.filter((request) => {
-    
-    // ------------------------------------------------------------
-    // 1. STATUS FILTER
-    // ---------------------------------------------------------
-    // We convert everything to lowercase to be safe (e.g., "Pending" matches "pending")
-    const currentStatus = request.status?.toLowerCase() || '';
-    const targetStatus = activeTab?.toLowerCase() || '';
 
-    // If the tab is NOT 'all', the status must match exactly.
-    // (e.g. Tab 'pending' only shows requests with status 'pending')
-    if (targetStatus !== 'all' && currentStatus !== targetStatus) {
-      return false;
-    }
+  // ... inside your component
 
-    // ------------------------------------------------------------
-    // 2. SEARCH FILTER
-    // ---------------------------------------------------------
-    // If there is no search term, we keep the item (since status matched)
-    if (!searchTerm) return true;
+  const filteredRequests = useMemo(() => {
+    return requests.filter((request) => {
 
-    const term = searchTerm.toLowerCase();
+      // ------------------------------------------------------------
+      // 1. STATUS FILTER
+      // ------------------------------------------------------------
+      const currentStatus = request.status?.toLowerCase() || '';
+      const targetStatus = activeTab?.toLowerCase() || 'all';
 
-    // Check top-level fields
-    const matchesTopLevel = 
-      request.requestNumber.toLowerCase().includes(term) ||
-      request.requesterName.toLowerCase().includes(term) ||
-      (request.departmentId && request.departmentId.toLowerCase().includes(term));
+      if (targetStatus !== 'all' && currentStatus !== targetStatus) {
+        return false;
+      }
 
-    if (matchesTopLevel) return true;
+      // ------------------------------------------------------------
+      // 2. TYPE FILTER (✅ NEW)
+      // ------------------------------------------------------------
+      // We compare strings to numbers safely using toString()
+      // Assuming 'typeFilter' is state holding "all", "1", "2", etc.
+      if (typeFilter !== 'all') {
+        // Backend sends number (e.g., 1), typeFilter is likely string (e.g., "1")
+        if (request.typeRequest.toString() !== typeFilter) {
+          return false;
+        }
+      }
 
-    return request.items.some((item) => 
-      item.sku.toLowerCase().includes(term) ||
-      item.name.toLowerCase().includes(term)
-    );
-  });
-}, [requests, activeTab, searchTerm]);
+      // ------------------------------------------------------------
+      // 3. SEARCH FILTER
+      // ------------------------------------------------------------
+      if (!searchTerm) return true;
 
+      const term = searchTerm.toLowerCase();
+
+      // Check top-level fields
+      const matchesTopLevel =
+        request.requestNumber.toLowerCase().includes(term) ||
+        request.requesterName.toLowerCase().includes(term) ||
+        (request.departmentId && request.departmentId.toLowerCase().includes(term)) ||
+        (request.workOrderId && request.workOrderId.toLowerCase().includes(term)); // Added WO search too
+
+      if (matchesTopLevel) return true;
+
+      // Check items
+      return request.items.some((item) =>
+        item.sku.toLowerCase().includes(term) ||
+        item.name.toLowerCase().includes(term)
+      );
+    });
+  }, [requests, activeTab, searchTerm, typeFilter]); // ✅ Added typeFilter dependency
 
 
 
@@ -168,8 +187,8 @@ const filteredRequests = useMemo(() => {
     } catch (error) {
       console.error("Error approving request:", error);
       alert("No se pudo aprobar la solicitud. Revisa la consola.");
-    }finally{
-    setLoadingModal(false)
+    } finally {
+      setLoadingModal(false)
     }
   };
 
@@ -212,8 +231,8 @@ const filteredRequests = useMemo(() => {
     } catch (error) {
       console.error("Error rejecting request:", error);
       alert("Failed to reject request.");
-    }finally{
-    setLoadingModal(false)
+    } finally {
+      setLoadingModal(false)
     }
   };
 
@@ -312,8 +331,7 @@ const filteredRequests = useMemo(() => {
           setSearchQuery={setSearchTerm}
           selectedType={typeFilter}
           setSelectedType={setTypeFilter}
-          // insert new type options here
-          typesOptions={[/*requestTypeOptions*/]}
+          typesOptions={requestTypeOptions}
         />
 
         {/** dinamic data table */}
