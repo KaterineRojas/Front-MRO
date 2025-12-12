@@ -1,6 +1,7 @@
 import { API_URL } from "../../../../url";
 import { store } from "../../../../store/store";
 
+
 // Types
 export interface Transfer {
   id: string;
@@ -56,6 +57,7 @@ export interface User {
 
 export async function getTransfersIncoming(): Promise<Transfer[]> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const recipientId = getCurrentUserId();
     
     const url = `${API_URL}/transfer-requests?recipientId=${recipientId}&status=Pending&pageNumber=1&pageSize=20`;
@@ -64,6 +66,7 @@ export async function getTransfersIncoming(): Promise<Transfer[]> {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       },
     });
     
@@ -83,8 +86,6 @@ export async function getTransfersIncoming(): Promise<Transfer[]> {
       return [];
     }
 
-    const currentUserId = getCurrentUserId();
-    
     const transfers: Transfer[] = responseData.data.map((item: any) => {
       const type = 'incoming';
       return {
@@ -124,6 +125,7 @@ export async function getTransfersIncoming(): Promise<Transfer[]> {
  */
 export async function getTransfersOutgoing(): Promise<Transfer[]> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const senderId = getCurrentUserId();
     
     const url = `${API_URL}/transfer-requests?senderId=${senderId}&status=PENDING&pageNumber=1&pageSize=20`;
@@ -132,6 +134,7 @@ export async function getTransfersOutgoing(): Promise<Transfer[]> {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       },
     });
 
@@ -151,8 +154,6 @@ export async function getTransfersOutgoing(): Promise<Transfer[]> {
       return [];
     }
 
-    const currentUserId = getCurrentUserId();
-    
     const transfers: Transfer[] = responseData.data.map((item: any) => {
       const type = 'outgoing';
       return {
@@ -192,12 +193,14 @@ export async function getTransfersOutgoing(): Promise<Transfer[]> {
  */
 export async function getTransferId(transferId: string): Promise<Transfer> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const url = `${API_URL}/transfer-requests/${transferId}`;
     
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       },
     });
 
@@ -255,12 +258,13 @@ function mapBackendStatusToLocal(backendStatus: string): 'pending' | 'completed'
 }
 
 /**
- * Obtener ID del usuario actualmente logueado desde authSlice
+ * Obtener ID del usuario actualmente logueado desde userSlice (engineer module)
  */
 function getCurrentUserId(): string {
   try {
     const state = store.getState();
-    const userId = state.auth?.user?.id;
+    // Obtener del engineerUser slice (userSlice)
+    const userId = (state as any).engineerUser?.currentUser?.id;
     
     if (!userId) {
       const localStorageId = localStorage.getItem('userId');
@@ -288,6 +292,7 @@ export async function getInventoryTransfer(
   warehouseId: string
 ): Promise<InventoryItem[]> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const url = `${API_URL}/engineer-holdings/${engineerId}?warehouseId=${warehouseId}`;
     console.log(`Fetching transfer inventory for engineer: ${engineerId}, warehouse: ${warehouseId}`);
     console.log(`API URL: ${url}`);
@@ -296,8 +301,7 @@ export async function getInventoryTransfer(
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        // Si tu API requiere autenticación, agrega aquí el token:
-        // "Authorization": `Bearer ${token}`
+        "Authorization": `Bearer ${token}`
       },
     });
 
@@ -369,6 +373,7 @@ export async function createTransfer(data: {
   notes?: string;
 }): Promise<{ success: boolean; transferId: string }> {
   try {
+    const token = store.getState().auth.accessToken as string;
     // Get current user ID from Redux
     const senderId = getCurrentUserId();
     
@@ -398,8 +403,7 @@ export async function createTransfer(data: {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Si tu backend requiere autenticación, agrega aquí el token:
-        // "Authorization": `Bearer ${token}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(payload)
     });
@@ -446,6 +450,7 @@ export async function acceptTransfer(
   workOrderId: string,
   notes?: string
 ): Promise<any> {
+  const token = store.getState().auth.accessToken as string;
   if (!recipientId) {
     throw new Error('Recipient ID is required to accept the transfer.');
   }
@@ -475,8 +480,7 @@ export async function acceptTransfer(
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
-      // Add authentication token here if needed
-      // "Authorization": `Bearer ${token}`,
+      "Authorization": `Bearer ${token}`
     },
     body: JSON.stringify(payload)
   });
@@ -499,12 +503,14 @@ export async function rejectTransfer(
   transferId: string
 ): Promise<{ success: boolean }> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const url = `${API_URL}/transfer-requests/${transferId}`;
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
     });
 
@@ -530,6 +536,7 @@ export async function rejectTransfer(
  */
 export async function deleteTransfer(transferId: string): Promise<{ success: boolean; message: string }> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const url = `${API_URL}/transfer-requests/${transferId}`;
     console.log('Deleting transfer from URL:', url);
     
@@ -537,8 +544,7 @@ export async function deleteTransfer(transferId: string): Promise<{ success: boo
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-        // Si tu backend requiere autenticación, aquí se añade el token:
-        // "Authorization": `Bearer ${token}`
+        "Authorization": `Bearer ${token}`
       },
     });
 

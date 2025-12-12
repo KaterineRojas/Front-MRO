@@ -535,6 +535,7 @@ function mapBackendStatusToLocal(backendStatus: string): 'pending' | 'completed'
  */
 export async function getTransfersOutgoing(): Promise<Transfer[]> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const senderId = getCurrentUserId();
     
     const url = `${API_URL}/transfer-requests?senderId=${senderId}&pageNumber=1&pageSize=20`;
@@ -543,6 +544,7 @@ export async function getTransfersOutgoing(): Promise<Transfer[]> {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       },
     });
 

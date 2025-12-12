@@ -1,6 +1,7 @@
 // Simula las llamadas al backend para el Catálogo de Inventario
 
 import { apiCall } from '../enginner/services/errorHandler';
+import { store } from "../../../store/store";
 
 export interface CatalogItem {
   itemId: number;
