@@ -98,9 +98,9 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
     const loadItems = async () => {
       if (selectedWarehouse) {
         try {
-          // Get current user ID from Redux
+          // Get current user employeeId from authSlice
           const state = store.getState();
-          const currentUserId = state.auth?.user?.id || '';
+          const currentUserId = (state as any).auth?.user?.employeeId || '';
           
           if (!currentUserId) {
             toast.error('Unable to load user information');

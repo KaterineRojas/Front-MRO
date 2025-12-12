@@ -5,6 +5,7 @@ export interface User {
   name: string;
   email: string;
   department: string;
+  employeeId?: string;
 }
 
 export interface InventoryItem {

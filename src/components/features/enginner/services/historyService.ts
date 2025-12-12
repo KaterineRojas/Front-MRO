@@ -498,19 +498,19 @@ export const getHistoryStats = async (): Promise<{
 };
 
 /**
- * Obtener ID del usuario actualmente logueado desde authSlice
+ * Obtener employeeId del usuario actualmente logueado desde authSlice
  */
 function getCurrentUserId(): string {
   try {
     const state = store.getState();
-    const userId = state.auth?.user?.id;
+    const employeeId = state.auth?.user?.employeeId;
     
-    if (!userId) {
+    if (!employeeId) {
       const localStorageId = localStorage.getItem('userId');
       return localStorageId || '';
     }
     
-    return userId;
+    return employeeId;
   } catch (error) {
     console.error('Error getting user ID:', error);
     const fallbackId = localStorage.getItem('userId') || '';

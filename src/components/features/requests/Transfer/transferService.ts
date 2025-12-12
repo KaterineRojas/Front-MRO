@@ -258,20 +258,20 @@ function mapBackendStatusToLocal(backendStatus: string): 'pending' | 'completed'
 }
 
 /**
- * Obtener ID del usuario actualmente logueado desde userSlice (engineer module)
+ * Obtener employeeId del usuario actualmente logueado desde authSlice
  */
 function getCurrentUserId(): string {
   try {
     const state = store.getState();
-    // Obtener del engineerUser slice (userSlice)
-    const userId = (state as any).engineerUser?.currentUser?.id;
+    // Obtener del auth slice - employeeId es el ID del empleado real
+    const employeeId = (state as any).auth?.user?.employeeId;
     
-    if (!userId) {
+    if (!employeeId) {
       const localStorageId = localStorage.getItem('userId');
       return localStorageId || '';
     }
     
-    return userId;
+    return employeeId;
   } catch (error) {
     console.error('Error getting user ID:', error);
     const fallbackId = localStorage.getItem('userId') || '';

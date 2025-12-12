@@ -15,6 +15,7 @@ import type { CartItem } from '../../enginner/types';
 import type { User as UserType } from '../../enginner/types';
 import { ConfirmModal, useConfirmModal, type ModalType } from '../../../ui/confirm-modal';
 import { ErrorType, type AppError } from '../../../features/enginner/services/errorHandler';
+import { store } from '../../../../store/store';
 import { createBorrowRequest } from './borrowService';
 import {
   getWarehouses,
@@ -667,9 +668,15 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
       showCancel: true,
       onConfirm: async () => {
         hideModal();
-        // Prepare payload for API
+        // Get employeeId from authSlice store
+        const authUser = (store.getState() as any).auth?.user;
+        const requesterId = authUser?.employeeId || '';
+        
+        console.log('Auth user from store:', authUser);
+        console.log('RequesterId being sent:', requesterId);
+        
         const payload = {
-          requesterId: currentUser.id,
+          requesterId: requesterId,
           warehouseId: parseInt(formData.warehouseId, 10),
           companyId: formData.company,
           customerId: formData.customer,
