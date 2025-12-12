@@ -77,6 +77,9 @@ export function Login() {
             email: response.user.email,
             role: frontendRole,
             department: response.user.departmentId ? String(response.user.departmentId) : 'Engineering',
+            employeeId: response.user.employeeId, // ej: "amx0148"
+            warehouseId: response.user.warehouseId, // ej: 1
+            roleName: response.user.roleName, // ej: "Keeper"
           },
           accessToken: response.token,
           authType: 'local',

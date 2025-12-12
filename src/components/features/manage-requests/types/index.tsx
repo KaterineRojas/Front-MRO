@@ -37,7 +37,7 @@ export interface LoanRequest {
   requesterEmail: string; 
   departmentName: string; 
   departmentId: number; // Requerido por el DTO del servidor
-  requesterId: number; // Si no existe aún
+  requesterId: string; // EmployeeId string (e.g., 'amx0142')
   projectId: number; // Si tu servidor espera el ID del proyecto
   project: string; 
   requestedLoanDate: string;

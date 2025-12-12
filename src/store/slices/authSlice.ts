@@ -8,6 +8,9 @@ interface User {
   role: UserRole;
   email: string;
   department: string;
+  employeeId?: string; 
+  warehouseId?: number; 
+  roleName?: string; 
   photoUrl?: string;
   jobTitle?: string;
   mobilePhone?: string;
