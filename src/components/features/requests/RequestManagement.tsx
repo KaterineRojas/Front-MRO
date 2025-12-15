@@ -9,7 +9,8 @@ import RequestsTable from './components/DataTable';
 import RequestModal from './components/ApproveRequestDialog';
 import { API_URL } from '../../../url'
 import { LoanRequestItem, LoanRequest, PaginatedLoanRequestResponse } from './types/loanTypes'
-import { approveLoanRequest, rejectLoanRequest } from './services/requestService'
+import { approveLoanRequest, rejectLoanRequest, getLoanRequests } from './services/requestService'
+
 
 
 export function RequestManagement() {
@@ -44,33 +45,32 @@ export function RequestManagement() {
   });
 
   useEffect(() => {
+    console.log(loading);
+  }, [loading])
+  
+
+  useEffect(() => {
     const controller = new AbortController();
 
-    const fetchRequests = async () => {
+    const loadRequests = async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams({
-          warehouseId: "1",
-          pageNumber: pagination.pageNumber.toString(),
-          pageSize: pagination.pageSize.toString()
-        });
-
-        const response = await fetch(`${API_URL}/loan-requests?${params}`, {
-          signal: controller.signal
-        });
-
-        if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
-
-        const result: PaginatedLoanRequestResponse = await response.json();
+        const result = await getLoanRequests(
+          "1",
+          pagination.pageNumber,
+          pagination.pageSize,
+          controller.signal
+        );
 
         console.log('API Response:', result);
 
         setRequests(result.data);
-
         setPagination(prev => ({
           ...prev,
           totalCount: result.totalCount,
-          totalPages: result.totalPages
+          totalPages: result.totalPages,
+          hasPreviousPage: result.hasPreviousPage,
+          hasNextPage: result.hasNextPage
         }));
 
       } catch (error) {
@@ -82,11 +82,11 @@ export function RequestManagement() {
       }
     };
 
-    fetchRequests();
+    loadRequests();
 
-    return () => controller.abort(); // Cleanup
+    return () => controller.abort();
 
-  }, [pagination.pageNumber, pagination.pageSize]);
+  }, [pagination.pageNumber, pagination.pageSize]); 
 
 
 
@@ -102,15 +102,10 @@ export function RequestManagement() {
   };
 
 
-  // corregir esto cuando el backend devuelva type
-  // type: 'purchase' | 'purchase-on-site' | 'transfer-on-site';
-
   const filteredRequests = useMemo(() => {
     return requests.filter((request) => {
 
-      // ------------------------------------------------------------
-      // 1. STATUS FILTER
-      // ------------------------------------------------------------
+      // STATUS FILTER
       const currentStatus = request.status?.toLowerCase() || '';
       const targetStatus = activeTab?.toLowerCase() || 'all';
 
@@ -118,9 +113,7 @@ export function RequestManagement() {
         return false;
       }
 
-      // ------------------------------------------------------------
-      // 2. TYPE FILTER 
-      // ------------------------------------------------------------
+      // TYPE FILTER 
       // We compare strings to numbers safely using toString()
       // Assuming 'typeFilter' is state holding "all", "1", "2", etc.
       if (typeFilter !== 'all') {
@@ -130,9 +123,7 @@ export function RequestManagement() {
         }
       }
 
-      // ------------------------------------------------------------
-      // 3. SEARCH FILTER
-      // ------------------------------------------------------------
+      // SEARCH FILTER
       if (!searchTerm) return true;
 
       const term = searchTerm.toLowerCase();
@@ -152,7 +143,7 @@ export function RequestManagement() {
         item.name.toLowerCase().includes(term)
       );
     });
-  }, [requests, activeTab, searchTerm, typeFilter]); 
+  }, [requests, activeTab, searchTerm, typeFilter]);
 
 
 
@@ -311,7 +302,7 @@ export function RequestManagement() {
         />
 
         {/** dinamic data table */}
-        <div className="space-y-6 border-[2px] p-5 rounded-lg">
+        <div className="space-y-6 border-gray-200 border-[1px] p-5 rounded-lg">
 
           <h2 className="flex items-center space-x-2 text-xl font-semibold text-gray-800 dark:text-gray-100">
             {/* <Check />
