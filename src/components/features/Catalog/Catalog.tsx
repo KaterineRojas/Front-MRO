@@ -438,7 +438,7 @@ export function Catalog() {
         retryable={modalState.retryable}
       />
       <div className="space-y-6">
-        <div style={{...styles.header, position: 'sticky', top: 0, zIndex: 10, paddingBottom: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'}}>
+        <div style={{...styles.header, position: 'sticky', top: 0, zIndex: 10, paddingBottom: '16px'}}>
           <div>
             <h1 style={styles.title}>Inventory Catalog</h1>
             <p style={styles.subtitle}>
