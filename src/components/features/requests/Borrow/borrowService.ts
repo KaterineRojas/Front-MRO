@@ -25,6 +25,9 @@ export interface BorrowRequest {
   totalItems?: number;
   totalQuantity?: number;
   notes: string;
+  address?: string;
+  location?: string;
+  zipCode?: string;
   items: BorrowItem[];
 }
 
@@ -232,6 +235,9 @@ export async function createBorrowRequest(payload: {
   workOrderId: string;
   expectedReturnDate: string;
   notes: string;
+  address?: string;
+  googleMapsUrl?: string;
+  zipCode?: string;
   items: { itemId: number; quantityRequested: number }[];
 }): Promise<{ success: boolean; message: string; requestNumber?: string }> {
   try {
