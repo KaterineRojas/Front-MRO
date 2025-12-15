@@ -2,6 +2,8 @@
 import { apiCall } from '../../enginner/services/errorHandler';
 import { API_BASE_URL } from '../../enginner/services/api';
 import {API_URL} from '../../../../url'
+import {PaginatedLoanRequestResponse} from '../types/loanTypes'
+import {authService} from '../../../../services/authService'
 
 export interface RequestItem {
   id: number;
@@ -393,4 +395,40 @@ export async function rejectLoanRequest(
     const errorText = await response.text();
     throw new Error(`Failed to reject request: ${errorText}`);
   }
+}
+
+/**
+ * Fetches paginated loan requests.
+ * @param warehouseId - 1 default
+ * @param pageNumber - Current page number
+ * @param pageSize - Items per page
+ * @param signal - (Optional) AbortSignal to cancel the request
+ */
+export async function getLoanRequests(
+  warehouseId: string, 
+  pageNumber: number, 
+  pageSize: number,
+  signal?: AbortSignal
+): Promise<PaginatedLoanRequestResponse> {
+  
+  const params = new URLSearchParams({
+    warehouseId: warehouseId,
+    pageNumber: pageNumber.toString(),
+    pageSize: pageSize.toString()
+  });
+
+  const response = await fetch(`${API_URL}/loan-requests?${params}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authService.getToken()}` 
+    },
+    signal: signal 
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 }

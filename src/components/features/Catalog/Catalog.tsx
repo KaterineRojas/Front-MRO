@@ -438,7 +438,7 @@ export function Catalog() {
         retryable={modalState.retryable}
       />
       <div className="space-y-6">
-        <div style={styles.header}>
+        <div style={{...styles.header, position: 'sticky', top: 0, zIndex: 10, paddingBottom: '16px'}}>
           <div>
             <h1 style={styles.title}>Inventory Catalog</h1>
             <p style={styles.subtitle}>
@@ -484,7 +484,7 @@ export function Catalog() {
               style={styles.inputStyle}
             />
           </div>
-          <Button onClick={() => setCameraOpen(true)} variant="outline" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Button onClick={() => setCameraOpen(true)} variant="outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.5, cursor: 'not-allowed' }}>
             <Camera className="h-4 w-4" />
             AI Camera
           </Button>
