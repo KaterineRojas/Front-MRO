@@ -50,6 +50,9 @@ interface LoanFormData {
   customer: string;
   project: string;
   workOrder: string;
+  address: string;
+  googleMapsUrl: string;
+  zipCode: string;
 }
 
 const formatWorkOrderDate = (value?: string) => {
@@ -63,11 +66,24 @@ const formatWorkOrderDate = (value?: string) => {
   });
 };
 
+/**
+ * Validates if a string is a valid URL
+ */
+const isValidUrl = (urlString: string): boolean => {
+  if (!urlString) return true; // Empty URL is valid (optional field)
+  try {
+    new URL(urlString);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 
 export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCreated }: LoanFormProps) {
   // Obtener el warehouse ID del carrito si existe
   const cartWarehouseId = cartItems.length > 0 ? cartItems[0].warehouseId : '';
-  
+
   const [formData, setFormData] = useState<LoanFormData>({
     items: cartItems.map(item => ({
       itemId: item.item.id,
@@ -81,7 +97,10 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
     company: '',
     customer: '',
     project: '',
-    workOrder: ''
+    workOrder: '',
+    address: '',
+    googleMapsUrl: '',
+    zipCode: ''
   });
 
   const [cartItemsCount] = useState(cartItems.length);
@@ -537,7 +556,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
     }));
     setItemSearches(prev => ({ ...prev, [newIndex]: '' }));
     setDropdownOpen(prev => ({ ...prev, [newIndex]: false }));
-    
+
     // Scroll to the new item after render
     setTimeout(() => {
       if (itemsContainerRef.current) {
@@ -631,6 +650,18 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
       return;
     }
 
+    // Validate location URL if provided
+    if (formData.googleMapsUrl && !isValidUrl(formData.googleMapsUrl)) {
+      toast.error('Please enter a valid URL for the location');
+      return;
+    }
+
+    // Validate zipCode length
+    if (formData.zipCode && formData.zipCode.length > 6) {
+      toast.error('ZIP code cannot exceed 6 characters');
+      return;
+    }
+
     // Validate required fields
     if (!formData.project) {
       toast.error('Please select a project');
@@ -671,10 +702,10 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
         // Get employeeId from authSlice store
         const authUser = (store.getState() as any).auth?.user;
         const requesterId = authUser?.employeeId || '';
-        
+
         console.log('Auth user from store:', authUser);
         console.log('RequesterId being sent:', requesterId);
-        
+
         const payload = {
           requesterId: requesterId,
           warehouseId: parseInt(formData.warehouseId, 10),
@@ -685,6 +716,9 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
           workOrderId: formData.workOrder,
           expectedReturnDate: formData.returnDate ? new Date(formData.returnDate).toISOString() : new Date().toISOString(),
           notes: formData.notes || '',
+          address: formData.address || '',
+          googleMapsUrl: formData.googleMapsUrl || '',
+          zipCode: formData.zipCode || '',
           items: formData.items.map(item => ({
             itemId: parseInt(item.itemId, 10),
             quantityRequested: item.quantity
@@ -859,13 +893,13 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                                     className={`text-xs ${item.itemId ? "cursor-pointer" : ""}`}
                                   />
                                   {dropdownOpen[index] && (
-                                    <div className="fixed z-50 border rounded-md bg-background shadow-xl max-h-80 overflow-y-auto" 
-                                         style={{
-                                           width: dropdownRefs.current[index]?.offsetWidth || '100%',
-                                           top: (dropdownRefs.current[index]?.getBoundingClientRect().top ?? 0) - 10,
-                                           left: dropdownRefs.current[index]?.getBoundingClientRect().left,
-                                           transform: 'translateY(-100%)',
-                                         }}>
+                                    <div className="fixed z-50 border rounded-md bg-background shadow-xl max-h-80 overflow-y-auto"
+                                      style={{
+                                        width: dropdownRefs.current[index]?.offsetWidth || '100%',
+                                        top: (dropdownRefs.current[index]?.getBoundingClientRect().top ?? 0) - 10,
+                                        left: dropdownRefs.current[index]?.getBoundingClientRect().left,
+                                        transform: 'translateY(-100%)',
+                                      }}>
                                       {(filteredItems[index] || catalogItems).length === 0 ? (
                                         <div className="px-3 py-2 text-sm text-muted-foreground">
                                           No items available
@@ -926,7 +960,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                                   className="text-sm font-medium w-8 text-center h-7 p-1"
                                 />
                               ) : (
-                                <span 
+                                <span
                                   className="text-sm font-medium w-8 text-center cursor-pointer hover:bg-accent rounded px-1 py-0.5"
                                   onClick={() => handleQuantityEdit(index, item.quantity)}
                                 >
@@ -971,7 +1005,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
             {/* Right Column - Project Details */}
             <Card className="flex flex-col h-[calc(100vh-16rem)]">
               <CardHeader>
-                <CardTitle>Project Details</CardTitle>
+                <CardTitle>Borrow Details</CardTitle>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col gap-4 overflow-y-auto space-y-4">
                 <div>
@@ -1172,6 +1206,49 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+
+
+                <div>
+                  <Label htmlFor="address">Address (optional)</Label>
+                  <Input
+                    id="address"
+                    type="text"
+                    placeholder="Enter delivery address"
+                    value={formData.address}
+                    onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="location">Location URL (optional)</Label>
+                  <Input
+                    id="location"
+                    type="text"
+                    placeholder="Enter Google Maps link or location URL"
+                    value={formData.googleMapsUrl}
+                    onChange={(e) => setFormData(prev => ({ ...prev, googleMapsUrl: e.target.value }))}
+                  />
+                  {formData.googleMapsUrl && !isValidUrl(formData.googleMapsUrl) && (
+                    <p className="text-xs text-red-500 mt-1">Please enter a valid URL</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="zipCode">ZIP Code (optional)</Label>
+                  <Input
+                    id="zipCode"
+                    type="text"
+                    placeholder="Enter ZIP code (max 6 characters)"
+                    value={formData.zipCode}
+                    onChange={(e) => {
+                      const value = e.target.value.slice(0, 6);
+                      setFormData(prev => ({ ...prev, zipCode: value }));
+                    }}
+                    maxLength={6}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{formData.zipCode.length}/6</p>
                 </div>
 
                 <div>
