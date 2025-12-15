@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
@@ -17,6 +18,7 @@ import { ConfirmModal, useConfirmModal, type ModalType } from '../../../ui/confi
 import { ErrorType, type AppError } from '../../../features/enginner/services/errorHandler';
 import { store } from '../../../../store/store';
 import { createBorrowRequest } from './borrowService';
+import { updateCartItem, removeFromCart } from '../../enginner/store/slices/cartSlice';
 import {
   getWarehouses,
   getCatalogItemsByWarehouse,
@@ -81,6 +83,9 @@ const isValidUrl = (urlString: string): boolean => {
 
 
 export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCreated }: LoanFormProps) {
+  // Redux dispatch for syncing cart
+  const dispatch = useDispatch();
+
   // Obtener el warehouse ID del carrito si existe
   const cartWarehouseId = cartItems.length > 0 ? cartItems[0].warehouseId : '';
 
@@ -566,6 +571,14 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
   };
 
   const removeItem = (index: number) => {
+    // Sync with Redux cart if this is a cart item (index < cartItemsCount)
+    if (index < cartItemsCount) {
+      const cartItem = cartItems[index];
+      if (cartItem) {
+        dispatch(removeFromCart(cartItem.item.id));
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       items: prev.items.filter((_, i) => i !== index)
@@ -594,12 +607,27 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
   };
 
   const updateItem = (index: number, field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      items: prev.items.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
-      )
-    }));
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        items: prev.items.map((item, i) =>
+          i === index ? { ...item, [field]: value } : item
+        )
+      };
+
+      // Sync with Redux cart if this is a cart item (index < cartItemsCount)
+      if (index < cartItemsCount && field === 'quantity') {
+        const cartItem = cartItems[index];
+        if (cartItem) {
+          dispatch(updateCartItem({
+            itemId: cartItem.item.id,
+            quantity: value
+          }));
+        }
+      }
+
+      return updated;
+    });
   };
 
   const validateStock = (itemId: string, quantity: number) => {
