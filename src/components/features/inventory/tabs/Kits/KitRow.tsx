@@ -3,7 +3,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import type { KitRowProps } from './types';
-import { getAvailableBins, checkKitOccupation, type Bin, getAllAvailableBins, AvailableBinResponse } from '../../services/binsService';
+import { checkKitOccupation, type Bin, getAllAvailableBins, AvailableBinResponse } from '../../services/binsService';
 import { getKitCurrentBin, createPhysicalKit, deleteKit as deleteKitService, dismantleKit, getKitDefaultBin } from '../../services/kitService';
 import { DismantleKitModal } from '../../modals/DismantleKitModal';
 import { ActionButton } from '../../components/ActionButton'
@@ -45,10 +45,8 @@ export function KitRow({
 
 
   useEffect(() => {
-    console.log(kit);
+    // console.log(kit);
     // console.log(articles);
-    
-
   }, [])
 
 
@@ -207,8 +205,8 @@ export function KitRow({
     }
   };
 
-  const getAvailableBadge = (stock: number, available: number) => {
-    if (available < 5) {
+  const getAvailableBadge = (available: number) => {
+    if (available === 0) {
       return <Badge variant={`${darkMode ? 'critical' : 'critical-soft'}`}>{available}</Badge>;
     }else{
       return <Badge variant={`${darkMode ? 'success' : 'success-soft'}`}>{available}</Badge>;
@@ -283,7 +281,7 @@ export function KitRow({
         </td>
 
         <td className="p-2 align-middle text-center">
-          {getAvailableBadge(kit.quantity, kit.quantityAvailable)}
+          {getAvailableBadge(kit.quantityAvailable)}
         </td>
 
         <td className="p-2 align-middle text-center py-3">

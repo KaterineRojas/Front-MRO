@@ -8,13 +8,14 @@ import { useSelector } from 'react-redux';
 interface cardProps {
     title: string,
     iconType: string,
-    value: number
+    value: number,
     description: string,
-    mainColor: string
+    mainColor: string,
+    loading: boolean,
 }
 
 
-function Card({ title, iconType, description, value, mainColor }: cardProps) {
+function Card({ title, iconType, description, value, mainColor, loading }: cardProps) {
 
     const darkMode = useSelector((state: any) => state.ui.darkMode);
 
@@ -30,6 +31,7 @@ function Card({ title, iconType, description, value, mainColor }: cardProps) {
                 break;
         }
     }
+    
 
     /**
      * red #FB2C36
@@ -59,6 +61,9 @@ function Card({ title, iconType, description, value, mainColor }: cardProps) {
         }
     }
 
+    // console.log(value);
+
+
 
     return (
         <div
@@ -74,9 +79,9 @@ function Card({ title, iconType, description, value, mainColor }: cardProps) {
             </div>
 
             <div className="px-6 [&:last-child]:pb-6">
-                <div className="text-2xl text-green-600"
+                <div className={`text-2xl text-green-600 ${loading ? `w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin` : ''}  `}
                     style={{ color: `${selectMainColorClass()}` }}
-                >{value}</div>
+                >{ loading ? '' : value}</div>
                 <p className="text-xs text-muted-foreground">{description}</p>
             </div>
         </div>
