@@ -6,10 +6,11 @@ interface User {
   id: string;
   name: string;
   email: string;
-  employeeId: string;
   role: number;
   roleName: string;
   department: string;
+  employeeId?: string; 
+  warehouseId?: number; 
   photoUrl?: string;
   jobTitle?: string;
   mobilePhone?: string;

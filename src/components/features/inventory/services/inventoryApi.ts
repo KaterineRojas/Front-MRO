@@ -2,6 +2,7 @@ import type { Article, InventoryItemResponse, Kit, Bin, Transaction } from '../t
 import type { PurchaseRequest, DamagedRequest, StockCorrectionRequest, WarehouseTransferRequest } from '../modals/RecordMovement/types';
 import type { WarehouseV2 } from '../types/warehouse-v2';
 import { API_URL } from "../../../../url";
+import { fetchWithAuth } from '../../../../utils/fetchWithAuth';
 import { store } from "../../../../store/store";
 
 // ============================================================================
@@ -361,6 +362,7 @@ export async function getCategories(): Promise<{ value: string; label: string }[
  */
 export async function createPurchaseApi(purchaseData: PurchaseRequest): Promise<void> {
   try {
+    const response = await fetchWithAuth(`${API_URL}/Inventory/purchase`, {
     const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Inventory/purchase`, {
       method: 'POST',
@@ -398,6 +400,7 @@ export async function getNewBins(): Promise<Bin[]> {
  */
 export async function fetchBinsFromApi(): Promise<Bin[]> {
   try {
+    const response = await fetchWithAuth(`${API_URL}/Bin/with-quantity?isActive=true`, {
     const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Bin/with-quantity?isActive=true`, {
       method: 'GET',
@@ -440,6 +443,7 @@ export async function fetchBinsFromApi(): Promise<Bin[]> {
 export async function fetchWarehousesFromApi(): Promise<WarehouseV2[]> {
   try {
     console.log('🔄 Fetching warehouses from API...');
+    const response = await fetchWithAuth(`${API_URL}/Bin/with-quantity`, {
     const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Bin/with-quantity`, {
       method: 'GET',
@@ -540,6 +544,7 @@ export async function createZoneApi(data: {
   name: string;
 }) {
   try {
+    const response = await fetchWithAuth(`${API_URL}/Zones`, {
     const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Zones`, {
       method: 'POST',
@@ -578,6 +583,7 @@ export async function createRackApi(data: {
   name: string;
 }) {
   try {
+    const response = await fetchWithAuth(`${API_URL}/Racks`, {
     const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Racks`, {
       method: 'POST',
@@ -616,6 +622,7 @@ export async function createLevelApi(data: {
   name: string;
 }) {
   try {
+    const response = await fetchWithAuth(`${API_URL}/Levels`, {
     const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Levels`, {
       method: 'POST',
@@ -655,6 +662,7 @@ export async function createBinApi(data: {
   allowDifferentItems: boolean;
 }) {
   try {
+    const response = await fetchWithAuth(`${API_URL}/Bin`, {
     const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Bin`, {
       method: 'POST',
@@ -906,6 +914,7 @@ export async function recordMovementApi(movementData: any): Promise<{ transactio
  */
 export async function createDamagedApi(damagedData: DamagedRequest): Promise<void> {
   try {
+    const response = await fetchWithAuth(`${API_URL}/Inventory/damaged`, {
     const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Inventory/damaged`, {
       method: 'POST',
@@ -934,6 +943,7 @@ export async function createDamagedApi(damagedData: DamagedRequest): Promise<voi
  */
 export async function createStockCorrectionApi(correctionData: StockCorrectionRequest): Promise<void> {
   try {
+    const response = await fetchWithAuth(`${API_URL}/Inventory/stock-correction`, {
     const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Inventory/stock-correction`, {
       method: 'POST',
@@ -966,6 +976,7 @@ export async function getValidDestinationBins(itemId: number, fromBinId: number)
   description: string;
 }[]> {
   try {
+    const response = await fetchWithAuth(`${API_URL}/Inventory/valid-destinations?itemId=${itemId}&fromBinId=${fromBinId}`, {
     const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Inventory/valid-destinations?itemId=${itemId}&fromBinId=${fromBinId}`, {
       method: 'GET',
@@ -994,6 +1005,7 @@ export async function getValidDestinationBins(itemId: number, fromBinId: number)
  */
 export async function createWarehouseTransferApi(transferData: WarehouseTransferRequest): Promise<void> {
   try {
+    const response = await fetchWithAuth(`${API_URL}/Inventory/relocate-item`, {
     const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Inventory/relocate-item`, {
       method: 'POST',

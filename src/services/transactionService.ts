@@ -1,6 +1,7 @@
 // src/services/transactionService.ts
 import { API_URL } from '../url';
 import type { Transaction, TransactionType } from '@/components/features/inventory/tabs/transactions/transactionTypes';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 
 /**
  * API response format for transactions
@@ -42,11 +43,8 @@ function transformTransaction(apiTransaction: TransactionResponse): Transaction 
  */
 export async function getAllTransactions(): Promise<Transaction[]> {
   try {
-    const response = await fetch(`${API_URL}/Transactions`, {
+    const response = await fetchWithAuth(`${API_URL}/Transactions`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -67,11 +65,8 @@ export async function getAllTransactions(): Promise<Transaction[]> {
  */
 export async function getTransactionById(id: number): Promise<Transaction> {
   try {
-    const response = await fetch(`${API_URL}/Transactions/${id}`, {
+    const response = await fetchWithAuth(`${API_URL}/Transactions/${id}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -92,11 +87,8 @@ export async function getTransactionById(id: number): Promise<Transaction> {
  */
 export async function getTransactionsByItem(itemId: number): Promise<Transaction[]> {
   try {
-    const response = await fetch(`${API_URL}/Transactions/by-item/${itemId}`, {
+    const response = await fetchWithAuth(`${API_URL}/Transactions/by-item/${itemId}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -117,11 +109,8 @@ export async function getTransactionsByItem(itemId: number): Promise<Transaction
  */
 export async function getTransactionsByInventory(inventoryId: number): Promise<Transaction[]> {
   try {
-    const response = await fetch(`${API_URL}/Transactions/by-inventory/${inventoryId}`, {
+    const response = await fetchWithAuth(`${API_URL}/Transactions/by-inventory/${inventoryId}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -142,11 +131,8 @@ export async function getTransactionsByInventory(inventoryId: number): Promise<T
  */
 export async function getTransactionTypes(): Promise<TransactionType[]> {
   try {
-    const response = await fetch(`${API_URL}/Transactions/types`, {
+    const response = await fetchWithAuth(`${API_URL}/Transactions/types`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {

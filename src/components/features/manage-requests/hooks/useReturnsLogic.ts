@@ -367,6 +367,7 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
 
         // --- 3. CONSTRUIR EL PAYLOAD PARA EL ENDPOINT DE INVENTARIO ---
         const itemsPayload: ReturnItemPayload[] = [];
+        const itemsWithZeroQuantity: string[] = [];
         let hasAnyItemToReturn = false;
 
         regularItems.forEach(item => {
@@ -382,9 +383,10 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
                 console.log(`getReturnQuantity result:`, returnQty);
                 console.log(`itemConditions[${itemKey}]:`, itemConditions[itemKey]);
                 
-                // Verificar si la cantidad es 0
+                // Verificar si la cantidad es 0 y mostrar error descriptivo
                 if (returnQty === 0) {
-                    console.log(`⚠️ Item ${item.name} has quantity 0, skipping...`);
+                    console.log(`⚠️ Item ${item.name} has quantity 0`);
+                    itemsWithZeroQuantity.push(item.name || item.sku || `Item ${item.id}`);
                     return; // Saltar este item
                 }
                 
@@ -437,31 +439,34 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
         });
 
         // Validar que se ingresaron cantidades
-        /*if (itemsWithZeroQuantity.length > 0) {
-            toast.error(`Please enter a quantity greater than 0 for the selected items.`);
+        if (itemsWithZeroQuantity.length > 0) {
+            toast.error(`Please enter a quantity greater than 0 for the selected items: ${itemsWithZeroQuantity.join(', ')}`);
             return;
-        }*/
+        }
 
-        // Doble chequeo final de seguridad
-        /*if (!hasAnyItemToReturn) {
-            toast.error('No items were processed for return. Please check quantities and conditions.');
+        // Validar que haya al menos un item para devolver
+        if (itemsPayload.length === 0) {
+            toast.error('No items to return. Please select items and enter quantities.');
             return;
-        }*/
+        }
+
 
         // --- 4. LLAMAR AL ENDPOINT DE DEVOLUCIÓN DE INVENTARIO (API) ---
         const loadingToastId = toast.loading('Submitting return items to API...');
 
         try {
             const payload: ReturnLoanPayload = {
-                engineerId: engineerId, 
+                engineerId: validatedRequest.requesterId || engineerId, // Usar el engineerId del request (ingeniero que tiene los items)
                 warehouseId: warehouseId,   
                 items: itemsPayload,
-                generalNotes: `Req ${validatedRequest.id}`, // Acortado para evitar error "Data too long for column 'Code'"
+                generalNotes: `Req ${validatedRequest.requestNumber || validatedRequest.id}`, // Usar requestNumber en lugar de id
                 photoUrl: itemsPhotoUrl || '', // URL de SharePoint guardada en el estado
             };
             
             console.log('=== PAYLOAD BEING SENT TO API ===');
+            console.log('Request Number:', validatedRequest.requestNumber);
             console.log('Request ID:', validatedRequest.id);
+            console.log('Engineer ID (from request):', validatedRequest.requesterId);
             console.log('Items:', itemsPayload);
             console.log('Full Payload:', payload);
             console.log('JSON Stringified:', JSON.stringify(payload, null, 2));
