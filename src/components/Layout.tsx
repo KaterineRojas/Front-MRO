@@ -112,21 +112,20 @@ export function Layout() {
   };
 
   const navigation = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/', disabled: false },
-    { id: 'articles', label: 'Inventory Management', icon: Package, path: '/inventory', disabled: false },
-    //{ id: 'loans', label: 'Request Orders2', icon: UserCheck, path: '/loans', disabled: false },
-    { id: 'orders', label: 'Purchase Request', icon: ShoppingCart, path: '/orders', disabled: false },
-    { id: 'cyclecount', label: 'Cycle Count', icon: Calculator, path: '/cycle-count', disabled: false },
-    { id: 'quickfind', label: 'Quick Find', icon: Search, path: '/quick-find', disabled: true },
-    { id: 'managerequests', label: 'Manage Requests', icon: Package, path: '/manage-requests', disabled: false },
-    { id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests', disabled: false },
-    { id: 'reports', label: 'Reports', icon: FileText, path: '/reports', disabled: false },
-    { id: 'users', label: 'User Management', icon: Users, path: '/users', disabled: false },
-    // Engineer Modules - Nuevos módulos integrados
-    { id: 'engineer-catalog', label: 'Engineer Catalog', icon: Package, path: '/engineer/catalog', disabled: false },
-    { id: 'engineer-requests', label: 'Request Orders', icon: FileText, path: '/engineer/requests', disabled: false },
-    { id: 'engineer-inventory', label: 'My Engineer Inventory', icon: PackageCheck, path: '/engineer/my-inventory', disabled: false },
-    { id: 'engineer-history', label: 'Engineer Complete History', icon: ScrollText, path: '/engineer/history', disabled: false },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/', disabled: false, roles: ['Engineer', 'Keeper', 'Manager', 'Director'] },
+    { id: 'articles', label: 'Inventory Management', icon: Package, path: '/inventory', disabled: false, roles: ['Keeper'] },
+    { id: 'orders', label: 'Purchase Request', icon: ShoppingCart, path: '/orders', disabled: false, roles: ['Keeper'] },
+    { id: 'cyclecount', label: 'Cycle Count', icon: Calculator, path: '/cycle-count', disabled: false, roles: ['Keeper'] },
+    { id: 'quickfind', label: 'Quick Find', icon: Search, path: '/quick-find', disabled: true, roles: ['Keeper'] },
+    { id: 'managerequests', label: 'Manage Requests', icon: Package, path: '/manage-requests', disabled: false, roles: ['Keeper'] },
+    { id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests', disabled: false, roles: ['Director', 'Manager'] },
+    { id: 'reports', label: 'Reports', icon: FileText, path: '/reports', disabled: false, roles: ['Director', 'Manager'] },
+    { id: 'users', label: 'User Management', icon: Users, path: '/users', disabled: false, roles: ['Director', 'Manager'] },
+    // Engineer Modules
+    { id: 'engineer-catalog', label: 'Engineer Catalog', icon: Package, path: '/engineer/catalog', disabled: false, roles: ['Engineer'] },
+    { id: 'engineer-requests', label: 'Request Orders', icon: FileText, path: '/engineer/requests', disabled: false, roles: ['Engineer'] },
+    { id: 'engineer-inventory', label: 'My Engineer Inventory', icon: PackageCheck, path: '/engineer/my-inventory', disabled: false, roles: ['Engineer'] },
+    { id: 'engineer-history', label: 'Engineer Complete History', icon: ScrollText, path: '/engineer/history', disabled: false, roles: ['Engineer'] },
   ] as const;
 
   const isActivePath = (path: string) => {
@@ -135,6 +134,23 @@ export function Layout() {
     }
     return location.pathname.startsWith(path);
   };
+
+  // Check if user has access to a module
+  const hasAccess = (roles: string[]): boolean => {
+    if (!currentUser) {
+      console.log('❌ No currentUser');
+      return false;
+    }
+    console.log('🔍 Checking access - User roleName:', currentUser.roleName, 'Required roles:', roles);
+    return roles.includes(currentUser.roleName);
+  };
+
+  // Filter navigation items based on user role
+  const filteredNavigation = navigation.filter(item => {
+    const access = hasAccess(item.roles);
+    console.log(`Module: ${item.label} - Access: ${access}`);
+    return access;
+  });
 
   return (
     <div className="flex h-screen bg-background">
@@ -164,7 +180,7 @@ export function Layout() {
         </div>
 
         <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-          {navigation.map((item) => {
+          {filteredNavigation.map((item) => {
             const Icon = item.icon;
             return (
               <Button
@@ -209,7 +225,7 @@ export function Layout() {
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-sm font-medium truncate">{currentUser.name}</p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {currentUser.jobTitle || currentUser.role}
+                        {currentUser.jobTitle || currentUser.roleName}
                       </p>
                     </div>
                   </div>
