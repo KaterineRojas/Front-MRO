@@ -1,4 +1,5 @@
 import { API_URL } from "../../../../url";
+import { fetchWithAuth } from '../../../../utils/fetchWithAuth';
 
 /**
  * Application Bin type
@@ -52,27 +53,27 @@ export async function getAvailableBins(warehouseId: number = 1, isActive?: boole
     if (isActive !== undefined) {
       params.append('isActive', isActive.toString());
     }
+    // allowDifferentItems=false significa bins que solo aceptan un tipo de item
+    params.append('allowDifferentItems', 'false');
+    params.append('warehouseId', '1');
 
     const url = `${API_URL}/Bin/available${params.toString() ? '?' + params.toString() : ''}`;
     console.log('🔍 Fetching available bins from:', url);
 
-    const response = await fetch(url, {
+    const response = await fetchWithAuth(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.warn(`⚠️ Failed to fetch available bins: ${response.status} - ${errorText}`);
+      // console.warn(`⚠️ Failed to fetch available bins: ${response.status} - ${errorText}`);
       return [];
     }
 
     // Verificar que la respuesta sea JSON
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
-      console.warn(`⚠️ Expected JSON response but got: ${contentType}`);
+      // console.warn(`⚠️ Expected JSON response but got: ${contentType}`);
       return [];
     }
 
@@ -87,7 +88,7 @@ export async function getAvailableBins(warehouseId: number = 1, isActive?: boole
       description: bin.name
     }));
   } catch (error) {
-    console.error('Error fetching available bins:', error);
+    // console.error('Error fetching available bins:', error);
     return [];
   }
 }
@@ -98,11 +99,8 @@ export async function getAvailableBins(warehouseId: number = 1, isActive?: boole
  */
 export async function checkItemOccupation(itemId: number): Promise<CheckItemOccupationResponse | null> {
   try {
-    const response = await fetch(`${API_URL}/Bin/check-item-occupation?itemId=${itemId}`, {
+    const response = await fetchWithAuth(`${API_URL}/Bin/check-item-occupation?itemId=${itemId}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -138,11 +136,8 @@ export async function checkItemOccupation(itemId: number): Promise<CheckItemOccu
  */
 export async function checkKitOccupation(kitId: number): Promise<CheckItemOccupationResponse | null> {
   try {
-    const response = await fetch(`${API_URL}/Bins/check-item-occupation?kitId=${kitId}`, {
+    const response = await fetchWithAuth(`${API_URL}/Bins/check-item-occupation?kitId=${kitId}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -176,11 +171,8 @@ export async function checkKitOccupation(kitId: number): Promise<CheckItemOccupa
  */
 export async function getKitCurrentBin(kitId: number): Promise<string> {
   try {
-    const response = await fetch(`${API_URL}/Bins/check-item-occupation?kitId=${kitId}`, {
+    const response = await fetchWithAuth(`${API_URL}/Bins/check-item-occupation?kitId=${kitId}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -258,11 +250,8 @@ export async function getAllAvailableBins(
 
     const url = `${API_URL}/Bin/available?${params.toString()}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithAuth(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {

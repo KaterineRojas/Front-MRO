@@ -5,6 +5,7 @@ export interface User {
   name: string;
   email: string;
   department: string;
+  employeeId?: string;
 }
 
 export interface InventoryItem {
@@ -21,6 +22,8 @@ export interface InventoryItem {
 export interface CartItem {
   item: InventoryItem;
   quantity: number;
+  warehouseId?: string;
+  warehouseName?: string;
 }
 
 export interface BorrowRequest {

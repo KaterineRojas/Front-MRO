@@ -2,6 +2,7 @@
 //KITS DUDA ORIGINAL
 import { Article2 } from "../types";
 import { API_URL } from "../../../../url";
+import { store } from "../../../../store/store";
 //const API_URL = 'http://localhost:5000/api';
 
 /**
@@ -38,6 +39,7 @@ interface KitResponse {
  */
 export interface Kit {
   id: number;
+  sku: string;
   binCode: string;
   name: string;
   description: string;
@@ -125,9 +127,9 @@ function transformKit(apiKit: KitResponse): Kit {
     description: apiKit.description || '',
     category: inferCategoryFromSKU(apiKit.sku || ''),
     quantity: apiKit.quantity || 0,
-    quantityAvailable: apiKit.quantityAvailable || 0, // ✅ NUEVO
-    quantityLoan: apiKit.quantityLoan || 0, // ✅ NUEVO
-    quantityReserved: apiKit.quantityReserved || 0, // ✅ NUEVO
+    quantityAvailable: apiKit.quantityAvailable || 0, 
+    quantityLoan: apiKit.quantityLoan || 0, 
+    quantityReserved: apiKit.quantityReserved || 0, 
     items: (apiKit.items || []).map(transformKitItem),
     status: 'good-condition',
     createdAt: new Date().toISOString().split('T')[0],
@@ -189,10 +191,12 @@ export interface KitDefaultBinResponse {
  */
 export async function getKitCategories(): Promise<KitCategory[]> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Kits/categories`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
     });
 
@@ -217,10 +221,12 @@ export async function getKitCategories(): Promise<KitCategory[]> {
  */
 export async function getKitsWithItems(): Promise<Kit[]> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Kits/with-items?isActive=true`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
     });
 
@@ -241,10 +247,12 @@ export async function getKitsWithItems(): Promise<Kit[]> {
  */
 export async function createKit(kitData: CreateKitRequest): Promise<Kit> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Kits/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(kitData),
     });
@@ -278,10 +286,12 @@ export interface CreatePhysicalKitRequest {
 export async function createPhysicalKit(kitData: CreatePhysicalKitRequest): Promise<void> {
   console.log(kitData);
   
+  const token = store.getState().auth.accessToken as string;
   const response = await fetch(`${API_URL}/Kits/create-physical`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify(kitData),
   });
@@ -324,10 +334,12 @@ interface CheckItemOccupationResponse {
 }
 export async function getKitCurrentBin(kitId: number): Promise<string> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Bins/check-item-occupation?kitId=${kitId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
     });
 
@@ -387,10 +399,12 @@ function transformItemToArticle(apiItem: ItemResponse): Article2 {
 }
 export async function getItems(): Promise<Article2[]> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Items`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
     });
 
@@ -414,10 +428,12 @@ export async function deleteKit(kitId: number): Promise<void> {
   try {
     console.log('🗑️ Deleting kit with ID:', kitId);
     
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Kits/${kitId}/deactivate`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
     });
 
@@ -450,10 +466,12 @@ export async function dismantleKit(kitId: number, data: DismantleKitRequest): Pr
   try {
     console.log(' Dismantling kit:', { kitId, ...data });
     
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Kits/${kitId}/dismantle`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
         quantity: data.quantity,
@@ -500,9 +518,13 @@ export const getKitDefaultBin = async (
   });
 
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Kits/default-bin?${queryParams.toString()}`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       signal,
     });
 

@@ -1,17 +1,21 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export type UserRole = 'administrator' | 'user' | 'purchasing' | 'auditor' | 'manager';
+export type UserRole = 'Engineer' | 'Keeper' | 'Manager' | 'Director';
 
 interface User {
   id: string;
   name: string;
-  role: UserRole;
   email: string;
+  role: number;
+  roleName: string;
   department: string;
+  employeeId?: string; 
+  warehouseId?: number; 
   photoUrl?: string;
   jobTitle?: string;
   mobilePhone?: string;
   officeLocation?: string;
+  warehouse?: number;
 }
 
 export type AuthType = 'local' | 'azure' | null;
@@ -68,7 +72,7 @@ const authSlice = createSlice({
     },
     updateUserRole: (state, action: PayloadAction<UserRole>) => {
       if (state.user) {
-        state.user.role = action.payload;
+        state.user.roleName = action.payload;
       }
     },
   },
