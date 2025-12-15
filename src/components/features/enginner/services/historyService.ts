@@ -1,5 +1,8 @@
+
+import { API_URL } from "../../../../url";
 // Simula las llamadas al backend para Complete History
 import { apiCall } from './errorHandler';
+import { store } from "../../../../store/store";
 
 export interface HistoryItem {
   id: string;
@@ -18,7 +21,7 @@ export interface HistoryRecord {
   completionDate: string;
   items: HistoryItem[];
   department: string;
-  project: string;
+  projectId: string;
   priority?: 'low' | 'medium' | 'urgent';
   totalCost?: number;
   selfPurchase?: boolean;
@@ -27,6 +30,35 @@ export interface HistoryRecord {
   rejectionReason?: string;
   warehouseId: string;
   warehouseName: string;
+}
+
+export interface TransferItem {
+  itemId: string;
+  itemName: string;
+  code?: string;
+  quantity: number;
+  image: string;
+  description?: string;
+  warehouse?: string;
+  warehouseCode?: string;
+}
+
+export interface Transfer {
+  id: string;
+  type: 'outgoing' | 'incoming';
+  fromUser?: string;
+  toUser?: string;
+  fromUserId?: string;
+  toUserId?: string;
+  items: TransferItem[];
+  notes: string;
+  requestDate: string;
+  status: 'pending' | 'completed' | 'rejected';
+  transferPhoto?: string;
+  imageUrl?: string;
+  warehouseName?: string;
+  projectId?: string;
+  projectName?: string;
 }
 
 // Datos mock
@@ -58,7 +90,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'IT',
-    project: 'Hardware Upgrade 2024',
+    projectId: 'Hardware Upgrade 2024',
     priority: 'urgent',
     totalCost: 2700,
     selfPurchase: false
@@ -82,7 +114,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'HR',
-    project: 'Office Ergonomics',
+    projectId: 'Office Ergonomics',
     priority: 'low',
     totalCost: 3000,
     selfPurchase: false,
@@ -123,7 +155,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Development',
-    project: 'Workstation Improvements',
+    projectId: 'Workstation Improvements',
     priority: 'medium',
     totalCost: 220,
     selfPurchase: false
@@ -147,7 +179,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Development',
-    project: 'Ergonomic Improvements',
+    projectId: 'Ergonomic Improvements',
     priority: 'low',
     totalCost: 500,
     selfPurchase: false,
@@ -178,7 +210,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Design',
-    project: 'UI/UX Redesign',
+    projectId: 'UI/UX Redesign',
     transferTo: 'Ana Martínez'
   },
   {
@@ -199,7 +231,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Marketing',
-    project: 'Content Creation',
+    projectId: 'Content Creation',
     transferTo: 'Carlos Rodríguez',
     rejectionReason: 'Destination engineer already has similar equipment assigned'
   },
@@ -230,7 +262,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Engineering',
-    project: 'Proyecto Construcción',
+    projectId: 'Proyecto Construcción',
     priority: 'urgent',
     totalCost: 375,
     selfPurchase: true
@@ -254,7 +286,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Design',
-    project: 'Workspace Optimization',
+    projectId: 'Workspace Optimization',
     priority: 'low',
     totalCost: 135,
     selfPurchase: false,
@@ -279,7 +311,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Administration',
-    project: 'Office Refurbishment',
+    projectId: 'Office Refurbishment',
     priority: 'medium',
     totalCost: 2000,
     selfPurchase: false
@@ -302,7 +334,7 @@ const mockHistoryRecords: HistoryRecord[] = [
       }
     ],
     department: 'Sales',
-    project: 'Client Presentations',
+    projectId: 'Client Presentations',
     transferTo: 'Juan Pérez'
   }
 ];
@@ -313,14 +345,36 @@ const simulateNetworkDelay = (ms: number = 500) => {
 };
 
 /**
- * GET - Obtiene todo el historial completo
+ * GET - Obtiene todo el historial completo (ahora usando getTransfersOutgoing)
  */
 export const getCompleteHistory = async (): Promise<HistoryRecord[]> => {
   return apiCall(async () => {
-    await simulateNetworkDelay();
-    return [...mockHistoryRecords];
+    const transfers = await getTransfersOutgoing();
+    
+    // Convertir Transfer[] a HistoryRecord[]
+    return transfers.map((transfer): HistoryRecord => ({
+      id: transfer.id,
+      type: 'transfer',
+      status: transfer.status === 'completed' ? 'completed' : transfer.status === 'rejected' ? 'rejected' : 'transferred',
+      requestDate: transfer.requestDate,
+      completionDate: transfer.requestDate, // Usar requestDate como completionDate
+      items: transfer.items.map(item => ({
+        id: item.itemId,
+        name: item.itemName,
+        code: item.code,
+        quantity: item.quantity,
+        image: item.image,
+        description: item.description
+      })),
+      department: '', // No disponible en Transfer
+      projectId: transfer.projectId || '', // Usar projectId del transfer
+      warehouseId: '', // No disponible en Transfer
+      warehouseName: transfer.warehouseName || ''
+    }));
   });
 };
+
+
 
 /**
  * GET - Obtiene un registro de historial por ID
@@ -359,7 +413,7 @@ export const getHistoryByStatus = async (status: HistoryRecord['status']): Promi
 export const getHistoryByProject = async (project: string): Promise<HistoryRecord[]> => {
   return apiCall(async () => {
     await simulateNetworkDelay();
-    return mockHistoryRecords.filter(rec => rec.project === project);
+    return mockHistoryRecords.filter(rec => rec.projectId === project);
   });
 };
 
@@ -442,3 +496,106 @@ export const getHistoryStats = async (): Promise<{
     return stats;
   });
 };
+
+/**
+ * Obtener employeeId del usuario actualmente logueado desde authSlice
+ */
+function getCurrentUserId(): string {
+  try {
+    const state = store.getState();
+    const employeeId = state.auth?.user?.employeeId;
+    
+    if (!employeeId) {
+      const localStorageId = localStorage.getItem('userId');
+      return localStorageId || '';
+    }
+    
+    return employeeId;
+  } catch (error) {
+    console.error('Error getting user ID:', error);
+    const fallbackId = localStorage.getItem('userId') || '';
+    return fallbackId;
+  }
+}
+
+/**
+ * Mapear estado del backend al estado local
+ */
+function mapBackendStatusToLocal(backendStatus: string): 'pending' | 'completed' | 'rejected' {
+  const statusMap: Record<string, 'pending' | 'completed' | 'rejected'> = {
+    'Pending': 'pending',
+    'Completed': 'completed',
+    'Rejected': 'rejected',
+  };
+  return statusMap[backendStatus] || 'pending';
+}
+
+/**
+ * Get outgoing transfers (sent by current user)
+ */
+export async function getTransfersOutgoing(): Promise<Transfer[]> {
+  try {
+    const token = store.getState().auth.accessToken as string;
+    const senderId = getCurrentUserId();
+    
+    const url = `${API_URL}/transfer-requests?senderId=${senderId}&pageNumber=1&pageSize=20`;
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error fetching outgoing transfers:', errorText);
+      throw new Error(`Error al obtener transferencias: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    
+    if (!responseData.data) {
+      return [];
+    }
+
+    if (!Array.isArray(responseData.data)) {
+      return [];
+    }
+    
+    const transfers: Transfer[] = responseData.data.map((item: any) => {
+      const type = 'outgoing';
+      return {
+        id: item.requestNumber,
+        type: type,
+        fromUser: item.senderName,
+        toUser: item.recipientName,
+        fromUserId: item.senderId,
+        toUserId: item.recipientId,
+        items: Array(item.totalItems).fill(null).map((_, idx) => ({
+          itemId: `item-${idx}`,
+          itemName: `Item ${idx + 1}`,
+          code: '',
+          quantity: 1,
+          image: '',
+          description: '',
+          warehouse: item.warehouseName,
+          warehouseCode: ''
+        })),
+        notes: '',
+        requestDate: item.createdAt,
+        status: mapBackendStatusToLocal(item.status),
+        transferPhoto: undefined,
+        warehouseName: item.warehouseName,
+        projectId: item.projectId,
+        projectName: item.projectName,
+      };
+    });
+
+    return transfers;
+  } catch (error) {
+    console.error('Error in getTransfersOutgoing:', error);
+    throw error;
+  }
+}

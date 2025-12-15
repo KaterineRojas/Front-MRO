@@ -7,6 +7,7 @@ export interface User {
   role: string;
   department?: string;
   avatar?: string;
+  employeeId: string
 }
 
 export interface InventoryItem {

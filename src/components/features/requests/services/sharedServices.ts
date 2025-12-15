@@ -1,6 +1,9 @@
 //import { API_BASE_URL } from "./api";
 import { API_URL } from "../../../../url";
 import { withRetry, classifyFetchError, handleError } from "../../enginner/services/errorHandler";
+import { store } from "../../../../store/store";
+
+// En cualquier componente
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -108,7 +111,7 @@ const mockStatuses: Status[] = [
   { id: 'completed', name: 'Completed', color: 'green' }
 ];
 
-async function fetchDataWithRetry<T>(
+/*async function fetchDataWithRetry<T>(
   endpoint: string,
   dataMapper: (data: any) => T,
 ): Promise<T> {
@@ -130,11 +133,57 @@ async function fetchDataWithRetry<T>(
     console.error(`Final Error fetching from ${endpoint}:`, appError);
     throw appError;
   }
+}*/
+
+export async function getCompanies(): Promise<Company[]> {
+  const endpoint = `/amx/companies`;
+  const token = store.getState().auth.accessToken as string;
+  return fetchDataWithRetry(endpoint, token, (data: any) =>
+    (data as string[]).map((companyName) => ({ name: companyName }))
+  );
+}
+
+/*export async function getCompanies(): Promise<Company[]> {
+  const endpoint = `/amx/companies`;
+  return fetchDataWithRetry(endpoint, (data: any) =>
+    (data as string[]).map((companyName) => ({ name: companyName }))
+  );
+}*/
+
+async function fetchDataWithRetry<T>(
+  endpoint: string,
+  token: string,
+  dataMapper: (data: any) => T,
+): Promise<T> {
+  const apiFunction = async () => {
+    const url = `${API_URL}${endpoint}`;
+    const response = await fetch(url, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (!response.ok) {
+      throw await classifyFetchError(response);
+    }
+    const data = await response.json();
+    return dataMapper(data);
+  };
+
+  try {
+    return await withRetry(apiFunction);
+  } catch (error) {
+    const appError = handleError(error);
+    console.error(`Final Error fetching from ${endpoint}:`, appError);
+    throw appError;
+  }
 }
 
 export async function getWarehouses(): Promise<Warehouse[]> {
   const endpoint = `/Warehouses`;
-  return fetchDataWithRetry(endpoint, (data: any) => {
+  const token = store.getState().auth.accessToken as string;
+  return fetchDataWithRetry(endpoint, token, (data: any) => {
     if (!Array.isArray(data)) {
       console.error("API /Warehouse did not return an array:", data);
       return [];
@@ -168,8 +217,9 @@ export async function getDepartments(companyName: string): Promise<Department[]>
   const endpoint = `/amx/departments/${encodeURIComponent(companyName)}`;
   const fullUrl = `${API_URL}${endpoint}`;
   console.log("Fetching departments from URL:", fullUrl);
+  const token = store.getState().auth.accessToken as string;
 
-  return fetchDataWithRetry(endpoint, (data: any) => {
+  return fetchDataWithRetry(endpoint, token, (data: any) => {
     // Data ahora viene como array de objetos con unitCode, unitName, company
     if (!Array.isArray(data)) {
       console.error("API /departments did not return an array:", data);
@@ -189,7 +239,8 @@ export async function getDepartments(companyName: string): Promise<Department[]>
 
 export async function getCatalogItemsByWarehouse(warehouseId: string): Promise<CatalogItem[]> {
   const endpoint = `/Inventory/by-warehouse/${warehouseId}`;
-  return fetchDataWithRetry(endpoint, (data: any) => {
+  const token = store.getState().auth.accessToken as string;
+  return fetchDataWithRetry(endpoint, token, (data: any) => {
     if (!Array.isArray(data)) {
       console.error("API /Items did not return an array:", data);
       return [];
@@ -225,16 +276,12 @@ export async function searchCatalogItems(query: string, warehouseId: string): Pr
   );
 }
 
-export async function getCompanies(): Promise<Company[]> {
-  const endpoint = `/amx/companies`;
-  return fetchDataWithRetry(endpoint, (data: any) =>
-    (data as string[]).map((companyName) => ({ name: companyName }))
-  );
-}
+
 
 export async function getCustomersByCompany(companyName: string): Promise<Customer[]> {
   const endpoint = `/amx/customers/${encodeURIComponent(companyName)}`;
-  return fetchDataWithRetry(endpoint, (data: any) => {
+  const token = store.getState().auth.accessToken as string;
+  return fetchDataWithRetry(endpoint, token, (data: any) => {
     return (data as string[]).map((customerName) => ({
       id: customerName,
       companyId: companyName,
@@ -246,7 +293,8 @@ export async function getCustomersByCompany(companyName: string): Promise<Custom
 
 export async function getProjectsByCustomer(companyName: string, customerName: string): Promise<Project[]> {
   const endpoint = `/amx/projects/${encodeURIComponent(companyName)}/${encodeURIComponent(customerName)}`;
-  return fetchDataWithRetry(endpoint, (data: any) => {
+  const token = store.getState().auth.accessToken as string;
+  return fetchDataWithRetry(endpoint, token, (data: any) => {
     return (data as string[]).map((projectName) => ({
       id: projectName,
       customerId: customerName,
@@ -259,7 +307,8 @@ export async function getProjectsByCustomer(companyName: string, customerName: s
 
 export async function getWorkOrdersByProject(companyName: string, customerName: string, projectName: string): Promise<WorkOrder[]> {
   const endpoint = `/amx/workorders/${encodeURIComponent(companyName)}/${encodeURIComponent(customerName)}/${encodeURIComponent(projectName)}?status=OPEN`;
-  return fetchDataWithRetry(endpoint, (data: any) => {
+  const token = store.getState().auth.accessToken as string;
+  return fetchDataWithRetry(endpoint, token, (data: any) => {
     if (!Array.isArray(data)) {
       console.error("API /workorders did not return an array:", data);
       return [];
@@ -284,8 +333,9 @@ export async function getUsers(status: string = 'OPEN'): Promise<Employee[]> {
   const endpoint = `/amx/employees?status=${encodeURIComponent(status)}?status=active`;
   const fullUrl = `${API_URL}${endpoint}`;
   console.log('Fetching users from URL:', fullUrl);
+  const token = store.getState().auth.accessToken as string;
 
-  return fetchDataWithRetry(endpoint, (data: any) => {
+  return fetchDataWithRetry(endpoint, token, (data: any) => {
     if (!Array.isArray(data)) {
       console.error('API /amx/employees did not return an array:', data);
       return [];
@@ -311,21 +361,27 @@ export async function getUsers(status: string = 'OPEN'): Promise<Employee[]> {
 /**
  * Envía una imagen al backend usando multipart/form-data
  */
-export async function sendImage(file: File): Promise<any> {
+export async function sendImage(file: File): Promise<{ photoUrl: string }> {
   const formData = new FormData();
-  formData.append("file", file); // el backend espera el campo "file"
+  formData.append("photo", file); // el backend espera "photo"
 
-  const url = `${API_URL}/Items/upload-image`;
-  console.log('Uploading image to URL:', url);
+  const token = store.getState().auth.accessToken as string;
+  if (!token) throw new Error("No authorization token available");
+
+  const url = `${API_URL}/transfer-requests/upload-photo`;
 
   const response = await fetch(url, {
     method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`
+    },
     body: formData,
   });
 
   if (!response.ok) {
-    throw new Error(`Error al subir imagen: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Error al subir imagen: ${response.statusText} - ${errorText}`);
   }
 
-  return await response.json();
+  return await response.json(); // { photoUrl: "https://..." }
 }

@@ -1,5 +1,6 @@
 import { LoanRequest, PagedResponseDto, CreateLoanRequestDto, UpdateLoanRequestStatusDto, LoanRequestDto, EngineerHoldingsResponse, HoldingSource, EngineerHoldingItem} from '../types';
 import { API_URL } from "../../../../url";
+import { fetchWithAuth } from '../../../../utils/fetchWithAuth';
 
 const API_BASE_URL = API_URL;
 const DEFAULT_WAREHOUSE_ID = 1;
@@ -19,7 +20,7 @@ async function getPagedData<T>(
     const url = `${API_BASE_URL}/${path}?${params}`; 
 
     try {
-        const response = await fetch(url);
+        const response = await fetchWithAuth(url);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -53,14 +54,25 @@ export async function getPackingRequests(): Promise<LoanRequest[]> {
     );
     const combined = [...approved, ...packing];
     
+    // Asegurar que cada request tenga un ID (generarlo del requestNumber si no existe)
+    const processedRequests = combined.map(req => {
+        if (!req.id && req.requestNumber) {
+            return {
+                ...req,
+                id: generateIdFromString(req.requestNumber)
+            };
+        }
+        return req;
+    });
+    
     // Debug: ver estructura de datos
-    console.log('🔍 Packing Requests from API:', combined);
-    if (combined.length > 0) {
-      console.log('🔍 First request structure:', combined[0]);
-      console.log('🔍 First request keys:', Object.keys(combined[0]));
+    console.log('🔍 Packing Requests from API:', processedRequests);
+    if (processedRequests.length > 0) {
+      console.log('🔍 First request structure:', processedRequests[0]);
+      console.log('🔍 First request keys:', Object.keys(processedRequests[0]));
     }
     
-    return combined;
+    return processedRequests;
 
   } catch (error) {
     console.warn('Error fetching packing requests:', error);
@@ -82,9 +94,13 @@ function generateIdFromString(s: string): number {
 
 export async function getEngineerReturns(engineerId: string, warehouseId: number = DEFAULT_WAREHOUSE_ID): Promise<LoanRequest[]> {
     const url = `${API_BASE_URL}/engineer-holdings/${engineerId}?warehouseId=${warehouseId}`;
+    
+    console.log('🔍 getEngineerReturns called with:', { engineerId, warehouseId, url });
 
     try {
-        const response = await fetch(url);
+        const response = await fetchWithAuth(url);
+        
+        console.log('🔍 Response status:', response.status, response.statusText);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -93,6 +109,8 @@ export async function getEngineerReturns(engineerId: string, warehouseId: number
         }
 
         const data: EngineerHoldingsResponse = await response.json();
+        console.log('🔍 API Response data:', JSON.stringify(data, null, 2));
+        
         const engineer = data.engineer;
         
         const returnsList: LoanRequest[] = [];
@@ -118,7 +136,7 @@ export async function getEngineerReturns(engineerId: string, warehouseId: number
                             requesterEmail: engineer.email,
                             departmentName: 'N/A', 
                             departmentId: 0, 
-                            requesterId: engineer.id, 
+                            requesterId: engineer.employeeId, 
                             projectId: 0, 
                             project: projectIdStr,
                             requestedLoanDate: dateReceived, 
@@ -136,7 +154,7 @@ export async function getEngineerReturns(engineerId: string, warehouseId: number
                     const loanRequest = requestsMap.get(requestNumber)!;
                 
                     loanRequest.items.push({
-                        id: catalogItemId, // ← Usar el itemId del catálogo (consistente)
+                        id: catalogItemId,
                         sku: item.sku, 
                         name: item.name, 
                         articleDescription: item.description || '',
@@ -154,6 +172,12 @@ export async function getEngineerReturns(engineerId: string, warehouseId: number
             });
             requestsMap.forEach(req => returnsList.push(req as LoanRequest));
         });
+        
+        console.log('🔍 Transformed returnsList:', returnsList.length, 'items');
+        if (returnsList.length > 0) {
+            console.log('🔍 First return item:', returnsList[0]);
+        }
+        
         return returnsList;
 
     } catch (error) {
@@ -165,12 +189,9 @@ export async function createLoanRequest(dto: CreateLoanRequestDto): Promise<Loan
   try {
     const url = `${API_BASE_URL}/loan-requests`;
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dto) 
-    });
-
+    const res = await fetchWithAuth(url, {
+      method: 'POST',      body: JSON.stringify(dto) 
+    });
     if (!res.ok) {
         const errorText = await res.text();
         console.error('Failed to create loan request on server. Response:', errorText);
@@ -195,9 +216,8 @@ export async function updateLoanRequestStatus(
         
         const dto: UpdateLoanRequestStatusDto = { status, packedByUserId };
 
-        const res = await fetch(url, {
-            method: 'PUT', 
-            headers: { 'Content-Type': 'application/json' },
+        const res = await fetchWithAuth(url, {
+            method: 'PUT',
             body: JSON.stringify(dto)
         });
 
@@ -216,9 +236,8 @@ export async function updateLoanRequestStatus(
 
 export async function updateReturnItems(requestId: number, items: LoanRequest['items']): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE_URL}/returns/${requestId}`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/returns/${requestId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items })
     });
     return res.ok;
@@ -236,7 +255,7 @@ export async function getEngineerHoldings(
     const url = `${API_BASE_URL}/engineer-holdings/${engineerId}?warehouseId=${warehouseId}`; 
 
     try {
-        const response = await fetch(url);
+        const response = await fetchWithAuth(url);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -263,12 +282,8 @@ export async function startPacking(requestNumber: string, keeperEmployeeId: stri
     try {
         const url = `${API_URL}/loan-requests/${requestNumber}/start-packing?keeperEmployeeId=${keeperEmployeeId}`;
         
-        const response = await fetch(url, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-
+        const response = await fetchWithAuth(url, {
+            method: 'PUT'
         });
 
         if (!response.ok) {
@@ -300,11 +315,8 @@ export async function sendLoanRequest(
     try {
         const url = `${API_URL}/loan-requests/${requestNumber}/send?keeperEmployeeId=${keeperEmployeeId}`;
         
-        const response = await fetch(url, {
+        const response = await fetchWithAuth(url, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify(packedItems)
         });
 
@@ -330,7 +342,7 @@ export async function uploadReturnPhoto(photoFile: Blob): Promise<string | null>
         const formData = new FormData();
         formData.append('photo', photoFile, 'return_photo.jpeg'); 
 
-        const response = await fetch(url, {
+        const response = await fetchWithAuth(url, {
             method: 'POST',
             body: formData,
         });
@@ -377,12 +389,8 @@ export async function submitReturnLoan(payload: ReturnLoanPayload): Promise<bool
   const url = `${API_BASE_URL}/Inventory/return-loan`; 
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithAuth(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Asegúrate de incluir cualquier cabecera de autenticación necesaria (e.g., Authorization)
-      },
       body: JSON.stringify(payload),
     });
 

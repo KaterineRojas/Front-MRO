@@ -1,4 +1,5 @@
 import { API_URL } from "../../../../url";
+import { store } from "../../../../store/store";
 
 // Types
 export interface BorrowItem {
@@ -24,6 +25,9 @@ export interface BorrowRequest {
   totalItems?: number;
   totalQuantity?: number;
   notes: string;
+  address?: string;
+  location?: string;
+  zipCode?: string;
   items: BorrowItem[];
 }
 
@@ -127,6 +131,7 @@ export async function getBorrowRequests(
   }
   const page = pageNumber ?? 1;
   const size = pageSize ?? 20;
+  const token = store.getState().auth.accessToken as string;
 
   const url = `${API_URL}/loan-requests?requesterId=${encodeURIComponent(
     requesterId
@@ -139,6 +144,7 @@ export async function getBorrowRequests(
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       }
     });
 
@@ -180,11 +186,13 @@ export async function getBorrowRequests(
  */
 export async function getBorrowRequestById(requestId: string, requesterId: string): Promise<BorrowRequest | null> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const url = `${API_URL}/loan-requests/${requestId}?requesterId=${encodeURIComponent(requesterId)}`;
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       }
     });
 
@@ -227,9 +235,13 @@ export async function createBorrowRequest(payload: {
   workOrderId: string;
   expectedReturnDate: string;
   notes: string;
+  address?: string;
+  googleMapsUrl?: string;
+  zipCode?: string;
   items: { itemId: number; quantityRequested: number }[];
 }): Promise<{ success: boolean; message: string; requestNumber?: string }> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const apiPayload = {
       ...payload
       // requesterId comes from payload (from currentUser.id in LoanForm)
@@ -244,7 +256,10 @@ export async function createBorrowRequest(payload: {
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(apiPayload)
     });
 
@@ -295,10 +310,12 @@ export async function updateBorrowRequestStatus(
   status: BorrowRequest['status']
 ): Promise<BorrowRequest | null> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/loan-requests/${requestId}/status`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ status })
     });
@@ -342,18 +359,16 @@ export async function updateBorrowRequestStatus(
 export async function deleteBorrow(
   requestNumber: string | number,
   options?: {
-    token?: string;
     signal?: AbortSignal;
   }
 ): Promise<{ success: boolean; message?: string; status: number }> {
+  const token = store.getState().auth.accessToken as string;
   const url = `${API_URL}/loan-requests/${requestNumber}`;
 
   const headers: Record<string, string> = {
-    Accept: "application/json",
+    'Accept': 'application/json',
+    'Authorization': `Bearer ${token}`
   };
-  if (options?.token) {
-    headers["Authorization"] = `Bearer ${options.token}`;
-  }
 
   const resp = await fetch(url, {
     method: "DELETE",
@@ -392,10 +407,12 @@ export async function returnBorrowedItems(
   requestId: string
 ): Promise<{ success: boolean; message: string }> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/loan-requests/${requestId}/return`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       }
     });
 

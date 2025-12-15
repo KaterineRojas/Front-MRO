@@ -11,7 +11,7 @@ import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import { toast } from 'sonner';
 import { getInventoryEngineer, type InventoryItem } from './myInventoryService';
 import { useAppSelector } from '../enginner/store/hooks';
-import { selectCurrentUser } from '../enginner/store/selectors';
+import { store } from '../../../store/store';
 
 interface GroupedInventoryItem {
   itemId: string;
@@ -64,7 +64,6 @@ type CombinedInventory = {
 };
 
 export function MyInventoryTransfer() {
-  const currentUser = useAppSelector(selectCurrentUser);
   const navigate = useNavigate();
 
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
@@ -79,10 +78,11 @@ export function MyInventoryTransfer() {
   // Load inventory and kits from service
   useEffect(() => {
     const loadInventory = async () => {
-      if (!currentUser?.id) return;
+      const currentUser = (store.getState() as any).auth?.user;
+      if (!currentUser?.employeeId) return;
 
       try {
-        const response = await getInventoryEngineer(currentUser.id);
+        const response = await getInventoryEngineer(currentUser.employeeId);
         setInventoryItems(response.items);
         setKits(response.kits);
       } catch (error) {
@@ -94,7 +94,7 @@ export function MyInventoryTransfer() {
     };
 
     loadInventory();
-  }, [currentUser?.id]);
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
