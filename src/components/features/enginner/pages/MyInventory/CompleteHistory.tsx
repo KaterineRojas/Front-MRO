@@ -20,12 +20,10 @@ import {
 } from 'lucide-react';
 import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
-import { useAppSelector } from '../../store/hooks';
-import { selectCurrentUser } from '../../store/selectors';
 import { getCompleteHistory, getWarehouses, type HistoryRecord, type Warehouse } from '../../services';
+//import { getWarehouses } from '../../../requests/services/sharedServices';
 
 export function CompleteHistory() {
-  const currentUser = useAppSelector(selectCurrentUser);
   const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [expandedRecords, setExpandedRecords] = useState<Set<string>>(new Set());
@@ -122,7 +120,7 @@ export function CompleteHistory() {
         const searchLower = searchTerm.toLowerCase();
         return (
           record.id.toLowerCase().includes(searchLower) ||
-          record.project.toLowerCase().includes(searchLower) ||
+          record.projectId.toLowerCase().includes(searchLower) ||
           record.department.toLowerCase().includes(searchLower) ||
           (record.warehouseName && record.warehouseName.toLowerCase().includes(searchLower)) ||
           record.items.some(item => 
@@ -283,7 +281,7 @@ export function CompleteHistory() {
                       <Calendar className="h-4 w-4" />
                       {formatDate(record.completionDate)}
                     </p>
-                    <p>Project: {record.project}</p>
+                    <p>Project: {record.projectId}</p>
                     {record.totalCost && (
                       <p className="flex items-center gap-1">
                         <DollarSign className="h-4 w-4" />
@@ -374,7 +372,7 @@ export function CompleteHistory() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <p className="text-sm">{record.project}</p>
+                          <p className="text-sm">{record.projectId}</p>
                           <p className="text-xs text-muted-foreground">{record.department}</p>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">

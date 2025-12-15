@@ -26,7 +26,7 @@ const getInitialState = (): UserState => {
     //borrow
     return {
       currentUser: {
-        id: 'amx0143',
+        id: 'amx0142',
         name: 'John Smith',
         email: 'john@company.com',
         department: 'IT-Bolivia'

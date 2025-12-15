@@ -2,6 +2,7 @@ import type { Article, InventoryItemResponse, Kit, Bin, Transaction } from '../t
 import type { PurchaseRequest, DamagedRequest, StockCorrectionRequest, WarehouseTransferRequest } from '../modals/RecordMovement/types';
 import type { WarehouseV2 } from '../types/warehouse-v2';
 import { API_URL } from "../../../../url";
+import { store } from "../../../../store/store";
 
 // ============================================================================
 // TRANSFORMERS & UTILITIES
@@ -80,9 +81,13 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
  */
 export async function fetchArticlesFromApi(): Promise<Article[]> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Inventory/items-with-bins?isActive=true`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
     });
 
     if (!response.ok) {
@@ -107,9 +112,13 @@ export async function fetchArticlesFromApi(): Promise<Article[]> {
  */
 export async function fetchArticleByIdApi(id: number): Promise<Article> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Items/${id}`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
     });
 
     if (!response.ok) {
@@ -138,6 +147,7 @@ export async function createArticleApi(articleData: {
   imageFile?: File | null;
 }): Promise<Article> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const formData = new FormData();
     formData.append('name', articleData.name);
     formData.append('description', articleData.description);
@@ -154,6 +164,9 @@ export async function createArticleApi(articleData: {
 
     const response = await fetch(`${API_URL}/Items/with-image`, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
       body: formData,
     });
 
@@ -184,6 +197,7 @@ export async function updateArticleApi(id: number, articleData: {
   imageUrl?: string | null;
 }): Promise<Article> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const payload = {
       sku: articleData.sku,
       name: articleData.name,
@@ -198,7 +212,10 @@ export async function updateArticleApi(id: number, articleData: {
 
     const response = await fetch(`${API_URL}/Items/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(payload),
     });
 
@@ -237,6 +254,7 @@ export async function updateArticleWithImageApi(id: number, articleData: {
   imageUrl?: string | null;
 }): Promise<Article> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const formData = new FormData();
     formData.append('sku', articleData.sku);
     formData.append('name', articleData.name);
@@ -255,6 +273,9 @@ export async function updateArticleWithImageApi(id: number, articleData: {
 
     const response = await fetch(`${API_URL}/Items/${id}/update-with-image`, {
       method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
       body: formData,
     });
 
@@ -283,9 +304,13 @@ export async function updateArticleWithImageApi(id: number, articleData: {
  */
 export async function deleteArticleApi(id: number): Promise<void> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Items/${id}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
     });
 
     if (!response.ok) {
@@ -303,9 +328,13 @@ export async function deleteArticleApi(id: number): Promise<void> {
  */
 export async function getCategories(): Promise<{ value: string; label: string }[]> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Items/categories`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
     });
 
     if (!response.ok) {
@@ -332,9 +361,13 @@ export async function getCategories(): Promise<{ value: string; label: string }[
  */
 export async function createPurchaseApi(purchaseData: PurchaseRequest): Promise<void> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Inventory/purchase`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(purchaseData),
     });
 
@@ -365,9 +398,13 @@ export async function getNewBins(): Promise<Bin[]> {
  */
 export async function fetchBinsFromApi(): Promise<Bin[]> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Bin/with-quantity?isActive=true`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
     });
 
     if (!response.ok) {
@@ -403,9 +440,13 @@ export async function fetchBinsFromApi(): Promise<Bin[]> {
 export async function fetchWarehousesFromApi(): Promise<WarehouseV2[]> {
   try {
     console.log('🔄 Fetching warehouses from API...');
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Bin/with-quantity`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
     });
 
     if (!response.ok) {
@@ -499,9 +540,13 @@ export async function createZoneApi(data: {
   name: string;
 }) {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Zones`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(data),
     });
 
@@ -533,9 +578,13 @@ export async function createRackApi(data: {
   name: string;
 }) {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Racks`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(data),
     });
 
@@ -567,9 +616,13 @@ export async function createLevelApi(data: {
   name: string;
 }) {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Levels`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(data),
     });
 
@@ -602,9 +655,13 @@ export async function createBinApi(data: {
   allowDifferentItems: boolean;
 }) {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Bin`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(data),
     });
 
@@ -849,10 +906,12 @@ export async function recordMovementApi(movementData: any): Promise<{ transactio
  */
 export async function createDamagedApi(damagedData: DamagedRequest): Promise<void> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Inventory/damaged`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(damagedData),
     });
@@ -875,10 +934,12 @@ export async function createDamagedApi(damagedData: DamagedRequest): Promise<voi
  */
 export async function createStockCorrectionApi(correctionData: StockCorrectionRequest): Promise<void> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Inventory/stock-correction`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(correctionData),
     });
@@ -905,10 +966,12 @@ export async function getValidDestinationBins(itemId: number, fromBinId: number)
   description: string;
 }[]> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Inventory/valid-destinations?itemId=${itemId}&fromBinId=${fromBinId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
     });
 
@@ -931,10 +994,12 @@ export async function getValidDestinationBins(itemId: number, fromBinId: number)
  */
 export async function createWarehouseTransferApi(transferData: WarehouseTransferRequest): Promise<void> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Inventory/relocate-item`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(transferData),
     });

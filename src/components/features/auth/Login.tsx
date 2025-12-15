@@ -75,6 +75,7 @@ export function Login() {
             id: String(response.user.id),
             name: response.user.name,
             email: response.user.email,
+            employeeId: response.user.employeeId,
             role: frontendRole,
             department: response.user.departmentId ? String(response.user.departmentId) : 'Engineering',
           },

@@ -7,9 +7,9 @@ import { Badge } from '../components/Badge'
 
 import { createPortal } from 'react-dom'
 import { AvailableBinResponse } from '../services/binsService';
-import { useReactToPrint } from 'react-to-print';
 import { Printer } from 'lucide-react';
 import { KitRequestPrintTemplate } from '../components/KitRequestPrintTemplate';
+import { usePrintWindow } from '../hooks/usePrintWindow';
 
 interface Bin {
     id: number;
@@ -60,13 +60,19 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
     const [selectedBinId, setSelectedBinId] = useState<number>(0);
     const [isVisible, setIsVisible] = useState(false);
     const [shouldRender, setShouldRender] = useState(false);
-    const printComponentRef = useRef<HTMLDivElement>(null);
 
-const handlePrint = useReactToPrint({
-    contentRef: printComponentRef,
-    documentTitle: `Request_${kit.sku}`,
-    onAfterPrint: () => console.log("Impresión finalizada"),
-});
+    const printReactComponent = usePrintWindow();
+
+    const handlePrintClick = () => {
+        printReactComponent(
+            <KitRequestPrintTemplate 
+                kit={kit} 
+                articles={articles} 
+                quantity={quantity} 
+            />, 
+            `Request_${kit.sku}` 
+        );
+    };
 
     useEffect(() => {
         if (isOpen) {
@@ -227,7 +233,7 @@ const handlePrint = useReactToPrint({
 
                             {/* THE PRINT BUTTON */}
                             <button
-                                onClick={handlePrint}
+                                onClick={handlePrintClick}
                                 className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                             >
                                 <Printer className="w-4 h-4" />
@@ -319,14 +325,7 @@ const handlePrint = useReactToPrint({
             </div>
 
 
-            <div style={{ display: "none" }}>
-                <KitRequestPrintTemplate
-                    ref={printComponentRef}
-                    kit={kit}
-                    articles={articles}
-                    quantity={quantity}
-                />
-            </div>
+            
         </div>
         , document.body);
 };

@@ -311,7 +311,7 @@ export function Catalog() {
     
     // Validar que no haya items de otro warehouse en el carrito
     const cartHasDifferentWarehouse = cartItems.length > 0 && 
-      cartItems[0].warehouseId && 
+      cartItems[0].warehouseName && 
       cartItems[0].warehouseId !== selectedWarehouse;
     
     if (cartHasDifferentWarehouse) {
@@ -402,7 +402,9 @@ export function Catalog() {
   };
 
   const onNavigateToRequest = () => {
-    navigate('/borrow');
+    setCartOpen(false);
+    sessionStorage.setItem('openBorrowForm', 'true');
+    navigate('/engineer/requests');
   };
 
   const handleAICameraError = (error: AppError) => {

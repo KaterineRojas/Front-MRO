@@ -23,7 +23,7 @@ export interface Request {
     requestDate: string;
     requiredDate?: string;
     returnDate?: string;
-    status: 'pending' | 'approved' | 'rejected' | 'completed';
+    status: 'pending' | 'approved' | 'rejected' | 'completed' | 'sent';
     reviewedBy?: string;
     reviewDate?: string;
     reviewNotes?: string;
