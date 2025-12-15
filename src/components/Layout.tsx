@@ -136,7 +136,7 @@ export function Layout() {
   };
 
   // Check if user has access to a module
-  const hasAccess = (roles: string[]): boolean => {
+  const hasAccess = (roles: readonly string[]): boolean => {
     if (!currentUser) {
       console.log('❌ No currentUser');
       return false;
