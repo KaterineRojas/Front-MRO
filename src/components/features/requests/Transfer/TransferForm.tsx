@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { toast } from 'sonner';
 import { store } from '../../../../store/store';
 import { 
-  getAvailableUsers, 
+   
   createTransfer,
   getInventoryTransfer,
   type InventoryItem,
@@ -266,8 +266,8 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
       const response = await sendImage(file);
       console.log('Photo validation response:', response);
 
-      if (response.url) {
-        setValidatedImageUrl(response.url);
+      if (response.photoUrl) {
+        setValidatedImageUrl(response.photoUrl);
         toast.success('Photograph validated successfully');
       } else {
         toast.error('Failed to validate photograph');
@@ -310,6 +310,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
 
       await createTransfer({
         targetEngineerId,
+        warehouseId: selectedWarehouse,
         items,
         photo: validatedImageUrl!
       });

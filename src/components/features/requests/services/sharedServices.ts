@@ -361,21 +361,27 @@ export async function getUsers(status: string = 'OPEN'): Promise<Employee[]> {
 /**
  * Envía una imagen al backend usando multipart/form-data
  */
-export async function sendImage(file: File): Promise<any> {
+export async function sendImage(file: File): Promise<{ photoUrl: string }> {
   const formData = new FormData();
-  formData.append("file", file); // el backend espera el campo "file"
+  formData.append("photo", file); // el backend espera "photo"
+
+  const token = store.getState().auth.accessToken as string;
+  if (!token) throw new Error("No authorization token available");
 
   const url = `${API_URL}/transfer-requests/upload-photo`;
-  console.log('Uploading image to URL:', url);
 
   const response = await fetch(url, {
     method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`
+    },
     body: formData,
   });
 
   if (!response.ok) {
-    throw new Error(`Error al subir imagen: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Error al subir imagen: ${response.statusText} - ${errorText}`);
   }
 
-  return await response.json();
+  return await response.json(); // { photoUrl: "https://..." }
 }

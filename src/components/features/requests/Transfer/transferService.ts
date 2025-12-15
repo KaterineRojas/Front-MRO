@@ -368,6 +368,7 @@ export async function getInventoryTransfer(
  */
 export async function createTransfer(data: {
   targetEngineerId: string;
+  warehouseId: string;
   items: { id: string; quantity: number }[];
   photo: string;
   notes?: string;
@@ -385,7 +386,7 @@ export async function createTransfer(data: {
     const payload = {
       senderId: senderId,
       recipientId: data.targetEngineerId,
-      warehouseId: 1, // TODO: Get from form state if needed
+      warehouseId: data.warehouseId,
       projectId: '', // TODO: Get from form if needed
       imageUrl: data.photo,
       notes: data.notes || '',
@@ -414,8 +415,20 @@ export async function createTransfer(data: {
       throw new Error(`Error creating transfer: ${response.status} - ${response.statusText}`);
     }
 
-    const responseData = await response.json();
-    console.log('Transfer created successfully:', responseData);
+    // Handle empty response body (backend may return 200 with no content)
+    const responseText = await response.text();
+    let responseData: any = {};
+    
+    if (responseText) {
+      try {
+        responseData = JSON.parse(responseText);
+        console.log('Transfer created successfully:', responseData);
+      } catch (parseError) {
+        console.warn('Response body is not valid JSON, treating as success with empty response');
+      }
+    } else {
+      console.log('Transfer created successfully with empty response body');
+    }
 
     // Assuming the API returns the request number or ID
     const transferId = responseData.requestNumber || responseData.id || `TR${Date.now()}`;
