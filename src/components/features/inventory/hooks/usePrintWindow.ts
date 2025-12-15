@@ -50,17 +50,11 @@ export const usePrintWindow = () => {
       `);
       doc.close();
 
-      // 5. Imprimir y Limpiar
-      // Damos foco al iframe para que el navegador sepa qué imprimir
       iframe.contentWindow?.focus();
       
-      // Un pequeño timeout es vital para asegurar que el contenido (y estilos) se renderizó en el iframe
       setTimeout(() => {
         iframe.contentWindow?.print();
         
-        // Limpieza: Borramos el iframe después de que el usuario cierre el diálogo de impresión
-        // (En la mayoría de navegadores, el JS se pausa mientras el diálogo está abierto, 
-        // así que esto corre justo después de que el usuario hace click en Imprimir o Cancelar)
         setTimeout(() => {
              document.body.removeChild(iframe);
         }, 1000); 
