@@ -30,7 +30,7 @@ export const PackingRequestsTab: React.FC<Props> = (props) => {
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <Button className="bg-[#568FCB] hover:bg-[#4A7AB5]">
+        <Button className="bg-white hover:bg-white">
           <Plus className="h-4 w-4 mr-2" /> Create New Request Order
         </Button>
       </div>
@@ -59,7 +59,6 @@ export const PackingRequestsTab: React.FC<Props> = (props) => {
                   <TableHead >Department</TableHead>
                   <TableHead >Project</TableHead>
                   <TableHead >Loan Date</TableHead>
-                  <TableHead >Priority</TableHead>
                   <TableHead >Kit</TableHead>
                   <TableHead >Actions</TableHead>
                 </TableRow>
