@@ -20,7 +20,7 @@ interface Props {
   getPackingItemQuantity: (requestId: number, itemId: number) => number;
   areAllItemsSelected: (requestId: number, items: LoanItem[]) => boolean;
   handleSelectAllPackingItems: (request: LoanRequest, checked: boolean) => void;
-  printedRequests: Set<number>;
+  printedRequests: Set<string>;
   handlePrintSinglePacking: (request: LoanRequest) => void;
   handleConfirmPacking: (request: LoanRequest) => void;
 }
@@ -65,13 +65,12 @@ export const PackingRequestRow: React.FC<Props> = ({
             } else if (!isKit && !areItemsSelected) {
                 disabledMessage = 'Please select the items and specify the quantities to pack.';
             } else {
-                // Mensaje genérico de fallback (aunque la lógica anterior cubre todos los casos)
                 disabledMessage = 'Action blocked due to pending validations.';
             }           
             toast.error(disabledMessage);
         }
     };
-// ... dentro del componente PackingRequestRow
+
 const isPacking = request.status === 'Packing';
 const isApproved = request.status === 'Approved';
 const isSent = request.status === 'Sent';
@@ -82,11 +81,7 @@ const isSent = request.status === 'Sent';
         : isPacking 
             ? 'Print Packing List' 
             : 'Request already sent or completed';
-            
-    // El botón debe estar deshabilitado solo si ya se envió la solicitud.
     const printerDisabled = isSent; 
-    
-    // Cambiamos el color para que sea más notable cuando está 'Approved' (y se requiere acción)
     const printerVariant = isApproved ? 'default' : 'outline';
   return (
     <>

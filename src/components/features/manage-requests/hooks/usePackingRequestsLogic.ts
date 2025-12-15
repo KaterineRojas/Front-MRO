@@ -4,6 +4,8 @@ import { LoanRequest, LoanItem, CreateLoanRequestDto } from '../types';
 import { getPackingRequests, updateLoanRequestStatus, startPacking, sendLoanRequest, getEngineerReturns } from '../services/requestManagementService';
 import { handlePrintSinglePacking as utilPrintSingle } from '../utils/requestManagementUtils';
 import { toast } from 'react-hot-toast';
+import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
+import { fetchPackingRequests, refreshPackingRequests } from '../../../../store/slices/requestsSlice';
 
 // Interfaz para el DTO de envío (necesario solo para handleConfirmPackingDialog)
 interface SendLoanRequestDto {
@@ -20,9 +22,14 @@ interface UsePackingRequestsLogicProps {
 }
 
 export function usePackingRequestsLogic({ keeperEmployeeId }: UsePackingRequestsLogicProps) {
-  const [packingRequests, setPackingRequests] = useState<LoanRequest[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const { packingRequests: reduxPackingRequests, loadingPacking, errorPacking } = useAppSelector((state) => state.requests);
+  
+  // Usar datos de Redux
+  const packingRequests = reduxPackingRequests;
+  const isLoading = loadingPacking;
+  const error = errorPacking;
+  
   const [expandedPackingRequests, setExpandedPackingRequests] = useState<Set<string>>(new Set());
   const [selectedPackingItems, setSelectedPackingItems] = useState<Set<string>>(new Set());
   const [packingItemQuantities, setPackingItemQuantities] = useState<Record<string, number>>({});
@@ -45,20 +52,17 @@ export function usePackingRequestsLogic({ keeperEmployeeId }: UsePackingRequests
   const MOCK_REQUESTER_ID = 1;
 
 
-  // Fetch packing requests from API on mount
+  // Fetch packing requests from Redux on mount
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await getPackingRequests();
-        console.log('📦 Packing requests received:', data);
+    dispatch(fetchPackingRequests()).then((result) => {
+      if (fetchPackingRequests.fulfilled.match(result)) {
+        const data = result.payload;
+        console.log('📦 Packing requests received from Redux:', data);
         if (data && data.length > 0) {
           console.log('📦 First request:', data[0]);
           console.log('📦 First request keys:', Object.keys(data[0]));
           console.log('📦 First request id field:', data[0].id);
         }
-        setPackingRequests(data || []);
         
         // Marcar automáticamente requests en estado 'Packing' como impresos
         const packingStatusRequests = data.filter(req => req.status === 'Packing').map(req => req.requestNumber);
@@ -76,16 +80,9 @@ export function usePackingRequestsLogic({ keeperEmployeeId }: UsePackingRequests
           const cleaned = new Set(Array.from(prev).filter(reqNum => currentRequestNumbers.has(reqNum)));
           return cleaned;
         });
-      } catch (err) {
-        console.error('Failed to load packing requests', err);
-        setError('Failed to load packing requests');
-        setPackingRequests([]);
-      } finally {
-        setIsLoading(false);
       }
-    };
-    fetchData();
-  }, []);
+    });
+  }, [dispatch]);
   
   // Persistir printedRequests en localStorage
   useEffect(() => {
@@ -140,15 +137,15 @@ export function usePackingRequestsLogic({ keeperEmployeeId }: UsePackingRequests
     setPackingConfirmDialogOpen(true);
   }, []);
 
-  // 1. Función para recargar la lista de Packing (DEBE ir ANTES de handlePrintAllPacking)
-  const reloadPackingRequests = useCallback(async () => {
-    try {
-      const data = await getPackingRequests();
-      setPackingRequests(data || []);
-    } catch (err) {
-      console.error('Failed to reload packing requests', err);
-    }
-  }, []);
+// 1. Función para recargar la lista de Packing desde Redux
+  const reloadPackingRequests = useCallback(async () => {
+    try {
+      await dispatch(refreshPackingRequests()).unwrap();
+      console.log('✅ Packing requests reloaded from server');
+    } catch (err) {
+      console.error('Failed to reload packing requests', err);
+    }
+  }, [dispatch]);
 
 // =================================================================
 // Función Auxiliar para la Generación de HTML (Reutilizable)

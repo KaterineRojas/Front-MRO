@@ -42,16 +42,12 @@ const PACKING_ALLOWED_STATUSES = ['Approved', 'Packing'];
 
 export async function getPackingRequests(): Promise<LoanRequest[]> {
   try {
-    const approved = await getPagedData<LoanRequest>(
-      'loan-requests',
-      'Approved',
-      DEFAULT_WAREHOUSE_ID
-    );
-    const packing = await getPagedData<LoanRequest>(
-      'loan-requests',
-      'Packing',
-      DEFAULT_WAREHOUSE_ID
-    );
+    // ⚡ Peticiones paralelas para mejorar velocidad
+    const [approved, packing] = await Promise.all([
+      getPagedData<LoanRequest>('loan-requests', 'Approved', DEFAULT_WAREHOUSE_ID),
+      getPagedData<LoanRequest>('loan-requests', 'Packing', DEFAULT_WAREHOUSE_ID)
+    ]);
+    
     const combined = [...approved, ...packing];
     
     // Asegurar que cada request tenga un ID (generarlo del requestNumber si no existe)
