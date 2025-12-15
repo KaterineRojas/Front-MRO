@@ -36,10 +36,19 @@ export function InventoryManager() {
 
   // Load data on mount
   useEffect(() => {
-    dispatch(fetchArticles());
-    dispatch(fetchKits());
-    dispatch(fetchBins());
-    dispatch(fetchTransactions());
+    // Dispatch with error handling - allow partial failures
+    dispatch(fetchArticles()).catch(() => {
+      console.warn('⚠️ Items data not loaded - authentication required');
+    });
+    dispatch(fetchKits()).catch(() => {
+      console.warn('⚠️ Kits data not loaded - authentication required');
+    });
+    dispatch(fetchBins()).catch(() => {
+      console.warn('⚠️ Bins data not loaded');
+    });
+    dispatch(fetchTransactions()).catch(() => {
+      console.warn('⚠️ Transactions data not loaded');
+    });
   }, [dispatch]);
 
 
@@ -314,18 +323,21 @@ export function InventoryManager() {
   //   );
   // }
 
-  // Show error state
-  if (error) {
+  // Show error state only if it's a critical error that prevents rendering
+  // Allow partial failures for Items/Kits while keeping Bins/Transactions functional
+  const isCriticalError = error && !error.includes('Items') && !error.includes('Kits') && !error.includes('items') && !error.includes('kits');
+  
+  if (isCriticalError) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-500">Error: {error}</p>
           <Button
             onClick={() => {
-              dispatch(fetchArticles());
-              dispatch(fetchKits());
-              dispatch(fetchBins());
-              dispatch(fetchTransactions());
+              dispatch(fetchArticles()).catch(() => {});
+              dispatch(fetchKits()).catch(() => {});
+              dispatch(fetchBins()).catch(() => {});
+              dispatch(fetchTransactions()).catch(() => {});
             }}
             className="mt-4"
           >

@@ -15,7 +15,11 @@ interface SendLoanRequestDto {
 
 const PRINTED_REQUESTS_KEY = 'packing_printed_requests';
 
-export function usePackingRequestsLogic() {
+interface UsePackingRequestsLogicProps {
+  keeperEmployeeId: string;
+}
+
+export function usePackingRequestsLogic({ keeperEmployeeId }: UsePackingRequestsLogicProps) {
   const [packingRequests, setPackingRequests] = useState<LoanRequest[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +38,8 @@ export function usePackingRequestsLogic() {
   });
   
   const [packingConfirmDialogOpen, setPackingConfirmDialogOpen] = useState(false);
-  const [currentPackingRequest, setCurrentPackingRequest] = useState<LoanRequest | null>(null);  const MOCK_KEEPER_EMPLOYEE_ID = "amx0093";
+  const [currentPackingRequest, setCurrentPackingRequest] = useState<LoanRequest | null>(null);
+  
   const MOCK_WAREHOUSE_ID = 1; 
   const MOCK_DEPARTMENT_ID = 1;
   const MOCK_REQUESTER_ID = 1;
@@ -258,7 +263,7 @@ const handlePrintAllPacking = useCallback(async () => { // Ya no necesita setAll
         // Solo llamar a startPacking si la solicitud está en estado 'Approved'
         if (request.status === 'Approved') {
             try {
-                const updatedRequest = await startPacking(request.requestNumber, MOCK_KEEPER_EMPLOYEE_ID);
+                const updatedRequest = await startPacking(request.requestNumber, keeperEmployeeId);
                 if (updatedRequest) {
                     successfulUpdates++;
                     setPrintedRequests(prev => new Set(prev).add(request.requestNumber));
@@ -296,7 +301,7 @@ const handlePrintAllPacking = useCallback(async () => { // Ya no necesita setAll
       setPrintedRequests(prev => new Set(prev).add(request.requestNumber));
       if (request.status === 'Approved') {
         try {
-          const updatedRequest = await startPacking(request.requestNumber, MOCK_KEEPER_EMPLOYEE_ID);          
+          const updatedRequest = await startPacking(request.requestNumber, keeperEmployeeId);          
           if (updatedRequest) {
             // Recargar la lista para reflejar el cambio de estado
             await reloadPackingRequests();
@@ -369,8 +374,27 @@ const handleConfirmPackingDialog = useCallback((
 
         const sendDto = { items: sendItemsForApi };
         console.log('DTO being sent to /send:', sendDto);
+        
+        // 1.5. Asegurar que el keeper actual sea el "owner" del packing
+        // Solo llamar a startPacking si el request está en estado "Approved"
+        // Si ya está en "Packing", significa que otro keeper ya lo empacó
+        if (currentPackingRequest.status === 'Approved') {
+            console.log(`Calling startPacking for ${currentPackingRequest.requestNumber} with keeper ${keeperEmployeeId}`);
+            const packingResult = await startPacking(currentPackingRequest.requestNumber, keeperEmployeeId);
+            if (!packingResult) {
+                toast.error(`Failed to update packing status for ${currentPackingRequest.requestNumber}`);
+                return;
+            }
+        }
+        // Si ya está en Packing, no llamamos a startPacking (el backend no lo permite)
+        // Solo intentamos send, y si falla por validación de keeper, mostraremos el error
+        
+        console.log(`📦 Confirming packing for request: ${currentPackingRequest.requestNumber}`);
+        console.log(`👤 Request is for engineer: ${currentPackingRequest.requesterId} (${currentPackingRequest.requesterName})`);
+        console.log(`📋 Items being sent:`, sendDto);
+        
         // 2. Llamada al API (PUT /send -> estado 'Sent')
-        const sentRequest = await sendLoanRequest(currentPackingRequest.requestNumber, MOCK_KEEPER_EMPLOYEE_ID, sendDto);
+        const sentRequest = await sendLoanRequest(currentPackingRequest.requestNumber, keeperEmployeeId, sendDto);
 
         if (!sentRequest) {
               toast.error(`Error: Failed to change status of ${currentPackingRequest.requestNumber} to Sent.`);
@@ -387,10 +411,16 @@ const handleConfirmPackingDialog = useCallback((
         setPackingConfirmDialogOpen(false);
         setCurrentPackingRequest(null);
         
-        // 4. Recargar Returns desde el API en lugar de actualización manual
+        // 4. Recargar Returns desde el API
+        // Usar el requesterId del request enviado (el ingeniero que recibirá los items)
+        // Si no se especificó engineerId en parámetros, usar el del request enviado
+        const targetEngineerId = engineerId || currentPackingRequest.requesterId || 'amx0142';
+        console.log(`🔄 Reloading engineer holdings for: ${targetEngineerId}`);
+        
         try {
-            const freshData = await getEngineerReturns(engineerId || 'amx0142', warehouseId || 1);
+            const freshData = await getEngineerReturns(targetEngineerId, warehouseId || 1);
             setAllReturns(freshData || []);
+            console.log(`✅ Reloaded ${freshData?.length || 0} returns for engineer ${targetEngineerId}`);
         } catch (err) {
             console.error('Error reloading returns after packing confirmation:', err);
         }
@@ -398,10 +428,18 @@ const handleConfirmPackingDialog = useCallback((
         toast.success(`Packing confirmed! Request ${currentPackingRequest.requestNumber} sent.`);
       } catch (err) {
         console.error('Error confirming packing and moving to returns', err);
-        toast.error('Error confirming packing. Please try again.');
+        
+        // Mostrar mensaje de error más descriptivo
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        
+        if (errorMessage.includes('not the keeper who packed')) {
+            toast.error(`Only the keeper who packed this request can send it. Please contact the original packer.`);
+        } else {
+            toast.error('Error confirming packing. Please try again.');
+        }
       }
     })();
-  }, [currentPackingRequest, isKitOrder, packingItemQuantities, selectedPackingItems, reloadPackingRequests]);
+  }, [currentPackingRequest, isKitOrder, packingItemQuantities, selectedPackingItems, reloadPackingRequests, keeperEmployeeId]);
   return {
     packingRequests, isLoading, error, expandedPackingRequests, selectedPackingItems, packingItemQuantities, printedRequests,
     packingConfirmDialogOpen, currentPackingRequest, setPackingConfirmDialogOpen,
