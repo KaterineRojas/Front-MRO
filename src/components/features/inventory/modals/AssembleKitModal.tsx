@@ -78,7 +78,15 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
         if (isOpen) {
             setShouldRender(true);
             setQuantity(1);
-            setSelectedBinId(0);
+            
+            // Si hay BIN pre-asignado, mantener selectedBinId en 0 (no usar dropdown)
+            // Si NO hay bin pre-asignado, auto-seleccionar el primer bin disponible
+            if (!assemblyBinCode && availableBins.length > 0) {
+                setSelectedBinId(availableBins[0].id);
+            } else {
+                setSelectedBinId(0);
+            }
+            
             document.body.style.overflow = 'hidden';
 
             requestAnimationFrame(() => {
