@@ -114,8 +114,13 @@ const isSent = request.status === 'Sent';
         </TableCell>
         <TableCell>{request.departmentId}</TableCell>
         <TableCell>{request.projectId}</TableCell>
-        <TableCell>{request.createdAt}</TableCell>
-        <TableCell>{getPriorityBadge(request.priority)}</TableCell>
+        <TableCell>
+          {new Date(request.createdAt).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          }).replace(/\//g, '-')}
+        </TableCell>
         <TableCell>
           <Badge variant={isKitOrder(request) ? 'default' : 'outline'}>{isKitOrder(request) ? 'Yes' : 'No'}</Badge>
         </TableCell>
