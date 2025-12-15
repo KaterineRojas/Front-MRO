@@ -107,7 +107,7 @@ export function CartSidebar({
           </div>
         ) : (
           <>
-            <ScrollArea className="flex-1 px-6">
+            <ScrollArea className="flex-1 px-6 max-h-[calc(100vh-280px)]">
               <div className="space-y-4 py-4">
                 {cartItems.map((cartItem) => (
                   <div

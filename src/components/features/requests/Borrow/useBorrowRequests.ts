@@ -76,6 +76,8 @@ export function useBorrowRequests() {
   // Load initial data
   // Get currentUser from authSlice with employeeId
   useEffect(() => {
+    let isMounted = true; // Flag para evitar actualizar estado si el componente fue desmontado
+
     const loadData = async () => {
       const currentUser = (store.getState() as any).auth?.user;
       if (!currentUser?.employeeId) {
@@ -87,27 +89,40 @@ export function useBorrowRequests() {
           getStatuses(),
           getBorrowRequests(currentUser.employeeId) 
         ]);
-        setWarehouses(whData);
-        setStatuses(statusData);
-        setBorrowRequests(requestsData.items || []);
-        console.log('Departamentos de los préstamos:', requestsData.items?.map(req => ({ requestNumber: req.requestNumber, departmentId: req.departmentId })));
+        
+        // Solo actualizar estado si el componente sigue montado
+        if (isMounted) {
+          setWarehouses(whData);
+          setStatuses(statusData);
+          setBorrowRequests(requestsData.items || []);
+          console.log('Departamentos de los préstamos:', requestsData.items?.map(req => ({ requestNumber: req.requestNumber, departmentId: req.departmentId })));
+        }
       } catch (error: any) {
-        const appError = handleError(error);
-        showConfirm({
-          title: appError.type === 'NETWORK_ERROR' ? 'Connection Error' : 'Error Loading Data',
-          description: appError.message,
-          type: appError.type === 'NETWORK_ERROR' ? 'network' : 'error',
-          confirmText: 'Retry',
-          cancelText: 'Cancel',
-          retryable: appError.retryable,
-          onConfirm: () => {
-            hideModal();
-            loadData();
-          }
-        });
+        // Solo mostrar error si el componente sigue montado
+        if (isMounted) {
+          const appError = handleError(error);
+          showConfirm({
+            title: appError.type === 'NETWORK_ERROR' ? 'Connection Error' : 'Error Loading Data',
+            description: appError.message,
+            type: appError.type === 'NETWORK_ERROR' ? 'network' : 'error',
+            confirmText: 'Retry',
+            cancelText: 'Cancel',
+            retryable: appError.retryable,
+            onConfirm: () => {
+              hideModal();
+              loadData();
+            }
+          });
+        }
       }
     };
+    
     loadData();
+
+    // Cleanup: Marcar componente como desmontado
+    return () => {
+      isMounted = false;
+    };
   }, []); // Load once on mount
 
   // Check mobile

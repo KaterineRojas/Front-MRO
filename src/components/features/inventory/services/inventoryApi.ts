@@ -3,6 +3,7 @@ import type { PurchaseRequest, DamagedRequest, StockCorrectionRequest, Warehouse
 import type { WarehouseV2 } from '../types/warehouse-v2';
 import { API_URL } from "../../../../url";
 import { fetchWithAuth } from '../../../../utils/fetchWithAuth';
+import { store } from '../../../../store/store';
 
 // ============================================================================
 // TRANSFORMERS & UTILITIES
@@ -81,9 +82,13 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
  */
 export async function fetchArticlesFromApi(): Promise<Article[]> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Inventory/items-with-bins?isActive=true`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
     });
 
     if (!response.ok) {
@@ -108,9 +113,13 @@ export async function fetchArticlesFromApi(): Promise<Article[]> {
  */
 export async function fetchArticleByIdApi(id: number): Promise<Article> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Items/${id}`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
     });
 
     if (!response.ok) {
@@ -139,6 +148,7 @@ export async function createArticleApi(articleData: {
   imageFile?: File | null;
 }): Promise<Article> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const formData = new FormData();
     formData.append('name', articleData.name);
     formData.append('description', articleData.description);
@@ -155,6 +165,9 @@ export async function createArticleApi(articleData: {
 
     const response = await fetch(`${API_URL}/Items/with-image`, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
       body: formData,
     });
 
@@ -185,6 +198,7 @@ export async function updateArticleApi(id: number, articleData: {
   imageUrl?: string | null;
 }): Promise<Article> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const payload = {
       sku: articleData.sku,
       name: articleData.name,
@@ -199,7 +213,10 @@ export async function updateArticleApi(id: number, articleData: {
 
     const response = await fetch(`${API_URL}/Items/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(payload),
     });
 
@@ -238,6 +255,7 @@ export async function updateArticleWithImageApi(id: number, articleData: {
   imageUrl?: string | null;
 }): Promise<Article> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const formData = new FormData();
     formData.append('sku', articleData.sku);
     formData.append('name', articleData.name);
@@ -256,6 +274,9 @@ export async function updateArticleWithImageApi(id: number, articleData: {
 
     const response = await fetch(`${API_URL}/Items/${id}/update-with-image`, {
       method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
       body: formData,
     });
 
@@ -284,9 +305,13 @@ export async function updateArticleWithImageApi(id: number, articleData: {
  */
 export async function deleteArticleApi(id: number): Promise<void> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Items/${id}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
     });
 
     if (!response.ok) {
@@ -304,9 +329,13 @@ export async function deleteArticleApi(id: number): Promise<void> {
  */
 export async function getCategories(): Promise<{ value: string; label: string }[]> {
   try {
+    const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Items/categories`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
     });
 
     if (!response.ok) {
