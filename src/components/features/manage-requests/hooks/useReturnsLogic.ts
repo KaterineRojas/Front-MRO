@@ -4,6 +4,8 @@ import { getEngineerReturns,uploadReturnPhoto, submitReturnLoan, ReturnItemPaylo
 import { formatConditionText as utilFormatConditionText } from '../utils/requestManagementUtils';
 import { toast } from 'react-hot-toast';
 import { handlePrintMissingKitItems } from '../utils/listKitRestock';
+import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
+import { fetchReturns, refreshReturns } from '../../../../store/slices/requestsSlice';
 
 export type ConditionCounts = { good: number, revision: number, lost: number };
 
@@ -13,11 +15,21 @@ interface UseReturnsLogicParams {
 }
 
 export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: UseReturnsLogicParams = {}) {
+  const dispatch = useAppDispatch();
+  const { returns: reduxReturns, loadingReturns, errorReturns } = useAppSelector((state) => state.requests);
+  
+  // Usar datos de Redux pero mantener setAllReturns para actualizaciones locales
   const [allReturns, setAllReturns] = useState<LoanRequest[]>([]);
   const allReturnsRef = useRef<LoanRequest[]>([]);
   
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  // Sincronizar Redux con estado local
+  useEffect(() => {
+    setAllReturns(reduxReturns);
+  }, [reduxReturns]);
+  
+  const isLoading = loadingReturns;
+  const error = errorReturns;
+  
   const [selectedReturnBorrower, setSelectedReturnBorrower] = useState<string>('');
   const [expandedReturns, setExpandedReturns] = useState<Set<number>>(new Set());
   const [expandedKitItems, setExpandedKitItems] = useState<Set<string>>(new Set());
@@ -50,22 +62,8 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
   }, [allReturns]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await getEngineerReturns(engineerId, warehouseId); 
-        setAllReturns(data || []);
-      } catch (err) {
-        console.error('Failed to load returns', err);
-        setError('Failed to load returns');
-        setAllReturns([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, [engineerId, warehouseId]);
+    dispatch(fetchReturns({ engineerId, warehouseId }));
+  }, [dispatch, engineerId, warehouseId]);
   const uniqueReturnBorrowers = useMemo(() => {
     const borrowers = allReturns.map(req => req.requesterName);
     return Array.from(new Set(borrowers)).sort();
@@ -483,12 +481,12 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
             return; 
         }
 
-        // --- 5. RECARGAR DATOS DESDE EL API (EN LUGAR DE ACTUALIZAR MANUALMENTE) ---
+        // --- 5. RECARGAR DATOS DESDE REDUX (EN LUGAR DE ACTUALIZAR MANUALMENTE) ---
         
         try {
-            // Recargar los holdings actualizados desde el backend
-            const freshData = await getEngineerReturns(engineerId, warehouseId);
-            setAllReturns(freshData || []);
+            // Recargar los holdings actualizados desde el backend usando Redux
+            await dispatch(refreshReturns({ engineerId, warehouseId })).unwrap();
+            console.log('✅ Returns reloaded from server');
         } catch (err) {
             console.error('Error reloading returns after successful submission:', err);
             // Aunque falle la recarga, el return fue exitoso, así que no mostramos error crítico
@@ -503,8 +501,8 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
         
         toast.success('Items successfully returned!'); // Toast de confirmación final
     })();
-// Dependencias actualizadas - removemos allReturns ya que usamos setAllReturns funcional
-}, [selectedReturnItems, getReturnQuantity, returnQuantities, itemConditions, setAllReturns, itemsPhotoUrl, engineerId, warehouseId]);
+// Dependencias actualizadas
+}, [selectedReturnItems, getReturnQuantity, returnQuantities, itemConditions, itemsPhotoUrl, engineerId, warehouseId, dispatch]);
 
   // 🛑 MODIFICACIÓN: Validar condición vs. cantidad devuelta antes de guardar el checklist
   const handleSaveKitChecklist = useCallback((requestId: number, itemId: number) => {
