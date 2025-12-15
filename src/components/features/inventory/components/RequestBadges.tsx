@@ -1,3 +1,4 @@
+import React from 'react';
 import {
     Clock,
     Check,
@@ -6,7 +7,11 @@ import {
     AlertTriangle,
     ShoppingCart,
     ArrowRightLeft,
-    Store
+    Store,
+    Package,
+    Truck,
+    HelpCircle,
+    FileText
 } from 'lucide-react';
 
 import { Badge } from './Badge';
@@ -15,41 +20,72 @@ type BadgeStyle = 'soft' | 'outline';
 
 export const getStatusBadge = (status: string, style: BadgeStyle = 'soft') => {
     const isSoft = style === 'soft';
+    const normalizedStatus = status?.toLowerCase() || 'unknown';
 
-    switch (status) {
+    switch (normalizedStatus) {
+        // PENDING
         case 'pending':
             return (
                 <Badge variant={isSoft ? 'warning-soft' : 'warning'}>
                     <Clock className="mr-1 h-3 w-3" /> Pending
                 </Badge>
             );
+
+        // PACKING 
+        case 'packing':
+            return (
+                <Badge variant={isSoft ? 'warning-soft' : 'warning'}>
+                    <Package className="mr-1 h-3 w-3" /> Packing
+                </Badge>
+            );
+
+        // SENT
+        case 'sent':
+            return (
+                <Badge variant={isSoft ? 'info-soft' : 'info'}>
+                    <Truck className="mr-1 h-3 w-3" /> Sent
+                </Badge>
+            );
+
+        // APPROVED
         case 'approved':
             return (
                 <Badge variant={isSoft ? 'success-soft' : 'success'}>
                     <Check className="mr-1 h-3 w-3" /> Approved
                 </Badge>
             );
+
+        // REJECTED
         case 'rejected':
             return (
                 <Badge variant={isSoft ? 'critical-soft' : 'critical'}>
                     <XCircle className="mr-1 h-3 w-3" /> Rejected
                 </Badge>
             );
+
+        // COMPLETED
         case 'completed':
             return (
                 <Badge variant={isSoft ? 'info-soft' : 'info'}>
                     <CheckCircle className="mr-1 h-3 w-3" /> Completed
                 </Badge>
             );
+
+        // ⚪ DEFAULT
         default:
-            return <Badge variant={isSoft ? 'neutral-soft' : 'neutral'}>{status}</Badge>;
+            return (
+                <Badge variant={isSoft ? 'neutral-soft' : 'neutral'}>
+                    <HelpCircle className="mr-1 h-3 w-3" /> {status}
+                </Badge>
+            );
     }
 };
 
 export const getUrgencyBadge = (urgency: string, style: BadgeStyle = 'soft') => {
     const isSoft = style === 'soft';
+    const normalized = urgency?.toLowerCase() || '';
 
-    switch (urgency) {
+    switch (normalized) {
         case 'low':
             return <Badge variant={isSoft ? 'success-soft' : 'success'}>Low</Badge>;
         case 'medium':
@@ -67,29 +103,48 @@ export const getUrgencyBadge = (urgency: string, style: BadgeStyle = 'soft') => 
     }
 };
 
-export const getTypeBadge = (type: string, style: BadgeStyle = 'soft') => {
+export const getTypeBadge = (type: number, style: BadgeStyle = 'soft') => {
     const isSoft = style === 'soft';
 
     switch (type) {
-        case 'transfer-on-site':
+        // 1 - Loan Request
+        case 1:
             return (
-                <Badge variant={isSoft ? 'neutral-soft' : 'neutral'}>
-                    <ArrowRightLeft className="mr-1 h-3 w-3" /> Transfer
+                <Badge variant={isSoft ? 'teal-soft' : 'teal'}>
+                    <FileText className="mr-1 h-3 w-3" /> Loan Request
                 </Badge>
             );
-        case 'purchase':
+
+        // 2 - Purchase
+        case 2:
             return (
                 <Badge variant={isSoft ? 'brand-soft' : 'brand'}>
                     <ShoppingCart className="mr-1 h-3 w-3" /> Purchase
                 </Badge>
             );
-        case 'purchase-on-site':
+
+        // 3 - Purchase On Site
+        case 3:
             return (
                 <Badge variant={isSoft ? 'info-soft' : 'info'}>
-                    <Store className="mr-1 h-3 w-3" /> Purchase On-Site
+                    <Store className="mr-1 h-3 w-3" /> Purchase On Site
                 </Badge>
             );
+
+        // 4 - Transfer On Site
+        case 4:
+            return (
+                <Badge variant={isSoft ? 'neutral-soft' : 'neutral'}>
+                    <ArrowRightLeft className="mr-1 h-3 w-3" /> Transfer On Site
+                </Badge>
+            );
+
+        // Fallback for unknown IDs
         default:
-            return <Badge variant="outline" className="capitalize">{(type || '').replace(/-/g, ' ')}</Badge>;
+            return (
+                <Badge variant="outline">
+                    <HelpCircle className="mr-1 h-3 w-3" /> Type {type}
+                </Badge>
+            );
     }
 };

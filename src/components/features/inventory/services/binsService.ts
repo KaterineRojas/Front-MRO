@@ -52,6 +52,9 @@ export async function getAvailableBins(warehouseId: number = 1, isActive?: boole
     if (isActive !== undefined) {
       params.append('isActive', isActive.toString());
     }
+    // allowDifferentItems=false significa bins que solo aceptan un tipo de item
+    params.append('allowDifferentItems', 'false');
+    params.append('warehouseId', '1');
 
     const url = `${API_URL}/Bin/available${params.toString() ? '?' + params.toString() : ''}`;
     console.log('🔍 Fetching available bins from:', url);
@@ -65,14 +68,14 @@ export async function getAvailableBins(warehouseId: number = 1, isActive?: boole
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.warn(`⚠️ Failed to fetch available bins: ${response.status} - ${errorText}`);
+      // console.warn(`⚠️ Failed to fetch available bins: ${response.status} - ${errorText}`);
       return [];
     }
 
     // Verificar que la respuesta sea JSON
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
-      console.warn(`⚠️ Expected JSON response but got: ${contentType}`);
+      // console.warn(`⚠️ Expected JSON response but got: ${contentType}`);
       return [];
     }
 
@@ -87,7 +90,7 @@ export async function getAvailableBins(warehouseId: number = 1, isActive?: boole
       description: bin.name
     }));
   } catch (error) {
-    console.error('Error fetching available bins:', error);
+    // console.error('Error fetching available bins:', error);
     return [];
   }
 }
