@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo, useCallback } from 'react'; // 👈 Impor
 import { toast } from 'sonner';
 import { useAppSelector, useAppDispatch } from '../../enginner/store/hooks';
 import { clearCart } from '../../enginner/store/slices/cartSlice';
-import { selectCartItems, selectCurrentUser } from '../../enginner/store/selectors';
+import { selectCartItems } from '../../enginner/store/selectors';
 import { useConfirmModal } from '../../../ui/confirm-modal';
 import { handleError, setupConnectionListener } from '../../enginner/services/errorHandler';
+import { store } from '../../../../store/store';
 
 import {
   getBorrowRequests,
@@ -30,7 +31,6 @@ import {
 export function useBorrowRequests() {
   const dispatch = useAppDispatch();
   const cartItems = useAppSelector(selectCartItems);
-  const currentUser = useAppSelector(selectCurrentUser);
 
   // Estados del componente
   const [showBorrowForm, setShowBorrowForm] = useState(false);
@@ -74,17 +74,18 @@ export function useBorrowRequests() {
   }, []);
 
   // Load initial data
-  // Ensure currentUser has ID (amx0142)
+  // Get currentUser from authSlice with employeeId
   useEffect(() => {
     const loadData = async () => {
-      if (!currentUser?.id) {
+      const currentUser = (store.getState() as any).auth?.user;
+      if (!currentUser?.employeeId) {
         return;
       }
       try {
         const [whData, statusData, requestsData] = await Promise.all([
           getWarehouses(),
           getStatuses(),
-          getBorrowRequests(currentUser.id) 
+          getBorrowRequests(currentUser.employeeId) 
         ]);
         setWarehouses(whData);
         setStatuses(statusData);
@@ -107,7 +108,7 @@ export function useBorrowRequests() {
       }
     };
     loadData();
-  }, [currentUser?.id]); // Añadir currentUser?.id a las dependencias
+  }, []); // Load once on mount
 
   // Check mobile
   useEffect(() => {
@@ -117,6 +118,15 @@ export function useBorrowRequests() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Check if should open borrow form from catalog
+  useEffect(() => {
+    const shouldOpenBorrowForm = sessionStorage.getItem('openBorrowForm');
+    if (shouldOpenBorrowForm === 'true') {
+      setShowBorrowForm(true);
+      sessionStorage.removeItem('openBorrowForm');
+    }
   }, []);
 
   //  3. Reemplazar el useEffect de filtrado por useMemo
@@ -297,9 +307,10 @@ export function useBorrowRequests() {
   };
 
   const reloadBorrowRequests = async () => {
-    if (!currentUser?.id) return;
+    const currentUser = (store.getState() as any).auth?.user;
+    if (!currentUser?.employeeId) return;
     try {
-      const requestsData = await getBorrowRequests(currentUser.id);
+      const requestsData = await getBorrowRequests(currentUser.employeeId);
       setBorrowRequests(requestsData.items || []);
     } catch (error: any) {
       const appError = handleError(error);
@@ -336,7 +347,7 @@ export function useBorrowRequests() {
     requestToDelete,
     modalState,
     cartItems,
-    currentUser,
+    currentUser: (store.getState() as any).auth?.user, // Get currentUser from authSlice
 
     // Setters
     setShowBorrowForm,

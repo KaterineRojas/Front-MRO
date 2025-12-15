@@ -1,8 +1,10 @@
 
 import { Trash2, Plus, Minus } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '../../ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../../ui/sheet';
 import { ScrollArea } from '../../ui/scroll-area';
+import { Input } from '../../ui/input';
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import type { CartItem } from '../enginner/types';
 
@@ -23,6 +25,9 @@ export function CartSidebar({
   onClearCart,
   onProceed
 }: CartSidebarProps) {
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+
   const handleIncrement = (item: CartItem) => {
     const availableQuantity = item.item.availableQuantity || 0;
     if (item.quantity < availableQuantity) {
@@ -35,6 +40,33 @@ export function CartSidebar({
       onUpdateQuantity(item.item.id, item.quantity - 1);
     }
   };
+
+  const handleQuantityEdit = (itemId: string, currentQuantity: number) => {
+    setEditingItemId(itemId);
+    setEditValue(currentQuantity.toString());
+  };
+
+  const handleQuantityInputChange = (value: string) => {
+    const numValue = parseInt(value) || 0;
+    setEditValue(numValue.toString());
+  };
+
+  const handleQuantityInputBlur = (item: CartItem) => {
+    const newQuantity = Math.max(1, Math.min(parseInt(editValue) || 1, item.item.availableQuantity || 0));
+    onUpdateQuantity(item.item.id, newQuantity);
+    setEditingItemId(null);
+    setEditValue('');
+  };
+
+  const handleQuantityInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, item: CartItem) => {
+    if (e.key === 'Enter') {
+      handleQuantityInputBlur(item);
+    } else if (e.key === 'Escape') {
+      setEditingItemId(null);
+      setEditValue('');
+    }
+  };
+
 
   const handleRemove = (itemId: string) => {
     onUpdateQuantity(itemId, 0);
@@ -113,9 +145,26 @@ export function CartSidebar({
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="text-sm font-medium w-8 text-center">
-                            {cartItem.quantity}
-                          </span>
+                          {editingItemId === cartItem.item.id ? (
+                            <Input
+                              type="number"
+                              min="1"
+                              max={cartItem.item.availableQuantity || 999}
+                              value={editValue}
+                              onChange={(e) => handleQuantityInputChange(e.target.value)}
+                              onBlur={() => handleQuantityInputBlur(cartItem)}
+                              onKeyDown={(e) => handleQuantityInputKeyDown(e, cartItem)}
+                              autoFocus
+                              className="text-sm font-medium w-8 text-center h-7 p-1"
+                            />
+                          ) : (
+                            <span 
+                              className="text-sm font-medium w-8 text-center cursor-pointer hover:bg-accent rounded px-1 py-0.5"
+                              onClick={() => handleQuantityEdit(cartItem.item.id, cartItem.quantity)}
+                            >
+                              {cartItem.quantity}
+                            </span>
+                          )}
                           <Button
                             variant="outline"
                             size="icon"
