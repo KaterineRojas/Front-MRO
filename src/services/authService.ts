@@ -133,6 +133,28 @@ export const authService = {
     localStorage.setItem('auth_token', token);
   },
 
+  // Guardar datos del usuario
+  saveUser(user: BackendUser): void {
+    localStorage.setItem('auth_user', JSON.stringify(user));
+  },
+
+  // Get User Data 
+  getUser(): BackendUser | null {
+    const userStr = localStorage.getItem('auth_user');
+    if (!userStr) return null;
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
+  },
+
+  // Limpiar auth
+  removeUser(): void {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+  },
+
   /**
    * Obtener token de localStorage
    */
