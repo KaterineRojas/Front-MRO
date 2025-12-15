@@ -33,14 +33,26 @@ const getPriorityBadge = (priority: string) => {
 export function ManageRequestsPage() {
   const [activeTab, setActiveTab] = useState<string>('packing-requests');
   
-  // Obtener el usuario autenticado
+  // Obtener el usuario autenticado del estado de Redux
   const user = useAppSelector(state => state.auth.user);
-  const engineerId = user?.id || 'amx0142'; // Fallback al ID por defecto
-  const warehouseId = 1; // Warehouse ID (puedes parametrizarlo si es necesario)
+  
+  // Extraer employeeId y warehouseId del usuario autenticado
+  // Si no están disponibles, usar valores por defecto para desarrollo
+  const keeperEmployeeId = user?.employeeId || 'amx0142';
+  const warehouseId = user?.warehouseId || 1;
+  
+  // Para Returns, usamos un engineerId específico (el que selecciona el keeper en la UI)
+  // Por ahora hardcoded para testing, después será dinámico con un dropdown
+  const engineerId = 'amx0142'; // TODO: Cambiar esto por el engineerId seleccionado en el dropdown de la UI
+  
+  console.log('🔍 ManageRequestsPage - User:', user);
+  console.log('🔍 ManageRequestsPage - keeperEmployeeId:', keeperEmployeeId);
+  console.log('🔍 ManageRequestsPage - warehouseId:', warehouseId);
+  console.log('🔍 ManageRequestsPage - engineerId for returns:', engineerId);
   
   // Llamar a los Custom Hooks
   const returnsLogic = useReturnsLogic({ engineerId, warehouseId });
-  const packingLogic = usePackingRequestsLogic();
+  const packingLogic = usePackingRequestsLogic({ keeperEmployeeId });
   
   // Manejar la dependencia cruzada
   const handleConfirmPackingDialog = useCallback(() => {
