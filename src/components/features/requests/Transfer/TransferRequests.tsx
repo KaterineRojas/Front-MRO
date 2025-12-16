@@ -272,7 +272,7 @@ export function TransferRequests() {
       // Call handleAccept with all required parameters
       await handleAccept(
         transferToAccept.id,
-        currentUser.employeeId,
+        currentUser.employeeId || '',
         selectedCompany,
         selectedCustomer,
         currentUser.department,
