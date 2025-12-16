@@ -130,7 +130,7 @@ export function TransactionsTable({
     if (filters.searchQuery) {
       const query = filters.searchQuery.toLowerCase();
       result = result.filter(
-        (t) => t.itemName.toLowerCase().includes(query) || t.itemSku.toLowerCase().includes(query)
+        (t) => (t.itemName?.toLowerCase().includes(query) ?? false) || (t.itemSku?.toLowerCase().includes(query) ?? false)
       );
     }
 
