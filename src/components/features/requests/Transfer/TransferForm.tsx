@@ -653,7 +653,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                 <Label>Target Engineer</Label>
                 <Select
                   value={targetEngineerId}
-                  onValueChange={(value) => {
+                  onValueChange={(value: string) => {
                     setTargetEngineerId(value);
                     setEngineerSearchTerm('');
                   }}
