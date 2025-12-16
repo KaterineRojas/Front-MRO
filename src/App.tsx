@@ -27,7 +27,8 @@ import { ManageRequestsPage } from './components/features/manage-requests/pages/
 import { Toaster } from 'react-hot-toast';
 import { Login, Register, ProtectedRoute } from './components/features/auth';
 import { RoleGuard } from './auth/RoleGuard'
-import { Unauthorized } from './auth/Unauthorized'
+import { Unauthorized } from './pages/Unauthorized'
+import { NotFound } from './pages/NotFound'
 
 const ROLES = {
   ENGINEER: 0,
@@ -56,151 +57,28 @@ function AuthHandler() {
 
   useEffect(() => {
     const initAuth = async () => {
-      // Wait for MSAL to finish initialization
+      // 1. Don't run if MSAL is still loading
       if (inProgress !== InteractionStatus.None) {
         return;
       }
 
-      // No intentar autenticar si estamos en la página de login o registro
+      // 2. Don't run logic on Login/Register pages
       if (location.pathname === '/login' || location.pathname === '/register') {
         dispatch(setLoading(false));
         return;
       }
 
-      // Check for local token first
+      // 3. CASE A: Check for Local Token (Restoring session from refresh)
       const localToken = authService.getToken();
-      if (localToken) {
-        try {
-          const backendUser = await authService.getCurrentUser(localToken);
-
-          // Mapear roles del backend a roles del frontend
-          const roleMap: Record<string, 'administrator' | 'user' | 'purchasing' | 'auditor' | 'manager'> = {
-            'Engineer': 'user',
-            'Keeper': 'user',
-            'Manager': 'manager',
-            'Director': 'administrator',
-          };
-
-          const frontendRole = roleMap[backendUser.roleName] || 'user';
-
-          // Actualizar Redux con el usuario
-          dispatch(
-            setAuth({
-              user: {
-                id: String(backendUser.id),
-                name: backendUser.name,
-                email: backendUser.email,
-                employeeId: backendUser.employeeId,
-                role: backendUser.role,
-                roleName: backendUser.roleName,
-                department: backendUser.departmentId ? String(backendUser.departmentId) : 'Engineering',
-              },
-              accessToken: localToken,
-              authType: 'local',
-            })
-          );
-          console.log('✅ Usuario autenticado con token local:', backendUser.email);
-          return; // Don't check Azure if local token is valid
-        } catch (error) {
-          // Token inválido, eliminarlo
-          console.warn('⚠️ Token local inválido, removiendo...');
-          authService.removeToken();
-        }
-      }
-
-      // If user is authenticated with Azure, get token and update Redux store
-      if (isAuthenticated && accounts.length > 0) {
-        try {
-          // 1. Get token for backend API
-          const apiTokenRequest = {
-            ...loginRequest,
-            account: accounts[0],
-          };
-          const apiTokenResponse = await instance.acquireTokenSilent(apiTokenRequest);
-
-          // 2. Get separate token for Microsoft Graph API
-          let graphProfile = null;
-          let graphPhotoUrl = null;
-
-          try {
-            const graphTokenRequest = {
-              scopes: ['User.Read'],
-              account: accounts[0],
-            };
-            const graphTokenResponse = await instance.acquireTokenSilent(graphTokenRequest);
-
-            // Fetch user profile and photo from Microsoft Graph using Graph token
-            const { profile, photoUrl } = await getUserProfileWithPhoto(graphTokenResponse.accessToken);
-            graphProfile = profile;
-            graphPhotoUrl = photoUrl;
-          } catch (graphError) {
-            console.warn('⚠️ Could not fetch Graph API data:', graphError);
-            // Continue without Graph data - will use basic info from token
-          }
-
-          // 3. Call backend to get JWT token
-          const account = apiTokenResponse.account;
-          const backendResponse = await authService.loginWithAzure({
-            azureToken: apiTokenResponse.accessToken,
-            userInfo: {
-              objectId: account.localAccountId || '',
-              email: graphProfile?.mail || graphProfile?.userPrincipalName || account.username || '',
-              name: graphProfile?.displayName || account.name || 'Unknown User',
-            },
-          });
-
-          // 4. Save backend JWT token to localStorage
-          authService.saveToken(backendResponse.token);
-          authService.saveUser(backendResponse.user);
-
-          // 5. Create User Object for Redux (MATCHING YOUR INTERFACE)
-          const user = {
-            id: String(backendResponse.user.id),
-            name: backendResponse.user.name,
-            email: backendResponse.user.email,
-            employeeId: backendResponse.user.employeeId,
-
-            role: backendResponse.user.role,
-
-            roleName: backendResponse.user.roleName,
-
-            department: backendResponse.user.departmentId
-              ? String(backendResponse.user.departmentId)
-              : graphProfile?.department || 'Engineering',
-
-            jobTitle: graphProfile?.jobTitle,
-            mobilePhone: graphProfile?.mobilePhone,
-            officeLocation: graphProfile?.officeLocation,
-            photoUrl: graphPhotoUrl || undefined,
-            warehouseId: backendResponse.user.warehouseId,
-          };
-
-          dispatch(
-            setAuth({
-              user,
-              accessToken: backendResponse.token,
-              authType: 'azure',
-            })
-          );
-
-          console.log('✅ User authenticated with Azure:', user.email);
-          console.log('✅ Backend JWT token saved to localStorage');
-        } catch (error) {
-          console.error('Error acquiring token:', error);
-          dispatch(setLoading(false));
-        }
-      } else {
-        // User not authenticated
-        dispatch(setLoading(false));
-      }
-
 
       if (localToken) {
         try {
           const backendUser = await authService.getCurrentUser(localToken);
 
+          // Save fresh data to localStorage
           authService.saveUser(backendUser);
 
+          // Update Redux
           dispatch(
             setAuth({
               user: {
@@ -208,10 +86,10 @@ function AuthHandler() {
                 name: backendUser.name,
                 email: backendUser.email,
 
-                // ✅ PASS THE NUMBER DIRECTLY (0, 1, 100, etc.)
+                // ✅ PASS THE NUMBER DIRECTLY
                 role: backendUser.role,
 
-                // ✅ PASS THE NAME DIRECTLY ("Engineer", "Admin", etc.)
+                // ✅ PASS THE NAME DIRECTLY
                 roleName: backendUser.roleName,
 
                 department: backendUser.departmentId ? String(backendUser.departmentId) : 'Engineering',
@@ -224,22 +102,26 @@ function AuthHandler() {
             })
           );
 
+          console.log('✅ User session restored:', backendUser.email);
+          return; // Stop here if local token worked (don't check Azure)
+
         } catch (error) {
+          console.warn('⚠️ Local token invalid, clearing session...');
           authService.removeUser();
         }
       }
 
-      // CASE 2: Azure Login Success
+      // 4. CASE B: Check for Azure Login (New login or SSO)
       if (isAuthenticated && accounts.length > 0) {
         try {
-          // 1. Get Access Token for your Backend API
+          // A. Get Access Token for Backend
           const apiTokenRequest = {
             ...loginRequest,
             account: accounts[0],
           };
           const apiTokenResponse = await instance.acquireTokenSilent(apiTokenRequest);
 
-          // 2. (Optional) Get Graph Data for extra details like photo/job title
+          // B. (Optional) Get Graph Data (Photo, Job Title)
           let graphProfile = null;
           let graphPhotoUrl = null;
 
@@ -249,8 +131,6 @@ function AuthHandler() {
               account: accounts[0],
             };
             const graphTokenResponse = await instance.acquireTokenSilent(graphTokenRequest);
-
-            // Assuming this service exists in your project
             const { profile, photoUrl } = await getUserProfileWithPhoto(graphTokenResponse.accessToken);
             graphProfile = profile;
             graphPhotoUrl = photoUrl;
@@ -260,24 +140,21 @@ function AuthHandler() {
 
           const account = apiTokenResponse.account;
 
-          // 3. Call Backend to Login/Register the user
-          // ✅ HERE IS THE MISSING PART YOU ASKED FOR
+          // C. Call Backend Login
           const backendResponse = await authService.loginWithAzure({
             azureToken: apiTokenResponse.accessToken,
             userInfo: {
-              // We prefer Graph data, but fallback to Account data if Graph failed
               objectId: account?.localAccountId || account?.homeAccountId || '',
               email: graphProfile?.mail || graphProfile?.userPrincipalName || account?.username || '',
               name: graphProfile?.displayName || account?.name || 'Unknown User',
-              // employeeId: graphProfile?.employeeId // If available in your Graph scopes
             },
           });
 
-          // 4. Save to LocalStorage (Persistence)
+          // D. Save Persistence
           authService.saveToken(backendResponse.token);
           authService.saveUser(backendResponse.user);
 
-          // 5. Update Redux State (UI)
+          // E. Update Redux
           const userForRedux = {
             id: String(backendResponse.user.id),
             name: backendResponse.user.name,
@@ -285,14 +162,12 @@ function AuthHandler() {
             employeeId: backendResponse.user.employeeId,
 
             role: backendResponse.user.role,
-
             roleName: backendResponse.user.roleName,
 
             department: backendResponse.user.departmentId
               ? String(backendResponse.user.departmentId)
               : graphProfile?.department || 'Engineering',
 
-            // Extra fields from Graph (Optional)
             jobTitle: graphProfile?.jobTitle,
             mobilePhone: graphProfile?.mobilePhone,
             officeLocation: graphProfile?.officeLocation,
@@ -313,16 +188,17 @@ function AuthHandler() {
         } catch (error) {
           console.error('Error acquiring token or logging in:', error);
           dispatch(setLoading(false));
-          // Optional: redirect to error page or show toast
         }
+      } else {
+        // User not authenticated (and no local token)
+        dispatch(setLoading(false));
       }
     };
 
     initAuth();
   }, [isAuthenticated, accounts, inProgress, instance, dispatch, location.pathname]);
 
-
-  return null; // This component doesn't render anything
+  return null;
 }
 
 // Wrapper components for route navigation
@@ -456,8 +332,9 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="*" element={<NotFound />} /> {/* Your new 404 page */}
 
-      {/* Protected Routes */}
+      {/* Protected Routes (Requires Login) */}
       <Route
         path="/"
         element={
@@ -466,56 +343,49 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        {/* --- COMMON ROUTES (Accessible by everyone logged in) --- */}
+        {/* --- COMMON ROUTES (Everyone) --- */}
         <Route index element={<Dashboard />} />
-        <Route path="quick-find" element={<QuickFind />} />
-        <Route path="reports" element={<Reports />} />
 
-        {/* --- ROLE PROTECTED ROUTES --- */}
-
-        {/* 1. INVENTORY & PURCHASING */}
-        {/* Who: Admin, Director, Manager, Keeper (Keeper needs to see inventory to work) */}
-        <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.MANAGER, ROLES.KEEPER]} />}>
-          <Route path="inventory" element={<InventoryManager />} />
-          <Route path="orders" element={<PurchaseOrdersWrapper />} />
-          <Route path="orders/detail" element={<OrderDetailWrapper />} />
-        </Route>
-
-        {/* 2. LOANS & WAREHOUSE OPERATIONS */}
-        {/* Who: Admin, Director, Manager, Keeper */}
-        {/* Engineers (0) should NOT see this; they use the Engineer Portal instead */}
-        <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.MANAGER, ROLES.KEEPER]} />}>
-          <Route path="loans" element={<RequestOrdersWrapper />} />
-          <Route path="loans/detail" element={<LoanDetailWrapper />} />
-          <Route path="loans/return" element={<ReturnItemsWrapper />} />
-          <Route path="requests" element={<RequestManagement />} />
-        </Route>
-
-        {/* 3. ADMIN ONLY */}
-        {/* Who: Admin only */}
-        <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN]} />}>
-          <Route path="users" element={<UserManagement />} />
-        </Route>
-
-        {/* 4. MANAGEMENT (Cycle Counts & Approvals) */}
-        {/* Who: Admin, Director, Manager */}
-        <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.MANAGER]} />}>
-          <Route path="cycle-count" element={<CycleCountWrapper />} />
-          <Route path="cycle-count/active" element={<CycleCountActiveWrapper />} />
-          <Route path="manage-requests" element={<ManageRequestsPage />} />
-        </Route>
-
-        {/* 5. ENGINEER MODULES (The Requester Portal) */}
-        {/* Who: Admin, Engineer, Collaborator */}
-        <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN, ROLES.ENGINEER, ROLES.COLLABORATOR]} />}>
+        {/* --- 1. ENGINEER ROUTES --- */}
+        {/* Access: Engineer, Collaborator (and Admin) */}
+        <Route element={<RoleGuard allowedRoles={[ROLES.ENGINEER, ROLES.COLLABORATOR, ROLES.ADMIN]} />}>
           <Route path="engineer/catalog" element={<EngineerModuleWrapper><EngineerCatalog /></EngineerModuleWrapper>} />
           <Route path="engineer/requests" element={<EngineerModuleWrapper><EngineerRequestOrdersWrapper /></EngineerModuleWrapper>} />
           <Route path="engineer/my-inventory" element={<EngineerModuleWrapper><EngineerMyInventory /></EngineerModuleWrapper>} />
           <Route path="engineer/history" element={<EngineerModuleWrapper><EngineerCompleteHistory /></EngineerModuleWrapper>} />
         </Route>
 
-        {/* Catch-all redirect */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* --- 2. KEEPER ROUTES --- */}
+        {/* Access: Keeper (and Admin) */}
+        {/* Includes: Inventory, Orders, Cycle Counts, Quick Find, Manage Requests */}
+        <Route element={<RoleGuard allowedRoles={[ROLES.KEEPER, ROLES.ADMIN]} />}>
+          {/* Inventory & Finding */}
+          <Route path="inventory" element={<InventoryManager />} />
+          <Route path="quick-find" element={<QuickFind />} />
+
+          {/* Orders (Purchasing) */}
+          <Route path="orders" element={<PurchaseOrdersWrapper />} />
+          <Route path="orders/detail" element={<OrderDetailWrapper />} />
+
+          {/* Operations */}
+          <Route path="cycle-count" element={<CycleCountWrapper />} />
+          <Route path="cycle-count/active" element={<CycleCountActiveWrapper />} />
+          <Route path="manage-requests" element={<ManageRequestsPage />} />
+
+          {/* NOTE: If Keepers need to process Loans/Returns (handing out items), 
+               you might need to add 'loans' routes here too. 
+               If not, they are hidden based on your list. */}
+        </Route>
+
+        {/* --- 3. MANAGER & DIRECTOR ROUTES --- */}
+        {/* Access: Manager, Director (and Admin) */}
+        {/* Includes: Requests, Reports, Users */}
+        <Route element={<RoleGuard allowedRoles={[ROLES.MANAGER, ROLES.DIRECTOR, ROLES.ADMIN]} />}>
+          <Route path="requests" element={<RequestManagement />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="users" element={<UserManagement />} />
+        </Route>
+
       </Route>
     </Routes>
   );
