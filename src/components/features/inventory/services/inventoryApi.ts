@@ -651,6 +651,77 @@ export async function createBinApi(data: {
 }
 
 /**
+ * Crea un nuevo bin usando códigos jerárquicos individuales
+ */
+export async function createBinByHierarchyApi(data: {
+  warehouseCode: string;
+  zoneCode: string;
+  rackCode: string;
+  levelCode: string;
+  binCode: string;
+  name: string;
+}) {
+  try {
+    const response = await fetchWithAuth(`${API_URL}/Bin/create-by-hierarchy`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = '';
+
+      try {
+        const errorData = await response.json();
+
+        // Extraer el mensaje de error del backend
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        } else if (errorData.title) {
+          // Formato de error de validación de ASP.NET
+          errorMessage = errorData.title;
+          if (errorData.errors) {
+            // Agregar detalles de errores de validación
+            const validationErrors = Object.entries(errorData.errors)
+              .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+              .join('; ');
+            errorMessage += ` - ${validationErrors}`;
+          }
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else {
+          errorMessage = JSON.stringify(errorData);
+        }
+      } catch {
+        // Si no es JSON, intentar leer como texto
+        try {
+          const errorText = await response.text();
+          errorMessage = errorText || `Error ${response.status}: ${response.statusText}`;
+        } catch {
+          errorMessage = `Error ${response.status}: ${response.statusText}`;
+        }
+      }
+
+      // Si no se pudo extraer ningún mensaje, usar uno genérico
+      if (!errorMessage) {
+        errorMessage = `Failed to create bin (HTTP ${response.status})`;
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    // Re-lanzar el error si ya tiene mensaje, o crear uno nuevo
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to create bin: Network error');
+  }
+}
+
+/**
  * @deprecated Temporalmente desactivado - pendiente migración a nueva lógica de bins
  */
 export async function createBinApiOld(_binData: {
