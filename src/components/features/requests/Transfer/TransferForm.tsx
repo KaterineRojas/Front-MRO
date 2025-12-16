@@ -8,15 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Checkbox } from '../../../ui/checkbox';
 import { ScrollArea } from '../../../ui/scroll-area';
-import { 
+import {
   Package, X, Camera, Upload, ArrowLeftRight, Search, AlertCircle, ArrowLeft
 } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { toast } from 'sonner';
 import { store } from '../../../../store/store';
-import { 
-   
+import {
+
   createTransfer,
   getInventoryTransfer,
   type InventoryItem,
@@ -56,12 +56,13 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
   const [transferPhoto, setTransferPhoto] = useState<string | null>(null);
   const [validatedImageUrl, setValidatedImageUrl] = useState<string | null>(null);
   const [isValidatingPhoto, setIsValidatingPhoto] = useState(false);
-  
+
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [projectFilter, setProjectFilter] = useState('all');
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
-  
+  const [engineerSearchTerm, setEngineerSearchTerm] = useState('');
+
   // Dialog state
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,12 +102,12 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
           // Get current user employeeId from authSlice
           const state = store.getState();
           const currentUserId = (state as any).auth?.user?.employeeId || '';
-          
+
           if (!currentUserId) {
             toast.error('Unable to load user information');
             return;
           }
-          
+
           console.log(`Loading inventory for user: ${currentUserId}, warehouse: ${selectedWarehouse}`);
           const data = await getInventoryTransfer(currentUserId, selectedWarehouse);
           setInventoryItems(data);
@@ -136,13 +137,13 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
 
   const filteredInventoryItems = useMemo(() => {
     return inventoryItems.filter(item => {
-      const matchesSearch = !searchTerm || 
+      const matchesSearch = !searchTerm ||
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()));
-      
+
       const matchesProject = projectFilter === 'all' || item.project === projectFilter;
-      
+
       return matchesSearch && matchesProject;
     });
   }, [inventoryItems, searchTerm, projectFilter]);
@@ -150,6 +151,18 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
   const selectedItems = useMemo(() => {
     return inventoryItems.filter(item => selectedItemIds.has(item.id));
   }, [inventoryItems, selectedItemIds]);
+
+  const filteredUsers = useMemo(() => {
+    const query = engineerSearchTerm.toLowerCase();
+    if (!query) {
+      return users;
+    }
+    return users.filter((user) => {
+      const name = user.name?.toLowerCase() ?? '';
+      const id = user.employeeId?.toLowerCase() ?? '';
+      return name.includes(query) || id.includes(query);
+    });
+  }, [users, engineerSearchTerm]);
 
   const canTransfer = targetEngineerId && validatedImageUrl && selectedItemIds.size > 0;
 
@@ -179,7 +192,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
   const handleQuantityChange = (id: string, quantity: number) => {
     const item = inventoryItems.find(i => i.id === id);
     const maxQty = item ? item.quantity : 1;
-    
+
     if (quantity >= 1 && quantity <= maxQty) {
       setTransferQuantities(prev => ({
         ...prev,
@@ -190,12 +203,12 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
 
   const openCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' }
       });
       setStream(mediaStream);
       setCameraOpen(true);
-      
+
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
@@ -250,7 +263,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
 
     try {
       setIsValidatingPhoto(true);
-      
+
       // Convert base64 to File object
       const base64Data = transferPhoto.split(',')[1];
       const byteCharacters = atob(base64Data);
@@ -302,7 +315,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
   const submitTransfer = async () => {
     try {
       setIsSubmitting(true);
-      
+
       const items = Array.from(selectedItemIds).map(id => ({
         id,
         quantity: transferQuantities[id] || 1
@@ -350,69 +363,70 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
     <div className="space-y-6">
       <style>{styles}</style>
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={handleCancel} className="gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Requests
-        </Button>
-      </div>
-
-      <div>
-        <h2>Transfer Mode</h2>
-        <p className="text-muted-foreground">Select items and quantity to transfer</p>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={handleCancel} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Requests
+          </Button>
+          <div>
+            <h2 className="text-lg font-semibold leading-tight">Transfer Mode</h2>
+            <p className="text-sm text-muted-foreground">Select items and quantity to transfer</p>
+          </div>
+        </div>
       </div>
 
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column - Item Selector */}
-        <Card className="flex flex-col h-[calc(100vh-16rem)]">
+        <Card className="flex flex-col h-[calc(100vh-16rem)] overflow-hidden">
           <CardHeader>
-            <CardTitle>Available Items</CardTitle>
+            <CardTitle className="text- text-lg font-semibold">Select from My Inventory</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
-            {/* Search and Filter */}
-            <div className="flex flex-col gap-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search items..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+          <CardContent className="flex-1 overflow-hidden p-0">
+            <div className="h-full overflow-y-auto space-y-4 p-6">
+              {/* Search and Filter */}
+              <div className="flex flex-col gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search items..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select Warehouse" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {warehouses.map((wh) => (
+                        <SelectItem key={wh.id} value={wh.id}>
+                          {wh.name} ({wh.code})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={projectFilter} onValueChange={setProjectFilter}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="All Projects" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Projects</SelectItem>
+                      {uniqueProjects.map((project) => (
+                        <SelectItem key={project} value={project}>
+                          {project}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select Warehouse" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {warehouses.map((wh) => (
-                      <SelectItem key={wh.id} value={wh.id}>
-                        {wh.name} ({wh.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={projectFilter} onValueChange={setProjectFilter}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="All Projects" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Projects</SelectItem>
-                    {uniqueProjects.map((project) => (
-                      <SelectItem key={project} value={project}>
-                        {project}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
 
-            {/* Items List with Scrollbar */}
-            <ScrollArea className="flex-1 -mx-6 px-6">
-              <div className="space-y-2 pr-4">
+              {/* Items List */}
+              <div className="space-y-2">
                 {filteredInventoryItems.length === 0 ? (
                   <div className="text-center py-8">
                     <Package className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
@@ -422,9 +436,8 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                   filteredInventoryItems.map((item) => (
                     <div
                       key={item.id}
-                      className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                        selectedItemIds.has(item.id) ? 'bg-accent border-accent-foreground/20' : 'hover:bg-muted/50'
-                      }`}
+                      className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${selectedItemIds.has(item.id) ? 'bg-accent border-accent-foreground/20' : 'hover:bg-muted/50'
+                        }`}
                       onClick={() => handleItemSelection(item.id, !selectedItemIds.has(item.id))}
                     >
                       <Checkbox
@@ -453,165 +466,28 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                   ))
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </CardContent>
         </Card>
 
         {/* Right Column - Selected Items and Transfer Details */}
-        <Card className="flex flex-col h-[calc(100vh-16rem)]">
+        <Card className="flex flex-col h-[calc(100vh-16rem)] overflow-hidden">
           <CardHeader>
-            <CardTitle>Transfer Details</CardTitle>
+            <CardTitle className="text- text-lg font-semibold">Transfer Details</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
-            {/* Target Engineer Selection */}
-            <div>
-              <Label>Target Engineer</Label>
-              <Select value={targetEngineerId} onValueChange={setTargetEngineerId}>
-                <SelectTrigger className="mt-2">
-                  <SelectValue placeholder="Select engineer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.employeeId} value={user.employeeId}>
-                      <div className="flex items-center gap-2">
-                        <span>{user.employeeId}</span>
-                        <span>-</span>
-                        <span>{user.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <CardContent className="flex-1 overflow-hidden p-0">
+            <div className="h-full overflow-y-auto space-y-4 p-6">
 
-            {/* Photograph Section */}
-            <div>
-              <Label>Photograph (Required)</Label>
-              <div className="mt-2">
-                {validatedImageUrl ? (
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <img
-                        src={transferPhoto || ''}
-                        alt="Transfer evidence"
-                        className="w-full h-32 object-cover rounded border"
-                      />
-                      <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold">
-                        ✓ Photograph Validated
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        setTransferPhoto(null);
-                        setValidatedImageUrl(null);
-                      }}
-                    >
-                      Change Photo
-                    </Button>
-                  </div>
-                ) : transferPhoto ? (
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <img
-                        src={transferPhoto}
-                        alt="Transfer evidence"
-                        className="w-full h-32 object-cover rounded border"
-                      />
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="absolute top-2 right-2"
-                        onClick={() => setTransferPhoto(null)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <Button
-                      onClick={validatePhoto}
-                      disabled={isValidatingPhoto}
-                      className={`w-full font-semibold bg-blue-600 hover:bg-blue-700 text-white py-5 text-base ${
-                        !validatedImageUrl ? 'validate-btn-blink' : ''
-                      }`}
-                      size="sm"
-                    >
-                      {isValidatingPhoto ? (
-                        <span className="flex items-center gap-2">
-                          <span className="inline-block animate-spin">⏳</span>
-                          Validating...
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-2">
-                          <span>✓</span>
-                          Validate Photograph
-                        </span>
-                      )}
-                    </Button>
-                  </div>
-                ) : cameraOpen ? (
-                  <div className="space-y-2">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      className="w-full h-32 object-cover rounded border bg-black"
-                    />
-                    <div className="flex gap-2">
-                      <Button onClick={capturePhoto} className="flex-1" size="sm">
-                        <Camera className="h-4 w-4 mr-2" />
-                        Capture
-                      </Button>
-                      <Button variant="outline" onClick={closeCamera} size="sm">
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1 gap-2"
-                      onClick={openCamera}
-                      size="sm"
-                    >
-                      <Camera className="h-4 w-4" />
-                      Camera
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1 gap-2"
-                      onClick={() => fileInputRef.current?.click()}
-                      size="sm"
-                    >
-                      <Upload className="h-4 w-4" />
-                      Upload
-                    </Button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={handleFileUpload}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Selected Items with Scrollbar */}
-            <div className="flex-1 flex flex-col min-h-0">
-              <Label className="mb-2">Selected Items ({selectedItemIds.size})</Label>
-              <ScrollArea className="flex-1 -mx-6 px-6">
+              {/* Selected Items */}
+              <div>
+                <Label className="mb-2">Selected Items ({selectedItemIds.size})</Label>
                 {selectedItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No items selected</p>
                   </div>
                 ) : (
-                  <div className="space-y-2 pr-4">
+                  <div className="space-y-2">
                     {selectedItems.map((item) => (
                       <div key={item.id} className="flex items-center gap-2 p-2 bg-accent/50 rounded border">
                         <ImageWithFallback
@@ -653,7 +529,178 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                     ))}
                   </div>
                 )}
-              </ScrollArea>
+              </div>
+
+
+              {/* Photograph Section */}
+              <div>
+                <Label>Photograph (Required)</Label>
+                <div className="mt-2">
+                  {validatedImageUrl ? (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <img
+                          src={transferPhoto || ''}
+                          alt="Transfer evidence"
+                          className="w-full h-32 object-cover rounded border"
+                        />
+                        <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold">
+                          ✓ Photograph Confirmed
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => {
+                          setTransferPhoto(null);
+                          setValidatedImageUrl(null);
+                        }}
+                      >
+                        Change Photo
+                      </Button>
+                    </div>
+                  ) : transferPhoto ? (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <img
+                          src={transferPhoto}
+                          alt="Transfer evidence"
+                          className="w-full h-32 object-cover rounded border"
+                        />
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="absolute top-2 right-2"
+                          onClick={() => setTransferPhoto(null)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <Button
+                        onClick={validatePhoto}
+                        disabled={isValidatingPhoto}
+                        className={`w-full font-semibold bg-blue-600 hover:bg-blue-700 text-white py-5 text-base ${!validatedImageUrl ? 'validate-btn-blink' : ''
+                          }`}
+                        size="sm"
+                      >
+                        {isValidatingPhoto ? (
+                          <span className="flex items-center gap-2">
+                            <span className="inline-block animate-spin">⏳</span>
+                            Confirming...
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <span>✓</span>
+                            Confirm Photograph
+                          </span>
+                        )}
+                      </Button>
+                    </div>
+                  ) : cameraOpen ? (
+                    <div className="space-y-2">
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        className="w-full h-32 object-cover rounded border bg-black"
+                      />
+                      <div className="flex gap-2">
+                        <Button onClick={capturePhoto} className="flex-1" size="sm">
+                          <Camera className="h-4 w-4 mr-2" />
+                          Capture
+                        </Button>
+                        <Button variant="outline" onClick={closeCamera} size="sm">
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-2"
+                        onClick={openCamera}
+                        size="sm"
+                      >
+                        <Camera className="h-4 w-4" />
+                        Camera
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-2"
+                        onClick={() => fileInputRef.current?.click()}
+                        size="sm"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Upload
+                      </Button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Target Engineer Selection */}
+              <div>
+                <Label>Target Engineer</Label>
+                <Select
+                  value={targetEngineerId}
+                  onValueChange={(value) => {
+                    setTargetEngineerId(value);
+                    setEngineerSearchTerm('');
+                  }}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue placeholder="Select engineer" />
+                  </SelectTrigger>
+                  <SelectContent className="p-0">
+                    <div className="p-2 border-b">
+                      <Input
+                        placeholder="Search engineer..."
+                        value={engineerSearchTerm}
+                        onChange={(e) => setEngineerSearchTerm(e.target.value)}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <ScrollArea className="max-h-56">
+                      <div className="p-2">
+                        {filteredUsers.length === 0 ? (
+                          <div className="py-6 text-center text-sm text-muted-foreground">
+                            No engineers found
+                          </div>
+                        ) : (
+                          filteredUsers.map((user) => (
+                            <SelectItem key={user.employeeId} value={user.employeeId}>
+                              <div className="flex items-center gap-2">
+                                <span>{user.employeeId}</span>
+                                <span>-</span>
+                                <span>{user.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </SelectContent>
+                </Select>
+              </div>
+
+
+
+
+
+
+
+
+
             </div>
           </CardContent>
         </Card>
@@ -661,7 +708,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
 
       {/* Transfer Button - Below Transfer Details - Centered */}
       <div className="flex justify-center w-full">
-        <Button 
+        <Button
           onClick={handleTransferClick}
           disabled={!canTransfer}
           className="gap-2 py-6 px-12 text-lg font-semibold bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -696,14 +743,14 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
             </div>
           </div>
           <div className="flex gap-2 justify-end mt-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setConfirmDialogOpen(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={submitTransfer}
               disabled={isSubmitting}
             >
