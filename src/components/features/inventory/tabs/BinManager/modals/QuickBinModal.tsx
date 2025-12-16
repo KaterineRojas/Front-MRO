@@ -15,40 +15,53 @@ import {
 interface QuickBinModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (binData: { 
-    code: string; 
-    name: string; 
-    rackCode: string; 
+  onSave: (binData: {
+    code: string;
+    name: string;
+    rackCode: string;
     levelCode: string;
     allowDifferentItems: boolean;
   }) => void;
   selectedZone: ZoneV2;
   locationPath?: string;
+  errorMessage?: string;
+  onClearError?: () => void;
 }
 
-export function QuickBinModal({ isOpen, onClose, onSave, selectedZone , locationPath}: QuickBinModalProps) {
+export function QuickBinModal({ isOpen, onClose, onSave, selectedZone, locationPath, errorMessage, onClearError }: QuickBinModalProps) {
   const [rackCode, setRackCode] = useState('');
   const [levelCode, setLevelCode] = useState('');
   const [binCode, setBinCode] = useState('');
   const [name, setName] = useState('');
   const [allowDifferentItems, setAllowDifferentItems] = useState(false);
+  const [wasOpen, setWasOpen] = useState(false);
 
   // Sanitize code: only alphanumeric and uppercase, max 6 characters
   const handleCodeChange = (value: string, setter: (val: string) => void) => {
     const sanitized = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6);
     setter(sanitized);
+    // Clear error when user types
+    if (onClearError) {
+      onClearError();
+    }
   };
 
   useEffect(() => {
-    if (isOpen) {
+    // Solo limpiar cuando el modal se abre (transición de cerrado a abierto)
+    if (isOpen && !wasOpen) {
       // Reset form when modal opens
       setRackCode('');
       setLevelCode('');
       setBinCode('');
       setName('');
       setAllowDifferentItems(false);
+      // Clear error when modal opens
+      if (onClearError) {
+        onClearError();
+      }
     }
-  }, [isOpen]);
+    setWasOpen(isOpen);
+  }, [isOpen]); // Solo depende de isOpen, no de onClearError
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +89,7 @@ export function QuickBinModal({ isOpen, onClose, onSave, selectedZone , location
               Create a new bin in zone: <span className="font-bold text-primary">{selectedZone?.code}</span>
             </DialogDescription>
           </DialogHeader>
+
           <div className="space-y-4 py-4">
             {/* Bin Code - All levels in one horizontal row */}
             <div className="space-y-2">
@@ -130,7 +144,13 @@ export function QuickBinModal({ isOpen, onClose, onSave, selectedZone , location
               <Input
                 id="name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  // Clear error when user types
+                  if (onClearError) {
+                    onClearError();
+                  }
+                }}
                 placeholder="Storage Bin A1"
                 required
                 className="dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:placeholder:text-gray-400"
@@ -146,7 +166,16 @@ export function QuickBinModal({ isOpen, onClose, onSave, selectedZone , location
                 </div>
               </div>
             )}
-            
+
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="p-3 bg-red-50 dark:bg-red-950 border border-red-300 dark:border-red-800 rounded-lg">
+                <p className="text-sm font-medium text-red-700 dark:text-red-300">
+                  {errorMessage}
+                </p>
+              </div>
+            )}
+
           </div>
 
           <DialogFooter>

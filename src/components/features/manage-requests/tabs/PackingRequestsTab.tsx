@@ -19,7 +19,7 @@ interface Props {
   getPackingItemQuantity: (requestId: number, itemId: number) => number;
   areAllItemsSelected: (requestId: number, items: any[]) => boolean;
   handleSelectAllPackingItems: (request: LoanRequest, checked: boolean) => void;
-  printedRequests: Set<number>;
+  printedRequests: Set<string>;
   handlePrintAllPacking: () => void;
   handlePrintSinglePacking: (request: LoanRequest) => void;
   handleConfirmPacking: (request: LoanRequest) => void;
