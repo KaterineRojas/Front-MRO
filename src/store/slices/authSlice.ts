@@ -9,6 +9,8 @@ interface User {
   role: number;
   roleName: string;
   department: string;
+  departmentId?: string;
+  departmentName?: string;
   employeeId?: string; 
   warehouseId?: number; 
   photoUrl?: string;
@@ -79,4 +81,4 @@ const authSlice = createSlice({
 });
 
 export const { setUser, setAccessToken, setAuth, logout, setLoading, updateUserRole, setUserPhoto } = authSlice.actions;
-export default authSlice.reducer;
+export default authSlice.reducer;  

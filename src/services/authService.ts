@@ -16,6 +16,8 @@ export interface BackendUser {
   roleName: string;
   authType: number;
   departmentId?: number;
+  departmentName?: string;
+  department?: string;
   warehouseId?: number;
 }
 

@@ -320,7 +320,7 @@ export function Header({
             <div className="p-2">
               <p className="text-sm">{currentUser.name}</p>
               <p className="text-xs text-muted-foreground">{currentUser.email}</p>
-              <p className="text-xs text-muted-foreground">{currentUser.department}</p>
+              <p className="text-xs text-muted-foreground">{currentUser.departmentName || currentUser.department}</p>
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-red-600">

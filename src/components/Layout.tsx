@@ -247,9 +247,9 @@ export function Layout() {
                       {currentUser.jobTitle && (
                         <p className="text-xs text-muted-foreground truncate">{currentUser.jobTitle}</p>
                       )}
-                      {currentUser.department && (
+                      {(currentUser.departmentName || currentUser.department) && (
                         <p className="text-xs text-muted-foreground truncate">
-                          {currentUser.department}
+                          {currentUser.departmentName || currentUser.department}
                         </p>
                       )}
                     </div>

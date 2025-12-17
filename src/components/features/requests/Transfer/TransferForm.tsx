@@ -72,6 +72,8 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const confirmPhotoButtonRef = useRef<HTMLButtonElement>(null);
+  const captureButtonRef = useRef<HTMLButtonElement>(null);
 
   // Load data
   useEffect(() => {
@@ -254,6 +256,18 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
       reader.readAsDataURL(file);
     }
   };
+
+  useEffect(() => {
+    if (transferPhoto && !validatedImageUrl && confirmPhotoButtonRef.current) {
+      confirmPhotoButtonRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [transferPhoto, validatedImageUrl]);
+
+  useEffect(() => {
+    if (cameraOpen && captureButtonRef.current) {
+      captureButtonRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [cameraOpen]);
 
   const validatePhoto = async () => {
     if (!transferPhoto) {
@@ -538,11 +552,11 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                 <div className="mt-2">
                   {validatedImageUrl ? (
                     <div className="space-y-2">
-                      <div className="relative">
+                      <div className="relative h-32 w-full flex items-center justify-center">
                         <img
                           src={transferPhoto || ''}
                           alt="Transfer evidence"
-                          className="w-full h-32 object-cover rounded border"
+                          className="h-full w-auto max-w-full object-contain rounded border"
                         />
                         <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold">
                           ✓ Photograph Confirmed
@@ -562,11 +576,11 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                     </div>
                   ) : transferPhoto ? (
                     <div className="space-y-2">
-                      <div className="relative">
+                      <div className="relative h-32 w-full flex items-center justify-center">
                         <img
                           src={transferPhoto}
                           alt="Transfer evidence"
-                          className="w-full h-32 object-cover rounded border"
+                          className="h-full w-auto max-w-full object-contain rounded border"
                         />
                         <Button
                           size="sm"
@@ -583,6 +597,7 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                         className={`w-full font-semibold bg-blue-600 hover:bg-blue-700 text-white py-5 text-base ${!validatedImageUrl ? 'validate-btn-blink' : ''
                           }`}
                         size="sm"
+                        ref={confirmPhotoButtonRef}
                       >
                         {isValidatingPhoto ? (
                           <span className="flex items-center gap-2">
@@ -599,14 +614,16 @@ export function TransferForm({ onBack, onSuccess }: TransferFormProps) {
                     </div>
                   ) : cameraOpen ? (
                     <div className="space-y-2">
-                      <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        className="w-full h-32 object-cover rounded border bg-black"
-                      />
+                      <div className="relative h-32 w-full flex items-center justify-center">
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          className="h-full w-auto max-w-full rounded border bg-black"
+                        />
+                      </div>
                       <div className="flex gap-2">
-                        <Button onClick={capturePhoto} className="flex-1" size="sm">
+                        <Button ref={captureButtonRef} onClick={capturePhoto} className="flex-1" size="sm">
                           <Camera className="h-4 w-4 mr-2" />
                           Capture
                         </Button>

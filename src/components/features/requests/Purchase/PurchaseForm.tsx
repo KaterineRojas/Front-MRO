@@ -41,7 +41,7 @@ interface PurchaseFormData {
 export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
   const [formData, setFormData] = useState<PurchaseFormData>({
     items: [{ name: '', isExisting: false, quantity: 1, estimatedCost: 0, justification: '', link: '' }],
-    department: currentUser.department || '',
+    department: currentUser.departmentId || currentUser.department || '',
     project: '',
     priority: 'medium',
     selfPurchase: false,

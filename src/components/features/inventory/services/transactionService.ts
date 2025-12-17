@@ -1,9 +1,6 @@
-// src/services/transactionService.ts
-
 import type { Transaction, TransactionType } from '../tabs/transactions/transactionTypes';
 import { API_URL } from "../../../../url";
 import { fetchWithAuth } from '../../../../utils/fetchWithAuth';
-//const API_URL = 'http://localhost:5000/api';
 
 /**
  * API response format for transactions
