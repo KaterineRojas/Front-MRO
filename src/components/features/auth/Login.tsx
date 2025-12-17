@@ -68,6 +68,9 @@ export function Login() {
 
       const frontendRole = roleMap[response.user.roleName] || 'user';
 
+      const departmentId = response.user.departmentId ? String(response.user.departmentId) : response.user.department || '';
+      const departmentName = response.user.departmentName || response.user.department || 'Engineering';
+
       // Actualizar Redux con el usuario y token del backend
       dispatch(
         setAuth({
@@ -77,8 +80,9 @@ export function Login() {
             email: response.user.email,
             employeeId: response.user.employeeId,
             role: frontendRole,
-            department: response.user.departmentId ? String(response.user.departmentId) : 'Engineering',
-            employeeId: response.user.employeeId, // ej: "amx0148"
+            department: departmentId,
+            departmentId,
+            departmentName,
             warehouseId: response.user.warehouseId, // ej: 1
             roleName: response.user.roleName, // ej: "Keeper"
           },

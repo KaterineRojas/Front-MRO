@@ -95,7 +95,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
       itemName: item.item.name,
       quantity: item.quantity
     })),
-    department: currentUser.department || '',
+    department: currentUser.departmentId || currentUser.department || '',
     returnDate: '',
     notes: '',
     warehouseId: cartWarehouseId || '',
@@ -1044,7 +1044,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
                     </div>
                   </Label>
                   <div className="flex items-center gap-2 p-2 border border-input rounded-md bg-muted">
-                    <Badge variant="secondary">{currentUser.department}</Badge>
+                    <Badge variant="secondary">{currentUser.departmentName || currentUser.department}</Badge>
                     <span className="text-sm text-muted-foreground">(Fixed)</span>
                   </div>
                 </div>

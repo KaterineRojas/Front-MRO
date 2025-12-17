@@ -275,7 +275,7 @@ export function TransferRequests() {
         currentUser.employeeId || '',
         selectedCompany,
         selectedCustomer,
-        currentUser.department,
+        currentUser.departmentId || currentUser.department,
         selectedProject,
         selectedWorkOrder,
         ''
