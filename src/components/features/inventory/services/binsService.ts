@@ -1,5 +1,6 @@
 import { API_URL } from "../../../../url";
 import { fetchWithAuth } from '../../../../utils/fetchWithAuth';
+import { store } from '../../../../store/store';
 
 /**
  * Application Bin type
@@ -55,7 +56,6 @@ export async function getAvailableBins(warehouseId: number = 1, isActive?: boole
     }
     // allowDifferentItems=false significa bins que solo aceptan un tipo de item
     params.append('allowDifferentItems', 'false');
-    params.append('warehouseId', '1');
 
     const url = `${API_URL}/Bin/available${params.toString() ? '?' + params.toString() : ''}`;
     console.log('🔍 Fetching available bins from:', url);
@@ -97,9 +97,25 @@ export async function getAvailableBins(warehouseId: number = 1, isActive?: boole
  * MOCK: Checks if an item has an occupied bin
  * ✅ REACTIVADO - Usa nueva lógica de bins jerárquicos
  */
-export async function checkItemOccupation(itemId: number): Promise<CheckItemOccupationResponse | null> {
+export async function checkItemOccupation(
+  itemId: number,
+  warehouseId?: number | string
+): Promise<CheckItemOccupationResponse | null> {
   try {
-    const response = await fetchWithAuth(`${API_URL}/Bin/check-item-occupation?itemId=${itemId}`, {
+    const state = store.getState();
+    const userWarehouseId = state.auth.user?.warehouseId ?? state.auth.user?.warehouse;
+    const resolvedWarehouseId = warehouseId ?? userWarehouseId;
+
+    const params = new URLSearchParams();
+    params.append('itemId', String(itemId));
+    if (resolvedWarehouseId !== undefined && resolvedWarehouseId !== null) {
+      params.append('warehouseId', String(resolvedWarehouseId));
+    }
+
+    const url = `${API_URL}/Bin/check-item-occupation${params.size ? `?${params.toString()}` : ''}`;
+    console.log('🔍 Checking item occupation:', url);
+
+    const response = await fetchWithAuth(url, {
       method: 'GET',
     });
 
@@ -117,7 +133,7 @@ export async function checkItemOccupation(itemId: number): Promise<CheckItemOccu
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
       console.warn(`⚠️ Expected JSON response but got: ${contentType}`);
-      console.warn(`⚠️ URL was: ${API_URL}/Bin/check-item-occupation?itemId=${itemId}`);
+      console.warn('⚠️ URL was:', url);
       return null;
     }
 

@@ -74,6 +74,7 @@ function AuthHandler() {
 
           const departmentId = backendUser.departmentId ? String(backendUser.departmentId) : backendUser.department || '';
           const departmentName = backendUser.departmentName || backendUser.department || 'Engineering';
+          const resolvedWarehouseId = backendUser.warehouseId ?? backendUser.warehouse ?? null;
 
           // Actualizar Redux con el usuario
           dispatch(
@@ -88,6 +89,8 @@ function AuthHandler() {
                 department: departmentId,
                 departmentId,
                 departmentName,
+                warehouse: resolvedWarehouseId ?? undefined,
+                warehouseId: resolvedWarehouseId ?? undefined,
               },
               accessToken: localToken,
               authType: 'local',
@@ -163,6 +166,7 @@ function AuthHandler() {
             || backendResponse.user.department
             || graphProfile?.department
             || 'Engineering';
+          const resolvedWarehouseId = backendResponse.user.warehouseId ?? backendResponse.user.warehouse ?? null;
 
           const user = {
             id: String(backendResponse.user.id),
@@ -173,6 +177,8 @@ function AuthHandler() {
             department: departmentId,
             departmentId,
             departmentName,
+            warehouse: resolvedWarehouseId ?? undefined,
+            warehouseId: resolvedWarehouseId ?? undefined,
             jobTitle: graphProfile?.jobTitle,
             mobilePhone: graphProfile?.mobilePhone,
             officeLocation: graphProfile?.officeLocation,

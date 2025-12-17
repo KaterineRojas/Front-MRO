@@ -15,16 +15,17 @@ import {
   createPurchaseApi,
   createDamagedApi,
   createStockCorrectionApi,
+   getValidDestinationBins,
   createWarehouseTransferApi,
   // getValidDestinationBins // Temporalmente desactivado - pendiente nueva lógica de bins
 } from '../../services/inventoryApi';
 import { checkItemOccupation, getAvailableBins } from '../../services/binsService';
 
 // Función temporal mock mientras se migra a la nueva lógica de bins
-const getValidDestinationBins = async (_itemId: number, _fromBinId: number): Promise<any[]> => {
-  console.warn('⚠️ getValidDestinationBins temporalmente desactivado - pendiente migración a nueva lógica');
-  return [];
-};
+//const getValidDestinationBins = async (_itemId: number, _fromBinId: number, _warehouseId?: number): Promise<any[]> => {
+//  console.warn('⚠️ getValidDestinationBins temporalmente desactivado - pendiente migración a nueva lógica');
+//  return [];
+//};
 
 interface RecordMovementModalProps {
   open: boolean;
@@ -200,7 +201,7 @@ export function RecordMovementModal({
       if (entityType === 'item' && currentOption.value === 'entry-purchase' && formData.itemId > 0) {
         try {
           console.log(`🔍 Checking occupation for item ${formData.itemId}...`);
-          const occupation = await checkItemOccupation(formData.itemId);
+          const occupation = await checkItemOccupation(formData.itemId, warehouseId);
           
           if (occupation && occupation.isOccupied && occupation.occupiedBin) {
             // Item has a bin assigned, auto-select it
@@ -551,7 +552,7 @@ export function RecordMovementModal({
                       // If this is a warehouse transfer, fetch valid destination bins
                       if (currentOption.value === 'relocation-transfer' && formData.itemId) {
                         try {
-                          const destinations = await getValidDestinationBins(formData.itemId, fromBinId);
+                          const destinations = await getValidDestinationBins(formData.itemId, fromBinId, warehouseId);
                           setValidDestinationBins(destinations);
                         } catch (error) {
                           console.error('Failed to load valid destination bins:', error);

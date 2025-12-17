@@ -22,6 +22,7 @@ export interface PurchaseRequest {
   quantity: number;
   unitCost: number;
   notes: string;
+  warehouseId?: number;
 }
 
 // Damaged request data for API
@@ -31,6 +32,7 @@ export interface DamagedRequest {
   quantity: number;
   damageDescription: string;
   notes: string;
+  warehouseId?: number;
 }
 
 // Stock correction request data for API
@@ -39,6 +41,7 @@ export interface StockCorrectionRequest {
   binId: number;
   quantity: number;
   notes: string;
+  warehouseId?: number;
 }
 
 // Warehouse transfer request data for API
@@ -48,6 +51,7 @@ export interface WarehouseTransferRequest {
   toBinId: number;
   quantity: number;
   notes: string;
+  warehouseId?: number;
 }
 
 // Legacy types (keep for backward compatibility)

@@ -83,6 +83,7 @@ export function Login() {
             department: departmentId,
             departmentId,
             departmentName,
+            warehouse: response.user.warehouseId ?? undefined,
             warehouseId: response.user.warehouseId, // ej: 1
             roleName: response.user.roleName, // ej: "Keeper"
           },
