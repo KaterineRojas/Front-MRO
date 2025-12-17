@@ -243,7 +243,7 @@ export function TransactionsTable({
                   <Calendar
                     mode="single"
                     selected={filters.dateFrom ? new Date(filters.dateFrom) : undefined}
-                    onSelect={(d) => {
+                    onSelect={(d: any) => {
                       const val = d ? format(d, 'yyyy-MM-dd') : null;
                       setFilters((prev) => ({ ...prev, dateFrom: val }));
                       setPagination((prev) => ({ ...prev, currentPage: 1 }));
@@ -274,7 +274,7 @@ export function TransactionsTable({
                   <Calendar
                     mode="single"
                     selected={filters.dateTo ? new Date(filters.dateTo) : undefined}
-                    onSelect={(d) => {
+                    onSelect={(d: any) => {
                       const val = d ? format(d, 'yyyy-MM-dd') : null;
                       setFilters((prev) => ({ ...prev, dateTo: val }));
                       setPagination((prev) => ({ ...prev, currentPage: 1 }));
