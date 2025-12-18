@@ -38,19 +38,38 @@ export interface CheckItemOccupationResponse {
   quantity: number | null;
 }
 
+const resolveWarehouseId = (override?: number | string | null): number | undefined => {
+  const state = store.getState();
+  const fallback = state.auth.user?.warehouseId ?? state.auth.user?.warehouse ?? null;
+  const value = override ?? fallback;
+
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  const parsed = typeof value === 'string' ? parseInt(value, 10) : value;
+  return Number.isNaN(parsed) ? undefined : parsed;
+};
+
 // ===================================================================
 // FUNCIONES TEMPORALMENTE DESACTIVADAS - PENDIENTE NUEVA LÓGICA BINS
 // ===================================================================
 
 /**
  * MOCK: Fetches all available bins from the API
- * ✅ REACTIVADO - Usa nueva lógica de bins jerárquicos
+ * ✅ REACTIVADO - Usa nueva lógica de bins jerárquicos si no tiene un bin asignado llama a este
  */
-export async function getAvailableBins(warehouseId: number = 1, isActive?: boolean): Promise<Bin[]> {
+export async function getAvailableBins(warehouseId?: number | string | null, isActive?: boolean): Promise<Bin[]> {
   try {
+    const resolvedWarehouseId = resolveWarehouseId(warehouseId ?? null);
+    if (resolvedWarehouseId === undefined) {
+      console.warn('⚠️ getAvailableBins: warehouseId is not available; returning empty list');
+      return [];
+    }
+
     // Construir URL con parámetros
     const params = new URLSearchParams();
-    params.append('warehouseId', warehouseId.toString());
+    params.append('warehouseId', resolvedWarehouseId.toString());
     if (isActive !== undefined) {
       params.append('isActive', isActive.toString());
     }
@@ -58,7 +77,7 @@ export async function getAvailableBins(warehouseId: number = 1, isActive?: boole
     params.append('allowDifferentItems', 'false');
 
     const url = `${API_URL}/Bin/available${params.toString() ? '?' + params.toString() : ''}`;
-    console.log('🔍 Fetching available bins from:', url);
+    console.log('🔍 Fetching available bins from****:', url);
 
     const response = await fetchWithAuth(url, {
       method: 'GET',
@@ -102,9 +121,7 @@ export async function checkItemOccupation(
   warehouseId?: number | string
 ): Promise<CheckItemOccupationResponse | null> {
   try {
-    const state = store.getState();
-    const userWarehouseId = state.auth.user?.warehouseId ?? state.auth.user?.warehouse;
-    const resolvedWarehouseId = warehouseId ?? userWarehouseId;
+    const resolvedWarehouseId = resolveWarehouseId(warehouseId ?? null);
 
     const params = new URLSearchParams();
     params.append('itemId', String(itemId));
@@ -113,7 +130,7 @@ export async function checkItemOccupation(
     }
 
     const url = `${API_URL}/Bin/check-item-occupation${params.size ? `?${params.toString()}` : ''}`;
-    console.log('🔍 Checking item occupation:', url);
+    console.log('🔍 Checking item occupation***:', url);
 
     const response = await fetchWithAuth(url, {
       method: 'GET',

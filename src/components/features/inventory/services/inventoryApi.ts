@@ -405,7 +405,7 @@ export async function createPurchaseApi(purchaseData: PurchaseRequest): Promise<
       method: 'POST',
       body: JSON.stringify(payload),
     });
-
+    console.log('✅ Purchase created successfully', response);
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(errorData?.message || `Failed to create purchase: ${response.status} ${response.statusText}`);
@@ -452,7 +452,7 @@ export async function fetchBinsFromApi({
     const response = await fetchWithAuth(url, {
       method: 'GET',
     });
-    console.log('[fetchBinsFromApi] GET', url);//*************** */
+    console.log('[fetchBinsFromApiforWH] GET', url);//*************** */
     if (!response.ok) {
       throw new Error(`Failed to fetch bins: ${response.status} ${response.statusText}`);
     }
@@ -1076,7 +1076,7 @@ export async function getValidDestinationBins(
     }
 
     const url = `${API_URL}/Inventory/valid-destinations?${params.toString()}`;
-
+    console.log('[getValidDestinationBins] GET', url);
     const response = await fetchWithAuth(url, {
       method: 'GET',
     });
