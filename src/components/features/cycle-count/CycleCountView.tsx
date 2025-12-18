@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -6,127 +6,156 @@ import { Label } from '../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { Badge } from '../../ui/badge';
-import { Textarea } from '../../ui/textarea';
-import { ArrowLeft, Package, Download, AlertTriangle, CheckCircle, Minus, Plus, Printer, Save } from 'lucide-react';
+import { ArrowLeft, Package, AlertTriangle, CheckCircle, Minus, Plus, Printer, Save, MessageSquare } from 'lucide-react';
 
 interface Article {
   id: string;
   code: string;
   description: string;
   type: 'consumable' | 'non-consumable';
-  category: string;
-  totalRegistered: number; // Total en sistema
-  onLoan: number; // Prestados
-  expectedInWarehouse: number; // Esperado en almacén (totalRegistered - onLoan)
-  physicalCount?: number; // Conteo físico
-  difference?: number; // Diferencia (physicalCount - expectedInWarehouse)
-  unit: string;
-  location: string;
-  status?: 'pending' | 'counted' | 'discrepancy' | 'reviewed';
-  notes?: string;
+  zone: 'Good Condition' | 'Damaged' | 'Quarantine';
+  totalRegistered: number;
+  physicalCount?: number;
+  status?: 'match' | 'discrepancy';
+  observations?: string;
 }
 
 interface CycleCountViewProps {
   onBack: () => void;
+  onComplete?: (completedData: {
+    date: string;
+    completedDate: string;
+    zone: string;
+    status: 'completed';
+    countType: 'Annual' | 'Biannual' | 'Spot Check';
+    auditor: string;
+    totalItems: number;
+    counted: number;
+    discrepancies: number;
+    articles: Article[];
+  }) => void;
+  onSaveProgress?: (progressData: {
+    date: string;
+    zone: string;
+    status: 'in-progress';
+    countType: 'Annual' | 'Biannual' | 'Spot Check';
+    auditor: string;
+    totalItems: number;
+    counted: number;
+    discrepancies: number;
+    articles: Article[];
+  }) => void;
+  existingCountData?: {
+    id?: number;
+    articles: Article[];
+    countType: 'Annual' | 'Biannual' | 'Spot Check';
+    auditor: string;
+    zone: string;
+  };
 }
 
 const mockArticles: Article[] = [
   {
     id: '1',
-    code: 'ELEC-001',
-    description: 'Digital Multimeter',
+    code: 'AMX01-ZGC-R01-L04-B01',
+    description: 'Premium Electronic Components',
     type: 'non-consumable',
-    category: 'Electronics',
-    totalRegistered: 10,
-    onLoan: 5,
-    expectedInWarehouse: 5,
-    unit: 'pcs',
-    location: 'A1-001',
-    status: 'pending'
+    zone: 'Good Condition',
+    totalRegistered: 25
   },
   {
     id: '2',
-    code: 'CONS-015',
-    description: 'AA Batteries',
-    type: 'consumable',
-    category: 'Batteries',
-    totalRegistered: 120,
-    onLoan: 0,
-    expectedInWarehouse: 120,
-    unit: 'pcs',
-    location: 'B2-012',
-    status: 'pending'
+    code: 'AMX01-ZGC-R02-L03-B05',
+    description: 'Digital Multimeter Pro',
+    type: 'non-consumable',
+    zone: 'Good Condition',
+    totalRegistered: 15
   },
   {
     id: '3',
-    code: 'TOOL-029',
-    description: 'Screwdriver Set',
+    code: 'AMX01-ZDM-R01-L02-B03',
+    description: 'Cracked Display Panel',
     type: 'non-consumable',
-    category: 'Tools',
-    totalRegistered: 12,
-    onLoan: 4,
-    expectedInWarehouse: 8,
-    unit: 'sets',
-    location: 'C1-005',
-    status: 'pending'
+    zone: 'Damaged',
+    totalRegistered: 8
   },
   {
     id: '4',
-    code: 'TECH-042',
-    description: 'Laptop Dell Latitude',
-    type: 'non-consumable',
-    category: 'Technology',
-    totalRegistered: 20,
-    onLoan: 15,
-    expectedInWarehouse: 5,
-    unit: 'units',
-    location: 'IT-001',
-    status: 'pending'
+    code: 'AMX01-ZDM-R03-L01-B02',
+    description: 'Used Battery Pack',
+    type: 'consumable',
+    zone: 'Damaged',
+    totalRegistered: 12
   },
   {
     id: '5',
-    code: 'OFF-008',
-    description: 'Office Paper A4',
-    type: 'consumable',
-    category: 'Office Supplies',
-    totalRegistered: 500,
-    onLoan: 0,
-    expectedInWarehouse: 500,
-    unit: 'sheets',
-    location: 'STORAGE-A',
-    status: 'pending'
+    code: 'AMX01-ZQT-R01-L01-B01',
+    description: 'Unverified Components',
+    type: 'non-consumable',
+    zone: 'Quarantine',
+    totalRegistered: 6
+  },
+  {
+    id: '6',
+    code: 'AMX01-ZGC-R03-L02-B04',
+    description: 'Industrial Sensors',
+    type: 'non-consumable',
+    zone: 'Good Condition',
+    totalRegistered: 32
+  },
+  {
+    id: '7',
+    code: 'AMX01-ZQT-R02-L03-B01',
+    description: 'Testing Equipment',
+    type: 'non-consumable',
+    zone: 'Quarantine',
+    totalRegistered: 4
   }
 ];
 
-export function CycleCountView({ onBack }: CycleCountViewProps) {
-  const [articles, setArticles] = useState<Article[]>(mockArticles);
+export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCountData }: CycleCountViewProps) {
+  // Initialize articles - if continuing, use existing data; otherwise use mock data
+  const [articles, setArticles] = useState<Article[]>(() => {
+    if (existingCountData?.articles) {
+      // Convert existing count data to Article format with proper type
+      return existingCountData.articles.map(a => ({
+        id: a.code, // Use code as id if id is not available
+        code: a.code,
+        description: a.description,
+        type: 'non-consumable' as const, // Default type
+        zone: a.zone,
+        totalRegistered: a.totalRegistered,
+        physicalCount: a.physicalCount,
+        status: a.status,
+        observations: a.observations
+      }));
+    }
+    return mockArticles;
+  });
+  
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedLocation, setSelectedLocation] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedZone, setSelectedZone] = useState<string>(existingCountData?.zone || 'all');
+  const [countType, setCountType] = useState<'Annual' | 'Biannual' | 'Spot Check'>(existingCountData?.countType || 'Annual');
+  const [auditor, setAuditor] = useState<string>(existingCountData?.auditor || '');
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          article.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;
-    const matchesLocation = selectedLocation === 'all' || article.location.startsWith(selectedLocation);
-    const matchesStatus = statusFilter === 'all' || (article.status || 'pending') === statusFilter;
+    const matchesZone = selectedZone === 'all' || article.zone === selectedZone;
     
-    return matchesSearch && matchesCategory && matchesLocation && matchesStatus;
+    return matchesSearch && matchesZone;
   });
 
   const handleCountUpdate = (articleId: string, physicalCount: number, notes?: string) => {
     setArticles(prev => prev.map(article => {
       if (article.id === articleId) {
-        const difference = physicalCount - article.expectedInWarehouse;
-        const status = difference === 0 ? 'counted' : 'discrepancy';
+        const status = physicalCount === article.totalRegistered ? 'match' : 'discrepancy';
         
         return {
           ...article,
           physicalCount,
-          difference,
           status,
-          notes: notes || article.notes
+          observations: notes || article.observations
         };
       }
       return article;
@@ -135,134 +164,129 @@ export function CycleCountView({ onBack }: CycleCountViewProps) {
 
   const handleSaveCycleCount = () => {
     // Save cycle count to backend
-    alert('Cycle count saved successfully!');
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    // Filter only the articles from the selected zone (if not "all")
+    const articlesToSave = selectedZone === 'all' 
+      ? articles 
+      : articles.filter(a => a.zone === selectedZone);
+    
+    const progressData = {
+      date: `${year}-${month}-${day}`,
+      zone: selectedZone,
+      status: 'in-progress' as const,
+      countType,
+      auditor,
+      totalItems: articlesToSave.length,
+      counted: articlesToSave.filter(a => a.status === 'match' || a.status === 'discrepancy').length,
+      discrepancies: articlesToSave.filter(a => a.status === 'discrepancy').length,
+      articles: articlesToSave.map(a => ({
+        id: a.id,
+        type: a.type,
+        code: a.code,
+        description: a.description,
+        zone: a.zone,
+        totalRegistered: a.totalRegistered,
+        physicalCount: a.physicalCount !== undefined ? a.physicalCount : a.totalRegistered,
+        status: a.status || 'match',
+        observations: a.observations
+      }))
+    };
+
+    // Llamar al callback onSaveProgress
+    if (onSaveProgress) {
+      onSaveProgress(progressData);
+    }
+    
+    alert('Cycle count progress saved successfully!');
+  };
+
+  const handleCompleteCycleCount = () => {
+    // Filter articles by selected zone (if not "all")
+    const articlesToCount = selectedZone === 'all' 
+      ? articles 
+      : articles.filter(a => a.zone === selectedZone);
+    
+    const countedArticles = articlesToCount.filter(a => a.status === 'match' || a.status === 'discrepancy');
+    const discrepancies = articlesToCount.filter(a => a.status === 'discrepancy');
+    
+    // Verificar que todos los artículos de la zona hayan sido contados
+    if (countedArticles.length < articlesToCount.length) {
+      alert(`Please count all items in ${selectedZone === 'all' ? 'all zones' : selectedZone} before completing the cycle count.`);
+      return;
+    }
+
+    // Verificar que se haya ingresado un auditor
+    if (!auditor.trim()) {
+      alert('Please enter an auditor name before completing the cycle count.');
+      return;
+    }
+
+    // Preparar los datos del conteo completado
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    const completedData = {
+      date: `${year}-${month}-${day}`,
+      completedDate: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,
+      zone: selectedZone,
+      status: 'completed' as const,
+      countType,
+      auditor,
+      totalItems: articlesToCount.length,
+      counted: countedArticles.length,
+      discrepancies: discrepancies.length,
+      articles: articlesToCount.map(a => ({
+        id: a.id,
+        type: a.type,
+        code: a.code,
+        description: a.description,
+        zone: a.zone,
+        totalRegistered: a.totalRegistered,
+        physicalCount: a.physicalCount!,
+        status: a.status!,
+        observations: a.observations
+      }))
+    };
+
+    // Llamar al callback onComplete
+    if (onComplete) {
+      onComplete(completedData);
+    }
+    
+    alert('Cycle count completed successfully!');
   };
 
   const handlePrintAll = () => {
     window.print();
   };
 
-  const handlePrintByCategory = () => {
-    // Create print content filtered by selected category
-    const printWindow = window.open('', '', 'height=600,width=800');
-    if (!printWindow) return;
+  const zones = ['all', 'Good Condition', 'Damaged', 'Quarantine'];
 
-    const categoryArticles = articles.filter(article => 
-      selectedCategory === 'all' ? true : article.category === selectedCategory
-    );
+  const countedArticles = articles.filter(a => a.status === 'match' || a.status === 'discrepancy');
+  const pendingArticles = articles.filter(a => !a.status);
+  const discrepancies = articles.filter(a => a.status === 'discrepancy');
 
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Cycle Count Report - ${selectedCategory === 'all' ? 'All Categories' : selectedCategory}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            h1 { font-size: 24px; margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .header { margin-bottom: 20px; }
-            .summary { margin: 20px 0; }
-            @media print {
-              button { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>Physical Inventory Count Report</h1>
-            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-            <p><strong>Category:</strong> ${selectedCategory === 'all' ? 'All Categories' : selectedCategory}</p>
-            <p><strong>Total Items:</strong> ${categoryArticles.length}</p>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Description</th>
-                <th>Location</th>
-                <th>Total Registered</th>
-                <th>On Loan</th>
-                <th>Expected in Warehouse</th>
-                <th>Physical Count</th>
-                <th>Difference</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${categoryArticles.map(article => `
-                <tr>
-                  <td>${article.code}</td>
-                  <td>${article.description}</td>
-                  <td>${article.location}</td>
-                  <td>${article.totalRegistered} ${article.unit}</td>
-                  <td>${article.onLoan} ${article.unit}</td>
-                  <td>${article.expectedInWarehouse} ${article.unit}</td>
-                  <td>${article.physicalCount !== undefined ? article.physicalCount + ' ' + article.unit : 'Not counted'}</td>
-                  <td>${article.difference !== undefined ? (article.difference >= 0 ? '+' : '') + article.difference : '-'}</td>
-                  <td>${article.status || 'pending'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <div class="summary">
-            <p><strong>Summary:</strong></p>
-            <p>Total Items: ${categoryArticles.length}</p>
-            <p>Counted: ${categoryArticles.filter(a => a.status === 'counted' || a.status === 'discrepancy').length}</p>
-            <p>Pending: ${categoryArticles.filter(a => a.status === 'pending').length}</p>
-            <p>Discrepancies: ${categoryArticles.filter(a => a.status === 'discrepancy').length}</p>
-          </div>
-          <script>
-            window.onload = function() {
-              window.print();
-            }
-          </script>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      pending: { variant: 'outline', label: 'Pending', icon: Package },
-      counted: { variant: 'default', label: 'Counted', icon: CheckCircle },
-      discrepancy: { variant: 'destructive', label: 'Discrepancy', icon: AlertTriangle },
-      reviewed: { variant: 'secondary', label: 'Reviewed', icon: CheckCircle }
-    };
-
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
-    const Icon = config.icon;
+  const getStatusBadge = (status: 'match' | 'discrepancy' | undefined) => {
+    if (!status) return null;
     
-    return (
-      <Badge variant={config.variant as any} className="flex items-center space-x-1">
-        <Icon className="h-3 w-3" />
-        <span>{config.label}</span>
-      </Badge>
-    );
-  };
-
-  const getDifferenceBadge = (difference: number | undefined) => {
-    if (difference === undefined) return null;
-    
-    if (difference === 0) {
+    if (status === 'match') {
       return <Badge variant="default" className="bg-green-600">Match</Badge>;
-    } else if (difference > 0) {
-      return <Badge variant="secondary" className="bg-blue-600">+{difference}</Badge>;
     } else {
-      return <Badge variant="destructive">{difference}</Badge>;
+      return <Badge variant="destructive">Discrepancy</Badge>;
     }
   };
-
-  const categories = ['all', ...Array.from(new Set(articles.map(a => a.category)))];
-  const locations = ['all', ...Array.from(new Set(articles.map(a => a.location.split('-')[0])))];
-
-  const countedArticles = articles.filter(a => a.status === 'counted' || a.status === 'discrepancy');
-  const pendingArticles = articles.filter(a => a.status === 'pending');
-  const discrepancies = articles.filter(a => a.status === 'discrepancy');
 
   return (
     <div className="space-y-6">
@@ -279,14 +303,6 @@ export function CycleCountView({ onBack }: CycleCountViewProps) {
           </div>
         </div>
         <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            onClick={handlePrintByCategory}
-            disabled={selectedCategory === 'all'}
-          >
-            <Printer className="h-4 w-4 mr-2" />
-            Print by Category
-          </Button>
           <Button variant="outline" onClick={handlePrintAll}>
             <Printer className="h-4 w-4 mr-2" />
             Print All
@@ -295,7 +311,7 @@ export function CycleCountView({ onBack }: CycleCountViewProps) {
             <Save className="h-4 w-4 mr-2" />
             Save Progress
           </Button>
-          <Button onClick={handleSaveCycleCount}>
+          <Button onClick={handleCompleteCycleCount}>
             <CheckCircle className="h-4 w-4 mr-2" />
             Complete Count
           </Button>
@@ -358,66 +374,48 @@ export function CycleCountView({ onBack }: CycleCountViewProps) {
               <Label htmlFor="search">Search</Label>
               <Input
                 id="search"
-                placeholder="Search by code or description..."
+                placeholder="Search by code or item name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="mt-1"
               />
             </div>
             <div>
-              <Label>Category</Label>
-              <div className="flex items-center space-x-2 mt-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePrintByCategory}
-                  disabled={selectedCategory === 'all'}
-                >
-                  <Printer className="h-4 w-4 mr-2" />
-                  Print by Category
-                </Button>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category === 'all' ? 'All Categories' : category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <Label>Location</Label>
-              <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                <SelectTrigger className="w-32 mt-1">
+              <Label>Zone</Label>
+              <Select value={selectedZone} onValueChange={setSelectedZone}>
+                <SelectTrigger className="w-48 mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {locations.map(location => (
-                    <SelectItem key={location} value={location}>
-                      {location === 'all' ? 'All' : location}
+                  {zones.map(zone => (
+                    <SelectItem key={zone} value={zone}>
+                      {zone === 'all' ? 'All Zones' : zone}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-32 mt-1">
+              <Label>Count Type</Label>
+              <Select value={countType} onValueChange={setCountType}>
+                <SelectTrigger className="w-48 mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="counted">Counted</SelectItem>
-                  <SelectItem value="discrepancy">Discrepancy</SelectItem>
+                  <SelectItem value="Annual">Annual</SelectItem>
+                  <SelectItem value="Biannual">Biannual</SelectItem>
+                  <SelectItem value="Spot Check">Spot Check</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Auditor</Label>
+              <Input
+                value={auditor}
+                onChange={(e) => setAuditor(e.target.value)}
+                placeholder="Enter auditor name"
+                className="w-48 mt-1"
+              />
             </div>
           </div>
         </CardContent>
@@ -437,14 +435,11 @@ export function CycleCountView({ onBack }: CycleCountViewProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Code</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Location</TableHead>
+                  <TableHead>Item</TableHead>
                   <TableHead className="text-right">Total Registered</TableHead>
-                  <TableHead className="text-right">On Loan</TableHead>
-                  <TableHead className="text-right">Expected in Warehouse</TableHead>
                   <TableHead className="text-right">Physical Count</TableHead>
-                  <TableHead className="text-right">Difference</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Observations</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -455,37 +450,26 @@ export function CycleCountView({ onBack }: CycleCountViewProps) {
                     <TableCell>
                       <div>
                         <p>{article.description}</p>
-                        <p className="text-xs text-muted-foreground">{article.category}</p>
+                        <p className="text-xs text-muted-foreground">{article.zone}</p>
                       </div>
                     </TableCell>
-                    <TableCell>{article.location}</TableCell>
                     <TableCell className="text-right">
-                      {article.totalRegistered} {article.unit}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {article.onLoan > 0 ? (
-                        <Badge variant="outline" className="text-blue-600 border-blue-600">
-                          {article.onLoan} {article.unit}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">0</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {article.expectedInWarehouse} {article.unit}
+                      {article.totalRegistered}
                     </TableCell>
                     <TableCell className="text-right">
                       {article.physicalCount !== undefined ? (
-                        <span>{article.physicalCount} {article.unit}</span>
+                        <span>{article.physicalCount}</span>
                       ) : (
-                        <span className="text-muted-foreground">Not counted</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      {article.difference !== undefined && getDifferenceBadge(article.difference)}
-                    </TableCell>
                     <TableCell>
-                      {getStatusBadge(article.status || 'pending')}
+                      {getStatusBadge(article.status)}
+                    </TableCell>
+                    <TableCell className="max-w-xs">
+                      <span className="text-sm text-muted-foreground">
+                        {article.observations || '-'}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <CountInput
@@ -511,18 +495,24 @@ interface CountInputProps {
 
 function CountInput({ article, onUpdate }: CountInputProps) {
   const [countValue, setCountValue] = useState(article.physicalCount?.toString() || '');
-  const [notes, setNotes] = useState(article.notes || '');
-  const [showNotes, setShowNotes] = useState(false);
+  const [observations, setObservations] = useState(article.observations || '');
+  const [showObservations, setShowObservations] = useState(false);
+
+  // Update local state when article changes
+  React.useEffect(() => {
+    setCountValue(article.physicalCount?.toString() || '');
+    setObservations(article.observations || '');
+  }, [article.physicalCount, article.observations]);
 
   const handleSubmit = () => {
     const quantity = parseInt(countValue);
     if (!isNaN(quantity) && quantity >= 0) {
-      onUpdate(article.id, quantity, notes.trim() || undefined);
+      onUpdate(article.id, quantity, observations.trim() || undefined);
     }
   };
 
   const handleQuickAdjust = (adjustment: number) => {
-    const currentValue = parseInt(countValue) || article.expectedInWarehouse;
+    const currentValue = parseInt(countValue) || 0;
     const newValue = Math.max(0, currentValue + adjustment);
     setCountValue(newValue.toString());
   };
@@ -542,7 +532,7 @@ function CountInput({ article, onUpdate }: CountInputProps) {
           type="number"
           value={countValue}
           onChange={(e) => setCountValue(e.target.value)}
-          placeholder={article.expectedInWarehouse.toString()}
+          placeholder="0"
           className="w-20 text-center"
           min="0"
         />
@@ -553,30 +543,28 @@ function CountInput({ article, onUpdate }: CountInputProps) {
         >
           <Plus className="h-3 w-3" />
         </Button>
-      </div>
-      <div className="flex space-x-1">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowNotes(!showNotes)}
-        >
-          Notes
-        </Button>
         <Button
           size="sm"
           onClick={handleSubmit}
-          disabled={!countValue}
         >
           Count
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowObservations(!showObservations)}
+          title="Add observations"
+        >
+          <MessageSquare className="h-3 w-3" />
+        </Button>
       </div>
-      {showNotes && (
-        <Textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Add notes about this count..."
-          className="mt-1"
-          rows={2}
+      {showObservations && (
+        <Input
+          type="text"
+          value={observations}
+          onChange={(e) => setObservations(e.target.value)}
+          placeholder="Add observations..."
+          className="w-full text-sm"
         />
       )}
     </div>
