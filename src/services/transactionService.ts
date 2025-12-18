@@ -1,7 +1,24 @@
 // src/services/transactionService.ts
 import { API_URL } from '../url';
-import type { Transaction, TransactionType } from '@/components/features/inventory/tabs/transactions/transactionTypes';
+import type { Transaction, TransactionType } from '../components/features/inventory/tabs/transactions/transactionTypes';
 import { fetchWithAuth } from '../utils/fetchWithAuth';
+import { store } from '../store/store';
+
+/**
+ * Resuelve el warehouseId desde el estado de autenticación
+ */
+const resolveWarehouseId = (override?: number | string | null): number | undefined => {
+  const state = store.getState();
+  const fallback = state.auth.user?.warehouseId ?? state.auth.user?.warehouse ?? null;
+  const value = override ?? fallback;
+
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  const parsed = typeof value === 'string' ? parseInt(value, 10) : value;
+  return Number.isNaN(parsed) ? undefined : parsed;
+};
 
 /**
  * API response format for transactions
@@ -38,12 +55,22 @@ function transformTransaction(apiTransaction: TransactionResponse): Transaction 
 }
 
 /**
- * Fetches all transactions from the API
- * GET /api/Transactions
+ * Fetches all transactions from the API filtered by warehouse
+ * GET /api/Transactions?warehouseId={warehouseId}
  */
 export async function getAllTransactions(): Promise<Transaction[]> {
   try {
-    const response = await fetchWithAuth(`${API_URL}/Transactions`, {
+    const warehouseId = resolveWarehouseId();
+    
+    if (warehouseId === undefined) {
+      console.warn('⚠️ getAllTransactions: warehouseId is not available; returning empty list');
+      return [];
+    }
+
+    const url = `${API_URL}/Transactions?warehouseId=${warehouseId}`;
+    console.log('🔄 Fetching transactions from API:', url);
+
+    const response = await fetchWithAuth(url, {
       method: 'GET',
     });
 
