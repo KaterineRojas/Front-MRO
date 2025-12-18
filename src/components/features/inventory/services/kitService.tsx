@@ -1,9 +1,6 @@
-// src/services/kitsService.ts
-//KITS DUDA ORIGINAL
 import { Article2 } from "../types";
 import { API_URL } from "../../../../url";
 import { store } from "../../../../store/store";
-//const API_URL = 'http://localhost:5000/api';
 
 /**
  * API response format for kit items
@@ -41,6 +38,7 @@ export interface Kit {
   id: number;
   sku: string;
   binCode: string;
+  binId: number;
   name: string;
   description: string;
   category: string;
@@ -222,13 +220,25 @@ export async function getKitCategories(): Promise<KitCategory[]> {
 export async function getKitsWithItems(): Promise<Kit[]> {
   try {
     const token = store.getState().auth.accessToken as string;
-    const response = await fetch(`${API_URL}/Kits/with-items?isActive=true`, {
+    const state = store.getState();
+    const warehouseId = state.auth.user?.warehouseId ?? state.auth.user?.warehouse ?? null;
+
+    const searchParams = new URLSearchParams();
+    if (warehouseId !== null && warehouseId !== undefined) {
+      searchParams.append('warehouseId', String(warehouseId));
+    }
+    searchParams.append('isActive', 'true');
+
+    const url = `${API_URL}/Kits/with-items${searchParams.size ? `?${searchParams.toString()}` : ''}`;
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
     });
+    console.log('Fetching kits from:', url);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch kits: ${response.status} ${response.statusText}`);
