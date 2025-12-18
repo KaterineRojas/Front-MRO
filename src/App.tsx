@@ -73,6 +73,10 @@ function AuthHandler() {
 
           const frontendRole = roleMap[backendUser.roleName] || 'user';
 
+          const departmentId = backendUser.departmentId ? String(backendUser.departmentId) : backendUser.department || '';
+          const departmentName = backendUser.departmentName || backendUser.department || 'Engineering';
+          const resolvedWarehouseId = backendUser.warehouseId ?? backendUser.warehouse ?? null;
+
           // Actualizar Redux con el usuario
           dispatch(
             setAuth({
@@ -83,7 +87,11 @@ function AuthHandler() {
                 employeeId: backendUser.employeeId,
                 role: backendUser.role,
                 roleName: backendUser.roleName,
-                department: backendUser.departmentId ? String(backendUser.departmentId) : 'Engineering',
+                department: departmentId,
+                departmentId,
+                departmentName,
+                warehouse: resolvedWarehouseId ?? undefined,
+                warehouseId: resolvedWarehouseId ?? undefined,
               },
               accessToken: localToken,
               authType: 'local',
@@ -152,13 +160,26 @@ function AuthHandler() {
 
           const frontendRole = roleMap[backendResponse.user.roleName] || 'user';
 
+          const departmentId = backendResponse.user.departmentId
+            ? String(backendResponse.user.departmentId)
+            : backendResponse.user.department || '';
+          const departmentName = backendResponse.user.departmentName
+            || backendResponse.user.department
+            || graphProfile?.department
+            || 'Engineering';
+          const resolvedWarehouseId = backendResponse.user.warehouseId ?? backendResponse.user.warehouse ?? null;
+
           const user = {
             id: String(backendResponse.user.id),
             name: backendResponse.user.name,
             email: backendResponse.user.email,
             employeeId: backendResponse.user.employeeId,
             role: frontendRole,
-            department: backendResponse.user.departmentId ? String(backendResponse.user.departmentId) : graphProfile?.department || 'Engineering',
+            department: departmentId,
+            departmentId,
+            departmentName,
+            warehouse: resolvedWarehouseId ?? undefined,
+            warehouseId: resolvedWarehouseId ?? undefined,
             jobTitle: graphProfile?.jobTitle,
             mobilePhone: graphProfile?.mobilePhone,
             officeLocation: graphProfile?.officeLocation,

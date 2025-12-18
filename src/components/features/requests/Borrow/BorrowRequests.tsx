@@ -72,7 +72,9 @@ export function BorrowRequests() {
       id: currentUser.id || '',
       name: currentUser.name || '',
       email: currentUser.email || '',
-      department: currentUser.department || '',
+      department: currentUser.departmentId || currentUser.department || '',
+      departmentId: currentUser.departmentId || currentUser.department || '',
+      departmentName: currentUser.departmentName || '',
       role: (currentUser as any).role || 'user',
       employeeId: (currentUser as any).employeeId || ''
     };

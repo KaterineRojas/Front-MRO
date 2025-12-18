@@ -409,10 +409,15 @@ export function MyInventoryTransfer() {
             Items currently under your responsibility
           </p>
         </div>
-        <Button onClick={() => navigate('/engineer/history')} variant="outline">
-          <History className="h-4 w-4 mr-2" />
-          Complete History
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button onClick={() => navigate('/engineer/history')} variant="outline" className="w-full sm:w-auto">
+            <History className="h-4 w-4 mr-2" />
+            Complete History
+          </Button>
+          <Button onClick={() => navigate('/engineer/requests?tab=transfer')} className="w-full sm:w-auto">
+            Request Transfer
+          </Button>
+        </div>
       </div>
 
       <Card>

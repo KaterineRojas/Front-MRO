@@ -73,6 +73,19 @@ export function transformInventoryItem(apiItem: InventoryItemResponse): Article 
  */
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+const resolveWarehouseId = (override?: number | string | null): number | undefined => {
+  const state = store.getState();
+  const fallback = state.auth.user?.warehouseId ?? state.auth.user?.warehouse ?? null;
+  const value = override ?? fallback;
+
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  const parsed = typeof value === 'string' ? parseInt(value, 10) : value;
+  return Number.isNaN(parsed) ? undefined : parsed;
+};
+
 // ============================================================================
 // ITEMS / ARTICLES API
 // ============================================================================
@@ -80,10 +93,30 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 /**
  * Obtiene todos los items con bins
  */
-export async function fetchArticlesFromApi(): Promise<Article[]> {
+export async function fetchArticlesFromApi({
+  isActive = true,
+  warehouseId,
+}: {
+  isActive?: boolean;
+  warehouseId?: number | string;
+} = {}): Promise<Article[]> {
   try {
-    const token = store.getState().auth.accessToken as string;
-    const response = await fetch(`${API_URL}/Inventory/items-with-bins?isActive=true`, {
+    const state = store.getState();
+    const token = state.auth.accessToken as string;
+    const userWarehouseId = state.auth.user?.warehouseId ?? state.auth.user?.warehouse;
+
+    const searchParams = new URLSearchParams();
+    searchParams.append('isActive', String(isActive));
+
+    const resolvedWarehouseId = warehouseId ?? userWarehouseId;
+    if (resolvedWarehouseId !== undefined && resolvedWarehouseId !== null) {
+      searchParams.append('warehouseId', String(resolvedWarehouseId));
+    }
+
+    const url = `${API_URL}/Inventory/items-with-bins${searchParams.size ? `?${searchParams.toString()}` : ''}`;
+    console.log('[fetchArticlesFromApi] GET', url);
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: { 
         'Content-Type': 'application/json',
@@ -362,11 +395,17 @@ export async function getCategories(): Promise<{ value: string; label: string }[
  */
 export async function createPurchaseApi(purchaseData: PurchaseRequest): Promise<void> {
   try {
+    const resolvedWarehouseId = resolveWarehouseId(purchaseData.warehouseId ?? null);
+    const payload: PurchaseRequest = {
+      ...purchaseData,
+      ...(resolvedWarehouseId !== undefined ? { warehouseId: resolvedWarehouseId } : {}),
+    };
+
     const response = await fetchWithAuth(`${API_URL}/Inventory/purchase`, {
       method: 'POST',
-      body: JSON.stringify(purchaseData),
+      body: JSON.stringify(payload),
     });
-
+    console.log('✅ Purchase created successfully', response);
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(errorData?.message || `Failed to create purchase: ${response.status} ${response.statusText}`);
@@ -392,12 +431,28 @@ export async function getNewBins(): Promise<Bin[]> {
  * Obtiene todos los bins desde el API
  * @deprecated Usar fetchWarehousesFromApi() en su lugar para obtener la estructura completa
  */
-export async function fetchBinsFromApi(): Promise<Bin[]> {
+export async function fetchBinsFromApi({
+  warehouseId,
+  isActive = true,
+}: {
+  warehouseId?: number | string;
+  isActive?: boolean;
+} = {}): Promise<Bin[]> {
   try {
-    const response = await fetchWithAuth(`${API_URL}/Bin/with-quantity?isActive=true`, {
+    const resolvedWarehouseId = resolveWarehouseId(warehouseId);
+
+    const params = new URLSearchParams();
+    if (resolvedWarehouseId !== undefined) {
+      params.append('warehouseId', String(resolvedWarehouseId));
+    }
+    params.append('isActive', String(isActive));
+
+    const url = `${API_URL}/Bin/with-quantity${params.size ? `?${params.toString()}` : ''}`;
+
+    const response = await fetchWithAuth(url, {
       method: 'GET',
     });
-
+    console.log('[fetchBinsFromApiforWH] GET', url);//*************** */
     if (!response.ok) {
       throw new Error(`Failed to fetch bins: ${response.status} ${response.statusText}`);
     }
@@ -651,6 +706,77 @@ export async function createBinApi(data: {
 }
 
 /**
+ * Crea un nuevo bin usando códigos jerárquicos individuales
+ */
+export async function createBinByHierarchyApi(data: {
+  warehouseCode: string;
+  zoneCode: string;
+  rackCode: string;
+  levelCode: string;
+  binCode: string;
+  name: string;
+}) {
+  try {
+    const response = await fetchWithAuth(`${API_URL}/Bin/create-by-hierarchy`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = '';
+
+      try {
+        const errorData = await response.json();
+
+        // Extraer el mensaje de error del backend
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        } else if (errorData.title) {
+          // Formato de error de validación de ASP.NET
+          errorMessage = errorData.title;
+          if (errorData.errors) {
+            // Agregar detalles de errores de validación
+            const validationErrors = Object.entries(errorData.errors)
+              .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+              .join('; ');
+            errorMessage += ` - ${validationErrors}`;
+          }
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else {
+          errorMessage = JSON.stringify(errorData);
+        }
+      } catch {
+        // Si no es JSON, intentar leer como texto
+        try {
+          const errorText = await response.text();
+          errorMessage = errorText || `Error ${response.status}: ${response.statusText}`;
+        } catch {
+          errorMessage = `Error ${response.status}: ${response.statusText}`;
+        }
+      }
+
+      // Si no se pudo extraer ningún mensaje, usar uno genérico
+      if (!errorMessage) {
+        errorMessage = `Failed to create bin (HTTP ${response.status})`;
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    // Re-lanzar el error si ya tiene mensaje, o crear uno nuevo
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to create bin: Network error');
+  }
+}
+
+/**
  * @deprecated Temporalmente desactivado - pendiente migración a nueva lógica de bins
  */
 export async function createBinApiOld(_binData: {
@@ -872,9 +998,15 @@ export async function recordMovementApi(movementData: any): Promise<{ transactio
  */
 export async function createDamagedApi(damagedData: DamagedRequest): Promise<void> {
   try {
+    const resolvedWarehouseId = resolveWarehouseId(damagedData.warehouseId ?? null);
+    const payload: DamagedRequest = {
+      ...damagedData,
+      ...(resolvedWarehouseId !== undefined ? { warehouseId: resolvedWarehouseId } : {}),
+    };
+
     const response = await fetchWithAuth(`${API_URL}/Inventory/damaged`, {
       method: 'POST',
-      body: JSON.stringify(damagedData),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -895,9 +1027,15 @@ export async function createDamagedApi(damagedData: DamagedRequest): Promise<voi
  */
 export async function createStockCorrectionApi(correctionData: StockCorrectionRequest): Promise<void> {
   try {
+    const resolvedWarehouseId = resolveWarehouseId(correctionData.warehouseId ?? null);
+    const payload: StockCorrectionRequest = {
+      ...correctionData,
+      ...(resolvedWarehouseId !== undefined ? { warehouseId: resolvedWarehouseId } : {}),
+    };
+
     const response = await fetchWithAuth(`${API_URL}/Inventory/stock-correction`, {
       method: 'POST',
-      body: JSON.stringify(correctionData),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -916,13 +1054,30 @@ export async function createStockCorrectionApi(correctionData: StockCorrectionRe
  * Gets valid destination bins for relocating an item
  * GET /api/Inventory/valid-destinations?itemId=1&fromBinId=1
  */
-export async function getValidDestinationBins(itemId: number, fromBinId: number): Promise<{
+export async function getValidDestinationBins(
+  itemId: number,
+  fromBinId: number,
+  warehouseId?: number | string
+): Promise<{
   binId: number;
   binCode: string;
   description: string;
 }[]> {
   try {
-    const response = await fetchWithAuth(`${API_URL}/Inventory/valid-destinations?itemId=${itemId}&fromBinId=${fromBinId}`, {
+    const resolvedWarehouseId = resolveWarehouseId(warehouseId);
+
+    const params = new URLSearchParams({
+      itemId: String(itemId),
+      fromBinId: String(fromBinId),
+    });
+
+    if (resolvedWarehouseId !== undefined) {
+      params.append('warehouseId', String(resolvedWarehouseId));
+    }
+
+    const url = `${API_URL}/Inventory/valid-destinations?${params.toString()}`;
+    console.log('[getValidDestinationBins] GET', url);
+    const response = await fetchWithAuth(url, {
       method: 'GET',
     });
 
@@ -945,9 +1100,15 @@ export async function getValidDestinationBins(itemId: number, fromBinId: number)
  */
 export async function createWarehouseTransferApi(transferData: WarehouseTransferRequest): Promise<void> {
   try {
+    const resolvedWarehouseId = resolveWarehouseId(transferData.warehouseId ?? null);
+    const payload: WarehouseTransferRequest = {
+      ...transferData,
+      ...(resolvedWarehouseId !== undefined ? { warehouseId: resolvedWarehouseId } : {}),
+    };
+
     const response = await fetchWithAuth(`${API_URL}/Inventory/relocate-item`, {
       method: 'POST',
-      body: JSON.stringify(transferData),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

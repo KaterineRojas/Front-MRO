@@ -134,7 +134,7 @@ export function PurchaseRequests() {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Department</p>
-                  <p className="font-medium">{currentUser.department || 'N/A'}</p>
+                  <p className="font-medium">{currentUser.departmentName || currentUser.department || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Request Type</p>

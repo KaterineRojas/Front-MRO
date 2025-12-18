@@ -30,10 +30,13 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Calendar,
+  Calendar as CalendarIcon,
   Search,
   Loader2,
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '../../../../ui/popover';
+import { Calendar } from '../../../../ui/calendar';
 import { TransactionBadge } from './TransactionBadge';
 import {
   formatTransactionDate,
@@ -130,7 +133,7 @@ export function TransactionsTable({
     if (filters.searchQuery) {
       const query = filters.searchQuery.toLowerCase();
       result = result.filter(
-        (t) => t.itemName.toLowerCase().includes(query) || t.itemSku.toLowerCase().includes(query)
+        (t) => (t.itemName?.toLowerCase().includes(query) ?? false) || (t.itemSku?.toLowerCase().includes(query) ?? false)
       );
     }
 
@@ -222,34 +225,82 @@ export function TransactionsTable({
 
             {/* Date From */}
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-              <Input
-                type="date"
-                placeholder="From date"
-                value={filters.dateFrom || ''}
-                onChange={(e) => {
-                  setFilters((prev) => ({ ...prev, dateFrom: e.target.value }));
-                  setPagination((prev) => ({ ...prev, currentPage: 1 }));
-                }}
-                className="pl-10 [&::-webkit-calendar-picker-indicator]:hidden"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                    {filters.dateFrom ? (
+                      <span>{format(new Date(filters.dateFrom), 'PPP')}</span>
+                    ) : (
+                      <span className="text-muted-foreground">From date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="p-0 bg-muted border border-gray-300 shadow-md">
+                  <Calendar
+                    mode="single"
+                    selected={filters.dateFrom ? new Date(filters.dateFrom) : undefined}
+                    onSelect={(d: any) => {
+                      const val = d ? format(d, 'yyyy-MM-dd') : null;
+                      setFilters((prev) => ({ ...prev, dateFrom: val }));
+                      setPagination((prev) => ({ ...prev, currentPage: 1 }));
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Date To */}
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-              <Input
-                type="date"
-                placeholder="To date"
-                value={filters.dateTo || ''}
-                onChange={(e) => {
-                  setFilters((prev) => ({ ...prev, dateTo: e.target.value }));
-                  setPagination((prev) => ({ ...prev, currentPage: 1 }));
-                }}
-                className="pl-10 [&::-webkit-calendar-picker-indicator]:hidden"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                    {filters.dateTo ? (
+                      <span>{format(new Date(filters.dateTo), 'PPP')}</span>
+                    ) : (
+                      <span className="text-muted-foreground">To date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="p-0 bg-muted border border-gray-300 shadow-md">
+                  <Calendar
+                    mode="single"
+                    selected={filters.dateTo ? new Date(filters.dateTo) : undefined}
+                    onSelect={(d: any) => {
+                      const val = d ? format(d, 'yyyy-MM-dd') : null;
+                      setFilters((prev) => ({ ...prev, dateTo: val }));
+                      setPagination((prev) => ({ ...prev, currentPage: 1 }));
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
+
+          {/* Date Reset */}
+          {(filters.dateFrom || filters.dateTo) && (
+            <div className="flex justify-end -mt-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFilters((prev) => ({ ...prev, dateFrom: null, dateTo: null }));
+                  setPagination((prev) => ({ ...prev, currentPage: 1 }));
+                }}
+              >
+                <X className="h-4 w-4 mr-1" /> Reset dates
+              </Button>
+            </div>
+          )}
 
           {/* Transaction Type Filters */}
           <div className="flex flex-wrap gap-2 items-center">
