@@ -482,11 +482,21 @@ export async function fetchBinsFromApi({
 
 /**
  * Obtiene la estructura completa de warehouses con zones, racks, levels y bins
+ * Filtrada por el warehouse del usuario autenticado
  */
 export async function fetchWarehousesFromApi(): Promise<WarehouseV2[]> {
   try {
-    console.log('🔄 Fetching warehouses from API...');
-    const response = await fetchWithAuth(`${API_URL}/Bin/with-quantity`, {
+    const warehouseId = resolveWarehouseId();
+    
+    if (warehouseId === undefined) {
+      console.warn('⚠️ fetchWarehousesFromApi: warehouseId is not available; returning empty list');
+      return [];
+    }
+
+    const url = `${API_URL}/Bin/with-quantity?warehouseId=${warehouseId}`;
+    console.log('🔄 Fetching warehouses from API:', url);
+    
+    const response = await fetchWithAuth(url, {
       method: 'GET',
     });
 
