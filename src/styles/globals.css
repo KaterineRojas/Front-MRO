@@ -195,24 +195,24 @@ html {
   body * {
     visibility: hidden;
   }
-  
+
   .review-table-container,
   .review-table-container * {
     visibility: visible;
   }
-  
+
   .review-table-container {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
   }
-  
+
   .review-table-container table {
     width: 100%;
     border-collapse: collapse;
   }
-  
+
   .review-table-container th,
   .review-table-container td {
     border: 1px solid #000;
@@ -220,17 +220,17 @@ html {
     text-align: left;
     font-size: 12px;
   }
-  
+
   .review-table-container th {
     background-color: #f5f5f5;
     font-weight: bold;
   }
-  
+
   .review-table-container img {
     max-width: 30px;
     max-height: 30px;
   }
-  
+
   @page {
     margin: 0.5in;
     size: landscape;

@@ -15,28 +15,26 @@ export interface PaginationMetadata {
 
 interface RequestsTableProps {
   requests: LoanRequest[];
-  pagination: PaginationMetadata;
+  // pagination: PaginationMetadata;
   expandedRequests: Set<string>;
-  // calculateTotalCost: (request: any) => number;
   handleToggleExpand: (requestNumber: string) => void;
   setSelectedRequest: (request: LoanRequest) => void;
   setShowModal: (open: boolean) => void;
   setModalType: (value: string) => void;
   loading: boolean;
-  onPageChange: (newPage: number) => void;
+  // onPageChange: (newPage: number) => void;
 }
 
 export default function RequestsTable({
   requests,
-  pagination,
+  // pagination,
   expandedRequests,
-  // calculateTotalCost,
   handleToggleExpand,
   setSelectedRequest,
   setShowModal,
   setModalType,
   loading,
-  onPageChange
+  // onPageChange
 }: RequestsTableProps) {
 
   const darkMode = useSelector((state: any) => state.ui.darkMode);
@@ -48,32 +46,32 @@ export default function RequestsTable({
     });
   };
 
-  const getTimelineColor = (startDate: string, endDate: string) => {
-    if (!startDate || !endDate) return "text-gray-500";
+  // const getTimelineColor = (startDate: string, endDate: string) => {
+  //   if (!startDate || !endDate) return "text-gray-500";
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+  //   const start = new Date(startDate);
+  //   const end = new Date(endDate);
+  //   const diffTime = Math.abs(end.getTime() - start.getTime());
+  //   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays <= 2) {
-      return "text-green-600 dark:text-green-400 font-medium";
-    } else if (diffDays <= 7) {
-      return "text-yellow-600 dark:text-yellow-400 font-medium";
-    } else {
-      return "text-red-600 dark:text-red-400 font-bold";
-    }
-  };
+  //   if (diffDays <= 2) {
+  //     return "text-green-600 dark:text-green-400 font-medium";
+  //   } else if (diffDays <= 7) {
+  //     return "text-yellow-600 dark:text-yellow-400 font-medium";
+  //   } else {
+  //     return "text-red-600 dark:text-red-400 font-bold";
+  //   }
+  // };
 
   return (
-    <div className="w-full max-h-[630px] flex flex-col rounded-xl border dark:border-gray-700">
+    <div className="w-full max-w-full min-w-0 max-h-[630px] flex flex-col rounded-xl border dark:border-gray-700 overflow-hidden">
 
-      <div className="flex-1 overflow-auto relative w-full rounded-xl">
-        <table className="w-full min-w-[1000px] caption-bottom text-sm">
+      <div className="flex-1 overflow-auto relative w-full rounded-xl min-w-0">
+        <table className="w-full min-w-[1000px] caption-bottom text-sm ">
 
-          <thead className="[&_tr]:border-b  sticky top-0 z-10 ">
-            <tr className="border-b dark:border-b-gray-500/50 transition-colors bg-white dark:bg-[#0A0A0A]">
+          
+          <thead className="[&_tr]:border-b sticky top-0 ">
+            <tr className="border-b dark:border-b-gray-500/50 transition-colors bg-white dark:bg-[#0A0A0A] whitespace-nowrap">
               <th className="h-12 w-12 px-4 text-left align-middle font-medium"></th>
               <th className="h-12 px-8 align-middle font-medium">Request #</th>
               <th className="h-12 px-8 align-middle font-medium">Status</th>
@@ -116,11 +114,9 @@ export default function RequestsTable({
               </tr>
             ) : (
               requests.map((request) => {
-                // const totalCost = calculateTotalCost ? calculateTotalCost(request) : 0;
-
                 return (
                   <React.Fragment key={request.requestNumber}>
-                    <tr className={`border-b dark:border-gray-500/50 transition-colors hover:bg-[#F5F5F7] dark:hover:bg-gray-400/10
+                    <tr className={`border-b dark:border-gray-500/50 transition-colors hover:bg-[#F5F5F7] dark:hover:bg-gray-400/10 whitespace-nowrap
                       ${expandedRequests.has(request.requestNumber) ? 'dark:!bg-gray-800' : ''}
                       `}>
 
@@ -181,13 +177,13 @@ export default function RequestsTable({
                       <td className="px-0 align-middle">
                         <div className="flex flex-col gap-0.5">
                           <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                            <span className="w-4"> In:</span>
+                            <span className="w-6"> In:</span>
                             <span>{formatDate(request.createdAt)}</span>
                           </div>
 
                           {request.expectedReturnDate && (
-                            <div className={`flex items-center gap-3.5 text-xs `}>
-                              <span className="w-4">Due:</span>
+                            <div className={`flex items-center gap-1.5 text-xs `}>
+                              <span className="w-6">Due:</span>
                               <span>{formatDate(request.expectedReturnDate)}</span>
                             </div>
                           )}
@@ -319,9 +315,10 @@ export default function RequestsTable({
         </table>
       </div>
 
+
       {/* PAGINATION FOOTER */}
-      {!loading && requests.length > 0 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-[#0A0A0A] border-t dark:border-gray-700">
+      {/* {!loading && requests.length > 0 && (
+        <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-white dark:bg-[#0A0A0A] border-t dark:border-gray-700">
           <div className="hidden sm:flex flex-1 items-center justify-between">
             <div>
               <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -354,7 +351,7 @@ export default function RequestsTable({
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

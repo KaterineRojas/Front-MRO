@@ -47,27 +47,27 @@ export function RequestManagement() {
 
   useEffect(() => {
     const controller = new AbortController();
-
+    
     const loadRequests = async () => {
       setLoading(true);
       try {
         const result = await getLoanRequests(
-          "1",
-          pagination.pageNumber,
-          pagination.pageSize,
+          "1",             
+          1,               
+          100,
           controller.signal
         );
 
-        console.log('API Response:', result);
+        // console.log('API Response:', result);
 
         setRequests(result.data);
-        setPagination(prev => ({
-          ...prev,
-          totalCount: result.totalCount,
-          totalPages: result.totalPages,
-          hasPreviousPage: result.hasPreviousPage,
-          hasNextPage: result.hasNextPage
-        }));
+        // setPagination(prev => ({
+        //   ...prev,
+        //   totalCount: result.totalCount,
+        //   totalPages: result.totalPages,
+        //   hasPreviousPage: result.hasPreviousPage,
+        //   hasNextPage: result.hasNextPage
+        // }));
 
       } catch (error) {
         if (error instanceof Error && error.name !== 'AbortError') {
@@ -82,7 +82,9 @@ export function RequestManagement() {
 
     return () => controller.abort();
 
-  }, [pagination.pageNumber, pagination.pageSize]);
+  }, []);
+
+
 
   const handlePageChange = (newPage: number) => {
     // Prevent fetching if we are already on that page or it's invalid
@@ -165,7 +167,7 @@ export function RequestManagement() {
 
       const updatedRequest = {
         ...selectedRequest,
-        status: 'approved',
+        status: 'Approved',
         // ...responseData 
       };
 
@@ -212,7 +214,7 @@ export function RequestManagement() {
         req.requestNumber === selectedRequest.requestNumber
           ? {
             ...req,
-            status: 'rejected',
+            status: 'Rejected',
           }
           : req
       ));
@@ -326,8 +328,8 @@ export function RequestManagement() {
               setSelectedRequest={setSelectedRequest}
               setShowModal={setShowModal}
               setModalType={setModalType}
-              pagination={pagination}
-              onPageChange={handlePageChange}
+              // pagination={pagination}
+              // onPageChange={handlePageChange}
 
               loading={loading}
             />
