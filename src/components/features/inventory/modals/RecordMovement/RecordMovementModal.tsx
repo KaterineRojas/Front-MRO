@@ -15,23 +15,25 @@ import {
   createPurchaseApi,
   createDamagedApi,
   createStockCorrectionApi,
+   getValidDestinationBins,
   createWarehouseTransferApi,
   // getValidDestinationBins // Temporalmente desactivado - pendiente nueva lógica de bins
 } from '../../services/inventoryApi';
 import { checkItemOccupation, getAvailableBins } from '../../services/binsService';
+import { useAppSelector } from '../../../../../store/hooks';
 
 // Función temporal mock mientras se migra a la nueva lógica de bins
-const getValidDestinationBins = async (_itemId: number, _fromBinId: number): Promise<any[]> => {
-  console.warn('⚠️ getValidDestinationBins temporalmente desactivado - pendiente migración a nueva lógica');
-  return [];
-};
+//const getValidDestinationBins = async (_itemId: number, _fromBinId: number, _warehouseId?: number): Promise<any[]> => {
+//  console.warn('⚠️ getValidDestinationBins temporalmente desactivado - pendiente migración a nueva lógica');
+//  return [];
+//};
 
 interface RecordMovementModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   articles: Article[];
   kits?: Kit[]; // Optional list of kits
-  warehouseId?: number; // Warehouse ID for fetching available bins (default: 1)
+  warehouseId?: number; // Warehouse ID for fetching available bins (optional override)
   onRecordTransaction: (transaction: TransactionFormData) => void;
   onSuccess?: () => void; // Callback to refresh data after successful transaction
 }
@@ -109,7 +111,7 @@ export function RecordMovementModal({
   onOpenChange,
   articles,
   kits = [],
-  warehouseId = 1,
+  warehouseId: warehouseIdProp,
   onRecordTransaction,
   onSuccess
 }: RecordMovementModalProps) {
@@ -120,6 +122,9 @@ export function RecordMovementModal({
   const [activeTab, setActiveTab] = useState('transaction');
   const [allBins, setAllBins] = useState<{ id: number; fullCode: string; name: string }[]>([]);
   const [validDestinationBins, setValidDestinationBins] = useState<{ binId: number; binCode: string; binPurpose: string; description: string }[]>([]);
+
+  const authWarehouseId = useAppSelector(state => state.auth.user?.warehouseId ?? state.auth.user?.warehouse ?? undefined);
+  const warehouseId = warehouseIdProp ?? authWarehouseId;
 
   // Get transaction options based on entity type
   const TRANSACTION_OPTIONS = entityType === 'item' ? ITEM_TRANSACTION_OPTIONS : KIT_TRANSACTION_OPTIONS;
@@ -140,6 +145,11 @@ export function RecordMovementModal({
   useEffect(() => {
     const loadAvailableBins = async () => {
       if (entityType === 'kit' || currentOption.transactionType === 0) { // Kit or Entry
+        if (!warehouseId) {
+          console.warn('⚠️ loadAvailableBins: warehouseId is not available; skipping fetch');
+          setAllBins([]);
+          return;
+        }
         try {
           const bins = await getAvailableBins(warehouseId, true); // warehouseId, isActive=true
           setAllBins(bins.map(bin => ({
@@ -197,10 +207,14 @@ export function RecordMovementModal({
   useEffect(() => {
     const checkAndAutoSelectBin = async () => {
       // Solo ejecutar para transacciones de tipo Entry (Purchase) cuando se selecciona un item
+      if (!warehouseId) {
+        return;
+      }
+
       if (entityType === 'item' && currentOption.value === 'entry-purchase' && formData.itemId > 0) {
         try {
           console.log(`🔍 Checking occupation for item ${formData.itemId}...`);
-          const occupation = await checkItemOccupation(formData.itemId);
+          const occupation = await checkItemOccupation(formData.itemId, warehouseId);
           
           if (occupation && occupation.isOccupied && occupation.occupiedBin) {
             // Item has a bin assigned, auto-select it
@@ -551,7 +565,7 @@ export function RecordMovementModal({
                       // If this is a warehouse transfer, fetch valid destination bins
                       if (currentOption.value === 'relocation-transfer' && formData.itemId) {
                         try {
-                          const destinations = await getValidDestinationBins(formData.itemId, fromBinId);
+                          const destinations = await getValidDestinationBins(formData.itemId, fromBinId, warehouseId);
                           setValidDestinationBins(destinations);
                         } catch (error) {
                           console.error('Failed to load valid destination bins:', error);

@@ -29,6 +29,7 @@ import {
 export function InventoryManager() {
   const dispatch = useAppDispatch();
   const { articles, kits, error } = useAppSelector((state) => state.inventory);
+  const warehouseId = useAppSelector(state => state.auth.user?.warehouseId ?? state.auth.user?.warehouse ?? undefined);
   const [viewMode, setViewMode] = useState<'items' | 'kits' | 'create-kit' | 'bin-manager' | 'transactions'>('items');
   const [recordMovementOpen, setRecordMovementOpen] = useState(false);
   const [editingKit, setEditingKit] = useState<Kit | null>(null);
@@ -437,6 +438,7 @@ export function InventoryManager() {
           onOpenChange={setRecordMovementOpen}
           articles={articles}
           kits={kits}
+          warehouseId={warehouseId}
           onRecordTransaction={handleRecordMovement as any}
           onSuccess={() => {
             // Refresh data after successful transaction
