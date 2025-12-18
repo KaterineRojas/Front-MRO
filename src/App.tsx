@@ -18,6 +18,7 @@ import { Reports } from './components/features/reports/Reports';
 import { UserManagement } from './components/features/users/UserManagement';
 import { QuickFind } from './components/features/quick-find/QuickFind';
 import { CycleCount } from './components/features/cycle-count/CycleCount';
+import { CycleCountDetailView } from './components/features/cycle-count/CycleCountDetailView';
 import { LoanDetailView } from './components/features/loans/LoanDetailView';
 import { OrderDetailView } from './components/features/orders/OrderDetailView';
 import { CycleCountView } from './components/features/cycle-count/CycleCountView';
@@ -195,10 +196,144 @@ function AuthHandler() {
 function CycleCountWrapper() {
   const navigate = useNavigate();
   
+  const handleNavigate = (path: string, state?: any) => {
+    if (state) {
+      sessionStorage.setItem('cycleCountState', JSON.stringify(state));
+    }
+    navigate(path);
+  };
+
+  const handleCompleteCycleCount = (completedData: any) => {
+    // Guardar el conteo completado en sessionStorage para agregarlo al historial
+    const existingHistory = sessionStorage.getItem('cycleCountHistory');
+    const history = existingHistory ? JSON.parse(existingHistory) : [];
+    
+    // Agregar el nuevo registro con un ID único
+    const newRecord = {
+      id: Date.now(), // ID temporal basado en timestamp
+      ...completedData
+    };
+    
+    history.unshift(newRecord); // Agregar al inicio del array
+    sessionStorage.setItem('cycleCountHistory', JSON.stringify(history));
+    
+    // Regresar a la página principal de Cycle Count
+    navigate('/cycle-count');
+  };
+
+  const handleContinueCycleCount = (record: any) => {
+    // Navegar a la vista de conteo con los datos existentes
+    handleNavigate('/cycle-count/active', { existingCountData: record });
+  };
+  
   return (
     <CycleCount 
       onStartCycleCount={() => navigate('/cycle-count/active')}
-      onViewCycleCount={(_record) => navigate('/cycle-count/active')}
+      onViewCycleCount={(record) => {
+        handleNavigate('/cycle-count/detail', { countData: record });
+      }}
+      onCompleteCycleCount={handleCompleteCycleCount}
+      onContinueCycleCount={handleContinueCycleCount}
+    />
+  );
+}
+
+function CycleCountDetailWrapper() {
+  const navigate = useNavigate();
+  
+  const stateData = sessionStorage.getItem('cycleCountState');
+  const state = stateData ? JSON.parse(stateData) : null;
+  
+  return (
+    <CycleCountDetailView 
+      countData={state?.countData}
+      onBack={() => {
+        sessionStorage.removeItem('cycleCountState');
+        navigate('/cycle-count');
+      }} 
+    />
+  );
+}
+
+function CycleCountActiveWrapper() {
+  const navigate = useNavigate();
+
+  // Obtener datos existentes si se está continuando un conteo
+  const stateData = sessionStorage.getItem('cycleCountState');
+  const state = stateData ? JSON.parse(stateData) : null;
+  const existingCountData = state?.existingCountData;
+
+  const handleCompleteCycleCount = (completedData: any) => {
+    // Guardar el conteo completado en sessionStorage
+    const existingHistory = sessionStorage.getItem('cycleCountHistory');
+    const history = existingHistory ? JSON.parse(existingHistory) : [];
+    
+    // Si estamos continuando un conteo existente, actualizar ese registro
+    if (existingCountData?.id) {
+      const index = history.findIndex((h: any) => h.id === existingCountData.id);
+      if (index !== -1) {
+        history[index] = {
+          ...history[index],
+          ...completedData,
+          id: existingCountData.id // Mantener el mismo ID
+        };
+      }
+    } else {
+      // Agregar un nuevo registro con un ID único
+      const newRecord = {
+        id: Date.now(),
+        ...completedData
+      };
+      history.unshift(newRecord);
+    }
+    
+    sessionStorage.setItem('cycleCountHistory', JSON.stringify(history));
+    
+    // Limpiar el estado y regresar a la página principal
+    sessionStorage.removeItem('cycleCountState');
+    navigate('/cycle-count');
+  };
+
+  const handleSaveProgress = (progressData: any) => {
+    // Guardar el progreso en sessionStorage
+    const existingHistory = sessionStorage.getItem('cycleCountHistory');
+    const history = existingHistory ? JSON.parse(existingHistory) : [];
+    
+    // Si estamos continuando un conteo existente, actualizar ese registro
+    if (existingCountData?.id) {
+      const index = history.findIndex((h: any) => h.id === existingCountData.id);
+      if (index !== -1) {
+        history[index] = {
+          ...history[index],
+          ...progressData,
+          id: existingCountData.id // Mantener el mismo ID
+        };
+      }
+    } else {
+      // Agregar un nuevo registro con un ID único
+      const newRecord = {
+        id: Date.now(),
+        ...progressData
+      };
+      history.unshift(newRecord);
+    }
+    
+    sessionStorage.setItem('cycleCountHistory', JSON.stringify(history));
+    
+    // Limpiar el estado y regresar a la página principal
+    sessionStorage.removeItem('cycleCountState');
+    navigate('/cycle-count');
+  };
+  
+  return (
+    <CycleCountView 
+      onBack={() => {
+        sessionStorage.removeItem('cycleCountState');
+        navigate('/cycle-count');
+      }}
+      onComplete={handleCompleteCycleCount}
+      onSaveProgress={handleSaveProgress}
+      existingCountData={existingCountData}
     />
   );
 }
@@ -301,15 +436,6 @@ function OrderDetailWrapper() {
   );
 }
 
-function CycleCountActiveWrapper() {
-  const navigate = useNavigate();
-  
-  return (
-    <CycleCountView 
-      onBack={() => navigate('/cycle-count')} 
-    />
-  );
-}
 
 function EngineerRequestOrdersWrapper() {
   return <EngineerRequestOrders />;
@@ -341,6 +467,7 @@ function AppRoutes() {
         {/* Cycle Count Routes */}
         <Route path="cycle-count" element={<CycleCountWrapper />} />
         <Route path="cycle-count/active" element={<CycleCountActiveWrapper />} />
+        <Route path="cycle-count/detail" element={<CycleCountDetailWrapper />} />
         
         {/* Loan/Request Orders Routes */}
         <Route path="loans" element={<RequestOrdersWrapper />} />
