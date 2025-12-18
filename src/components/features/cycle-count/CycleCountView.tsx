@@ -184,17 +184,17 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
       countType,
       auditor,
       totalItems: articlesToSave.length,
-      counted: articlesToSave.filter(a => a.status === 'match' || a.status === 'discrepancy').length,
+      counted: articlesToSave.filter(a => a.physicalCount !== undefined).length,
       discrepancies: articlesToSave.filter(a => a.status === 'discrepancy').length,
       articles: articlesToSave.map(a => ({
-        id: a.id,
+         id: a.id,
         type: a.type,
         code: a.code,
         description: a.description,
         zone: a.zone,
         totalRegistered: a.totalRegistered,
-        physicalCount: a.physicalCount !== undefined ? a.physicalCount : a.totalRegistered,
-        status: a.status || 'match',
+        physicalCount: a.physicalCount !== undefined ? a.physicalCount : 0,
+        status: a.status,
         observations: a.observations
       }))
     };
@@ -249,7 +249,7 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
       discrepancies: discrepancies.length,
       articles: articlesToCount.map(a => ({
         id: a.id,
-        type: a.type,
+        type: a.type,   
         code: a.code,
         description: a.description,
         zone: a.zone,

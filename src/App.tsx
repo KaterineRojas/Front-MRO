@@ -259,11 +259,37 @@ function CycleCountWrapper() {
   );
 }
 
-function CycleCountDetailWrapper() {
+function CycleCountDetailPage() {
   const navigate = useNavigate();
   
   const stateData = sessionStorage.getItem('cycleCountState');
   const state = stateData ? JSON.parse(stateData) : null;
+  
+  const handleAdjustmentsApplied = (updatedData: any) => {
+    // Update the sessionStorage with the updated data
+    const currentHistory = sessionStorage.getItem('cycleCountHistory');
+    const history = currentHistory ? JSON.parse(currentHistory) : [];
+    
+    // Check if the record already exists in the history
+    const existingIndex = history.findIndex((record: any) => record.id === updatedData.id);
+    
+    if (existingIndex !== -1) {
+      // Update existing record
+      history[existingIndex] = updatedData;
+    } else {
+      // Add new record (coming from mock data)
+      history.push(updatedData);
+    }
+    
+    // Save updated history
+    sessionStorage.setItem('cycleCountHistory', JSON.stringify(history));
+    
+    // Update the current state
+    sessionStorage.setItem('cycleCountState', JSON.stringify({ countData: updatedData }));
+    
+    // Navigate back to cycle count
+    navigate('/cycle-count');
+  };
   
   return (
     <CycleCountDetailView 
@@ -271,7 +297,8 @@ function CycleCountDetailWrapper() {
       onBack={() => {
         sessionStorage.removeItem('cycleCountState');
         navigate('/cycle-count');
-      }} 
+      }}
+      onAdjustmentsApplied={handleAdjustmentsApplied}
     />
   );
 }
@@ -488,7 +515,7 @@ function AppRoutes() {
         {/* Cycle Count Routes */}
         <Route path="cycle-count" element={<CycleCountWrapper />} />
         <Route path="cycle-count/active" element={<CycleCountActiveWrapper />} />
-        <Route path="cycle-count/detail" element={<CycleCountDetailWrapper />} />
+        <Route path="cycle-count/detail" element={<CycleCountDetailPage />} />
         
         {/* Loan/Request Orders Routes */}
         <Route path="loans" element={<RequestOrdersWrapper />} />
