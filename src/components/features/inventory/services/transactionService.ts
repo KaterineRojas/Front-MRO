@@ -1,6 +1,7 @@
 import type { Transaction, TransactionType } from '../tabs/transactions/transactionTypes';
 import { API_URL } from "../../../../url";
 import { fetchWithAuth } from '../../../../utils/fetchWithAuth';
+import { store } from '../../../../store/store';
 
 /**
  * API response format for transactions
@@ -38,14 +39,23 @@ function transformTransaction(apiTransaction: TransactionResponse): Transaction 
 
 /**
  * Fetches all transactions from the API
- * GET /api/Transactions
+ * GET /api/Transactions ya con warehouseId *****
  */
 export async function getAllTransactions(): Promise<Transaction[]> {
   try {
-    const response = await fetchWithAuth(`${API_URL}/Transactions`, {
+    const state = store.getState();
+    const warehouseId = state.auth.user?.warehouseId ?? state.auth.user?.warehouse ?? null;
+    const searchParams = new URLSearchParams();
+    if (warehouseId !== null && warehouseId !== undefined) {
+      searchParams.append('warehouseId', String(warehouseId));
+    }
+
+    const url = `${API_URL}/Transactions${searchParams.size ? `?${searchParams.toString()}` : ''}`;
+
+    const response = await fetchWithAuth(url, {
       method: 'GET',
     });
-
+    console.log('Fetching all transactions from:', url);
     if (!response.ok) {
       throw new Error(`Failed to fetch transactions: ${response.status} ${response.statusText}`);
     }
