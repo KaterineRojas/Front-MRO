@@ -27,9 +27,21 @@ import { ReturnItemsPage } from './components/features/loans/ReturnItemsPage';
 import { ManageRequestsPage } from './components/features/manage-requests/pages/ManageRequestsPage';
 import { Toaster } from 'react-hot-toast';
 import { Login, Register, ProtectedRoute } from './components/features/auth';
+import { RoleGuard } from './auth/RoleGuard'
+import { Unauthorized } from './pages/Unauthorized'
+import { NotFound } from './pages/NotFound'
+
+const ROLES = {
+  ENGINEER: 0,
+  KEEPER: 1,
+  MANAGER: 2,
+  DIRECTOR: 3,
+  COLLABORATOR: 10,
+  ADMIN: 100
+};
 
 // Engineer Module Imports
-import { 
+import {
   Catalog as EngineerCatalog,
   MyInventoryTransfer as EngineerMyInventory,
   CompleteHistory as EngineerCompleteHistory,
@@ -46,19 +58,20 @@ function AuthHandler() {
 
   useEffect(() => {
     const initAuth = async () => {
-      // Wait for MSAL to finish initialization
+      // 1. Don't run if MSAL is still loading
       if (inProgress !== InteractionStatus.None) {
         return;
       }
 
-      // No intentar autenticar si estamos en la página de login o registro
+      // 2. Don't run logic on Login/Register pages
       if (location.pathname === '/login' || location.pathname === '/register') {
         dispatch(setLoading(false));
         return;
       }
 
-      // Check for local token first
+      // 3. CASE A: Check for Local Token (Restoring session from refresh)
       const localToken = authService.getToken();
+
       if (localToken) {
         try {
           const backendUser = await authService.getCurrentUser(localToken);
@@ -73,50 +86,50 @@ function AuthHandler() {
 
           const frontendRole = roleMap[backendUser.roleName] || 'user';
 
-          const departmentId = backendUser.departmentId ? String(backendUser.departmentId) : backendUser.department || '';
-          const departmentName = backendUser.departmentName || backendUser.department || 'Engineering';
-          const resolvedWarehouseId = backendUser.warehouseId ?? backendUser.warehouse ?? null;
-
-          // Actualizar Redux con el usuario
+          // Update Redux
           dispatch(
             setAuth({
               user: {
                 id: String(backendUser.id),
                 name: backendUser.name,
                 email: backendUser.email,
-                employeeId: backendUser.employeeId,
+
+                // ✅ PASS THE NUMBER DIRECTLY
                 role: backendUser.role,
+
+                // ✅ PASS THE NAME DIRECTLY
                 roleName: backendUser.roleName,
-                department: departmentId,
-                departmentId,
-                departmentName,
-                warehouse: resolvedWarehouseId ?? undefined,
-                warehouseId: resolvedWarehouseId ?? undefined,
+
+                department: backendUser.departmentId ? String(backendUser.departmentId) : 'Engineering',
+                employeeId: backendUser.employeeId,
+                warehouseId: backendUser.warehouseId,
+                // photoUrl: backendUser.photoUrl,
               },
               accessToken: localToken,
               authType: 'local',
             })
           );
-          console.log('✅ Usuario autenticado con token local:', backendUser.email);
-          return; // Don't check Azure if local token is valid
+
+          console.log('✅ User session restored:', backendUser.email);
+          return; // Stop here if local token worked (don't check Azure)
+
         } catch (error) {
-          // Token inválido, eliminarlo
-          console.warn('⚠️ Token local inválido, removiendo...');
-          authService.removeToken();
+          console.warn('⚠️ Local token invalid, clearing session...');
+          authService.removeUser();
         }
       }
 
-      // If user is authenticated with Azure, get token and update Redux store
+      // 4. CASE B: Check for Azure Login (New login or SSO)
       if (isAuthenticated && accounts.length > 0) {
         try {
-          // 1. Get token for backend API
+          // A. Get Access Token for Backend
           const apiTokenRequest = {
             ...loginRequest,
             account: accounts[0],
           };
           const apiTokenResponse = await instance.acquireTokenSilent(apiTokenRequest);
 
-          // 2. Get separate token for Microsoft Graph API
+          // B. (Optional) Get Graph Data (Photo, Job Title)
           let graphProfile = null;
           let graphPhotoUrl = null;
 
@@ -126,83 +139,66 @@ function AuthHandler() {
               account: accounts[0],
             };
             const graphTokenResponse = await instance.acquireTokenSilent(graphTokenRequest);
-
-            // Fetch user profile and photo from Microsoft Graph using Graph token
             const { profile, photoUrl } = await getUserProfileWithPhoto(graphTokenResponse.accessToken);
             graphProfile = profile;
             graphPhotoUrl = photoUrl;
           } catch (graphError) {
-            console.warn('⚠️ Could not fetch Graph API data:', graphError);
-            // Continue without Graph data - will use basic info from token
+            console.warn('⚠️ Could not fetch Graph API data, continuing with basic info...');
           }
 
-          // 3. Call backend to get JWT token
           const account = apiTokenResponse.account;
+
+          // C. Call Backend Login
           const backendResponse = await authService.loginWithAzure({
             azureToken: apiTokenResponse.accessToken,
             userInfo: {
-              objectId: account.localAccountId || '',
-              email: graphProfile?.mail || graphProfile?.userPrincipalName || account.username || '',
-              name: graphProfile?.displayName || account.name || 'Unknown User',
+              objectId: account?.localAccountId || account?.homeAccountId || '',
+              email: graphProfile?.mail || graphProfile?.userPrincipalName || account?.username || '',
+              name: graphProfile?.displayName || account?.name || 'Unknown User',
             },
           });
 
-          // 4. Save backend JWT token to localStorage
+          // D. Save Persistence
           authService.saveToken(backendResponse.token);
+          authService.saveUser(backendResponse.user);
 
-          // 5. Map backend role to frontend role
-          const roleMap: Record<string, 'administrator' | 'user' | 'purchasing' | 'auditor' | 'manager'> = {
-            'Engineer': 'user',
-            'Keeper': 'user',
-            'Manager': 'manager',
-            'Director': 'administrator',
-          };
-
-          const frontendRole = roleMap[backendResponse.user.roleName] || 'user';
-
-          const departmentId = backendResponse.user.departmentId
-            ? String(backendResponse.user.departmentId)
-            : backendResponse.user.department || '';
-          const departmentName = backendResponse.user.departmentName
-            || backendResponse.user.department
-            || graphProfile?.department
-            || 'Engineering';
-          const resolvedWarehouseId = backendResponse.user.warehouseId ?? backendResponse.user.warehouse ?? null;
-
-          const user = {
+          // E. Update Redux
+          const userForRedux = {
             id: String(backendResponse.user.id),
             name: backendResponse.user.name,
             email: backendResponse.user.email,
             employeeId: backendResponse.user.employeeId,
-            role: frontendRole,
-            department: departmentId,
-            departmentId,
-            departmentName,
-            warehouse: resolvedWarehouseId ?? undefined,
-            warehouseId: resolvedWarehouseId ?? undefined,
+
+            role: backendResponse.user.role,
+            roleName: backendResponse.user.roleName,
+
+            department: backendResponse.user.departmentId
+              ? String(backendResponse.user.departmentId)
+              : graphProfile?.department || 'Engineering',
+
             jobTitle: graphProfile?.jobTitle,
             mobilePhone: graphProfile?.mobilePhone,
             officeLocation: graphProfile?.officeLocation,
             photoUrl: graphPhotoUrl || undefined,
+            warehouseId: backendResponse.user.warehouseId,
           };
 
-          // 6. Update Redux store with backend JWT token
           dispatch(
             setAuth({
-              user,
+              user: userForRedux,
               accessToken: backendResponse.token,
               authType: 'azure',
             })
           );
 
-          console.log('✅ User authenticated with Azure:', user.email);
-          console.log('✅ Backend JWT token saved to localStorage');
+          console.log('✅ User authenticated with Azure:', userForRedux.email);
+
         } catch (error) {
-          console.error('Error acquiring token:', error);
+          console.error('Error acquiring token or logging in:', error);
           dispatch(setLoading(false));
         }
       } else {
-        // User not authenticated
+        // User not authenticated (and no local token)
         dispatch(setLoading(false));
       }
     };
@@ -210,7 +206,7 @@ function AuthHandler() {
     initAuth();
   }, [isAuthenticated, accounts, inProgress, instance, dispatch, location.pathname]);
 
-  return null; // This component doesn't render anything
+  return null;
 }
 
 // Wrapper components for route navigation
@@ -248,7 +244,7 @@ function CycleCountWrapper() {
   };
   
   return (
-    <CycleCount 
+    <CycleCount
       onStartCycleCount={() => navigate('/cycle-count/active')}
       onViewCycleCount={(record) => {
         handleNavigate('/cycle-count/detail', { countData: record });
@@ -388,16 +384,16 @@ function CycleCountActiveWrapper() {
 
 function RequestOrdersWrapper() {
   const navigate = useNavigate();
-  
+
   const handleNavigate = (path: string, state?: any) => {
     if (state) {
       sessionStorage.setItem('navigationState', JSON.stringify(state));
     }
     navigate(path);
   };
-  
+
   return (
-    <RequestOrders 
+    <RequestOrders
       onViewDetail={(request, previousTab) => {
         handleNavigate('/loans/detail', { request, previousTab });
       }}
@@ -410,49 +406,49 @@ function RequestOrdersWrapper() {
 
 function PurchaseOrdersWrapper() {
   const navigate = useNavigate();
-  
+
   const handleNavigate = (path: string, state?: any) => {
     if (state) {
       sessionStorage.setItem('navigationState', JSON.stringify(state));
     }
     navigate(path);
   };
-  
+
   return (
-    <PurchaseOrders 
+    <PurchaseOrders
       onViewDetail={(order) => {
         handleNavigate('/orders/detail', { order });
-      }} 
+      }}
     />
   );
 }
 
 function LoanDetailWrapper() {
   const navigate = useNavigate();
-  
+
   const stateData = sessionStorage.getItem('navigationState');
   const state = stateData ? JSON.parse(stateData) : null;
-  
+
   return (
-    <LoanDetailView 
-      request={state?.request} 
+    <LoanDetailView
+      request={state?.request}
       onBack={() => {
         sessionStorage.removeItem('navigationState');
         navigate('/loans');
-      }} 
+      }}
     />
   );
 }
 
 function ReturnItemsWrapper() {
   const navigate = useNavigate();
-  
+
   const stateData = sessionStorage.getItem('navigationState');
   const state = stateData ? JSON.parse(stateData) : null;
-  
+
   return (
-    <ReturnItemsPage 
-      request={state?.request} 
+    <ReturnItemsPage
+      request={state?.request}
       onBack={() => {
         sessionStorage.removeItem('navigationState');
         navigate('/loans');
@@ -469,35 +465,45 @@ function ReturnItemsWrapper() {
 
 function OrderDetailWrapper() {
   const navigate = useNavigate();
-  
+
   const stateData = sessionStorage.getItem('navigationState');
   const state = stateData ? JSON.parse(stateData) : null;
-  
+
   return (
-    <OrderDetailView 
-      order={state?.order} 
+    <OrderDetailView
+      order={state?.order}
       onBack={() => {
         sessionStorage.removeItem('navigationState');
         navigate('/orders');
-      }} 
+      }}
     />
   );
 }
 
+function CycleCountActiveWrapper() {
+  const navigate = useNavigate();
+
+  return (
+    <CycleCountView
+      onBack={() => navigate('/cycle-count')}
+    />
+  );
+}
 
 function EngineerRequestOrdersWrapper() {
   return <EngineerRequestOrders />;
 }
 
 function AppRoutes() {
-
   return (
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="*" element={<NotFound />} /> {/* Your new 404 page */}
 
-      {/* Protected Routes */}
+      {/* Protected Routes (Requires Login) */}
       <Route
         path="/"
         element={
@@ -506,43 +512,49 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        {/* Main Routes */}
+        {/* --- COMMON ROUTES (Everyone) --- */}
         <Route index element={<Dashboard />} />
-        <Route path="inventory" element={<InventoryManager />} />
-        <Route path="quick-find" element={<QuickFind />} />
-        <Route path="reports" element={<Reports />} />
-        
-        {/* Cycle Count Routes */}
-        <Route path="cycle-count" element={<CycleCountWrapper />} />
-        <Route path="cycle-count/active" element={<CycleCountActiveWrapper />} />
-        <Route path="cycle-count/detail" element={<CycleCountDetailPage />} />
-        
-        {/* Loan/Request Orders Routes */}
-        <Route path="loans" element={<RequestOrdersWrapper />} />
-        <Route path="loans/detail" element={<LoanDetailWrapper />} />
-        <Route path="loans/return" element={<ReturnItemsWrapper />} />
-        
-        {/* Purchase Orders Routes */}
-        <Route path="orders" element={<PurchaseOrdersWrapper />} />
-        <Route path="orders/detail" element={<OrderDetailWrapper />} />
 
-        {/* Manage Requests Route */}
-        <Route path="manage-requests" element={<ManageRequestsPage />} />
-        
-        {/* Request Management (temporarily open) */}
-        <Route path="requests" element={<RequestManagement />} />
-        
-        {/* User Management (temporarily open) */}
-        <Route path="users" element={<UserManagement />} />
-        
-        {/* Engineer Modules - Nuevos módulos integrados */}
-        <Route path="engineer/catalog" element={<EngineerModuleWrapper><EngineerCatalog /></EngineerModuleWrapper>} />
-        <Route path="engineer/requests" element={<EngineerModuleWrapper><EngineerRequestOrdersWrapper /></EngineerModuleWrapper>} />
-        <Route path="engineer/my-inventory" element={<EngineerModuleWrapper><EngineerMyInventory /></EngineerModuleWrapper>} />
-        <Route path="engineer/history" element={<EngineerModuleWrapper><EngineerCompleteHistory /></EngineerModuleWrapper>} />
-        
-        {/* Catch-all redirect */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* --- 1. ENGINEER ROUTES --- */}
+        {/* Access: Engineer, Collaborator (and Admin) */}
+        <Route element={<RoleGuard allowedRoles={[ROLES.ENGINEER, ROLES.COLLABORATOR, ROLES.ADMIN]} />}>
+          <Route path="engineer/catalog" element={<EngineerModuleWrapper><EngineerCatalog /></EngineerModuleWrapper>} />
+          <Route path="engineer/requests" element={<EngineerModuleWrapper><EngineerRequestOrdersWrapper /></EngineerModuleWrapper>} />
+          <Route path="engineer/my-inventory" element={<EngineerModuleWrapper><EngineerMyInventory /></EngineerModuleWrapper>} />
+          <Route path="engineer/history" element={<EngineerModuleWrapper><EngineerCompleteHistory /></EngineerModuleWrapper>} />
+        </Route>
+
+        {/* --- 2. KEEPER ROUTES --- */}
+        {/* Access: Keeper (and Admin) */}
+        {/* Includes: Inventory, Orders, Cycle Counts, Quick Find, Manage Requests */}
+        <Route element={<RoleGuard allowedRoles={[ROLES.KEEPER, ROLES.ADMIN]} />}>
+          {/* Inventory & Finding */}
+          <Route path="inventory" element={<InventoryManager />} />
+          <Route path="quick-find" element={<QuickFind />} />
+
+          {/* Orders (Purchasing) */}
+          <Route path="orders" element={<PurchaseOrdersWrapper />} />
+          <Route path="orders/detail" element={<OrderDetailWrapper />} />
+
+          {/* Operations */}
+          <Route path="cycle-count" element={<CycleCountWrapper />} />
+          <Route path="cycle-count/active" element={<CycleCountActiveWrapper />} />
+          <Route path="manage-requests" element={<ManageRequestsPage />} />
+
+          {/* NOTE: If Keepers need to process Loans/Returns (handing out items), 
+               you might need to add 'loans' routes here too. 
+               If not, they are hidden based on your list. */}
+        </Route>
+
+        {/* --- 3. MANAGER & DIRECTOR ROUTES --- */}
+        {/* Access: Manager, Director (and Admin) */}
+        {/* Includes: Requests, Reports, Users */}
+        <Route element={<RoleGuard allowedRoles={[ROLES.MANAGER, ROLES.DIRECTOR, ROLES.ADMIN]} />}>
+          <Route path="requests" element={<RequestManagement />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="users" element={<UserManagement />} />
+        </Route>
+
       </Route>
     </Routes>
   );
@@ -552,10 +564,10 @@ export default function App() {
   return (
     <Provider store={store}>
       <BrowserRouter>
-          <AuthHandler />
+        <AuthHandler />
         <AppRoutes />
       </BrowserRouter>
-      <Toaster 
+      <Toaster
         position="top-center"
         reverseOrder={false}
         toastOptions={{

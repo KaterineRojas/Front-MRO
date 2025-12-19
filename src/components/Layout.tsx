@@ -144,14 +144,14 @@ export function Layout() {
       console.log('❌ No currentUser');
       return false;
     }
-    console.log('🔍 Checking access - User roleName:', currentUser.roleName, 'Required roles:', roles);
+    // console.log('🔍 Checking access - User roleName:', currentUser.roleName, 'Required roles:', roles);
     return roles.includes(currentUser.roleName);
   };
 
   // Filter navigation items based on user role
   const filteredNavigation = navigation.filter(item => {
     const access = hasAccess(item.roles);
-    console.log(`Module: ${item.label} - Access: ${access}`);
+    // console.log(`Module: ${item.label} - Access: ${access}`);
     return access;
   });
 

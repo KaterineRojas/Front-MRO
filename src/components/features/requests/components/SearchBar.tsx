@@ -60,10 +60,10 @@ export default function SearchBar({
     }, [isDropdownOpen]);
 
     return (
-        <div className="w-full max-w-7xl mx-auto p-4 border rounded-xl">
+        <div className="w-full max-w-7xl mx-auto p-4 border dark:border-gray-700 rounded-xl">
             <div className="flex gap-4 items-center flex-col md:flex-row">
                 {/* Search Input */}
-                <div className="flex-1 rounded-xl w-[-webkit-fill-available]"
+                <div className="flex-1 rounded-xl w-[-webkit-fill-available] dark:focus:border-gray-700 "
                     style={{
                         background: `${darkMode ? '#121212' : '#F3F3F5'}`,
                     }}
@@ -119,7 +119,7 @@ export default function SearchBar({
                                     key={option.value}
                                     onClick={() => handleTypeSelect(option.value)}
                                     className={`w-full px-4 py-2 text-left text-sm rounded-xl 
-                                        transition-colors flex items-center justify-between group transition
+                                        transition-colors flex items-center justify-between group
                                         ${darkMode ? 'hover:bg-[#262626]' : 'hover:bg-[#ECECF0]'}
                                     `}
 
