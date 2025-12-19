@@ -76,15 +76,8 @@ function AuthHandler() {
         try {
           const backendUser = await authService.getCurrentUser(localToken);
 
-          // Mapear roles del backend a roles del frontend
-          const roleMap: Record<string, 'administrator' | 'user' | 'purchasing' | 'auditor' | 'manager'> = {
-            'Engineer': 'user',
-            'Keeper': 'user',
-            'Manager': 'manager',
-            'Director': 'administrator',
-          };
-
-          const frontendRole = roleMap[backendUser.roleName] || 'user';
+          // Save fresh data to localStorage
+          authService.saveUser(backendUser);
 
           // Update Redux
           dispatch(
@@ -479,6 +472,7 @@ function OrderDetailWrapper() {
     />
   );
 }
+
 
 
 function EngineerRequestOrdersWrapper() {
