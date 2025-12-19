@@ -112,6 +112,7 @@ export function BinManagerTab() {
     return 'warehouse';
   };
 
+  /*
   const getAddButtonText = () => {
     const level = getCurrentViewLevel();
     switch (level) {
@@ -127,6 +128,7 @@ export function BinManagerTab() {
         return 'Add';
     }
   };
+  */
 
   const handleAddClick = () => {
     const level = getCurrentViewLevel();
@@ -135,8 +137,9 @@ export function BinManagerTab() {
       setEditingZone(null);
       setIsZoneModalOpen(true);
     } else if (level === 'rack' && selectedZone) {
-      setEditingRack(null);
-      setIsRackModalOpen(true);
+      // Σ Rack creation disabled for now
+      // setEditingRack(null);
+      // setIsRackModalOpen(true);
     } else if (level === 'level' && selectedRack) {
       setEditingLevel(null);
       setIsLevelModalOpen(true);
@@ -147,6 +150,16 @@ export function BinManagerTab() {
       toast.error('Please select a parent location first');
     }
   };
+
+  // const handleAddZoneClick = () => {
+  //   if (!selectedWarehouse) {
+  //     toast.error('Please select a warehouse first');
+  //     return;
+  //   }
+  //
+  //   setEditingZone(null);
+  //   setIsZoneModalOpen(true);
+  // };
 
   const handleQuickAddBin = () => {
     if (selectedZone) {
@@ -961,6 +974,9 @@ export function BinManagerTab() {
     setDeletingType(null);
   };
 
+  const currentViewLevel = getCurrentViewLevel();
+  const shouldShowAddZoneButton = currentViewLevel === 'zone';
+
   return (
     <>
       <Card>
@@ -1029,19 +1045,20 @@ export function BinManagerTab() {
               </Button>
             </div>
             
-            {/* Quick Add Bin Button (only in zone view) */}
-            {getCurrentViewLevel() === 'rack' && selectedZone && (
+            {/* Quick Add Bin Button (only in rack view) */}
+            {currentViewLevel === 'rack' && selectedZone && (
               <Button onClick={handleQuickAddBin} size="sm" variant="outline" className="shrink-0">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Bin
               </Button>
             )}
             
-            {/* Add Button */}
-            <Button onClick={handleAddClick} size="sm" className="shrink-0">
-              <Plus className="w-4 h-4 mr-2" />
-              {getAddButtonText()}
-            </Button>
+            {shouldShowAddZoneButton && (
+              <Button onClick={handleAddClick} size="sm" className="shrink-0">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Zone
+              </Button>
+            )}
           </div>
         </div>
 

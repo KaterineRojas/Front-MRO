@@ -99,7 +99,7 @@ export function RackGridView({ racks, onRackClick, onEditRack, onDeleteRack, sho
                             color="green"
                             subtitle=""
                             onClick={() => {}}
-                            onEdit={() => onEditBin?.(bin)}
+                            // onEdit={() => onEditBin?.(bin)}
                             onDelete={() => onDeleteBin?.(bin)}
                             extraContent={
                               <>
@@ -249,7 +249,7 @@ export function BinGridView({ bins, levelName, onBinClick, onEditBin, onDeleteBi
               color="green"
               subtitle=""
               onClick={() => onBinClick?.(bin)}
-              onEdit={() => onEditBin(bin)}
+              // onEdit={() => onEditBin(bin)}
               onDelete={() => onDeleteBin(bin)}
               extraContent={
                 <>

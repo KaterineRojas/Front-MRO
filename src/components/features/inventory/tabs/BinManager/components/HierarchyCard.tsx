@@ -8,7 +8,7 @@ interface HierarchyCardProps {
   color: 'blue' | 'pink' | 'yellow' | 'green';
   subtitle: string;
   onClick?: () => void;
-  onEdit: () => void;
+  onEdit?: () => void;
   onDelete: () => void;
   extraContent?: React.ReactNode;
 }
@@ -70,17 +70,20 @@ export function HierarchyCard({
     >
       {/* Action Buttons */}
       <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10">
-        <button
-          type="button"
-          onClick={(e: React.MouseEvent) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onEdit();
-          }}
-          className={`h-7 w-7 p-0 shadow-md rounded-md flex items-center justify-center transition-colors ${classes.editBtn}`}
-        >
-          <Edit className={`w-3.5 h-3.5 ${classes.editIcon}`} />
-        </button>
+        {/* Edit action hidden when onEdit is omitted (e.g. bins) */}
+        {onEdit && (
+          <button
+            type="button"
+            onClick={(e: React.MouseEvent) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onEdit();
+            }}
+            className={`h-7 w-7 p-0 shadow-md rounded-md flex items-center justify-center transition-colors ${classes.editBtn}`}
+          >
+            <Edit className={`w-3.5 h-3.5 ${classes.editIcon}`} />
+          </button>
+        )}
         <button
           type="button"
           onMouseDown={(e: React.MouseEvent) => {
