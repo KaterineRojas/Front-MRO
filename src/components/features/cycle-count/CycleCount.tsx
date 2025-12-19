@@ -12,6 +12,7 @@ import {
   Download
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useLocation } from 'react-router-dom';
 
 interface CountedArticle {
   code: string;
@@ -21,6 +22,8 @@ interface CountedArticle {
   physicalCount: number;
   status: 'match' | 'discrepancy';
   observations?: string;
+  adjustment?: number;
+  adjustmentReason?: string;
 }
 
 interface CycleCountRecord {
@@ -35,6 +38,7 @@ interface CycleCountRecord {
   counted: number;
   discrepancies: number;
   articles: CountedArticle[];
+  adjustmentsApplied?: boolean;
 }
 
 interface CycleCountProps {
@@ -264,19 +268,60 @@ const mockCycleCountHistory: CycleCountRecord[] = [
 ];
 
 export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycleCount, onCompleteCycleCount }: CycleCountProps) {
+  const location = useLocation();
+  
   // Combinar el historial mock con el guardado en sessionStorage
+  // Los registros en sessionStorage sobrescriben los del mock por ID
   const [history, setHistory] = useState<CycleCountRecord[]>(() => {
-    const savedHistory = sessionStorage.getItem('cycleCountHistory');
-    const dynamicHistory = savedHistory ? JSON.parse(savedHistory) : [];
-    return [...dynamicHistory, ...mockCycleCountHistory];
+  const savedHistory = sessionStorage.getItem('cycleCountHistory');
+
+  const dynamicHistory: CycleCountRecord[] = savedHistory
+    ? JSON.parse(savedHistory) as CycleCountRecord[]
+    : [];
+
+  const dynamicMap = new Map(
+    dynamicHistory.map(record => [record.id, record])
+  );
+
+  const mergedHistory = mockCycleCountHistory.map(mockRecord =>
+    dynamicMap.get(mockRecord.id) || mockRecord
+  );
+
+  dynamicHistory.forEach(record => {
+    if (!mockCycleCountHistory.find(m => m.id === record.id)) {
+      mergedHistory.unshift(record);
+    }
   });
 
-  // Actualizar el historial cuando cambie el sessionStorage
-  React.useEffect(() => {
-    const savedHistory = sessionStorage.getItem('cycleCountHistory');
-    const dynamicHistory = savedHistory ? JSON.parse(savedHistory) : [];
-    setHistory([...dynamicHistory, ...mockCycleCountHistory]);
-  }, []);
+  return mergedHistory;
+});
+
+ React.useEffect(() => {
+  const savedHistory = sessionStorage.getItem('cycleCountHistory');
+
+  const dynamicHistory: CycleCountRecord[] = savedHistory
+    ? JSON.parse(savedHistory) as CycleCountRecord[]
+    : [];
+
+  // Create a map of dynamic records by ID
+  const dynamicMap = new Map<number, CycleCountRecord>(
+    dynamicHistory.map(record => [record.id, record])
+  );
+
+  // Merge: dynamic records override mock records with same ID
+  const mergedHistory: CycleCountRecord[] = mockCycleCountHistory.map(
+    mockRecord => dynamicMap.get(mockRecord.id) || mockRecord
+  );
+
+  // Add dynamic records that don't exist in mock
+  dynamicHistory.forEach(record => {
+    if (!mockCycleCountHistory.find(m => m.id === record.id)) {
+      mergedHistory.unshift(record);
+    }
+  });
+
+  setHistory(mergedHistory);
+}, [location.key]);
 
   const handleStartCycleCount = () => {
     // Check if there's already an in-progress count

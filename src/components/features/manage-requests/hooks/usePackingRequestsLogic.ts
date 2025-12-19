@@ -19,9 +19,10 @@ const PRINTED_REQUESTS_KEY = 'packing_printed_requests';
 
 interface UsePackingRequestsLogicProps {
   keeperEmployeeId: string;
+  warehouseId: number;
 }
 
-export function usePackingRequestsLogic({ keeperEmployeeId }: UsePackingRequestsLogicProps) {
+export function usePackingRequestsLogic({ keeperEmployeeId, warehouseId }: UsePackingRequestsLogicProps) {
   const dispatch = useAppDispatch();
   const { packingRequests: reduxPackingRequests, loadingPacking, errorPacking } = useAppSelector((state) => state.requests);
   
@@ -54,7 +55,7 @@ export function usePackingRequestsLogic({ keeperEmployeeId }: UsePackingRequests
 
   // Fetch packing requests from Redux on mount
   useEffect(() => {
-    dispatch(fetchPackingRequests()).then((result) => {
+    dispatch(fetchPackingRequests(warehouseId)).then((result) => {
       if (fetchPackingRequests.fulfilled.match(result)) {
         const data = result.payload;
         console.log('📦 Packing requests received from Redux:', data);
@@ -82,7 +83,7 @@ export function usePackingRequestsLogic({ keeperEmployeeId }: UsePackingRequests
         });
       }
     });
-  }, [dispatch]);
+  }, [dispatch, warehouseId]);
   
   // Persistir printedRequests en localStorage
   useEffect(() => {
@@ -140,12 +141,12 @@ export function usePackingRequestsLogic({ keeperEmployeeId }: UsePackingRequests
 // 1. Función para recargar la lista de Packing desde Redux
   const reloadPackingRequests = useCallback(async () => {
     try {
-      await dispatch(refreshPackingRequests()).unwrap();
+      await dispatch(refreshPackingRequests(warehouseId)).unwrap();
       console.log('✅ Packing requests reloaded from server');
     } catch (err) {
       console.error('Failed to reload packing requests', err);
     }
-  }, [dispatch]);
+  }, [dispatch, warehouseId]);
 
 // =================================================================
 // Función Auxiliar para la Generación de HTML (Reutilizable)

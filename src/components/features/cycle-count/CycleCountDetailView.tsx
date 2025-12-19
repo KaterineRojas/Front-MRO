@@ -15,6 +15,8 @@ interface CountedArticle {
   physicalCount: number;
   status: 'match' | 'discrepancy';
   observations?: string;
+  adjustment?: number;
+  adjustmentReason?: string;
 }
 
 interface DiscrepancyAdjustment {
@@ -34,21 +36,41 @@ interface CycleCountDetailData {
   totalItems: number;
   counted: number;
   discrepancies: number;
+  adjustmentsApplied?: boolean;
 }
 
 interface CycleCountDetailViewProps {
   countData: CycleCountDetailData;
   onBack: () => void;
+  onAdjustmentsApplied?: (updatedData: CycleCountDetailData) => void;
 }
 
-export function CycleCountDetailView({ countData, onBack }: CycleCountDetailViewProps) {
+export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied }: CycleCountDetailViewProps) {
   const accuracy = Math.round((1 - countData.discrepancies / countData.totalItems) * 100);
   const discrepancyArticles = countData.articles.filter(a => a.status === 'discrepancy');
   
-  // State for adjustments
-  const [adjustments, setAdjustments] = React.useState<Record<string, string>>({});
-  const [adjustmentReasons, setAdjustmentReasons] = React.useState<Record<string, string>>({});
-  const [isAdjustmentsApplied, setIsAdjustmentsApplied] = React.useState(false);
+  // State for adjustments - Initialize from existing data if adjustments were already applied
+  const [adjustments, setAdjustments] = React.useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    countData.articles.forEach(article => {
+      if (article.adjustment !== undefined) {
+        initial[article.code] = article.adjustment.toString();
+      }
+    });
+    return initial;
+  });
+  
+  const [adjustmentReasons, setAdjustmentReasons] = React.useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    countData.articles.forEach(article => {
+      if (article.adjustmentReason) {
+        initial[article.code] = article.adjustmentReason;
+      }
+    });
+    return initial;
+  });
+  
+  const [isAdjustmentsApplied, setIsAdjustmentsApplied] = React.useState(countData.adjustmentsApplied || false);
 
   const handleAdjustmentChange = (code: string, value: string) => {
     // Don't allow negative numbers
@@ -105,6 +127,30 @@ export function CycleCountDetailView({ countData, onBack }: CycleCountDetailView
       
       // Don't clear the adjustments, just mark them as applied
       setIsAdjustmentsApplied(true);
+      
+      // Update the countData with adjustments
+      const updatedArticles = countData.articles.map(article => {
+        const adjustment = adjustments[article.code];
+        const reason = adjustmentReasons[article.code];
+        if (adjustment && !isNaN(parseInt(adjustment))) {
+          return {
+            ...article,
+            adjustment: parseInt(adjustment),
+            adjustmentReason: reason || 'Adjusted based on cycle count'
+          };
+        }
+        return article;
+      });
+      
+      const updatedData: CycleCountDetailData = {
+        ...countData,
+        articles: updatedArticles,
+        adjustmentsApplied: true
+      };
+      
+      if (onAdjustmentsApplied) {
+        onAdjustmentsApplied(updatedData);
+      }
     }
   };
 
@@ -338,8 +384,10 @@ export function CycleCountDetailView({ countData, onBack }: CycleCountDetailView
                       <TableCell className="text-right">{article.totalRegistered}</TableCell>
                       <TableCell className="text-right">{article.physicalCount}</TableCell>
                       <TableCell>{getStatusBadge(article.status)}</TableCell>
-                      <TableCell className="max-w-xs">
-                        {article.observations || '-'}
+                      <TableCell className="max-w-[200px]">
+                        <div className="truncate" title={article.observations || '-'}>
+                          {article.observations || '-'}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Input
@@ -347,7 +395,7 @@ export function CycleCountDetailView({ countData, onBack }: CycleCountDetailView
                           value={adjustments[article.code] || ''}
                           onChange={(e) => handleAdjustmentChange(article.code, e.target.value)}
                           disabled={isAdjustmentsApplied}
-                          className={`w-full ${isAdjustmentsApplied ? 'bg-muted cursor-not-allowed' : ''}`}
+                          className={`w-32 ${isAdjustmentsApplied ? 'bg-muted cursor-not-allowed' : ''}`}
                         />
                       </TableCell>
                       <TableCell>
@@ -356,7 +404,8 @@ export function CycleCountDetailView({ countData, onBack }: CycleCountDetailView
                           value={adjustmentReasons[article.code] || ''}
                           onChange={(e) => handleReasonChange(article.code, e.target.value)}
                           disabled={isAdjustmentsApplied}
-                          className={`w-full ${isAdjustmentsApplied ? 'bg-muted cursor-not-allowed' : ''}`}
+                          placeholder="Enter reason"
+                          className={`w-48 ${isAdjustmentsApplied ? 'bg-muted cursor-not-allowed' : ''}`}
                         />
                       </TableCell>
                     </TableRow>
@@ -402,8 +451,10 @@ export function CycleCountDetailView({ countData, onBack }: CycleCountDetailView
                     <TableCell className="text-right">{article.totalRegistered}</TableCell>
                     <TableCell className="text-right">{article.physicalCount}</TableCell>
                     <TableCell>{getStatusBadge(article.status)}</TableCell>
-                    <TableCell className="max-w-xs">
-                      {article.observations || '-'}
+                    <TableCell className="max-w-[200px]">
+                      <div className="truncate" title={article.observations || '-'}>
+                        {article.observations || '-'}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -33,7 +33,7 @@ const CACHE_DURATION = 2 * 60 * 1000;
 // Async thunks
 export const fetchPackingRequests = createAsyncThunk(
   'requests/fetchPackingRequests',
-  async (_, { getState }) => {
+  async (warehouseId: number | undefined, { getState }) => {
     const state = getState() as { requests: RequestsState };
     const now = Date.now();
     
@@ -45,8 +45,8 @@ export const fetchPackingRequests = createAsyncThunk(
       return state.requests.packingRequests;
     }
     
-    console.log('🔄 Fetching fresh packing requests...');
-    const requests = await getPackingRequestsApi();
+    console.log('🔄 Fetching fresh packing requests for warehouse:', warehouseId);
+    const requests = await getPackingRequestsApi(warehouseId);
     return requests;
   }
 );
@@ -74,9 +74,9 @@ export const fetchReturns = createAsyncThunk(
 // Force refresh actions (bypass cache)
 export const refreshPackingRequests = createAsyncThunk(
   'requests/refreshPackingRequests',
-  async () => {
-    console.log('🔄 Force refreshing packing requests...');
-    const requests = await getPackingRequestsApi();
+  async (warehouseId: number | undefined) => {
+    console.log('🔄 Force refreshing packing requests for warehouse:', warehouseId);
+    const requests = await getPackingRequestsApi(warehouseId);
     return requests;
   }
 );
