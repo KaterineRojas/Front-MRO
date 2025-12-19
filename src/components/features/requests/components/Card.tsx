@@ -79,7 +79,7 @@ function Card({ title, iconType, description, value, mainColor, loading }: cardP
             </div>
 
             <div className="px-6 [&:last-child]:pb-6">
-                <div className={`text-2xl text-green-600 ${loading ? `w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin` : ''}  `}
+                <div className={`text-2xl text-green-600 ${loading ? `w-8 h-8 border-3 border-gray-600 border-t-transparent rounded-full animate-spin` : ''}  `}
                     style={{ color: `${selectMainColorClass()}` }}
                 >{ loading ? '' : value}</div>
                 <p className="text-xs text-muted-foreground">{description}</p>

@@ -1,14 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Badge } from '../../ui/badge';
-import { Check, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
-import { mockRequests, type Request } from './data/mockRequest'
 import CardRequest from './components/Card'
 import TabsGroup from './components/Tabs'
-import SearchBar, { SelectOption } from './components/SearchBar'
+import SearchBar from './components/SearchBar'
 import RequestsTable from './components/DataTable';
 import RequestModal from './components/ApproveRequestDialog';
-import { API_URL } from '../../../url'
-import { LoanRequestItem, LoanRequest, PaginatedLoanRequestResponse } from './types/loanTypes'
+import { LoanRequest } from './types/loanTypes'
 import { approveLoanRequest, rejectLoanRequest, getLoanRequests } from './services/requestService'
 
 
@@ -21,7 +17,6 @@ export function RequestManagement() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedRequest, setSelectedRequest] = useState<LoanRequest | null>(null);
   const [expandedRequests, setExpandedRequests] = useState<Set<string>>(new Set());
-  const [rejectNotes, setRejectNotes] = useState('');
   const [modalType, setModalType] = useState('approve')
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -36,42 +31,43 @@ export function RequestManagement() {
     { value: '4', label: 'Transfer On Site' },
   ];
 
-
   const [pagination, setPagination] = useState({
     pageNumber: 1,
     pageSize: 20,
     totalCount: 0,
-    totalPages: 0
+    totalPages: 0,
+    hasPreviousPage: false, 
+    hasNextPage: false      
   });
 
   useEffect(() => {
     console.log(loading);
   }, [loading])
-  
+
 
   useEffect(() => {
     const controller = new AbortController();
-
+    
     const loadRequests = async () => {
       setLoading(true);
       try {
         const result = await getLoanRequests(
-          "1",
-          pagination.pageNumber,
-          pagination.pageSize,
+          "1",             
+          1,               
+          100,
           controller.signal
         );
 
-        console.log('API Response:', result);
+        // console.log('API Response:', result);
 
         setRequests(result.data);
-        setPagination(prev => ({
-          ...prev,
-          totalCount: result.totalCount,
-          totalPages: result.totalPages,
-          hasPreviousPage: result.hasPreviousPage,
-          hasNextPage: result.hasNextPage
-        }));
+        // setPagination(prev => ({
+        //   ...prev,
+        //   totalCount: result.totalCount,
+        //   totalPages: result.totalPages,
+        //   hasPreviousPage: result.hasPreviousPage,
+        //   hasNextPage: result.hasNextPage
+        // }));
 
       } catch (error) {
         if (error instanceof Error && error.name !== 'AbortError') {
@@ -86,7 +82,19 @@ export function RequestManagement() {
 
     return () => controller.abort();
 
-  }, [pagination.pageNumber, pagination.pageSize]); 
+  }, []);
+
+
+
+  const handlePageChange = (newPage: number) => {
+    // Prevent fetching if we are already on that page or it's invalid
+    if (newPage < 1 || (pagination.totalPages > 0 && newPage > pagination.totalPages)) return;
+
+    setPagination(prev => ({
+      ...prev,
+      pageNumber: newPage
+    }));
+  };
 
 
 
@@ -159,7 +167,7 @@ export function RequestManagement() {
 
       const updatedRequest = {
         ...selectedRequest,
-        status: 'approved',
+        status: 'Approved',
         // ...responseData 
       };
 
@@ -206,7 +214,7 @@ export function RequestManagement() {
         req.requestNumber === selectedRequest.requestNumber
           ? {
             ...req,
-            status: 'rejected',
+            status: 'Rejected',
           }
           : req
       ));
@@ -302,7 +310,7 @@ export function RequestManagement() {
         />
 
         {/** dinamic data table */}
-        <div className="space-y-6 border-gray-200 border-[1px] p-5 rounded-lg">
+        <div className="space-y-6 border-gray-200 border-[2px] dark:border-gray-800 p-5 rounded-lg">
 
           <h2 className="flex items-center space-x-2 text-xl font-semibold text-gray-800 dark:text-gray-100">
             {/* <Check />
@@ -320,6 +328,8 @@ export function RequestManagement() {
               setSelectedRequest={setSelectedRequest}
               setShowModal={setShowModal}
               setModalType={setModalType}
+              // pagination={pagination}
+              // onPageChange={handlePageChange}
 
               loading={loading}
             />
