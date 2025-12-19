@@ -148,7 +148,7 @@ export const mockWarehousesV2: WarehouseV2[] = [
                   },
                   { 
                     id: '14', 
-                    code: 'AMX01-ZGC-R01-L01-B02',
+                    code: 'AMX01-ZGC-R01-L01-B03',
                     name: 'Keyboards and Mice', 
                     quantity: 0,
                     allowDifferentItems: false,

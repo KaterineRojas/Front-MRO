@@ -1,6 +1,9 @@
+// src/services/kitsService.ts
+//KITS DUDA ORIGINAL
 import { Article2 } from "../types";
 import { API_URL } from "../../../../url";
 import { store } from "../../../../store/store";
+//const API_URL = 'http://localhost:5000/api';
 
 /**
  * API response format for kit items
@@ -43,7 +46,7 @@ export interface Kit {
   description: string;
   category: string;
   quantity: number;
-    quantityAvailable: number; 
+  quantityAvailable: number;
   quantityLoan: number; 
   quantityReserved: number; 
   imageUrl?: string;
@@ -223,13 +226,13 @@ export async function getKitsWithItems(): Promise<Kit[]> {
     const state = store.getState();
     const warehouseId = state.auth.user?.warehouseId ?? state.auth.user?.warehouse ?? null;
 
-    const searchParams = new URLSearchParams();
+    const params = new URLSearchParams();
     if (warehouseId !== null && warehouseId !== undefined) {
-      searchParams.append('warehouseId', String(warehouseId));
+      params.append('warehouseId', String(warehouseId));
     }
-    searchParams.append('isActive', 'true');
+    params.append('isActive', 'true');
 
-    const url = `${API_URL}/Kits/with-items${searchParams.size ? `?${searchParams.toString()}` : ''}`;
+    const url = `${API_URL}/Kits/with-items${params.size ? `?${params.toString()}` : ''}`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -239,12 +242,12 @@ export async function getKitsWithItems(): Promise<Kit[]> {
       },
     });
     console.log('Fetching kits from:', url);
-
     if (!response.ok) {
       throw new Error(`Failed to fetch kits: ${response.status} ${response.statusText}`);
     }
 
     const data: KitResponse[] = await response.json();
+    console.log('getKitsWithItems payload:', data);
     return data.map(transformKit);
   } catch (error) {
     console.error('Error fetching kits:', error);
@@ -305,7 +308,7 @@ export async function createPhysicalKit(kitData: CreatePhysicalKitRequest): Prom
     },
     body: JSON.stringify(kitData),
   });
-
+  console.log('Response status:', response);
   if (!response.ok) {
     // Backend always returns error in format: { "message": "error description" }
     let errorMessage = 'Failed to build kit';
@@ -537,9 +540,12 @@ export const getKitDefaultBin = async (
       },
       signal,
     });
+    console.log('getKitDefaultBin request url:', `${API_URL}/Kits/default-bin?${queryParams.toString()}`);
 
     if (response.ok) {
-      return await response.json();
+      const payload = await response.json();
+      console.log('getKitDefaultBin payload:', payload);
+      return payload;
     }
 
     if (response.status === 404) {
