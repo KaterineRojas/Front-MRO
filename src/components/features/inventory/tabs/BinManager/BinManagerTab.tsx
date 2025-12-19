@@ -1038,10 +1038,10 @@ export function BinManagerTab() {
             )}
             
             {/* Add Button */}
-            {/* <Button onClick={handleAddClick} size="sm" className="shrink-0">
+            <Button onClick={handleAddClick} size="sm" className="shrink-0">
               <Plus className="w-4 h-4 mr-2" />
               {getAddButtonText()}
-            </Button>*/}
+            </Button>
           </div>
         </div>
 
