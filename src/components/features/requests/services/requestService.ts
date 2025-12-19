@@ -400,20 +400,17 @@ export async function rejectLoanRequest(
 
 /**
  * Fetches paginated loan requests.
- * @param warehouseId - 1 default
  * @param pageNumber - Current page number
  * @param pageSize - Items per page
  * @param signal - (Optional) AbortSignal to cancel the request
  */
 export async function getLoanRequests(
-  warehouseId: string, 
   pageNumber: number, 
   pageSize: number,
   signal?: AbortSignal
 ): Promise<PaginatedLoanRequestResponse> {
   
   const params = new URLSearchParams({
-    warehouseId: warehouseId,
     pageNumber: pageNumber.toString(),
     pageSize: pageSize.toString()
   });

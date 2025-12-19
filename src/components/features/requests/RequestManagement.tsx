@@ -52,7 +52,6 @@ export function RequestManagement() {
       setLoading(true);
       try {
         const result = await getLoanRequests(
-          "1",             
           1,               
           100,
           controller.signal
