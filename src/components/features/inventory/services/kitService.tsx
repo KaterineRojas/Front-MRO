@@ -41,11 +41,12 @@ export interface Kit {
   id: number;
   sku: string;
   binCode: string;
+  binId: number;
   name: string;
   description: string;
   category: string;
   quantity: number;
-    quantityAvailable: number; 
+  quantityAvailable: number;
   quantityLoan: number; 
   quantityReserved: number; 
   imageUrl?: string;
@@ -222,19 +223,31 @@ export async function getKitCategories(): Promise<KitCategory[]> {
 export async function getKitsWithItems(): Promise<Kit[]> {
   try {
     const token = store.getState().auth.accessToken as string;
-    const response = await fetch(`${API_URL}/Kits/with-items?isActive=true`, {
+    const state = store.getState();
+    const warehouseId = state.auth.user?.warehouseId ?? state.auth.user?.warehouse ?? null;
+
+    const params = new URLSearchParams();
+    if (warehouseId !== null && warehouseId !== undefined) {
+      params.append('warehouseId', String(warehouseId));
+    }
+    params.append('isActive', 'true');
+
+    const url = `${API_URL}/Kits/with-items${params.size ? `?${params.toString()}` : ''}`;
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
     });
-
+    console.log('Fetching kits from:', url);
     if (!response.ok) {
       throw new Error(`Failed to fetch kits: ${response.status} ${response.statusText}`);
     }
 
     const data: KitResponse[] = await response.json();
+    console.log('getKitsWithItems payload:', data);
     return data.map(transformKit);
   } catch (error) {
     console.error('Error fetching kits:', error);
@@ -295,7 +308,7 @@ export async function createPhysicalKit(kitData: CreatePhysicalKitRequest): Prom
     },
     body: JSON.stringify(kitData),
   });
-
+  console.log('Response status:', response);
   if (!response.ok) {
     // Backend always returns error in format: { "message": "error description" }
     let errorMessage = 'Failed to build kit';
@@ -527,9 +540,12 @@ export const getKitDefaultBin = async (
       },
       signal,
     });
+    console.log('getKitDefaultBin request url:', `${API_URL}/Kits/default-bin?${queryParams.toString()}`);
 
     if (response.ok) {
-      return await response.json();
+      const payload = await response.json();
+      console.log('getKitDefaultBin payload:', payload);
+      return payload;
     }
 
     if (response.status === 404) {

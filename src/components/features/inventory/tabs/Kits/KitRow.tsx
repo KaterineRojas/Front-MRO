@@ -40,7 +40,7 @@ export function KitRow({
   const [deleteStatus, setDeleteStatus] = useState<'confirm' | 'loading' | 'success' | 'error'>('confirm');
   const [deleteMessageModal, setDeleteMessageModal] = useState('')
   const darkMode = useSelector((state: any) => state.ui.darkMode);
-  const WAREHOUSE_ID = 1;
+  const warehouseId = useSelector((state: any) => state.auth.user?.warehouseId ?? state.auth.user?.warehouse ?? null);
  
  
  
@@ -57,6 +57,15 @@ export function KitRow({
     // 2. CACHE CHECK: If already have the code, do nothing.
     if (assemblyBinCode) return;
  
+    const resolvedWarehouseId = warehouseId !== null && warehouseId !== undefined
+      ? (typeof warehouseId === 'string' ? parseInt(warehouseId, 10) : warehouseId)
+      : undefined;
+
+    if (resolvedWarehouseId === undefined || Number.isNaN(resolvedWarehouseId)) {
+      console.warn('KitRow: warehouseId unavailable, skipping default bin lookup');
+      return;
+    }
+
     // Setup AbortController for cleanup
     const controller = new AbortController();
     let isActive = true;
@@ -67,7 +76,7 @@ export function KitRow({
  
         // A. Fetch Kit Occupation (Default Bin)
         const occupation = await getKitDefaultBin(
-          { kitId: kit.id, warehouseId: WAREHOUSE_ID },
+          { kitId: kit.id, warehouseId: resolvedWarehouseId },
           controller.signal
         );
  
@@ -93,7 +102,7 @@ export function KitRow({
             // NOTE: Ideally, 'availableBins' should be managed by a separate query (React Query),
             // but for this manual effect, we fetch if the list is likely empty.
             if (availableBins.length === 0) {
-              const bins = await getAllAvailableBins(WAREHOUSE_ID, true);
+              const bins = await getAllAvailableBins(resolvedWarehouseId, true);
               if (isActive) setAvailableBins(bins);
             }
           }
@@ -117,7 +126,7 @@ export function KitRow({
     };
  
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isExpanded, isAssembleModalOpen, kit.id, assemblyBinCode]);
+  }, [isExpanded, isAssembleModalOpen, kit.id, assemblyBinCode, warehouseId]);
   // We intentionally exclude 'availableBins' to avoid loops, or we handle it via ref.
  
  

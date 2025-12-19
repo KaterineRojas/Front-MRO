@@ -883,25 +883,28 @@ export async function updateBinApi(_id: number, _binData: {
  * Elimina un bin
  * @deprecated Temporalmente desactivado - pendiente migración a nueva lógica de bins
  */
-export async function deleteBinApi(_id: number): Promise<void> {
-  console.warn('⚠️ deleteBinApi temporalmente desactivado - pendiente migración a nueva lógica');
-  throw new Error('Function temporarily disabled');
-  
-  // CÓDIGO ORIGINAL COMENTADO (PENDIENTE MIGRACIÓN)
-  // try {
-  //   const response = await fetch(`${API_URL}/Bins/${id}`, {
-  //     method: 'DELETE',
-  //     headers: { 'Content-Type': 'application/json' },
-  //   });
+export async function deleteBinApi(id: number | string): Promise<void> {
+  console.log('deleteBinApi invoked with id:', id);
 
-  //   if (!response.ok) {
-  //     const errorText = await response.text();
-  //     throw new Error(`Failed to delete bin: ${response.status} - ${errorText}`);
-  //   }
-  // } catch (error) {
-  //   console.error('Error deleting bin:', error);
-  //   throw error;
-  // }
+  const resolvedId = typeof id === 'string' ? parseInt(id, 10) : id;
+
+  if (Number.isNaN(resolvedId)) {
+    throw new Error('Invalid bin identifier');
+  }
+
+  try {
+    const response = await fetchWithAuth(`${API_URL}/Bin/${resolvedId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`Failed to delete bin: ${response.status} - ${errorText}`);
+    }
+  } catch (error) {
+    console.error('Error deleting bin:', error);
+    throw error;
+  }
 }
 
 /**

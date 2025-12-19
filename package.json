@@ -51,6 +51,7 @@
     "react-toastify": "^11.0.5",
     "recharts": "^2.15.2",
     "redux": "^5.0.1",
+    "slsx": "^0.0.3",
     "sonner": "^2.0.3",
     "tailwind-merge": "*",
     "vaul": "^1.1.2",
