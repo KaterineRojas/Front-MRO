@@ -23,11 +23,14 @@ import {
 } from '../../../ui/alert-dialog';
 import { toast } from 'sonner';
 import { fetchWarehousesFromApi, createZoneApi, createRackApi, createLevelApi, createBinApi, createBinByHierarchyApi } from '../../services/inventoryApi';
+import { useAppDispatch } from '../../../../../store/hooks';
+import { deleteBin as deleteBinThunk } from '../../../../../store/slices/inventorySlice';
 
 type ViewLevel = 'warehouse' | 'zone' | 'rack' | 'level' | 'bin';
 type ViewMode = 'grid' | 'table';
 
 export function BinManagerTab() {
+  const dispatch = useAppDispatch();
   const [warehouses, setWarehouses] = useState(mockWarehousesV2);
   const [selectedWarehouse, setSelectedWarehouse] = useState<WarehouseV2 | null>(warehouses[0]);
   const [selectedZone, setSelectedZone] = useState<ZoneV2 | null>(null);
@@ -795,8 +798,110 @@ export function BinManagerTab() {
     }
   };
 
-  const handleDelete = () => {
-    if (!deletingItem || !deletingType || !selectedWarehouse) return;
+  const findBinLocation = (binId: string) => {
+    for (let warehouseIndex = 0; warehouseIndex < warehouses.length; warehouseIndex++) {
+      const warehouse = warehouses[warehouseIndex];
+      for (let zoneIndex = 0; zoneIndex < warehouse.zones.length; zoneIndex++) {
+        const zone = warehouse.zones[zoneIndex];
+        for (let rackIndex = 0; rackIndex < zone.racks.length; rackIndex++) {
+          const rack = zone.racks[rackIndex];
+          for (let levelIndex = 0; levelIndex < rack.levels.length; levelIndex++) {
+            const level = rack.levels[levelIndex];
+            const binIndex = level.bins.findIndex(b => b.id === binId);
+            if (binIndex !== -1) {
+              return { warehouseIndex, zoneIndex, rackIndex, levelIndex, binIndex };
+            }
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  const handleDelete = async () => {
+    if (!deletingItem || !deletingType) return;
+
+    if (deletingType === 'bin') {
+      const bin = deletingItem as BinV2;
+      const resolvedBinId = typeof bin.id === 'string' ? parseInt(bin.id, 10) : bin.id;
+
+      if (Number.isNaN(resolvedBinId)) {
+        toast.error('Invalid bin identifier');
+        setDeletingItem(null);
+        setDeletingType(null);
+        return;
+      }
+
+      let location = null;
+
+      if (selectedWarehouse && selectedZone && selectedRack && selectedLevel) {
+        const warehouseIndex = warehouses.findIndex(wh => wh.id === selectedWarehouse.id);
+        if (warehouseIndex !== -1) {
+          const zoneIndex = warehouses[warehouseIndex].zones.findIndex(z => z.id === selectedZone.id);
+          const rackIndex = zoneIndex !== -1
+            ? warehouses[warehouseIndex].zones[zoneIndex].racks.findIndex(r => r.id === selectedRack.id)
+            : -1;
+          const levelIndex = zoneIndex !== -1 && rackIndex !== -1
+            ? warehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels.findIndex(l => l.id === selectedLevel.id)
+            : -1;
+
+          if (zoneIndex !== -1 && rackIndex !== -1 && levelIndex !== -1) {
+            const binIndex = warehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex].bins.findIndex(b => b.id === bin.id);
+            if (binIndex !== -1) {
+              location = { warehouseIndex, zoneIndex, rackIndex, levelIndex, binIndex };
+            }
+          }
+        }
+      }
+
+      if (!location) {
+        location = findBinLocation(bin.id);
+      }
+
+      try {
+        setIsLoading(true);
+        await dispatch(deleteBinThunk(resolvedBinId)).unwrap();
+
+        if (location) {
+          const { warehouseIndex, zoneIndex, rackIndex, levelIndex, binIndex } = location;
+          const updatedWarehouses = [...warehouses];
+          const level = updatedWarehouses[warehouseIndex]
+            ?.zones[zoneIndex]
+            ?.racks[rackIndex]
+            ?.levels[levelIndex];
+
+          if (level) {
+            level.bins.splice(binIndex, 1);
+            setWarehouses(updatedWarehouses);
+            setSelectedWarehouse(updatedWarehouses[warehouseIndex]);
+            setSelectedZone(updatedWarehouses[warehouseIndex].zones[zoneIndex]);
+            setSelectedRack(updatedWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex]);
+            setSelectedLevel(level);
+          }
+        }
+
+        toast.success('Bin deleted successfully');
+      } catch (error) {
+        console.error('Error deleting bin from API:', error);
+        toast.error('Failed to delete bin');
+        setIsLoading(false);
+        setDeletingItem(null);
+        setDeletingType(null);
+        return;
+      } finally {
+        setIsLoading(false);
+      }
+
+      setDeletingItem(null);
+      setDeletingType(null);
+      return;
+    }
+
+    if (!selectedWarehouse) {
+      setDeletingItem(null);
+      setDeletingType(null);
+      return;
+    }
 
     const newWarehouses = [...warehouses];
     const warehouseIndex = newWarehouses.findIndex(wh => wh.id === selectedWarehouse.id);
@@ -848,20 +953,6 @@ export function BinManagerTab() {
             setSelectedLevel(null);
           }
           toast.success('Level deleted successfully');
-        }
-      }
-    } else if (deletingType === 'bin' && selectedZone && selectedRack && selectedLevel) {
-      const bin = deletingItem as BinV2;
-      const zoneIndex = newWarehouses[warehouseIndex].zones.findIndex(z => z.id === selectedZone.id);
-      const rackIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks.findIndex(r => r.id === selectedRack.id);
-      const levelIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels.findIndex(l => l.id === selectedLevel.id);
-      if (zoneIndex !== -1 && rackIndex !== -1 && levelIndex !== -1) {
-        const binIndex = newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex].bins.findIndex(b => b.id === bin.id);
-        if (binIndex !== -1) {
-          newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex].bins.splice(binIndex, 1);
-          setWarehouses(newWarehouses);
-          setSelectedLevel(newWarehouses[warehouseIndex].zones[zoneIndex].racks[rackIndex].levels[levelIndex]);
-          toast.success('Bin deleted successfully');
         }
       }
     }
@@ -947,10 +1038,10 @@ export function BinManagerTab() {
             )}
             
             {/* Add Button */}
-            {/* <Button onClick={handleAddClick} size="sm" className="shrink-0">
+            <Button onClick={handleAddClick} size="sm" className="shrink-0">
               <Plus className="w-4 h-4 mr-2" />
               {getAddButtonText()}
-            </Button>*/}
+            </Button>
           </div>
         </div>
 
@@ -1135,7 +1226,7 @@ export function BinManagerTab() {
                 if (deletingType === 'zone') return (deletingItem as ZoneV2).racks.length > 0;
                 if (deletingType === 'rack') return (deletingItem as RackV2).levels.length > 0;
                 if (deletingType === 'level') return (deletingItem as LevelV2).bins.length > 0;
-                if (deletingType === 'bin') return (deletingItem as BinV2).quantity > 0;
+                if (deletingType === 'bin') return isLoading || (deletingItem as BinV2).quantity > 0;
                 return false;
               })()}
               className="bg-destructive hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
