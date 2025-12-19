@@ -11,6 +11,7 @@ import {
   setNotificationsOpen,
   markAllAsRead
 } from '../store';
+import { clearPackingRequests, clearReturns } from '../store/slices/requestsSlice';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -74,6 +75,8 @@ export function Layout() {
       console.log("Logging out user with authType:", authType);
 
       dispatch(logout());
+      dispatch(clearPackingRequests());
+      dispatch(clearReturns());
       authService.removeToken();
 
       // Only redirect to Azure logout if user authenticated with Azure

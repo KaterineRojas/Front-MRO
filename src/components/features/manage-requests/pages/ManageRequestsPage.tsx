@@ -52,7 +52,7 @@ export function ManageRequestsPage() {
   
   // Llamar a los Custom Hooks
   const returnsLogic = useReturnsLogic({ engineerId, warehouseId });
-  const packingLogic = usePackingRequestsLogic({ keeperEmployeeId });
+  const packingLogic = usePackingRequestsLogic({ keeperEmployeeId, warehouseId });
   
   // Manejar la dependencia cruzada
   const handleConfirmPackingDialog = useCallback(() => {

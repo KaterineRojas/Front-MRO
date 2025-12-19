@@ -40,12 +40,12 @@ async function getPagedData<T>(
 
 const PACKING_ALLOWED_STATUSES = ['Approved', 'Packing'];
 
-export async function getPackingRequests(): Promise<LoanRequest[]> {
+export async function getPackingRequests(warehouseId: number = DEFAULT_WAREHOUSE_ID): Promise<LoanRequest[]> {
   try {
     // ⚡ Peticiones paralelas para mejorar velocidad
     const [approved, packing] = await Promise.all([
-      getPagedData<LoanRequest>('loan-requests', 'Approved', DEFAULT_WAREHOUSE_ID),
-      getPagedData<LoanRequest>('loan-requests', 'Packing', DEFAULT_WAREHOUSE_ID)
+      getPagedData<LoanRequest>('loan-requests', 'Approved', warehouseId),
+      getPagedData<LoanRequest>('loan-requests', 'Packing', warehouseId)
     ]);
     
     const combined = [...approved, ...packing];
