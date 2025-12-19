@@ -350,7 +350,7 @@ export async function approveLoanRequest(
     method: 'PUT', 
     headers: {
       'Content-Type': 'application/json',
-      // 'Authorization': `Bearer ${token}` 
+      'Authorization': `Bearer ${authService.getToken()}` 
     }
   });
 
@@ -388,6 +388,7 @@ export async function rejectLoanRequest(
     method: 'PUT', 
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authService.getToken()}` 
     }
   });
 
