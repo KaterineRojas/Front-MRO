@@ -480,15 +480,7 @@ function OrderDetailWrapper() {
   );
 }
 
-function CycleCountActiveWrapper() {
-  const navigate = useNavigate();
 
-  return (
-    <CycleCountView
-      onBack={() => navigate('/cycle-count')}
-    />
-  );
-}
 
 function EngineerRequestOrdersWrapper() {
   return <EngineerRequestOrders />;
