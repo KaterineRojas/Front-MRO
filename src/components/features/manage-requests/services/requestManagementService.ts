@@ -334,7 +334,7 @@ export interface UploadReturnPhotoResponse {
 
 export async function uploadReturnPhoto(photoFile: Blob): Promise<string | null> {
     try {
-        const url = `${API_BASE_URL}/Inventory/upload-return-photo`;
+        const url = `${API_BASE_URL}/inventory/upload-return-photo`;
         const formData = new FormData();
         formData.append('photo', photoFile, 'return_photo.jpeg'); 
 
@@ -382,7 +382,7 @@ export interface ReturnLoanPayload {
 
 export async function submitReturnLoan(payload: ReturnLoanPayload): Promise<boolean> {
   // Asegúrate de usar la URL base correcta de tu API
-  const url = `${API_BASE_URL}/Inventory/return-loan`; 
+  const url = `${API_BASE_URL}/inventory/return-loan`; 
 
   try {
     const response = await fetchWithAuth(url, {

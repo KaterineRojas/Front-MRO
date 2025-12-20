@@ -348,7 +348,7 @@ interface CheckItemOccupationResponse {
 export async function getKitCurrentBin(kitId: number): Promise<string> {
   try {
     const token = store.getState().auth.accessToken as string;
-    const response = await fetch(`${API_URL}/Bins/check-item-occupation?kitId=${kitId}`, {
+    const response = await fetch(`${API_URL}/bins/check-item-occupation?kitId=${kitId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

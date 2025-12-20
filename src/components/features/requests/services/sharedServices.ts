@@ -238,7 +238,7 @@ export async function getDepartments(companyName: string): Promise<Department[]>
 }
 
 export async function getCatalogItemsByWarehouse(warehouseId: string): Promise<CatalogItem[]> {
-  const endpoint = `/Inventory/by-warehouse/${warehouseId}`;
+  const endpoint = `/inventory/by-warehouse/${warehouseId}`;
   const token = store.getState().auth.accessToken as string;
   return fetchDataWithRetry(endpoint, token, (data: any) => {
     if (!Array.isArray(data)) {

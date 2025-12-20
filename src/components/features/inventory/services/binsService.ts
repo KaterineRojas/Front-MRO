@@ -76,7 +76,7 @@ export async function getAvailableBins(warehouseId?: number | string | null, isA
     // allowDifferentItems=false significa bins que solo aceptan un tipo de item
     params.append('allowDifferentItems', 'false');
 
-    const url = `${API_URL}/Bin/available${params.toString() ? '?' + params.toString() : ''}`;
+    const url = `${API_URL}/bins/available${params.toString() ? '?' + params.toString() : ''}`;
     console.log('🔍 Fetching available bins from****:', url);
 
     const response = await fetchWithAuth(url, {
@@ -129,7 +129,7 @@ export async function checkItemOccupation(
       params.append('warehouseId', String(resolvedWarehouseId));
     }
 
-    const url = `${API_URL}/Bin/check-item-occupation${params.size ? `?${params.toString()}` : ''}`;
+    const url = `${API_URL}/bins/check-item-occupation${params.size ? `?${params.toString()}` : ''}`;
     console.log('🔍 Checking item occupation***:', url);
 
     const response = await fetchWithAuth(url, {
@@ -169,7 +169,7 @@ export async function checkItemOccupation(
  */
 export async function checkKitOccupation(kitId: number): Promise<CheckItemOccupationResponse | null> {
   try {
-    const response = await fetchWithAuth(`${API_URL}/Bins/check-item-occupation?kitId=${kitId}`, {
+    const response = await fetchWithAuth(`${API_URL}/bins/check-item-occupation?kitId=${kitId}`, {
       method: 'GET',
     });
 
@@ -204,7 +204,7 @@ export async function checkKitOccupation(kitId: number): Promise<CheckItemOccupa
  */
 export async function getKitCurrentBin(kitId: number): Promise<string> {
   try {
-    const response = await fetchWithAuth(`${API_URL}/Bins/check-item-occupation?kitId=${kitId}`, {
+    const response = await fetchWithAuth(`${API_URL}/bins/check-item-occupation?kitId=${kitId}`, {
       method: 'GET',
     });
 
@@ -281,7 +281,7 @@ export async function getAllAvailableBins(
     // If you discover it is needed later, uncomment the next line:
     // params.append('allowDifferentItems', 'false');
 
-    const url = `${API_URL}/Bin/available?${params.toString()}`;
+    const url = `${API_URL}/bins/available?${params.toString()}`;
 
     const response = await fetchWithAuth(url, {
       method: 'GET',

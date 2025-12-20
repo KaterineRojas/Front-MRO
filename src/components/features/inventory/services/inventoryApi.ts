@@ -113,7 +113,7 @@ export async function fetchArticlesFromApi({
       searchParams.append('warehouseId', String(resolvedWarehouseId));
     }
 
-    const url = `${API_URL}/Inventory/items-with-bins${searchParams.size ? `?${searchParams.toString()}` : ''}`;
+    const url = `${API_URL}/inventory/items-with-bins${searchParams.size ? `?${searchParams.toString()}` : ''}`;
     console.log('[fetchArticlesFromApi] GET', url);
 
     const response = await fetch(url, {
@@ -401,7 +401,7 @@ export async function createPurchaseApi(purchaseData: PurchaseRequest): Promise<
       ...(resolvedWarehouseId !== undefined ? { warehouseId: resolvedWarehouseId } : {}),
     };
 
-    const response = await fetchWithAuth(`${API_URL}/Inventory/purchase`, {
+    const response = await fetchWithAuth(`${API_URL}/inventory/purchase`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -447,7 +447,7 @@ export async function fetchBinsFromApi({
     }
     params.append('isActive', String(isActive));
 
-    const url = `${API_URL}/Bin/with-quantity${params.size ? `?${params.toString()}` : ''}`;
+    const url = `${API_URL}/bins/with-quantity${params.size ? `?${params.toString()}` : ''}`;
 
     const response = await fetchWithAuth(url, {
       method: 'GET',
@@ -493,7 +493,7 @@ export async function fetchWarehousesFromApi(): Promise<WarehouseV2[]> {
       return [];
     }
 
-    const url = `${API_URL}/Bin/with-quantity?warehouseId=${warehouseId}`;
+    const url = `${API_URL}/bins/with-quantity?warehouseId=${warehouseId}`;
     console.log('🔄 Fetching warehouses from API:', url);
     
     const response = await fetchWithAuth(url, {
@@ -691,7 +691,7 @@ export async function createBinApi(data: {
   allowDifferentItems: boolean;
 }) {
   try {
-    const response = await fetchWithAuth(`${API_URL}/Bin`, {
+    const response = await fetchWithAuth(`${API_URL}/bins`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -727,7 +727,7 @@ export async function createBinByHierarchyApi(data: {
   name: string;
 }) {
   try {
-    const response = await fetchWithAuth(`${API_URL}/Bin/create-by-hierarchy`, {
+    const response = await fetchWithAuth(`${API_URL}/bins/create-by-hierarchy`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -893,7 +893,7 @@ export async function deleteBinApi(id: number | string): Promise<void> {
   }
 
   try {
-    const response = await fetchWithAuth(`${API_URL}/Bin/${resolvedId}`, {
+    const response = await fetchWithAuth(`${API_URL}/bins/${resolvedId}`, {
       method: 'DELETE',
     });
 
@@ -1017,7 +1017,7 @@ export async function createDamagedApi(damagedData: DamagedRequest): Promise<voi
       ...(resolvedWarehouseId !== undefined ? { warehouseId: resolvedWarehouseId } : {}),
     };
 
-    const response = await fetchWithAuth(`${API_URL}/Inventory/damaged`, {
+    const response = await fetchWithAuth(`${API_URL}/inventory/damaged`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -1046,7 +1046,7 @@ export async function createStockCorrectionApi(correctionData: StockCorrectionRe
       ...(resolvedWarehouseId !== undefined ? { warehouseId: resolvedWarehouseId } : {}),
     };
 
-    const response = await fetchWithAuth(`${API_URL}/Inventory/stock-correction`, {
+    const response = await fetchWithAuth(`${API_URL}/inventory/stock-correction`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -1088,7 +1088,7 @@ export async function getValidDestinationBins(
       params.append('warehouseId', String(resolvedWarehouseId));
     }
 
-    const url = `${API_URL}/Inventory/valid-destinations?${params.toString()}`;
+    const url = `${API_URL}/inventory/valid-destinations?${params.toString()}`;
     console.log('[getValidDestinationBins] GET', url);
     const response = await fetchWithAuth(url, {
       method: 'GET',
@@ -1119,7 +1119,7 @@ export async function createWarehouseTransferApi(transferData: WarehouseTransfer
       ...(resolvedWarehouseId !== undefined ? { warehouseId: resolvedWarehouseId } : {}),
     };
 
-    const response = await fetchWithAuth(`${API_URL}/Inventory/relocate-item`, {
+    const response = await fetchWithAuth(`${API_URL}/inventory/relocate-item`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
