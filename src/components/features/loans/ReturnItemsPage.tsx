@@ -477,7 +477,7 @@ export function ReturnItemsPage({ request, onBack, onReturnConfirmed }: ReturnIt
 
                       {/* Return Controls */}
                       {returnItem.selected && (
-                        <div className="space-y-4 pt-3 border-t">
+                        <div className="space-y-4 pt-3 border-t dark:border-border">
                           {/* Quantity Controls */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -643,7 +643,7 @@ export function ReturnItemsPage({ request, onBack, onReturnConfirmed }: ReturnIt
       </Card>
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-between pt-4 border-t">
+      <div className="flex items-center justify-between pt-4 border-t dark:border-border">
         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
           {selectedCount > 0 ? (
             <>
@@ -731,7 +731,7 @@ export function ReturnItemsPage({ request, onBack, onReturnConfirmed }: ReturnIt
                   {partialReturnHistory.map((returnRecord) => (
                     <div key={returnRecord.id} className="border rounded-lg p-4 space-y-4">
                       {/* Return Header */}
-                      <div className="flex items-center justify-between pb-3 border-b">
+                      <div className="flex items-center justify-between pb-3 border-b dark:border-border">
                         <div>
                           <div className="flex items-center space-x-2">
                             <FileText className="h-4 w-4" />

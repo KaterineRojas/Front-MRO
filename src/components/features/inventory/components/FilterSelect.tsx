@@ -59,12 +59,12 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
                 disabled={isLoading}
                 className={`
                     w-full min-w-[200px] px-4 py-2.5 rounded-lg text-sm font-medium
-                    flex items-center justify-between transition-all duration-200 border
+                    flex items-center justify-between transition-all duration-200 border dark:border-border
                     focus:outline-none focus:ring-2 focus:ring-blue-500/50
 
                     bg-[#F3F3F5] text-gray-700 border-transparent hover:bg-gray-200
-                    
-                    dark:bg-[#121212] dark:text-white dark:border-gray-800 dark:hover:bg-[#1a1a1a]
+
+                    dark:bg-[#121212] dark:text-white dark:hover:bg-[#1a1a1a]
 
                     disabled:opacity-50 disabled:cursor-not-allowed
                 `}
@@ -89,10 +89,10 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
             {/* --- DROPDOWN MENU --- */}
             {isOpen && (
                 <div className={`
-                    absolute right-0 mt-2 w-full min-w-[220px] z-50 
-                    rounded-xl shadow-xl border py-1.5 animate-in fade-in zoom-in-95 duration-100 origin-top-right
-                    bg-white border-gray-200 
-                    dark:bg-black dark:border-gray-800 dark:overflow-x-hidden
+                    absolute right-0 mt-2 w-full min-w-[220px] z-50
+                    rounded-xl shadow-xl border dark:border-border py-1.5 animate-in fade-in zoom-in-95 duration-100 origin-top-right
+                    bg-white border-gray-200
+                    dark:bg-black dark:overflow-x-hidden
                 `}>
                     <div className="max-h-[280px] overflow-y-auto custom-scrollbar">
                         {allOptionIncluded && <button

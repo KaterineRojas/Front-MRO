@@ -239,7 +239,7 @@ export function TransactionsTable({
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="start" className="p-0 bg-muted border border-gray-300 shadow-md">
+                <PopoverContent align="start" className="p-0 bg-muted border border-gray-300 dark:border-border shadow-md">
                   <Calendar
                     mode="single"
                     selected={filters.dateFrom ? new Date(filters.dateFrom) : undefined}
@@ -270,7 +270,7 @@ export function TransactionsTable({
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="start" className="p-0 bg-muted border border-gray-300 shadow-md">
+                <PopoverContent align="start" className="p-0 bg-muted border border-gray-300 dark:border-border shadow-md">
                   <Calendar
                     mode="single"
                     selected={filters.dateTo ? new Date(filters.dateTo) : undefined}
@@ -341,7 +341,7 @@ export function TransactionsTable({
         {/* Desktop Table */}
         {!loading && filteredTransactions.length > 0 && (
           <>
-            <div className="hidden md:block border rounded-lg overflow-hidden">
+            <div className="hidden md:block border dark:border-border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -480,7 +480,7 @@ export function TransactionsTable({
             </div>
 
             {/* Pagination Controls */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t dark:border-border">
               {/* Items per page + info */}
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">

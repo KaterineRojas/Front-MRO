@@ -128,12 +128,12 @@ export function CreateBinModal({
           <div>
             <Label htmlFor="type">Type *</Label>
             {loadingTypes ? (
-              <div className="flex items-center justify-center p-4 border rounded-md">
+              <div className="flex items-center justify-center p-4 border dark:border-border rounded-md">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
                 <span className="text-sm text-muted-foreground">Loading types...</span>
               </div>
             ) : errorTypes ? (
-              <div className="p-3 border border-destructive rounded-md bg-destructive/10">
+              <div className="p-3 border dark:border-border border-destructive rounded-md bg-destructive/10">
                 <p className="text-destructive text-sm">{errorTypes}</p>
               </div>
             ) : (

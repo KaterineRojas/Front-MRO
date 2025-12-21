@@ -139,13 +139,13 @@ export function KitMovementForm({
 
       {/* CONDITIONAL FIELDS (Relocation only for Kits) */}
       {selectedKitForMovement ? (
-        <RelocationFields 
-          movementData={movementData} 
-          setMovementData={setMovementData} 
+        <RelocationFields
+          movementData={movementData}
+          setMovementData={setMovementData}
           selectedItem={null} // Es un Kit, no un Article
         />
       ) : (
-        <div className="p-4 text-center text-sm text-muted-foreground border rounded-lg">
+        <div className="p-4 text-center text-sm text-muted-foreground border dark:border-border rounded-lg">
           Please select a kit to continue.
         </div>
       )}

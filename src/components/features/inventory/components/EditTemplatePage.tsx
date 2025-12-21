@@ -255,7 +255,7 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
                 filteredArticles.map((article) => {
                   const isInTemplate = formData.items.some(item => item.articleId === article.id);
                   return (
-                    <div key={article.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div key={article.id} className="flex items-center space-x-3 p-3 border dark:border-border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
                         {article.imageUrl ? (
                           <img
@@ -312,7 +312,7 @@ export function EditTemplatePage({ articles, editingTemplate, onBack, onSave }: 
               {formData.items.map((item) => {
                 const article = articles.find(a => a.id === item.articleId);
                 return (
-                  <div key={item.articleId} className="flex items-center space-x-3 p-4 border rounded-lg bg-gray-50">
+                  <div key={item.articleId} className="flex items-center space-x-3 p-4 border dark:border-border rounded-lg bg-gray-50 dark:bg-gray-800">
                     <div className="w-12 h-12 rounded-md overflow-hidden bg-white flex-shrink-0 flex items-center justify-center border">
                       {article?.imageUrl ? (
                         <img

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const BASE_STYLES = "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-colors";
+const BASE_STYLES = "inline-flex items-center justify-center rounded-md border dark:border-border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-colors";
 
 const VARIANTS = {
     default: "border-transparent bg-gray-900 text-white dark:bg-gray-50 dark:text-gray-900",

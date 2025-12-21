@@ -255,7 +255,7 @@ export function CreateKitPage({ editingKit, articles: articlesFromParent, onBack
                   {filteredArticles.map((article) => {
                     const isInKit = formData.items.some(item => item.articleId === article.id);
                     return (
-                      <div key={article.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50">
+                      <div key={article.id} className="flex items-center space-x-3 p-3 border dark:border-border rounded-lg hover:bg-muted/50">
                         <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
                           {article.imageUrl ? (
                             <img
@@ -309,7 +309,7 @@ export function CreateKitPage({ editingKit, articles: articlesFromParent, onBack
                     </p>
                   ) : (
                     formData.items.map((item) => (
-                      <div key={item.articleId} className="flex items-center space-x-3 p-3 border rounded-lg">
+                      <div key={item.articleId} className="flex items-center space-x-3 p-3 border dark:border-border rounded-lg">
                         <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
                           {item.imageUrl ? (
                             <img

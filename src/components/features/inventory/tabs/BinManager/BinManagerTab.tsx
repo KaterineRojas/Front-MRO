@@ -1000,7 +1000,7 @@ export function BinManagerTab() {
           {/* Location Breadcrumb */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Location:</span>
-            <div className="flex items-center gap-1 flex-wrap px-2 py-1 bg-white dark:bg-gray-900 rounded border dark:border-gray-700">
+            <div className="flex items-center gap-1 flex-wrap px-2 py-1 bg-white dark:bg-gray-900 rounded border dark:border-border">
               {getLocationPath().length > 0 ? (
                 getLocationPath().map((part, index) => (
                   <div key={index} className="flex items-center gap-1">
@@ -1024,7 +1024,7 @@ export function BinManagerTab() {
           {/* View Toggle and Add Button */}
           <div className="flex items-center gap-2">
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-1 border rounded-md p-1">
+            <div className="flex items-center gap-1 border dark:border-border rounded-md p-1">
               <Button
                 size="sm"
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}

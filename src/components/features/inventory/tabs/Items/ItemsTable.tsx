@@ -13,7 +13,7 @@ export function ItemsTable({
   onImageError,
 }: ItemsTableProps) {
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border dark:border-border">
       <Table>
         <TableHeader>
           <TableRow>

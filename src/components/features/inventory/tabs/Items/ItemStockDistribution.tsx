@@ -23,7 +23,7 @@ export function ItemStockDistribution({ article }: ItemStockDistributionProps) {
         <Package className="h-4 w-4 mr-2" />
         Stock Distribution for SKU: {article.sku}
       </h4>
-      <div className="rounded-md border bg-card">
+      <div className="rounded-md border dark:border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>

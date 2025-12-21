@@ -53,11 +53,11 @@ export function ItemMovementForm({
 
     const renderMovementFields = () => {
         if (!selectedArticle) {
-            return <p className="text-sm text-muted-foreground text-center p-4 border rounded-lg">Please select an article to continue.</p>;
+            return <p className="text-sm text-muted-foreground text-center p-4 border dark:border-border rounded-lg">Please select an article to continue.</p>;
         }
 
         if (movementData.movementType !== 'entry' && movementData.articleBinId === 0) {
-            return <p className="text-sm text-muted-foreground text-center p-4 border rounded-lg">Please select a BIN to continue.</p>;
+            return <p className="text-sm text-muted-foreground text-center p-4 border dark:border-border rounded-lg">Please select a BIN to continue.</p>;
         }
 
         switch (movementData.movementType) {

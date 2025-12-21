@@ -9,7 +9,18 @@ interface UIState {
 
 const initialState: UIState = {
   sidebarOpen: false,
-  darkMode: false,
+  darkMode: (() => {
+    try {
+      const stored = localStorage.getItem('mro_dark_mode');
+      if (stored !== null) {
+        return JSON.parse(stored);
+      }
+      // Fallback a preferencia del sistema
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } catch {
+      return false;
+    }
+  })(),
   notificationsOpen: false,
 };
 
@@ -25,9 +36,19 @@ const uiSlice = createSlice({
     },
     toggleDarkMode: (state) => {
       state.darkMode = !state.darkMode;
+      try {
+        localStorage.setItem('mro_dark_mode', JSON.stringify(state.darkMode));
+      } catch {
+        // Fail silently si localStorage no está disponible
+      }
     },
     setDarkMode: (state, action: PayloadAction<boolean>) => {
       state.darkMode = action.payload;
+      try {
+        localStorage.setItem('mro_dark_mode', JSON.stringify(action.payload));
+      } catch {
+        // Fail silently
+      }
     },
     toggleNotifications: (state) => {
       state.notificationsOpen = !state.notificationsOpen;

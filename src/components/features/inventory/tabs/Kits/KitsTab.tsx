@@ -83,7 +83,7 @@ export function KitsTab({
   return (
     <div className="bg-white dark:bg-[#0A0A0A] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
 
-      <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-6 border-b dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
@@ -106,7 +106,7 @@ export function KitsTab({
 
       <div className="p-6 space-y-6">
 
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-white dark:bg-[#0A0A0A] p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-white dark:bg-[#0A0A0A] p-4 rounded-xl shadow-sm border dark:border-gray-800">
 
           <div className="w-full">
             <SearchBar

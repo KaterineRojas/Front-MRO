@@ -12,8 +12,8 @@ interface ZoneGridViewProps {
 
 export function ZoneGridView({ zones, onZoneClick, onEditZone, onDeleteZone }: ZoneGridViewProps) {
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md p-6">
-      <div className="mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-600">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 dark:border-border shadow-md p-6">
+      <div className="mb-6 pb-4 border-b-2 dark:border-border">
         <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Warehouse className="w-6 h-6" />
           Warehouse Zones
@@ -56,8 +56,8 @@ export function RackGridView({ racks, onRackClick, onEditRack, onDeleteRack, sho
   if (showBins) {
     // Show all bins organized by levels
     return (
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md p-6">
-        <div className="mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-600">
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 dark:border-border shadow-md p-6">
+        <div className="mb-6 pb-4 border-b-2 dark:border-border">
           <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
             <Box className="w-6 h-6" />
             All Bins in Zone
@@ -67,7 +67,7 @@ export function RackGridView({ racks, onRackClick, onEditRack, onDeleteRack, sho
         
         <div className="space-y-6">
           {racks.map((rack) => (
-            <div key={rack.id} className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-900">
+            <div key={rack.id} className="border dark:border-border rounded-lg p-4 bg-white dark:bg-gray-900">
               <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                 <Grid3x3 className="w-5 h-5" />
                 {rack.code} - {rack.name}
@@ -145,8 +145,8 @@ export function RackGridView({ racks, onRackClick, onEditRack, onDeleteRack, sho
 
   // Original rack view
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md p-6">
-      <div className="mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-600">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 dark:border-border shadow-md p-6">
+      <div className="mb-6 pb-4 border-b-2 dark:border-border">
         <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Grid3x3 className="w-6 h-6" />
           Storage Racks
@@ -184,8 +184,8 @@ interface LevelGridViewProps {
 
 export function LevelGridView({ levels, onLevelClick, onEditLevel, onDeleteLevel }: LevelGridViewProps) {
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md p-6">
-      <div className="mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-600">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 dark:border-border shadow-md p-6">
+      <div className="mb-6 pb-4 border-b-2 dark:border-border">
         <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Layers className="w-6 h-6" />
           Rack Levels
@@ -224,8 +224,8 @@ interface BinGridViewProps {
 
 export function BinGridView({ bins, levelName, onBinClick, onEditBin, onDeleteBin }: BinGridViewProps) {
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md p-6">
-      <div className="mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-600">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border-2 dark:border-border shadow-md p-6">
+      <div className="mb-6 pb-4 border-b-2 dark:border-border">
         <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Box className="w-6 h-6" />
           Storage Bins

@@ -110,7 +110,7 @@ export function BinTableView({
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-white dark:bg-gray-800 border rounded-lg">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-white dark:bg-gray-800 border dark:border-border rounded-lg">
         <div className="space-y-2">
           <label className="text-sm font-medium">Warehouse</label>
           <Select value={filterWarehouse} onValueChange={onFilterWarehouseChange}>
@@ -173,7 +173,7 @@ export function BinTableView({
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg">
+      <div className="border dark:border-border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>

@@ -12,7 +12,7 @@ export function ItemBinDistribution({ article, bins }: ItemBinDistributionProps)
 
   return (
     <div className="space-y-4">
-      <div className="border rounded-lg overflow-hidden bg-muted/30">
+      <div className="border dark:border-border rounded-lg overflow-hidden bg-muted/30">
         <Button
           type="button"
           variant="ghost"
@@ -31,8 +31,8 @@ export function ItemBinDistribution({ article, bins }: ItemBinDistributionProps)
           )}
         </Button>
         {showBinStock && (
-          <div className="p-4 border-t">
-            <div className="rounded-md border bg-card">
+          <div className="p-4 border-t dark:border-border">
+            <div className="rounded-md border dark:border-border bg-card">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -56,7 +56,7 @@ export function ItemBinDistribution({ article, bins }: ItemBinDistributionProps)
                 </TableBody>
               </Table>
             </div>
-            <div className="mt-3 p-3 bg-primary/5 rounded-md border border-primary/10">
+            <div className="mt-3 p-3 bg-primary/5 rounded-md border dark:border-border border-primary/10">
               <p className="text-sm font-medium">
                 Total Physical Stock: <span className="text-primary">{totalStock} {article.unit}</span>
               </p>

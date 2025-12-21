@@ -1751,7 +1751,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
                   {mockReturnHistory[selectedHistoryRequest.id].map((returnRecord) => (
                     <div key={returnRecord.id} className="border rounded-lg p-4 space-y-4">
                       {/* Return Header */}
-                      <div className="flex items-center justify-between pb-3 border-b">
+                      <div className="flex items-center justify-between pb-3 border-b dark:border-border">
                         <div>
                           <div className="flex items-center space-x-2">
                             <FileText className="h-4 w-4" />
@@ -3016,7 +3016,7 @@ export function RequestOrders({ onViewDetail, onReturnItems, initialTab }: Reque
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end space-x-3 pt-4 border-t">
+            <div className="flex justify-end space-x-3 pt-4 border-t dark:border-border">
               <Button
                 type="button"
                 variant="outline"

@@ -888,7 +888,7 @@ export function TransferRequests() {
               )}
             </div>
           </div>
-          <div className="flex gap-2 justify-end flex-shrink-0 border-t pt-4">
+          <div className="flex gap-2 justify-end flex-shrink-0 border-t dark:border-border pt-4">
             <Button variant="outline" onClick={() => setConfirmTransferOpen(false)}>
               Cancel
             </Button>

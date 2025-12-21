@@ -209,7 +209,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
                         ) : (
                             <div className="relative">
                                 {loadingAvailableBins ? (
-                                    <div className="p-4 border rounded-lg flex items-center justify-center text-gray-500 gap-2 bg-gray-50 dark:bg-gray-900/30">
+                                    <div className="p-4 border dark:border-border rounded-lg flex items-center justify-center text-gray-500 gap-2 bg-gray-50 dark:bg-gray-900/30">
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                         <span className="text-sm">Loading bins...</span>
                                     </div>
@@ -242,7 +242,7 @@ export const AssembleKitModal: React.FC<AssembleKitModalProps> = ({
                             {/* THE PRINT BUTTON */}
                             <button
                                 onClick={handlePrintClick}
-                                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             >
                                 <Printer className="w-4 h-4" />
                                 Print Request

@@ -167,10 +167,10 @@ export function Layout() {
       
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col
+        fixed inset-y-0 left-0 z-50 w-64 bg-card border-r dark:border-border transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex items-center justify-between h-16 px-4 border-b">
+        <div className="flex items-center justify-between h-16 px-4 border-b dark:border-border">
           <h1 className="text-lg font-semibold">Inventory System</h1>
           <Button
             variant="ghost"
@@ -204,7 +204,7 @@ export function Layout() {
         </nav>
 
         {currentUser && (
-          <div className="p-4 border-t mt-auto relative">
+          <div className="p-4 border-t dark:border-border mt-auto relative">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full justify-start p-0 h-auto hover:bg-muted/50">
@@ -294,10 +294,10 @@ export function Layout() {
             {notificationsOpen && (
               <div className="fixed inset-0 z-50" onClick={() => handleNotificationsOpen(false)}>
                 <div
-                  className="absolute bottom-20 left-4 w-80 bg-card border rounded-lg shadow-lg"
+                  className="absolute bottom-20 left-4 w-80 bg-card border dark:border-border rounded-lg shadow-lg"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="flex items-center justify-between p-4 border-b">
+                  <div className="flex items-center justify-between p-4 border-b dark:border-border">
                     <h3 className="font-semibold">Notifications</h3>
                     <Badge variant="secondary">{notifications.length}</Badge>
                   </div>
@@ -341,7 +341,7 @@ export function Layout() {
         <Button
           variant="ghost"
           size="sm"
-          className="lg:hidden fixed top-4 right-4 z-30 bg-card border shadow-md"
+          className="lg:hidden fixed top-4 right-4 z-30 bg-card border dark:border-border shadow-md"
           onClick={() => dispatch(setSidebarOpen(true))}
         >
           <Menu className="h-5 w-5" />

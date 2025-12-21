@@ -163,7 +163,7 @@ export function Login() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50 dark:bg-background">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
@@ -176,26 +176,26 @@ export function Login() {
 
           {/* Welcome Text */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-foreground mb-2">
               Sign in
             </h2>
-            <p className="text-gray-500">
+            <p className="text-gray-500 dark:text-muted-foreground">
               Access your inventory management dashboard
             </p>
           </div>
 
           {/* Login Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+          <div className="bg-white dark:bg-card rounded-2xl shadow-sm border border-gray-200 dark:border-border p-8">
             {/* Local Login Form */}
             <form onSubmit={handleLocalLogin} className="space-y-5">
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
                   {error}
                 </div>
               )}
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-foreground mb-2">
                   Email
                 </label>
                 <input
@@ -204,13 +204,13 @@ export function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-input bg-white dark:bg-background text-gray-900 dark:text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-primary focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-muted-foreground"
                   placeholder="your_email@amaxst.com"
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-foreground mb-2">
                   Password
                 </label>
                 <input
@@ -220,7 +220,7 @@ export function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-input bg-white dark:bg-background text-gray-900 dark:text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-primary focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-muted-foreground"
                   placeholder="••••••••"
                 />
               </div>
@@ -262,10 +262,10 @@ export function Login() {
               {/* Divider */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
+                  <div className="w-full border-t border-gray-200 dark:border-border"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">Or continue with</span>
+                  <span className="px-4 bg-white dark:bg-card text-gray-500 dark:text-muted-foreground">Or continue with</span>
                 </div>
               </div>
 
@@ -274,7 +274,7 @@ export function Login() {
                 type="button"
                 onClick={handleAzureLogin}
                 disabled={azureLoading || loading}
-                className="w-full flex items-center justify-center gap-3 px-6 py-3.5 border-2 border-gray-300 rounded-xl font-medium text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-4 focus:ring-gray-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-3 px-6 py-3.5 border-2 border-gray-300 dark:border-input rounded-xl font-medium text-gray-700 dark:text-foreground bg-white dark:bg-background hover:bg-gray-50 dark:hover:bg-accent hover:border-gray-400 dark:hover:border-border focus:outline-none focus:ring-4 focus:ring-gray-500/10 dark:focus:ring-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {azureLoading ? (
                   <>
@@ -313,10 +313,10 @@ export function Login() {
                 )}
               </button>
 
-              <div className="text-center pt-4 border-t border-gray-100">
-                <p className="text-sm text-gray-600">
+              <div className="text-center pt-4 border-t border-gray-100 dark:border-border">
+                <p className="text-sm text-gray-600 dark:text-muted-foreground">
                   Don't have an account?{' '}
-                  <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+                  <Link to="/register" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
                     Sign up
                   </Link>
                 </p>

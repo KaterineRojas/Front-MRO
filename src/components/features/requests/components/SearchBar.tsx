@@ -31,7 +31,6 @@ export default function SearchBar({
 
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const darkMode = useSelector((state: any) => state.ui.darkMode);
 
     const handleTypeSelect = (value: string) => {
         setSelectedType(value);
@@ -63,22 +62,13 @@ export default function SearchBar({
         <div className="w-full max-w-7xl mx-auto p-4 border dark:border-gray-700 rounded-xl">
             <div className="flex gap-4 items-center flex-col md:flex-row">
                 {/* Search Input */}
-                <div className="flex-1 rounded-xl w-[-webkit-fill-available] dark:focus:border-gray-700 "
-                    style={{
-                        background: `${darkMode ? '#121212' : '#F3F3F5'}`,
-                    }}
-                >
+                <div className="flex-1 rounded-xl w-[-webkit-fill-available] bg-muted dark:bg-card border border-transparent dark:border-border">
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder={placeholder}
-                        className={`px-4 py-1 rounded-lg  placeholder-gray-400  w-full
-                            transition-all ${darkMode ? 'bg-[#121212]' : 'bg-[#F3F3F5]'}
-                        `}
-                        style={{
-                            // width: '-webkit-fill-available'
-                        }}
+                        className="px-4 py-1 rounded-lg bg-transparent text-foreground placeholder-gray-400 dark:placeholder-muted-foreground w-full transition-all focus:outline-none"
                     />
                 </div>
 
@@ -86,48 +76,26 @@ export default function SearchBar({
                 <div className="relative w-full md:w-auto" ref={dropdownRef}>
                     <button
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className={` min-w-[200px] w-full  px-4 py-2 bg-gray-50 rounded-lg text-gray-700 flex items-center justify-between 
-                        hover:bg-gray-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm
-                            ${darkMode ? 'text-white' : 'text-black'}
-                        `}
-                        style={{
-                            background: `${darkMode ? '#121212' : '#F3F3F5'}`,
-                            minWidth: '180px'
-                        }}
+                        className="min-w-[200px] w-full px-4 py-2 bg-muted dark:bg-card rounded-lg text-foreground flex items-center justify-between hover:bg-gray-100 dark:hover:bg-accent transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-primary text-sm border border-transparent dark:border-border"
                     >
                         <span>{getSelectedLabel()}</span>
                         <ChevronDown
-                            className={`w-5 h-5 ml-2 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-                            style={{
-                                transition: '.2s',
-                                transform: `${isDropdownOpen ? 'rotate(180deg)' : ''}`
-                            }}
+                            className={`w-5 h-5 ml-2 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
                         />
                     </button>
 
                     {/* Dropdown Menu */}
                     {isDropdownOpen && (
-                        <div className={`flex flex-col gap-0 absolute right-0 mt-2 min-w-[220px] rounded-lg shadow-lg border border-gray-200 py-2 z-10
-                                ${darkMode ? 'bg-[#000]' : 'bg-[#fff]'}
-                            `}
-                            style={{
-                                minWidth: '180px'
-                            }}
-                        >
+                        <div className="flex flex-col gap-0 absolute right-0 mt-2 min-w-[220px] rounded-lg shadow-lg bg-white dark:bg-card border border-gray-200 dark:border-border py-2 z-10">
                             {typesOptions.map((option) => (
                                 <button
                                     key={option.value}
                                     onClick={() => handleTypeSelect(option.value)}
-                                    className={`w-full px-4 py-2 text-left text-sm rounded-xl 
-                                        transition-colors flex items-center justify-between group
-                                        ${darkMode ? 'hover:bg-[#262626]' : 'hover:bg-[#ECECF0]'}
-                                    `}
-
+                                    className="w-full px-4 py-2 text-left text-sm rounded-xl transition-colors flex items-center justify-between group hover:bg-gray-100 dark:hover:bg-accent"
                                 >
-                                    <span className={`text-gray-700 ${darkMode ? 'text-white' : 'text-black'}
-                                        `}>{option.label}</span>
+                                    <span className="text-gray-700 dark:text-foreground">{option.label}</span>
                                     {selectedType === option.value && (
-                                        <Check className="w-5 h-5 text-blue-600" />
+                                        <Check className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                     )}
                                 </button>
                             ))}
@@ -138,7 +106,7 @@ export default function SearchBar({
 
             {/* Results Preview (opcional) */}
             {searchQuery && (
-                <div className="mt-4 text-sm text-gray-500">
+                <div className="mt-4 text-sm text-gray-500 dark:text-muted-foreground">
                     Buscando "{searchQuery}" en: {getSelectedLabel()}
                 </div>
             )}

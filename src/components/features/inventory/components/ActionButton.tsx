@@ -131,7 +131,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
         }
     };
 
-    const baseStyles = "inline-flex items-center justify-center font-medium transition-all duration-200 border rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-30 dark:disabled:opacity-50  dark:disabled:hover:bg-[#0A0A0A] disabled:cursor-not-allowed";
+    const baseStyles = "inline-flex items-center justify-center font-medium transition-all duration-200 border dark:border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-30 dark:disabled:opacity-50  dark:disabled:hover:bg-[#0A0A0A] disabled:cursor-not-allowed";
 
     const sizeStyles = label
         ? "px-3 py-1.5 text-sm"  

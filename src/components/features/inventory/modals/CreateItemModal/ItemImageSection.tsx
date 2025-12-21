@@ -29,7 +29,7 @@ export function ItemImageSection({
         <div className="flex items-start gap-4">
           {/* Image Preview */}
           {imageUrl ? (
-            <div className="relative w-28 h-28 border border-dashed border-primary/20 rounded-md overflow-hidden bg-muted/30 flex-shrink-0">
+            <div className="relative w-28 h-28 border border-dashed border-primary/20 dark:border-primary/30 rounded-md overflow-hidden bg-muted/30 flex-shrink-0">
               <img
                 src={imageUrl}
                 alt="Preview"
@@ -45,7 +45,7 @@ export function ItemImageSection({
               </button>
             </div>
           ) : (
-            <div className="w-28 h-28 border border-dashed border-muted-foreground/25 rounded-md flex items-center justify-center bg-muted/30 flex-shrink-0">
+            <div className="w-28 h-28 border border-dashed border-muted-foreground/25 dark:border-muted-foreground/20 rounded-md flex items-center justify-center bg-muted/30 flex-shrink-0">
               <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
             </div>
           )}
@@ -53,7 +53,7 @@ export function ItemImageSection({
           {/* Upload Input */}
           <div className="flex-1 space-y-2">
             <Label htmlFor="image-upload" className="cursor-pointer">
-              <div className="border border-dashed rounded-md p-3 hover:border-primary/50 hover:bg-muted/50 transition-colors">
+              <div className="border dark:border-border border-dashed rounded-md p-3 hover:border-primary/50 dark:hover:border-primary/50 hover:bg-muted/50 transition-colors">
                 <div className="flex flex-col items-center gap-1.5 text-center">
                   <ImageIcon className="h-6 w-6 text-muted-foreground" />
                   <div>

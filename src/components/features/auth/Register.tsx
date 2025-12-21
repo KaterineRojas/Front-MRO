@@ -112,7 +112,7 @@ export function Register() {
       </div>
 
       {/* Right Side - Register Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50 dark:bg-background">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
@@ -125,25 +125,25 @@ export function Register() {
 
           {/* Welcome Text */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-foreground mb-2">
               Create Account
             </h2>
-            <p className="text-gray-500">
+            <p className="text-gray-500 dark:text-muted-foreground">
               Fill in your details to get started
             </p>
           </div>
 
           {/* Register Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+          <div className="bg-white dark:bg-card rounded-2xl shadow-sm border border-gray-200 dark:border-border p-8">
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
                   {error}
                 </div>
               )}
 
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-foreground mb-2">
                   Full Name
                 </label>
                 <input
@@ -154,13 +154,13 @@ export function Register() {
                   onChange={handleChange}
                   required
                   minLength={2}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-input bg-white dark:bg-background text-gray-900 dark:text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-primary focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-muted-foreground"
                   placeholder="John Doe"
                 />
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-foreground mb-2">
                   Email
                 </label>
                 <input
@@ -170,13 +170,13 @@ export function Register() {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-input bg-white dark:bg-background text-gray-900 dark:text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-primary focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-muted-foreground"
                   placeholder="tu@empresa.com"
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-foreground mb-2">
                   Password
                 </label>
                 <input
@@ -187,14 +187,14 @@ export function Register() {
                   onChange={handleChange}
                   required
                   minLength={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-input bg-white dark:bg-background text-gray-900 dark:text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-primary focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-muted-foreground"
                   placeholder="••••••••"
                 />
-                <p className="mt-1 text-xs text-gray-500">At least 6 characters</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-muted-foreground">At least 6 characters</p>
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-foreground mb-2">
                   Confirm Password
                 </label>
                 <input
@@ -205,7 +205,7 @@ export function Register() {
                   onChange={handleChange}
                   required
                   minLength={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-input bg-white dark:bg-background text-gray-900 dark:text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-primary focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-muted-foreground"
                   placeholder="••••••••"
                 />
               </div>
@@ -244,10 +244,10 @@ export function Register() {
                 )}
               </button>
 
-              <div className="text-center pt-4 border-t border-gray-100">
-                <p className="text-sm text-gray-600">
+              <div className="text-center pt-4 border-t border-gray-100 dark:border-border">
+                <p className="text-sm text-gray-600 dark:text-muted-foreground">
                   Already have an account?{' '}
-                  <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+                  <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
                     Sign in
                   </Link>
                 </p>
@@ -256,7 +256,7 @@ export function Register() {
           </div>
 
           <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-muted-foreground">
               By creating an account, you'll be assigned the default Engineer role.
               <br />
               Contact your administrator to update your permissions.
