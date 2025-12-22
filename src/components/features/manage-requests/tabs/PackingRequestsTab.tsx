@@ -49,44 +49,52 @@ export const PackingRequestsTab: React.FC<Props> = (props) => {
           </div>
         </CardHeader>
         <CardContent>
+          {packingRequests.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Package className="h-16 w-16 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Packing Requests</h3>
+
+            </div>
+          ) : (
             <div className="rounded-md">
-            <Table className="border-collapse min-w-max">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12 align-middle text-left"></TableHead>
-                  <TableHead >Request #</TableHead>
-                  <TableHead >Borrower</TableHead>
-                  <TableHead >Department</TableHead>
-                  <TableHead >Project</TableHead>
-                  <TableHead >Loan Date</TableHead>
-                  <TableHead >Kit</TableHead>
-                  <TableHead >Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="text-left">
-                {packingRequests.map((request) => (
-                  <PackingRequestRow
-                    key={request.requestNumber}
-                    request={request}
-                    expanded={expandedPackingRequests.has(request.requestNumber)}
-                    onToggleExpand={onToggleExpandPacking}
-                    isKitOrder={props.isKitOrder}
-                    getPriorityBadge={props.getPriorityBadge}
-                    selectedPackingItems={props.selectedPackingItems}
-                    packingItemQuantities={props.packingItemQuantities}
-                    handleSelectPackingItem={props.handleSelectPackingItem}
-                    handlePackingQuantityChange={props.handlePackingQuantityChange}
-                    getPackingItemQuantity={props.getPackingItemQuantity}
-                    areAllItemsSelected={props.areAllItemsSelected}
-                    handleSelectAllPackingItems={props.handleSelectAllPackingItems}
-                    printedRequests={props.printedRequests}
-                    handlePrintSinglePacking={props.handlePrintSinglePacking}
-                    handleConfirmPacking={props.handleConfirmPacking}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              <Table className="border-collapse min-w-max">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12 align-middle text-left"></TableHead>
+                    <TableHead >Request #</TableHead>
+                    <TableHead >Borrower</TableHead>
+                    <TableHead >Department</TableHead>
+                    <TableHead >Project</TableHead>
+                    <TableHead >Loan Date</TableHead>
+                    <TableHead >Kit</TableHead>
+                    <TableHead >Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="text-left">
+                  {packingRequests.map((request) => (
+                    <PackingRequestRow
+                      key={request.requestNumber}
+                      request={request}
+                      expanded={expandedPackingRequests.has(request.requestNumber)}
+                      onToggleExpand={onToggleExpandPacking}
+                      isKitOrder={props.isKitOrder}
+                      getPriorityBadge={props.getPriorityBadge}
+                      selectedPackingItems={props.selectedPackingItems}
+                      packingItemQuantities={props.packingItemQuantities}
+                      handleSelectPackingItem={props.handleSelectPackingItem}
+                      handlePackingQuantityChange={props.handlePackingQuantityChange}
+                      getPackingItemQuantity={props.getPackingItemQuantity}
+                      areAllItemsSelected={props.areAllItemsSelected}
+                      handleSelectAllPackingItems={props.handleSelectAllPackingItems}
+                      printedRequests={props.printedRequests}
+                      handlePrintSinglePacking={props.handlePrintSinglePacking}
+                      handleConfirmPacking={props.handleConfirmPacking}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

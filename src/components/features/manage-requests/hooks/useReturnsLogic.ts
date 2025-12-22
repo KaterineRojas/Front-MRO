@@ -43,7 +43,6 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
   const [itemsPhotoDialogOpen, setItemsPhotoDialogOpen] = useState(false);
   const [kitPhotoDialogOpen, setKitPhotoDialogOpen] = useState(false);
   const [currentKitItem, setCurrentKitItem] = useState<{requestId: number, itemId: number} | null>(null);
-  //const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [itemsPhotoUrl, setItemsPhotoUrl] = useState<string | null>(null);
   const [kitPhotos, setKitPhotos] = useState<Record<string, string>>({});
   const [kitReturnDialogOpen, setKitReturnDialogOpen] = useState(false);
@@ -55,6 +54,7 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
   const [currentConditionItem, setCurrentConditionItem] = useState<{ requestId: number; itemId: number; kitItemId?: number; isKit: boolean; occurrences?: Array<{requestId: number; itemId: number}> } | null>(null);
   const [conditionCounts, setConditionCounts] = useState<ConditionCounts>({ good: 0, revision: 0, lost: 0 });
   const [missingKitItems, setMissingKitItems] = useState<Array<{id: number, name: string, category: string, missingQuantity: number, totalQuantity: number}>>([]);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
 
   // Mantener la referencia actualizada de allReturns
   useEffect(() => {
@@ -698,15 +698,16 @@ const handleSelectAllKitItems = useCallback((requestId: number, kitItem: LoanIte
     allReturns, isLoading, error, setAllReturns: setAllReturns as Dispatch<SetStateAction<LoanRequest[]>>, 
     filteredReturns, selectedReturnBorrower, borrowerSelectSearchTerm, filteredBorrowersForSelect,
     expandedReturns, expandedKitItems, selectedReturnItems, selectedKitItems,
-    itemsPhotoDialogOpen, kitPhotoDialogOpen, itemsPhotoUrl, kitPhotos,
-    kitReturnDialogOpen, kitReturnOption, pendingKitReturn, missingKitItems,
-    kitConfirmationDialogOpen, pendingKitConfirmation,
-    conditionDialogOpen, setConditionDialogOpen, 
-    conditionCounts, setConditionCounts, 
-    returnQuantities, kitItemQuantities, itemConditions, kitItemConditions,
+    itemsPhotoDialogOpen, kitPhotoDialogOpen, itemsPhotoUrl, kitPhotos, capturedPhoto,
+    kitReturnDialogOpen, kitReturnOption, pendingKitReturn, missingKitItems,
+    kitConfirmationDialogOpen, pendingKitConfirmation,
+    conditionDialogOpen, setConditionDialogOpen, 
+    conditionCounts, setConditionCounts, 
+    returnQuantities, kitItemQuantities, itemConditions, kitItemConditions,
 
     // Getters
-    getReturnQuantity, getItemCondition, getKitItemQuantity, getKitItemCondition, getCurrentRequest,    // Handlers
+    getReturnQuantity, getItemCondition, getKitItemQuantity, getKitItemCondition, getCurrentRequest,
+    // Handlers
     handleBorrowerSelect, setBorrowerSelectSearchTerm,
     onToggleExpandReturns: handleToggleExpandReturns, onToggleExpandKitItem: handleToggleExpandKitItem,
     handleReturnQuantityChange, handleSelectReturnItem,
