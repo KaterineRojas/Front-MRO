@@ -8,6 +8,7 @@ import { StatusBadge } from './components/StatusBadge';
 import { CountSummaryCards } from './components/CountSummaryCards';
 import { CountFilters } from './components/CountFilters';
 import { CountInput } from './components/CountInput';
+import { generatePrintCountInProgress } from './utils/reportGenerator';
 
 export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCountData }: CycleCountViewProps) {
   const {
@@ -30,7 +31,17 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
   } = useInventoryCount(existingCountData, onComplete, onSaveProgress);
 
   const handlePrintAll = () => {
-    window.print();
+    generatePrintCountInProgress({
+      articles: filteredArticles,
+      countType,
+      auditor,
+      zone: selectedZone === 'all' ? 'All Zones' : selectedZone,
+      date: new Date().toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    });
   };
 
   const zones = ['all', 'Good Condition', 'Damaged', 'Quarantine'];

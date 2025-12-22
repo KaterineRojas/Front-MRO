@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '../../ui/table';
-import { Clock, PlayCircle } from 'lucide-react';
+import { Clock, PlayCircle, Printer } from 'lucide-react';
 import { useCycleCountHistory, CycleCountRecord } from './hooks/useCycleCountHistory';
-import { generatePrintReport, generateExcelReport } from './utils/reportGenerator';
+import { generatePrintReport, generateExcelReport, generatePrintAllHistory } from './utils/reportGenerator';
 import { HistoryTableRow } from './components/HistoryTableRow';
 
 interface CycleCountProps {
@@ -45,19 +45,29 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
     generateExcelReport(record);
   };
 
+  const handlePrintAllHistory = () => {
+    generatePrintAllHistory(history);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1>Cycle Count</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Cycle Count</h1>
           <p className="text-muted-foreground">
             Physical inventory count verification and history
           </p>
         </div>
-        <Button onClick={handleStartCycleCount}>
-          <PlayCircle className="h-4 w-4 mr-2" />
-          Start New Cycle Count
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handlePrintAllHistory} variant="outline">
+            <Printer className="h-4 w-4 mr-2" />
+            Print All
+          </Button>
+          <Button onClick={handleStartCycleCount}>
+            <PlayCircle className="h-4 w-4 mr-2" />
+            Start New Cycle Count
+          </Button>
+        </div>
       </div>
 
       {/* History Table */}
