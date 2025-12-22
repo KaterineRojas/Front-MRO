@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../requests/services/api";
+import { API_URL } from "../../../url";
 import { store } from "../../../store/store";
 
 /**
@@ -52,7 +52,7 @@ export async function getInventoryEngineer(
 ): Promise<InventoryResponse> {
   try {
     const token = store.getState().auth.accessToken as string;
-    const url = `${API_BASE_URL}/engineer-holdings/${engineerId}`;
+    const url = `${API_URL}/engineer-holdings/${engineerId}`;
     console.log(`Fetching inventory for engineer: ${engineerId}`);
     console.log(`API URL: ${url}`);
 
@@ -165,7 +165,7 @@ export async function transferInventory(
     console.log('Item IDs:', itemIds);
     console.log('Quantities:', quantities);
     
-    const url = `${API_BASE_URL}/engineer-holdings/transfer`;
+    const url = `${API_URL}/engineer-holdings/transfer`;
     const payload = {
       fromEngineerId,
       toEngineerId,
