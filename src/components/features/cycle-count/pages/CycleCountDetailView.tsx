@@ -1,15 +1,15 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
-import { Input } from '../../ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Badge } from '../../../ui/badge';
+import { Input } from '../../../ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { ArrowLeft, Printer, Download, CheckCircle, AlertTriangle, Save } from 'lucide-react';
-import { CycleCountDetailViewProps } from './types';
-import { downloadCycleCountReport } from './utils/excelUtils';
-import { StatusBadge } from './components/StatusBadge';
-import { AuditHeader } from './components/AuditHeader';
-import { ExecutiveSummary } from './components/ExecutiveSummary';
-import { useCycleCountAdjustments } from './hooks/useCycleCountAdjustments';
+import { CycleCountDetailViewProps } from '../types';
+import { downloadCycleCountReport } from '../utils/excelUtils';
+import { StatusBadge } from '../components/StatusBadge';
+import { AuditHeader } from '../components/AuditHeader';
+import { ExecutiveSummary } from '../components/ExecutiveSummary';
+import { useCycleCountAdjustments } from '../hooks/useCycleCountAdjustments';
 
 export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied }: CycleCountDetailViewProps) {
   const accuracy = Math.round((1 - countData.discrepancies / countData.totalItems) * 100);

@@ -1,10 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '../../ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
+import { Button } from '../../../ui/button';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Clock, PlayCircle, Printer } from 'lucide-react';
-import { useCycleCountHistory, CycleCountRecord } from './hooks/useCycleCountHistory';
-import { generatePrintReport, generateExcelReport, generatePrintAllHistory } from './utils/reportGenerator';
-import { HistoryTableRow } from './components/HistoryTableRow';
+import { useCycleCountHistory, CycleCountRecord } from '../hooks/useCycleCountHistory';
+import { generatePrintReport, generateExcelReport, generatePrintAllHistory } from '../utils/reportGenerator';
+import { HistoryTableRow } from '../components/HistoryTableRow';
 
 interface CycleCountProps {
   onStartCycleCount: () => void;
