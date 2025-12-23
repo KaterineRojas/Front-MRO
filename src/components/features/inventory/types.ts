@@ -53,10 +53,13 @@ export interface Article2 {
 
 // Nueva interface para bins individuales
 export interface ArticleBin {
-  inventoryId: number; // ID de la relación Inventory (item + bin)
+  inventoryId?: number; // ID de la relación Inventory (item + bin)
   binId: number;
   binCode: string;
   quantity: number;
+  binPurpose?: string | null;
+  binPurposeDisplay?: string | null;
+  isDefault?: boolean;
 }
 
 // Tipo que llega del backend
@@ -69,17 +72,26 @@ export interface InventoryItemResponse {
   consumable: boolean;
   minStock: number;
   imageUrl: string | null;
-  bins: {
-    inventoryId: number; // ID de la relación Inventory
-    binId: number;
-    binCode: string;
-    quantity: number;
-  }[];
+  unit?: string | null;
+  isActive?: boolean;
+  cost?: number | null;
+  createdAt?: string | null;
+  bins: InventoryItemBinResponse[];
   quantityAvailable: number;
   quantityOnLoan: number;
   quantityReserved: number;
   totalPhysical: number;
 };
+
+export interface InventoryItemBinResponse {
+  inventoryId?: number; // ID de la relación Inventory
+  binId: number;
+  binCode: string;
+  quantity: number;
+  binPurpose?: string | null;
+  binPurposeDisplay?: string | null;
+  default?: boolean;
+}
 
 
 export interface KitItem {
