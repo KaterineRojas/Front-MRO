@@ -24,8 +24,8 @@ export function getInitialFormData(
       category: editingArticle.category,
       typeUI: getUIType(editingArticle),
       binCode: editingArticle.bins?.[0]?.binCode || '',
-      unit: editingArticle.unit,
-      minStock: editingArticle.minStock.toString(),
+      unit: editingArticle.unit || '',
+      minStock: (editingArticle.minStock ?? 0).toString(),
       imageUrl: editingArticle.imageUrl || ''
     };
   }

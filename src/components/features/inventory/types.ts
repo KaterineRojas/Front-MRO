@@ -5,6 +5,7 @@ export interface Article {
   name: string;
   description: string;
   category: string;
+  categoryRaw?: string;
   consumable: boolean;
   minStock: number;
   status: boolean;
