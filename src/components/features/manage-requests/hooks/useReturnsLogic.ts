@@ -70,14 +70,17 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
 
   // Cargar lista de ingenieros del warehouse
   useEffect(() => {
+    console.log('🚀 [useReturnsLogic] Loading warehouse engineers for warehouseId:', warehouseId);
     const loadWarehouseEngineers = async () => {
       setLoadingEngineers(true);
       try {
+        console.log('📡 [useReturnsLogic] Calling getWarehouseEngineers...');
         const engineers = await getWarehouseEngineers(warehouseId);
+        console.log('✅ [useReturnsLogic] Loaded warehouse engineers:', engineers);
+        console.log('✅ [useReturnsLogic] Engineers count:', engineers.length);
         setWarehouseEngineers(engineers);
-        console.log('✅ Loaded warehouse engineers:', engineers);
       } catch (error) {
-        console.error('Error loading warehouse engineers:', error);
+        console.error('❌ [useReturnsLogic] Error loading warehouse engineers:', error);
         setWarehouseEngineers([]);
       } finally {
         setLoadingEngineers(false);
@@ -108,7 +111,10 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
   
   // Lista de ingenieros desde el API del warehouse (en lugar de extraerlos de returns)
   const uniqueReturnBorrowers = useMemo(() => {
-    return warehouseEngineers.map(e => e.name).sort();
+    console.log('📝 [uniqueReturnBorrowers] Computing from warehouseEngineers:', warehouseEngineers);
+    const borrowers = warehouseEngineers.map(e => e.name).sort();
+    console.log('📝 [uniqueReturnBorrowers] Result:', borrowers);
+    return borrowers;
   }, [warehouseEngineers]);
 
   const filteredReturns = useMemo(() => {
@@ -131,8 +137,18 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
     return filtered;
   }, [allReturns, selectedReturnBorrower]);
   const filteredBorrowersForSelect = useMemo(() => {
-    if (!borrowerSelectSearchTerm.trim()) return uniqueReturnBorrowers;
-    return uniqueReturnBorrowers.filter(b => b.toLowerCase().includes(borrowerSelectSearchTerm.toLowerCase()));
+    console.log('🔎 [filteredBorrowersForSelect] Computing...');
+    console.log('🔎 [filteredBorrowersForSelect] uniqueReturnBorrowers:', uniqueReturnBorrowers);
+    console.log('🔎 [filteredBorrowersForSelect] borrowerSelectSearchTerm:', borrowerSelectSearchTerm);
+    
+    if (!borrowerSelectSearchTerm.trim()) {
+      console.log('🔎 [filteredBorrowersForSelect] No search term, returning all:', uniqueReturnBorrowers);
+      return uniqueReturnBorrowers;
+    }
+    
+    const filtered = uniqueReturnBorrowers.filter(b => b.toLowerCase().includes(borrowerSelectSearchTerm.toLowerCase()));
+    console.log('🔎 [filteredBorrowersForSelect] Filtered result:', filtered);
+    return filtered;
   }, [uniqueReturnBorrowers, borrowerSelectSearchTerm]);
   
   // Getters 

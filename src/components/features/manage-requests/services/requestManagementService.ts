@@ -61,6 +61,9 @@ export async function getPackingRequests(warehouseId: number = DEFAULT_WAREHOUSE
         return req;
     });
     
+    // Ordenar por ID de menor a mayor (las nuevas solicitudes al final)
+    processedRequests.sort((a, b) => a.id - b.id);
+    
     // Debug: ver estructura de datos
     console.log('🔍 Packing Requests from API:', processedRequests);
     if (processedRequests.length > 0) {
