@@ -274,6 +274,56 @@ export async function getEngineerHoldings(
     }
 }
 
+/**
+ * Get all engineers with holdings in a specific warehouse
+ * GET /api/engineer-holdings/warehouse/{warehouseId}
+ */
+export async function getWarehouseEngineers(
+    warehouseId: number = DEFAULT_WAREHOUSE_ID
+): Promise<{ employeeId: string; name: string; email: string }[]> {
+    const url = `${API_BASE_URL}/engineer-holdings/warehouse/${warehouseId}`;
+    
+    console.log('🔍 getWarehouseEngineers called with:', { warehouseId, url });
+
+    try {
+        const response = await fetchWithAuth(url);
+        
+        console.log('🔍 Response status:', response.status, response.statusText);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`API Error on GET ${url}. Status: ${response.status}`, errorText);
+            
+            if (response.status === 404) {
+                console.log('No engineers found in this warehouse.');
+                return [];
+            }
+
+            throw new Error(`Failed to fetch warehouse engineers: ${response.statusText}`);
+        }
+
+        const data: any = await response.json();
+        console.log('🔍 Warehouse Engineers API Response:', JSON.stringify(data, null, 2));
+        
+        // Extraer la lista de ingenieros del response
+        const engineers = data.engineers || [];
+        
+        // Mapear a formato simplificado para el dropdown
+        const engineersList = engineers.map((eng: any) => ({
+            employeeId: eng.engineer.employeeId,
+            name: eng.engineer.name,
+            email: eng.engineer.email || ''
+        }));
+        
+        console.log('🔍 Processed engineers list:', engineersList);
+        return engineersList;
+        
+    } catch (error) {
+        console.error('Error fetching warehouse engineers:', error);
+        return [];
+    }
+}
+
 export async function startPacking(requestNumber: string, keeperEmployeeId: string): Promise<LoanRequest | null> {
     try {
         const url = `${API_URL}/loan-requests/${requestNumber}/start-packing?keeperEmployeeId=${keeperEmployeeId}`;

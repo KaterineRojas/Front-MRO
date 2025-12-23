@@ -54,19 +54,10 @@ export const fetchPackingRequests = createAsyncThunk(
 export const fetchReturns = createAsyncThunk(
   'requests/fetchReturns',
   async ({ engineerId, warehouseId }: { engineerId: string; warehouseId?: number }, { getState }) => {
-    const state = getState() as { requests: RequestsState };
-    const now = Date.now();
-    
-    // Check cache validity
-    if (state.requests.lastFetchReturns && 
-        (now - state.requests.lastFetchReturns) < CACHE_DURATION &&
-        state.requests.returns.length > 0) {
-      console.log('✅ Using cached returns');
-      return state.requests.returns;
-    }
-    
-    console.log('🔄 Fetching fresh returns...');
+    // No usar cache para returns - cada ingeniero tiene datos diferentes
+    console.log('🔄 Fetching returns for engineerId:', engineerId, 'warehouseId:', warehouseId);
     const returns = await getEngineerReturnsApi(engineerId, warehouseId);
+    console.log('✅ Fetched', returns.length, 'returns');
     return returns;
   }
 );

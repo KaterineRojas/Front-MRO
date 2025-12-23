@@ -159,10 +159,10 @@ function generatePackingHtml(request: LoanRequest, quantities: Record<string, nu
       <div class="request-card">
         <div class="request-header">
           <h2>${request.requestNumber} ${isKit ? ' (KIT ORDER)' : ''}</h2>
-          <p><strong>Borrower:</strong> ${request.requesterName} (${request.requesterEmail ?? 'N/A'})</p>
-          <p><strong>Department:</strong> ${request.departmentName ?? 'N/A'} | <strong>Project:</strong> ${request.project ?? 'N/A'}</p>
+          <p><strong>Borrower:</strong> ${request.requesterName} (${request.requesterEmail})</p>
+          <p><strong>Department:</strong> ${request.departmentId} | <strong>Project:</strong> ${request.projectId}</p>
           <p><strong>Priority:</strong> <span class="priority-${request.priority ?? 'low'}">${(request.priority ?? 'low').toUpperCase()}</span></p>
-          <p><strong>Loan Date:</strong> ${new Date(request.requestedLoanDate ?? '').toLocaleDateString()} | <strong>Expected Return:</strong> ${new Date(request.expectedReturnDate ?? '').toLocaleDateString()}</p>
+          <p><strong>Loan Date:</strong> ${request.createdAt} | <strong>Expected Return:</strong> ${request.expectedReturnDate}</p>
         </div>
         
         <h3>Items Checklist:</h3>
@@ -185,9 +185,9 @@ function generatePackingHtml(request: LoanRequest, quantities: Record<string, nu
                 <tr>
                   <td><span class="checkbox"></span></td>
                   <td>${item.sku}</td>
-                  <td>${item.articleDescription || item.name}</td>
+                  <td>${item.articleDescription}</td>
                   <td>${qty}${qty !== item.quantityRequested ? ` (Original: ${item.quantityRequested})` : ''}</td>
-                  <td>${item.unit ?? 'Pcs'}</td>
+                  <td>${item.unit}</td>
                   <td>________________</td>
                 </tr>
               `;

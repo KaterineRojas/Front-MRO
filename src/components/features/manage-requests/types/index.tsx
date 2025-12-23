@@ -147,3 +147,28 @@ export interface EngineerHoldingsResponse {
     totalItemsAcrossWarehouses: number;
     totalQuantityAcrossWarehouses: number;
 }
+
+// Respuesta del endpoint GET /api/engineer-holdings/warehouse/{warehouseId}
+export interface EngineerHoldingSummary {
+    engineer: EngineerInfo;
+    items: EngineerHoldingItem[];
+    kits: any[]; // Tipo para kits si es necesario
+    totalItems: number;
+    totalKits: number;
+    totalItemQuantity: number;
+    totalKitQuantity: number;
+}
+
+export interface WarehouseEngineersResponse {
+    warehouse: {
+        id: number;
+        code: string;
+        name: string;
+    };
+    engineers: EngineerHoldingSummary[];
+    totalEngineers: number;
+    totalDistinctItems: number;
+    totalDistinctKits: number;
+    totalItemQuantity: number;
+    totalKitQuantity: number;
+}
