@@ -477,7 +477,24 @@ export interface DismantleKitRequest {
  */
 export async function dismantleKit(kitId: number, data: DismantleKitRequest): Promise<void> {
   try {
-    console.log(' Dismantling kit:', { kitId, ...data });
+    const state = store.getState();
+    const rawWarehouseId = state.auth.user?.warehouseId ?? state.auth.user?.warehouse ?? null;
+
+    const resolvedWarehouseId = rawWarehouseId !== null && rawWarehouseId !== undefined
+      ? (typeof rawWarehouseId === 'string' ? parseInt(rawWarehouseId, 10) : rawWarehouseId)
+      : undefined;
+
+    if (resolvedWarehouseId === undefined || Number.isNaN(resolvedWarehouseId)) {
+      throw new Error('Warehouse context is unavailable; cannot dismantle kit.');
+    }
+
+    const payload = {
+      warehouseId: resolvedWarehouseId,
+      quantity: data.quantity,
+      notes: data.notes || '',
+    };
+
+    console.log('📦 Dismantling kit payload:', { kitId, payload });
     
     const token = store.getState().auth.accessToken as string;
     const response = await fetch(`${API_URL}/Kits/${kitId}/dismantle`, {
@@ -486,12 +503,10 @@ export async function dismantleKit(kitId: number, data: DismantleKitRequest): Pr
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({
-        quantity: data.quantity,
-        notes: data.notes || '',
-      }),
+      body: JSON.stringify(payload),
     });
 
+    console.log('Response status kit dismantle:', response);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `Failed to dismantle kit: ${response.status} ${response.statusText}`);

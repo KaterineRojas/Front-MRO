@@ -257,9 +257,9 @@ export function getTypeFromBinPurpose(_binPurpose: number): string {
 
 
 /**
- * GET available bins
+ * GET available bins **
  * 
- */
+ */ 
 export async function getAllAvailableBins(
   warehouseId: number, 
   isActive: boolean = true
