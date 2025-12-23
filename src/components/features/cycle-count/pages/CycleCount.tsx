@@ -5,16 +5,20 @@ import { Clock, PlayCircle, Printer } from 'lucide-react';
 import { useCycleCountHistory, CycleCountRecord } from '../hooks/useCycleCountHistory';
 import { generatePrintReport, generateExcelReport, generatePrintAllHistory } from '../utils/reportGenerator';
 import { HistoryTableRow } from '../components/HistoryTableRow';
+import { StartCycleCountModal } from '../modals/StartCycleCountModal';
+import { useState } from 'react';
 
 interface CycleCountProps {
-  onStartCycleCount: () => void;
+  onStartCycleCount: (data: { zone: string; countType: 'Annual' | 'Biannual' | 'Spot Check'; auditor: string }) => void;
   onViewCycleCount: (record: CycleCountRecord) => void;
   onContinueCycleCount?: (record: CycleCountRecord) => void;
   onCompleteCycleCount?: (completedData: any) => void;
+  keeperName: string;
 }
 
-export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycleCount }: CycleCountProps) {
+export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycleCount, keeperName }: CycleCountProps) {
   const { history } = useCycleCountHistory();
+  const [showStartModal, setShowStartModal] = useState(false);
 
   const handleStartCycleCount = () => {
     // Check if there's already an in-progress count
@@ -30,7 +34,11 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
       }
     }
     
-    onStartCycleCount();
+    setShowStartModal(true);
+  };
+
+  const handleConfirmStart = (data: { zone: string; countType: 'Annual' | 'Biannual' | 'Spot Check'; auditor: string }) => {
+    onStartCycleCount(data);
   };
 
   const handleViewReport = (record: CycleCountRecord) => {
@@ -112,6 +120,13 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
           </Table>
         </CardContent>
       </Card>
+
+      <StartCycleCountModal
+        open={showStartModal}
+        onClose={() => setShowStartModal(false)}
+        onConfirm={handleConfirmStart}
+        keeperName={keeperName}
+      />
     </div>
   );
 }

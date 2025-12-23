@@ -81,4 +81,9 @@ export interface CycleCountViewProps {
     auditor: string;
     zone: string;
   };
+  initialConfig?: {
+    zone: string;
+    countType: 'Annual' | 'Biannual' | 'Spot Check';
+    auditor: string;
+  };
 }

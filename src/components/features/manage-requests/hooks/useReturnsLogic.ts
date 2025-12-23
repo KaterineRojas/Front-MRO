@@ -677,21 +677,6 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
       setMissingKitItems(missing);
     }
 
-    // Persist removal of the kit item from the return on the server
-   /* try {
-      // compute new items for that request (remove the kit item)
-      const request = filteredReturns.find(r => r.id === requestId);
-      if (request) {
-        const remainingItems = request.items.filter(i => i.id !== itemId);
-        const ok = await updateReturnItems(requestId, remainingItems);
-        if (!ok) console.warn('Failed to persist kit checklist changes to server');
-        // update local state as well
-        setAllReturns(prev => prev.map(req => req.id === requestId ? { ...req, items: remainingItems } : req).filter(r => r.items.length > 0));
-      }
-    } catch (err) {
-      console.error('Error persisting kit checklist changes:', err);
-    }*/
-
     setPendingKitReturn({ requestId, itemId });
     setKitReturnOption('');
     setKitReturnDialogOpen(true);

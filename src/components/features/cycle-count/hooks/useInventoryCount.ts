@@ -13,18 +13,22 @@ interface UseInventoryCountReturn {
   pendingArticles: Article[];
   discrepancies: Article[];
   setSearchTerm: (term: string) => void;
-  setSelectedZone: (zone: string) => void;
-  setCountType: (type: 'Annual' | 'Biannual' | 'Spot Check') => void;
-  setAuditor: (auditor: string) => void;
   handleCountUpdate: (articleId: string, physicalCount: number, notes?: string) => void;
   handleSaveCycleCount: () => void;
   handleCompleteCycleCount: () => void;
 }
 
+interface InitialConfig {
+  zone: string;
+  countType: 'Annual' | 'Biannual' | 'Spot Check';
+  auditor: string;
+}
+
 export function useInventoryCount(
   existingCountData: CycleCountViewProps['existingCountData'],
   onComplete?: CycleCountViewProps['onComplete'],
-  onSaveProgress?: CycleCountViewProps['onSaveProgress']
+  onSaveProgress?: CycleCountViewProps['onSaveProgress'],
+  initialConfig?: InitialConfig
 ): UseInventoryCountReturn {
   // Initialize articles - if continuing, use existing data; otherwise use mock data
   const [articles, setArticles] = useState<Article[]>(() => {
@@ -46,11 +50,26 @@ export function useInventoryCount(
   });
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedZone, setSelectedZone] = useState<string>(existingCountData?.zone || 'all');
-  const [countType, setCountType] = useState<'Annual' | 'Biannual' | 'Spot Check'>(
-    existingCountData?.countType || 'Annual'
-  );
-  const [auditor, setAuditor] = useState<string>(existingCountData?.auditor || '');
+  
+  // Use initialConfig if provided, otherwise fall back to existingCountData or defaults
+  console.log('🔧 [useInventoryCount] initialConfig:', initialConfig);
+  console.log('🔧 [useInventoryCount] existingCountData:', existingCountData);
+  
+  const [selectedZone] = useState<string>(() => {
+    const zone = initialConfig?.zone || existingCountData?.zone || 'all';
+    console.log('🔧 [useInventoryCount] Setting selectedZone to:', zone);
+    return zone;
+  });
+  const [countType] = useState<'Annual' | 'Biannual' | 'Spot Check'>(() => {
+    const type = initialConfig?.countType || existingCountData?.countType || 'Annual';
+    console.log('🔧 [useInventoryCount] Setting countType to:', type);
+    return type;
+  });
+  const [auditor] = useState<string>(() => {
+    const aud = initialConfig?.auditor || existingCountData?.auditor || '';
+    console.log('🔧 [useInventoryCount] Setting auditor to:', aud);
+    return aud;
+  });
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -194,9 +213,6 @@ export function useInventoryCount(
     pendingArticles,
     discrepancies,
     setSearchTerm,
-    setSelectedZone,
-    setCountType,
-    setAuditor,
     handleCountUpdate,
     handleSaveCycleCount,
     handleCompleteCycleCount

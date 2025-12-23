@@ -10,7 +10,7 @@ import { CountFilters } from '../components/CountFilters';
 import { CountInput } from '../components/CountInput';
 import { generatePrintCountInProgress } from '../utils/reportGenerator';
 
-export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCountData }: CycleCountViewProps) {
+export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCountData, initialConfig }: CycleCountViewProps) {
   const {
     filteredArticles,
     countedArticles,
@@ -22,13 +22,10 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
     auditor,
     articles,
     setSearchTerm,
-    setSelectedZone,
-    setCountType,
-    setAuditor,
     handleCountUpdate,
     handleSaveCycleCount,
     handleCompleteCycleCount
-  } = useInventoryCount(existingCountData, onComplete, onSaveProgress);
+  } = useInventoryCount(existingCountData, onComplete, onSaveProgress, initialConfig);
 
   const handlePrintAll = () => {
     generatePrintCountInProgress({
@@ -92,9 +89,6 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
         auditor={auditor}
         zones={zones}
         onSearchChange={setSearchTerm}
-        onZoneChange={setSelectedZone}
-        onCountTypeChange={setCountType}
-        onAuditorChange={setAuditor}
       />
 
       {/* Count Table */}

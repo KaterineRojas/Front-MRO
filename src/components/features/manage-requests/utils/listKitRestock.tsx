@@ -5,21 +5,25 @@ interface KitItemMissing {
   missingQuantity: number;
   totalQuantity: number;
 }
-interface LoanItem {
+
+interface PrintableLoanItem {
   id: number;
-  articleName: string;
-  articleBinCode: string;
+  articleName?: string;
+  articleBinCode?: string;
+  name?: string;
+  sku?: string;
 }
-interface LoanRequest {
+
+interface PrintableLoanRequest {
   id: number;
   requestNumber: string;
-  borrower: string;
-  items: LoanItem[];
+  requesterName?: string;
+  items: PrintableLoanItem[];
 }
 
 export const handlePrintMissingKitItems = (
   pendingKitReturn: { requestId: number, itemId: number } | null,
-  filteredReturns: LoanRequest[],
+  filteredReturns: PrintableLoanRequest[],
   missingKitItems: KitItemMissing[]
 ) => {
   if (!pendingKitReturn) return;
@@ -43,7 +47,7 @@ export const handlePrintMissingKitItems = (
     printWindow.document.write(`
       <html>
         <head>
-          <title>Missing Kit Items - ${kitItem.articleName}</title>
+          <title>Missing Kit Items - ${kitItem.articleName || kitItem.name || 'Kit'}</title>
           <style>
             body {
               font-family: 'Segoe UI Variable', 'Segoe UI', sans-serif;
@@ -90,10 +94,10 @@ export const handlePrintMissingKitItems = (
         <body>
           <h1>Missing Kit Items Report</h1>
           <div class="header-info">
-            <div class="info-row"><strong>Kit Name:</strong> ${kitItem.articleName}</div>
-            <div class="info-row"><strong>BIN Code:</strong> ${kitItem.articleBinCode}</div>
+            <div class="info-row"><strong>Kit Name:</strong> ${kitItem.articleName || kitItem.name || 'N/A'}</div>
+            <div class="info-row"><strong>BIN Code:</strong> ${kitItem.articleBinCode || kitItem.sku || 'N/A'}</div>
             <div class="info-row"><strong>Request Number:</strong> ${request.requestNumber}</div>
-            <div class="info-row"><strong>Borrower:</strong> ${request.borrower}</div>
+            <div class="info-row"><strong>Borrower:</strong> ${request.requesterName || 'N/A'}</div>
             <div class="info-row"><strong>Date:</strong> ${new Date().toLocaleDateString()}</div>
           </div>
           <h2>Items to Restock (${missingKitItems.length})</h2>

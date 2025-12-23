@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from
 import { useEffect } from 'react';
 import { useMsal, useIsAuthenticated } from '@azure/msal-react';
 import { InteractionStatus } from '@azure/msal-browser';
-import { store, useAppDispatch } from './store';
+import { store, useAppDispatch, useAppSelector } from './store';
 import { setAuth, setLoading, setUserPhoto } from './store/slices/authSlice';
 import { loginRequest } from './authConfig';
 import { getUserProfileWithPhoto } from './services/graphService';
@@ -205,6 +205,15 @@ function AuthHandler() {
 // Wrapper components for route navigation
 function CycleCountWrapper() {
   const navigate = useNavigate();
+  const user = useAppSelector(state => state.auth.user);
+  const keeperName = user?.name || 'Unknown';
+  
+  const handleStartCycleCount = (data: { zone: string; countType: 'Annual' | 'Biannual' | 'Spot Check'; auditor: string }) => {
+    // Save initial configuration in sessionStorage
+    console.log('🚀 [CycleCountWrapper] Saving initial config:', data);
+    sessionStorage.setItem('cycleCountInitialConfig', JSON.stringify(data));
+    navigate('/cycle-count/active');
+  };
   
   const handleNavigate = (path: string, state?: any) => {
     if (state) {
@@ -238,12 +247,13 @@ function CycleCountWrapper() {
   
   return (
     <CycleCount
-      onStartCycleCount={() => navigate('/cycle-count/active')}
+      onStartCycleCount={handleStartCycleCount}
       onViewCycleCount={(record) => {
         handleNavigate('/cycle-count/detail', { countData: record });
       }}
       onCompleteCycleCount={handleCompleteCycleCount}
       onContinueCycleCount={handleContinueCycleCount}
+      keeperName={keeperName}
     />
   );
 }
@@ -299,6 +309,15 @@ function CycleCountActiveWrapper() {
   const stateData = sessionStorage.getItem('cycleCountState');
   const state = stateData ? JSON.parse(stateData) : null;
   const existingCountData = state?.existingCountData;
+  
+  // Get initial configuration if it's a new count
+  const initialConfigData = sessionStorage.getItem('cycleCountInitialConfig');
+  console.log('📖 [CycleCountActiveWrapper] Reading initialConfigData:', initialConfigData);
+  const initialConfig = initialConfigData ? JSON.parse(initialConfigData) : undefined;
+  console.log('📖 [CycleCountActiveWrapper] Parsed initialConfig:', initialConfig);
+  
+  // Don't clear config immediately - let it be used by the hook first
+  // It will be cleared when completing or saving progress
 
   const handleCompleteCycleCount = (completedData: any) => {
     // Guardar el conteo completado en sessionStorage
@@ -328,6 +347,7 @@ function CycleCountActiveWrapper() {
     
     // Limpiar el estado y regresar a la página principal
     sessionStorage.removeItem('cycleCountState');
+    sessionStorage.removeItem('cycleCountInitialConfig');
     navigate('/cycle-count');
   };
 
@@ -359,6 +379,7 @@ function CycleCountActiveWrapper() {
     
     // Limpiar el estado y regresar a la página principal
     sessionStorage.removeItem('cycleCountState');
+    sessionStorage.removeItem('cycleCountInitialConfig');
     navigate('/cycle-count');
   };
   
@@ -366,11 +387,13 @@ function CycleCountActiveWrapper() {
     <CycleCountView 
       onBack={() => {
         sessionStorage.removeItem('cycleCountState');
+        sessionStorage.removeItem('cycleCountInitialConfig');
         navigate('/cycle-count');
       }}
       onComplete={handleCompleteCycleCount}
       onSaveProgress={handleSaveProgress}
       existingCountData={existingCountData}
+      initialConfig={initialConfig}
     />
   );
 }
@@ -524,6 +547,7 @@ function AppRoutes() {
           {/* Operations */}
           <Route path="cycle-count" element={<CycleCountWrapper />} />
           <Route path="cycle-count/active" element={<CycleCountActiveWrapper />} />
+          <Route path="cycle-count/detail" element={<CycleCountDetailPage />} />
           <Route path="manage-requests" element={<ManageRequestsPage />} />
 
           {/* NOTE: If Keepers need to process Loans/Returns (handing out items), 
