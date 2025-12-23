@@ -198,7 +198,6 @@ export function KitRow({
   const handleConfirmDismantle = async () => {
     try {
       setIsDismantling(true);
- 
       await dismantleKit(kit.id, {
         quantity: dismantleQuantity,
         notes: dismantleNotes || undefined,
