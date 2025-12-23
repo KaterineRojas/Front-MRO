@@ -1,13 +1,12 @@
 // services/requestService.ts
 import { apiCall } from '../../enginner/services/errorHandler';
-import { API_BASE_URL } from '../../enginner/services/api';
 import {API_URL} from '../../../../url'
 import {PaginatedLoanRequestResponse} from '../types/loanTypes'
 import {authService} from '../../../../services/authService'
 
 export interface RequestItem {
   id: number;
-  imageUrl: string;
+  imageUrl: string; 
   sku: string;
   name: string;
   description: string;
@@ -53,7 +52,7 @@ export interface PurchaseRequest {
  */
 export const getBorrowRequests = async (): Promise<BorrowRequest[]> => {
   return apiCall(async () => {
-    const response = await fetch(`${API_BASE_URL}/borrow-requests`, {
+    const response = await fetch(`${API_URL}/borrow-requests`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -73,7 +72,7 @@ export const getBorrowRequests = async (): Promise<BorrowRequest[]> => {
  */
 export const getBorrowRequestById = async (requestId: string, requesterId: string): Promise<BorrowRequest | null> => {
   return apiCall(async () => {
-    const url = `${API_BASE_URL}/borrow-requests/${requestId}?requesterId=${encodeURIComponent(requesterId)}`;
+    const url = `${API_URL}/borrow-requests/${requestId}?requesterId=${encodeURIComponent(requesterId)}`;
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -100,7 +99,7 @@ export const createBorrowRequest = async (
   request: Omit<BorrowRequest, 'requestId' | 'status' | 'createdAt'>
 ): Promise<BorrowRequest> => {
   return apiCall(async () => {
-    const response = await fetch(`${API_BASE_URL}/borrow-requests`, {
+    const response = await fetch(`${API_URL}/borrow-requests`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -125,7 +124,7 @@ export const updateBorrowRequestStatus = async (
   status: BorrowRequest['status']
 ): Promise<BorrowRequest | null> => {
   return apiCall(async () => {
-    const response = await fetch(`${API_BASE_URL}/borrow-requests/${requestId}/status`, {
+    const response = await fetch(`${API_URL}/borrow-requests/${requestId}/status`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -151,7 +150,7 @@ export const updateBorrowRequestStatus = async (
  */
 export const deleteBorrowRequest = async (requestId: string): Promise<{ success: boolean; message: string }> => {
   return apiCall(async () => {
-    const response = await fetch(`${API_BASE_URL}/borrow-requests/${requestId}`, {
+    const response = await fetch(`${API_URL}/borrow-requests/${requestId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -178,7 +177,7 @@ export const deleteBorrowRequest = async (requestId: string): Promise<{ success:
  */
 export const getPurchaseRequests = async (): Promise<PurchaseRequest[]> => {
   return apiCall(async () => {
-    const response = await fetch(`${API_BASE_URL}/purchase-requests`, {
+    const response = await fetch(`${API_URL}/purchase-requests`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -198,7 +197,7 @@ export const getPurchaseRequests = async (): Promise<PurchaseRequest[]> => {
  */
 export const getPurchaseRequestById = async (requestId: string): Promise<PurchaseRequest | null> => {
   return apiCall(async () => {
-    const response = await fetch(`${API_BASE_URL}/purchase-requests/${requestId}`, {
+    const response = await fetch(`${API_URL}/purchase-requests/${requestId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -224,7 +223,7 @@ export const createPurchaseRequest = async (
   request: Omit<PurchaseRequest, 'requestId' | 'status' | 'createdAt'>
 ): Promise<PurchaseRequest> => {
   return apiCall(async () => {
-    const response = await fetch(`${API_BASE_URL}/purchase-requests`, {
+    const response = await fetch(`${API_URL}/purchase-requests`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -249,7 +248,7 @@ export const updatePurchaseRequestStatus = async (
   status: PurchaseRequest['status']
 ): Promise<PurchaseRequest | null> => {
   return apiCall(async () => {
-    const response = await fetch(`${API_BASE_URL}/purchase-requests/${requestId}/status`, {
+    const response = await fetch(`${API_URL}/purchase-requests/${requestId}/status`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -275,7 +274,7 @@ export const updatePurchaseRequestStatus = async (
  */
 export const deletePurchaseRequest = async (requestId: string): Promise<{ success: boolean; message: string }> => {
   return apiCall(async () => {
-    const response = await fetch(`${API_BASE_URL}/purchase-requests/${requestId}`, {
+    const response = await fetch(`${API_URL}/purchase-requests/${requestId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -303,7 +302,7 @@ export const updatePurchaseRequestPriority = async (
   priority: PurchaseRequest['priority']
 ): Promise<PurchaseRequest | null> => {
   return apiCall(async () => {
-    const response = await fetch(`${API_BASE_URL}/purchase-requests/${requestId}/priority`, {
+    const response = await fetch(`${API_URL}/purchase-requests/${requestId}/priority`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

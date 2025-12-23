@@ -17,11 +17,11 @@ import { RequestManagement } from './components/features/requests/RequestManagem
 import { Reports } from './components/features/reports/Reports';
 import { UserManagement } from './components/features/users/UserManagement';
 import { QuickFind } from './components/features/quick-find/QuickFind';
-import { CycleCount } from './components/features/cycle-count/CycleCount';
-import { CycleCountDetailView } from './components/features/cycle-count/CycleCountDetailView';
+import { CycleCount } from './components/features/cycle-count/pages/CycleCount';
+import { CycleCountDetailView } from './components/features/cycle-count/pages/CycleCountDetailView';
 import { LoanDetailView } from './components/features/loans/LoanDetailView';
 import { OrderDetailView } from './components/features/orders/OrderDetailView';
-import { CycleCountView } from './components/features/cycle-count/CycleCountView';
+import { CycleCountView } from './components/features/cycle-count/pages/CycleCountView';
 import { ThemeProvider } from "next-themes";
 import { ReturnItemsPage } from './components/features/loans/ReturnItemsPage';
 import { ManageRequestsPage } from './components/features/manage-requests/pages/ManageRequestsPage';
