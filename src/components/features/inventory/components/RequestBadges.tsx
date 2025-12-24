@@ -16,9 +16,8 @@ import {
 
 import { Badge } from './Badge';
 
-type BadgeStyle = 'soft' | 'outline';
 
-export const getStatusBadge = (status: string, style: BadgeStyle = 'soft') => {
+export const getStatusBadge = (status: string, style: string = 'soft') => {
     const isSoft = style === 'soft';
     const normalizedStatus = status?.toLowerCase() || 'unknown';
 
@@ -81,7 +80,7 @@ export const getStatusBadge = (status: string, style: BadgeStyle = 'soft') => {
     }
 };
 
-export const getUrgencyBadge = (urgency: string, style: BadgeStyle = 'soft') => {
+export const getUrgencyBadge = (urgency: string, style: string = 'soft') => {
     const isSoft = style === 'soft';
     const normalized = urgency?.toLowerCase() || '';
 
@@ -103,7 +102,7 @@ export const getUrgencyBadge = (urgency: string, style: BadgeStyle = 'soft') => 
     }
 };
 
-export const getTypeBadge = (type: number, style: BadgeStyle = 'soft') => {
+export const getTypeBadge = (type: number, style: string = 'soft') => {
     const isSoft = style === 'soft';
 
     switch (type) {

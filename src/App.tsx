@@ -13,6 +13,7 @@ import { Dashboard } from './components/features/dashboard/Dashboard';
 import { InventoryManager } from './components/features/inventory/InventoryManager';
 import { RequestOrders } from './components/features/loans/RequestOrders';
 import { PurchaseOrders } from './components/features/orders/PurchaseOrders';
+import { Main } from './components/features/orders/Main';
 import { RequestManagement } from './components/features/requests/RequestManagement';
 import { Reports } from './components/features/reports/Reports';
 import { UserManagement } from './components/features/users/UserManagement';
@@ -408,7 +409,7 @@ function PurchaseOrdersWrapper() {
   };
 
   return (
-    <PurchaseOrders
+    <Main
       onViewDetail={(order) => {
         handleNavigate('/orders/detail', { order });
       }}

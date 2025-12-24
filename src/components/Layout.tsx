@@ -152,8 +152,12 @@ export function Layout() {
   const filteredNavigation = navigation.filter(item => {
     const access = hasAccess(item.roles);
     // console.log(`Module: ${item.label} - Access: ${access}`);
+    
     return access;
   });
+
+  // console.log(filteredNavigation);
+  
 
   return (
     <div className="flex h-screen bg-background">
