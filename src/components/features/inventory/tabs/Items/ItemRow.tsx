@@ -6,8 +6,35 @@ import { TableCell, TableRow } from '../../../../ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../../ui/alert-dialog';
 import { Package, Edit, Trash2, ChevronDown, ChevronRight, TrendingDown, RotateCcw } from 'lucide-react';
 import { ItemStockDistribution } from './ItemStockDistribution';
-import { formatCategory, getStockStatus } from './itemsHelpers';
+import { formatCategory, getStockStatus, isNewItem } from './itemsHelpers';
 import type { ItemRowProps } from './types';
+
+// Estilos CSS para animación de parpadeo del borde
+const pulseRingStyle = `
+  @keyframes pulse-ring {
+    0%, 100% {
+      box-shadow: 0 0 0 0px rgba(134, 239, 172, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 3px rgba(134, 239, 172, 0.6);
+    }
+  }
+  .pulse-ring-animation {
+    animation: pulse-ring 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-text {
+    0%, 100% {
+      color: white;
+    }
+    50% {
+      color: black;
+    }
+  }
+  .pulse-text-animation {
+    animation: pulse-text 2s ease-in-out infinite;
+  }
+`;
 
 export function ItemRow({
   article,
@@ -29,8 +56,12 @@ export function ItemRow({
     return <RotateCcw className="h-4 w-4 text-blue-600" />;
   };
 
+  const itemIsNew = isNewItem(article.createdAt);
+
   return (
     <React.Fragment>
+      {/* Inyectar estilos CSS para la animación */}
+      {itemIsNew && <style>{pulseRingStyle}</style>}
       <TableRow>
         <TableCell>
           <Button
@@ -50,7 +81,9 @@ export function ItemRow({
             <img
               src={article.imageUrl}
               alt={article.name}
-              className="w-12 h-12 object-cover rounded"
+              className={`w-12 h-12 object-cover rounded ${
+                itemIsNew ? 'ring-1 ring-green-300 pulse-ring-animation' : ''
+              }`}
               onError={() => onImageError(article.id)}
             />
           ) : (
@@ -59,7 +92,16 @@ export function ItemRow({
             </div>
           )}
         </TableCell>
-        <TableCell className="font-mono text-sm">{article.sku}</TableCell>
+        <TableCell className="font-mono text-sm">
+          <div className="flex flex-col gap-0.5">
+            {itemIsNew && (
+              <Badge className="bg-green-400 text-[11px] font-semibold px-1.5 py-0 hover:bg-green-400 w-fit leading-tight">
+                <span className="pulse-text-animation">New</span>
+              </Badge>
+            )}
+            <span>{article.sku}</span>
+          </div>
+        </TableCell>
         <TableCell className="max-w-xs">
           <div className="flex flex-col">
             <span className="font-medium">{article.name}</span>
