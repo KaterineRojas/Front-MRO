@@ -19,7 +19,7 @@ export interface ItemsFiltersProps {
   setCategoryFilter: (value: string) => void;
   stockFilter: 'all' | 'with-stock' | 'empty';
   setStockFilter: (value: 'all' | 'with-stock' | 'empty') => void;
-  categories: { value: string; label: string }[];
+  categories: { value: string; label: string; apiValue?: string }[];
   categoriesLoading: boolean;
   itemsCount: {
     all: number;
@@ -32,7 +32,7 @@ export interface ItemsTableProps {
   articles: Article[];
   expandedItems: Set<number>;
   imageErrors: Set<number>;
-  categories: { value: string; label: string }[];
+  categories: { value: string; label: string; apiValue?: string }[];
   onToggleExpand: (id: number) => void;
   onEditItem: (article: Article) => void;
   onDeleteItem: (id: number) => void;
@@ -43,7 +43,7 @@ export interface ItemRowProps {
   article: Article;
   isExpanded: boolean;
   imageErrors: Set<number>;
-  categories: { value: string; label: string }[];
+  categories: { value: string; label: string; apiValue?: string }[];
   onToggleExpand: (id: number) => void;
   onEditItem: (article: Article) => void;
   onDeleteItem: (id: number) => void;

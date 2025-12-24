@@ -20,7 +20,7 @@ export interface CreateItemModalProps {
   onOpenChange: (open: boolean) => void;
   editingArticle: Article | null;
   onSubmit: (articleData: ApiPayload) => void;
-  categories: { value: string; label: string }[];
+  categories: { value: string; label: string; apiValue?: string }[];
   categoriesLoading: boolean;
 }
 
@@ -44,7 +44,7 @@ export interface ItemBasicInfoProps {
 
 export interface ItemClassificationProps {
   formData: ItemFormData;
-  categories: { value: string; label: string }[];
+  categories: { value: string; label: string; apiValue?: string }[];
   categoriesLoading: boolean;
   onFormDataChange: (data: Partial<ItemFormData>) => void;
 }

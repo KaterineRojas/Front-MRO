@@ -62,6 +62,7 @@ export function transformInventoryItem(apiItem: InventoryItemResponse): Article 
     name: apiItem.itemName,
     description: apiItem.description || '',
     category: mapCategory(apiItem.category),
+    categoryRaw: apiItem.category,
     consumable: Boolean(apiItem.consumable),
     minStock: apiItem.minStock ?? 0,
     status: apiItem.isActive ?? true,
@@ -204,6 +205,17 @@ export async function createArticleApi(articleData: {
     if (articleData.imageFile) {
       formData.append('file', articleData.imageFile);
     }
+
+    console.log('[createArticleApi] payload preview:', {
+      name: articleData.name,
+      description: articleData.description,
+      category: articleData.category,
+      unit: articleData.unit,
+      minStock: articleData.minStock,
+      consumable: articleData.consumable,
+      binCode: articleData.binCode,
+      hasImageFile: Boolean(articleData.imageFile),
+    });
 
     const response = await fetch(`${API_URL}/Items/with-image`, {
       method: 'POST',
@@ -386,10 +398,19 @@ export async function getCategories(): Promise<{ value: string; label: string }[
 
     const data: string[] = await response.json();
 
-    return data.map((category: string) => ({
-      value: category.toLowerCase().replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(),
-      label: category.replace(/([a-z])([A-Z])/g, '$1 $2')
-    }));
+    return data.map((category: string) => {
+      const normalizedValue = mapCategory(category) || 'other';
+      const label = category
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/[-_]/g, ' ')
+        .replace(/\w/g, char => char.toUpperCase());
+
+      return {
+        value: normalizedValue,
+        label,
+        apiValue: category,
+      };
+    });
   } catch (error) {
     console.error('Error fetching categories:', error);
     return [
