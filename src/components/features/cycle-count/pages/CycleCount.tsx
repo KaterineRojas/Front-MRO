@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '../../../ui/table';
-import { Clock, PlayCircle, Printer } from 'lucide-react';
+import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from '../../../ui/table';
+import { Clock, PlayCircle, Printer, Loader2 } from 'lucide-react';
 import { useCycleCountHistory, CycleCountRecord } from '../hooks/useCycleCountHistory';
 import { generatePrintReport, generateExcelReport, generatePrintAllHistory } from '../utils/reportGenerator';
 import { HistoryTableRow } from '../components/HistoryTableRow';
@@ -9,7 +9,7 @@ import { StartCycleCountModal } from '../modals/StartCycleCountModal';
 import { useState } from 'react';
 
 interface CycleCountProps {
-  onStartCycleCount: (data: { zone: string; countType: 'Annual' | 'Biannual' | 'Spot Check'; auditor: string }) => void;
+  onStartCycleCount: (data: { countName: string; zone: string; countType: 'Annual' | 'Biannual' | 'Spot Check'; auditor: string }) => void;
   onViewCycleCount: (record: CycleCountRecord) => void;
   onContinueCycleCount?: (record: CycleCountRecord) => void;
   onCompleteCycleCount?: (completedData: any) => void;
@@ -17,7 +17,7 @@ interface CycleCountProps {
 }
 
 export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycleCount, keeperName }: CycleCountProps) {
-  const { history } = useCycleCountHistory();
+  const { history, isLoading } = useCycleCountHistory();
   const [showStartModal, setShowStartModal] = useState(false);
 
   const handleStartCycleCount = () => {
@@ -37,7 +37,7 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
     setShowStartModal(true);
   };
 
-  const handleConfirmStart = (data: { zone: string; countType: 'Annual' | 'Biannual' | 'Spot Check'; auditor: string }) => {
+  const handleConfirmStart = (data: { countName: string; zone: string; countType: 'Annual' | 'Biannual' | 'Spot Check'; auditor: string }) => {
     onStartCycleCount(data);
   };
 
@@ -96,6 +96,7 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Zone</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Total Items</TableHead>
@@ -106,16 +107,33 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
               </TableRow>
             </TableHeader>
             <TableBody>
-              {history.map((record) => (
-                <HistoryTableRow
-                  key={record.id}
-                  record={record}
-                  onView={handleViewReport}
-                  onContinue={onContinueCycleCount}
-                  onPrint={handlePrintReport}
-                  onDownload={handleDownloadReport}
-                />
-              ))}
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="h-32 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">Loading cycle counts...</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : history.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                    No cycle counts found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                history.map((record) => (
+                  <HistoryTableRow
+                    key={record.id}
+                    record={record}
+                    onView={handleViewReport}
+                    onContinue={onContinueCycleCount}
+                    onPrint={handlePrintReport}
+                    onDownload={handleDownloadReport}
+                  />
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

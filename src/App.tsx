@@ -208,11 +208,44 @@ function CycleCountWrapper() {
   const user = useAppSelector(state => state.auth.user);
   const keeperName = user?.name || 'Unknown';
   
-  const handleStartCycleCount = (data: { zone: string; countType: 'Annual' | 'Biannual' | 'Spot Check'; auditor: string }) => {
-    // Save initial configuration in sessionStorage
-    console.log('🚀 [CycleCountWrapper] Saving initial config:', data);
-    sessionStorage.setItem('cycleCountInitialConfig', JSON.stringify(data));
-    navigate('/cycle-count/active');
+  const handleStartCycleCount = async (data: { countName: string; zone: string; countType: 'Annual' | 'Biannual' | 'Spot Check'; auditor: string }) => {
+    try {
+      const { createCycleCount, getCycleCountEntries, mapZoneToZoneId } = await import('./components/features/cycle-count/services/cycleCountService');
+      const warehouseId = user?.warehouseId || 1;
+      
+      // Create cycle count via API
+      const cycleCountResponse = await createCycleCount({
+        countName: data.countName,
+        warehouseId: warehouseId,
+        zoneId: mapZoneToZoneId(data.zone),
+        createdByUserId: 5, // Hardcoded as requested
+        showSystemQuantity: true,
+        notes: ''
+      });
+
+      console.log('✅ Cycle count created:', cycleCountResponse);
+
+      // Fetch entries for the created cycle count
+      const entriesResponse = await getCycleCountEntries(cycleCountResponse.id);
+      console.log('✅ Cycle count entries fetched:', entriesResponse);
+
+      // Navigate to active count view with the created cycle count data
+      // Use logged in user's name as auditor instead of the one from modal
+      // Store entries.data array (the paginated response contains a data array)
+      sessionStorage.setItem('cycleCountActiveData', JSON.stringify({
+        cycleCount: cycleCountResponse,
+        entries: entriesResponse.data, // Extract data array from paginated response
+        initialConfig: {
+          ...data,
+          auditor: keeperName // Use logged in user's name
+        }
+      }));
+      
+      navigate('/cycle-count/active');
+    } catch (error) {
+      console.error('❌ Error creating cycle count:', error);
+      alert('Failed to start cycle count. Please try again.');
+    }
   };
   
   const handleNavigate = (path: string, state?: any) => {
@@ -304,82 +337,138 @@ function CycleCountDetailPage() {
 
 function CycleCountActiveWrapper() {
   const navigate = useNavigate();
+  const user = useAppSelector(state => state.auth.user);
+  const keeperName = user?.name || 'Unknown';
 
-  // Obtener datos existentes si se está continuando un conteo
+  // Get data from newly created cycle count (from POST /api/cycle-counts)
+  const activeDataString = sessionStorage.getItem('cycleCountActiveData');
+  const activeData = activeDataString ? JSON.parse(activeDataString) : null;
+  
+  // Obtener datos existentes si se está continuando un conteo (from history)
   const stateData = sessionStorage.getItem('cycleCountState');
   const state = stateData ? JSON.parse(stateData) : null;
   const existingCountData = state?.existingCountData;
   
-  // Get initial configuration if it's a new count
-  const initialConfigData = sessionStorage.getItem('cycleCountInitialConfig');
-  console.log('📖 [CycleCountActiveWrapper] Reading initialConfigData:', initialConfigData);
-  const initialConfig = initialConfigData ? JSON.parse(initialConfigData) : undefined;
-  console.log('📖 [CycleCountActiveWrapper] Parsed initialConfig:', initialConfig);
+  // Get initial configuration from activeData (new count) or from state (existing count)
+  // Always use logged in user's name as auditor
+  const initialConfig = activeData?.initialConfig 
+    ? { ...activeData.initialConfig, auditor: keeperName }
+    : undefined;
+  
+  // Convert API entries to Article format if we have activeData
+  // This mapping will be done inline since we can't use async in component body
+  let countDataWithArticles = existingCountData;
+  
+  if (activeData?.entries && activeData?.cycleCount && activeData.entries.length > 0) {
+    // Map entries to Article format inline
+    const zoneName = activeData.cycleCount.zoneName || 'Good Condition';
+    let zone: 'Good Condition' | 'Damaged' | 'Quarantine' = 'Good Condition';
+    if (zoneName === 'Damaged') zone = 'Damaged';
+    else if (zoneName === 'Quarantine') zone = 'Quarantine';
+    
+    const mappedArticles = activeData.entries.map((entry: any) => {
+      let status: 'match' | 'discrepancy' | undefined = undefined;
+      const statusNameLower = entry.statusName?.toLowerCase() || '';
+      if (statusNameLower === 'match' || statusNameLower === 'matched') {
+        status = 'match';
+      } else if (statusNameLower === 'discrepancy' || statusNameLower === 'variance') {
+        status = 'discrepancy';
+      }
+      
+      return {
+        id: entry.itemSku || entry.id.toString(),
+        code: entry.itemSku,
+        description: entry.itemName,
+        type: 'non-consumable' as const,
+        zone,
+        totalRegistered: entry.systemQuantity,
+        physicalCount: entry.physicalCount > 0 ? entry.physicalCount : undefined,
+        status,
+        observations: entry.notes || undefined
+      };
+    });
+    
+    countDataWithArticles = {
+      id: activeData.cycleCount.id,
+      articles: mappedArticles,
+      countType: initialConfig?.countType || 'Annual',
+      auditor: keeperName,
+      zone: activeData.cycleCount.zoneName || 'All Zones'
+    };
+  }
   
   // Don't clear config immediately - let it be used by the hook first
   // It will be cleared when completing or saving progress
 
   const handleCompleteCycleCount = (completedData: any) => {
-    // Guardar el conteo completado en sessionStorage
-    const existingHistory = sessionStorage.getItem('cycleCountHistory');
-    const history = existingHistory ? JSON.parse(existingHistory) : [];
+    // Only add to history when Complete Count is pressed
+    const cycleCountId = activeData?.cycleCount?.id || existingCountData?.id;
     
-    // Si estamos continuando un conteo existente, actualizar ese registro
-    if (existingCountData?.id) {
-      const index = history.findIndex((h: any) => h.id === existingCountData.id);
+    if (cycleCountId) {
+      // Store in history with the cycle count ID from API
+      const existingHistory = sessionStorage.getItem('cycleCountHistory');
+      const history = existingHistory ? JSON.parse(existingHistory) : [];
+      
+      const index = history.findIndex((h: any) => h.id === cycleCountId);
       if (index !== -1) {
+        // Update existing record
         history[index] = {
           ...history[index],
           ...completedData,
-          id: existingCountData.id // Mantener el mismo ID
+          id: cycleCountId
         };
+      } else {
+        // Add new record with API ID
+        const newRecord = {
+          id: cycleCountId,
+          ...completedData
+        };
+        history.unshift(newRecord);
       }
-    } else {
-      // Agregar un nuevo registro con un ID único
-      const newRecord = {
-        id: Date.now(),
-        ...completedData
-      };
-      history.unshift(newRecord);
+      
+      sessionStorage.setItem('cycleCountHistory', JSON.stringify(history));
     }
-    
-    sessionStorage.setItem('cycleCountHistory', JSON.stringify(history));
     
     // Limpiar el estado y regresar a la página principal
     sessionStorage.removeItem('cycleCountState');
     sessionStorage.removeItem('cycleCountInitialConfig');
+    sessionStorage.removeItem('cycleCountActiveData');
     navigate('/cycle-count');
   };
 
   const handleSaveProgress = (progressData: any) => {
-    // Guardar el progreso en sessionStorage
-    const existingHistory = sessionStorage.getItem('cycleCountHistory');
-    const history = existingHistory ? JSON.parse(existingHistory) : [];
+    // Only add to history when Save Progress is pressed
+    const cycleCountId = activeData?.cycleCount?.id || existingCountData?.id;
     
-    // Si estamos continuando un conteo existente, actualizar ese registro
-    if (existingCountData?.id) {
-      const index = history.findIndex((h: any) => h.id === existingCountData.id);
+    if (cycleCountId) {
+      // Store in history with the cycle count ID from API
+      const existingHistory = sessionStorage.getItem('cycleCountHistory');
+      const history = existingHistory ? JSON.parse(existingHistory) : [];
+      
+      const index = history.findIndex((h: any) => h.id === cycleCountId);
       if (index !== -1) {
+        // Update existing record
         history[index] = {
           ...history[index],
           ...progressData,
-          id: existingCountData.id // Mantener el mismo ID
+          id: cycleCountId
         };
+      } else {
+        // Add new record with API ID
+        const newRecord = {
+          id: cycleCountId,
+          ...progressData
+        };
+        history.unshift(newRecord);
       }
-    } else {
-      // Agregar un nuevo registro con un ID único
-      const newRecord = {
-        id: Date.now(),
-        ...progressData
-      };
-      history.unshift(newRecord);
+      
+      sessionStorage.setItem('cycleCountHistory', JSON.stringify(history));
     }
-    
-    sessionStorage.setItem('cycleCountHistory', JSON.stringify(history));
     
     // Limpiar el estado y regresar a la página principal
     sessionStorage.removeItem('cycleCountState');
     sessionStorage.removeItem('cycleCountInitialConfig');
+    sessionStorage.removeItem('cycleCountActiveData');
     navigate('/cycle-count');
   };
   
@@ -388,11 +477,12 @@ function CycleCountActiveWrapper() {
       onBack={() => {
         sessionStorage.removeItem('cycleCountState');
         sessionStorage.removeItem('cycleCountInitialConfig');
+        sessionStorage.removeItem('cycleCountActiveData');
         navigate('/cycle-count');
       }}
       onComplete={handleCompleteCycleCount}
       onSaveProgress={handleSaveProgress}
-      existingCountData={existingCountData}
+      existingCountData={countDataWithArticles}
       initialConfig={initialConfig}
     />
   );

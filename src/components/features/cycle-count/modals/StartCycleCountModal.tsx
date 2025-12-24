@@ -1,24 +1,32 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Button } from '../../../ui/button';
 import { Label } from '../../../ui/label';
+import { Input } from '../../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { useState } from 'react';
 
 interface StartCycleCountModalProps {
   open: boolean;
   onClose: () => void;
-  onConfirm: (data: { zone: string; countType: 'Annual' | 'Biannual' | 'Spot Check'; auditor: string }) => void;
+  onConfirm: (data: { countName: string; zone: string; countType: 'Annual' | 'Biannual' | 'Spot Check'; auditor: string }) => void;
   keeperName: string;
 }
 
 export function StartCycleCountModal({ open, onClose, onConfirm, keeperName }: StartCycleCountModalProps) {
+  const [countName, setCountName] = useState<string>('');
   const [zone, setZone] = useState<string>('all');
   const [countType, setCountType] = useState<'Annual' | 'Biannual' | 'Spot Check'>('Annual');
 
   const zones = ['all', 'Good Condition', 'Damaged', 'Quarantine'];
 
   const handleConfirm = () => {
+    if (!countName.trim()) {
+      alert('Please enter a count name');
+      return;
+    }
+    
     onConfirm({
+      countName: countName.trim(),
       zone,
       countType,
       auditor: keeperName
@@ -28,6 +36,7 @@ export function StartCycleCountModal({ open, onClose, onConfirm, keeperName }: S
 
   const handleCancel = () => {
     // Reset to defaults
+    setCountName('');
     setZone('all');
     setCountType('Annual');
     onClose();
@@ -44,6 +53,16 @@ export function StartCycleCountModal({ open, onClose, onConfirm, keeperName }: S
         </DialogHeader>
         
         <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="countName">Name</Label>
+            <Input
+              id="countName"
+              placeholder="Enter count name..."
+              value={countName}
+              onChange={(e) => setCountName(e.target.value)}
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="zone">Zone</Label>
             <Select value={zone} onValueChange={setZone}>
