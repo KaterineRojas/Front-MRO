@@ -152,7 +152,9 @@ export function Layout() {
   const filteredNavigation = navigation.filter(item => {
     const access = hasAccess(item.roles);
     // console.log(`Module: ${item.label} - Access: ${access}`);
-    
+    if(item.id === 'orders'){
+      item.disabled = false;
+    }
     return access;
   });
 
