@@ -19,6 +19,31 @@ export function CreateItemModal({
   categories,
   categoriesLoading,
 }: CreateItemModalProps) {
+  const categoriesWithEditing = React.useMemo(() => {
+    if (!editingArticle) {
+      return categories;
+    }
+
+    const exists = categories.some(category => category.value === editingArticle.category);
+    if (exists) {
+      return categories;
+    }
+
+    const derivedLabel = editingArticle.category
+      .replace(/[-_]/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/\b\w/g, char => char.toUpperCase());
+
+    return [
+      ...categories,
+      {
+        value: editingArticle.category,
+        label: derivedLabel,
+        apiValue: editingArticle.categoryRaw || editingArticle.category,
+      },
+    ];
+  }, [categories, editingArticle]);
+
   const {
     formData,
     imageFile,
@@ -58,7 +83,7 @@ export function CreateItemModal({
 
             <ItemClassificationSection
               formData={formData}
-              categories={categories}
+              categories={categoriesWithEditing}
               categoriesLoading={categoriesLoading}
               onFormDataChange={updateFormData}
             />

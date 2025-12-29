@@ -6,7 +6,7 @@ import type { Article } from '../../types';
  */
 export function formatCategory(
   category: string,
-  categories: { value: string; label: string }[]
+  categories: { value: string; label: string; apiValue?: string }[]
 ): string {
   if (!category) return 'Uncategorized';
   

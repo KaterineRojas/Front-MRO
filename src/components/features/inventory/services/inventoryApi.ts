@@ -41,6 +41,20 @@ function mapCategory(apiCategory?: string): Article['category'] {
  * Transforma InventoryItemResponse a Article
  */
 export function transformInventoryItem(apiItem: InventoryItemResponse): Article {
+  const bins = (apiItem.bins ?? []).map(bin => {
+    const inferredPurpose = bin.binPurpose ?? bin.binPurposeDisplay ?? (bin.default ? 'GoodCondition' : null);
+
+    return {
+      inventoryId: bin.inventoryId,
+      binId: bin.binId,
+      binCode: bin.binCode,
+      quantity: bin.quantity ?? 0,
+      binPurpose: inferredPurpose,
+      binPurposeDisplay: bin.binPurposeDisplay ?? inferredPurpose,
+      isDefault: bin.default ?? false,
+    };
+  });
+
   return {
     id: apiItem.itemId,
     imageUrl: getFullImageUrl(apiItem.imageUrl),
@@ -48,23 +62,19 @@ export function transformInventoryItem(apiItem: InventoryItemResponse): Article 
     name: apiItem.itemName,
     description: apiItem.description || '',
     category: mapCategory(apiItem.category),
-    consumable: apiItem.consumable,
-    minStock: apiItem.minStock || 0,
-    status: true,
-    bins: apiItem.bins?.map(bin => ({
-      inventoryId: bin.inventoryId,
-      binId: bin.binId,
-      binCode: bin.binCode,
-      quantity: bin.quantity
-    })) || [],
+    categoryRaw: apiItem.category,
+    consumable: Boolean(apiItem.consumable),
+    minStock: apiItem.minStock ?? 0,
+    status: apiItem.isActive ?? true,
+    bins,
     quantityAvailable: apiItem.quantityAvailable ?? 0,
     quantityOnLoan: apiItem.quantityOnLoan ?? 0,
     quantityReserved: apiItem.quantityReserved ?? 0,
     totalPhysical: apiItem.totalPhysical ?? 0,
     currentStock: apiItem.totalPhysical ?? 0,
-    unit: 'units',
-    cost: 0,
-    createdAt: new Date().toISOString().split('T')[0]
+    unit: apiItem.unit?.trim() || 'units',
+    cost: apiItem.cost ?? 0,
+    createdAt: apiItem.createdAt ?? new Date().toISOString().split('T')[0]
   };
 }
 
@@ -133,7 +143,7 @@ export async function fetchArticlesFromApi({
     if (!Array.isArray(data)) {
       throw new Error('Invalid response format: expected an array');
     }
-
+    console.log(`📦 Fetched ${data.length} items from API`,  data.map(transformInventoryItem)) ;
     return data.map(transformInventoryItem);
   } catch (error) {
     console.error('Error fetching all items with bins:', error);
@@ -195,6 +205,17 @@ export async function createArticleApi(articleData: {
     if (articleData.imageFile) {
       formData.append('file', articleData.imageFile);
     }
+
+    console.log('[createArticleApi] payload preview:', {
+      name: articleData.name,
+      description: articleData.description,
+      category: articleData.category,
+      unit: articleData.unit,
+      minStock: articleData.minStock,
+      consumable: articleData.consumable,
+      binCode: articleData.binCode,
+      hasImageFile: Boolean(articleData.imageFile),
+    });
 
     const response = await fetch(`${API_URL}/Items/with-image`, {
       method: 'POST',
@@ -377,10 +398,19 @@ export async function getCategories(): Promise<{ value: string; label: string }[
 
     const data: string[] = await response.json();
 
-    return data.map((category: string) => ({
-      value: category.toLowerCase().replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(),
-      label: category.replace(/([a-z])([A-Z])/g, '$1 $2')
-    }));
+    return data.map((category: string) => {
+      const normalizedValue = mapCategory(category) || 'other';
+      const label = category
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/[-_]/g, ' ')
+        .replace(/\w/g, char => char.toUpperCase());
+
+      return {
+        value: normalizedValue,
+        label,
+        apiValue: category,
+      };
+    });
   } catch (error) {
     console.error('Error fetching categories:', error);
     return [
