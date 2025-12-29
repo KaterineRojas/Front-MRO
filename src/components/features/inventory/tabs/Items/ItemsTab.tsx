@@ -13,7 +13,7 @@ import type { ItemsTabProps, CreateArticleData, UpdateArticleData } from './type
 import type { Article } from '../../types';
 
 export function ItemsTab({ articles, onCreateItem, onUpdateItem, onDeleteItem }: ItemsTabProps) {
-  const [stockFilter, setStockFilter] = useState<'all' | 'with-stock' | 'empty'>('all');
+  const [stockFilter, setStockFilter] = useState<'all' | 'with-stock' | 'empty'>('with-stock');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
