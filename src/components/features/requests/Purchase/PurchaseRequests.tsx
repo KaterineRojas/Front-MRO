@@ -7,9 +7,10 @@ import { Label } from '../../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
-import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle } from 'lucide-react';
+import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle, ArrowLeft } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { PurchaseForm } from './PurchaseForm';
+import { FormPurchase } from './FormPurchase'; 
 import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
 //import { toast } from 'sonner';
 import { useAppSelector } from '../../../../store';
@@ -22,7 +23,7 @@ import type { PurchaseRequest } from './purchaseService';
 
 export function PurchaseRequests() {
   const currentUser = useAppSelector(selectCurrentUser);
-  const [showPurchaseForm, setShowPurchaseForm] = useState(false);
+  const [activeView, setActiveView] = useState<'list' | 'request' | 'make'>('list');
   const [isMobile, setIsMobile] = useState(false);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
 
@@ -103,15 +104,15 @@ export function PurchaseRequests() {
     setPurchaseToConfirm(null);
   };
 
-  // Show purchase form
-  if (showPurchaseForm) {
+  // Show request or direct purchase forms
+  if (activeView === 'request') {
     if (!currentUser) {
       return (
         <div className="space-y-6">
           <Card>
             <CardContent className="p-12 text-center">
               <p className="text-muted-foreground">User information not available</p>
-              <Button variant="outline" onClick={() => setShowPurchaseForm(false)} className="mt-4">
+              <Button variant="outline" onClick={() => setActiveView('list')} className="mt-4">
                 ← Back to Requests
               </Button>
             </CardContent>
@@ -122,34 +123,18 @@ export function PurchaseRequests() {
 
     return (
       <div className="space-y-6">
- {/** 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-
-         <Card className="flex-1 md:ml-4">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Engineer</p>
-                  <p className="font-medium">{currentUser.name || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Department</p>
-                  <p className="font-medium">{currentUser.departmentName || currentUser.department || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Request Type</p>
-                  <p className="font-medium">Purchase</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-     
-        </div>
-             */}
         <PurchaseForm
           currentUser={currentUser}
-          onBack={() => setShowPurchaseForm(false)}
+          onBack={() => setActiveView('list')}
         />
+      </div>
+    );
+  }
+
+  if (activeView === 'make') {
+    return (
+      <div className="space-y-6">
+        <FormPurchase onBack={() => setActiveView('list')} />
       </div>
     );
   }
@@ -165,10 +150,15 @@ export function PurchaseRequests() {
             Manage your equipment purchase requests
           </p>
         </div>
-        <Button onClick={() => setShowPurchaseForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Request Purchase
-        </Button>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => setActiveView('make')}>
+            Make Purchase
+          </Button>
+          <Button onClick={() => setActiveView('request')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Request Purchase
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filter Bar */}
