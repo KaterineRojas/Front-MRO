@@ -11,6 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { Calendar as CalendarIcon, Plus, Trash2, ArrowLeft, Package, Search } from 'lucide-react';
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import { format } from 'date-fns';
+import { Button as Button2 } from '../inventory/components/Button';
+import {ArticleSelector, NewRequestItem} from './components/ArticleSelector'
 
 interface Article {
   code: string;
@@ -79,39 +81,23 @@ export function CreatePurchaseRequestPage({ onBack, onSave }: CreatePurchaseRequ
 
   const selectedArticle = mockArticles.find(a => a.code === currentItem.articleCode);
 
-  const handleAddItem = () => {
-    if (!currentItem.articleCode || !currentItem.quantity) {
-      alert('Please select an article and enter quantity');
-      return;
-    }
-
-    const article = mockArticles.find(a => a.code === currentItem.articleCode);
-    if (!article) return;
-
-    const quantity = parseInt(currentItem.quantity);
-    const estimatedCost = parseFloat(currentItem.estimatedCost) || article.cost;
-    const totalCost = quantity * estimatedCost;
+  const handleAddItem = (itemData: NewRequestItem) => {
+    const totalCost = itemData.quantity * itemData.estimatedCost;
 
     const newItem: PurchaseRequestItem = {
       id: Date.now(),
-      articleCode: article.code,
-      articleDescription: article.description,
-      quantity,
-      unit: article.unit,
-      estimatedCost,
-      totalCost,
-      purchaseUrl: currentItem.purchaseUrl,
-      imageUrl: article.imageUrl
+      articleCode: itemData.articleCode,
+      articleDescription: itemData.description || '', 
+      quantity: itemData.quantity,
+      unit: itemData.unit || 'pcs',
+      estimatedCost: itemData.estimatedCost,
+      totalCost: totalCost,
+      purchaseUrl: itemData.purchaseUrl,
+      imageUrl: itemData.imageUrl || ''
     };
 
-    setItems([...items, newItem]);
-    setCurrentItem({
-      articleCode: '',
-      quantity: '',
-      estimatedCost: '',
-      purchaseUrl: ''
-    });
-  };
+    setItems((prevItems) => [...prevItems, newItem]);
+};
 
   const handleRemoveItem = (id: number) => {
     setItems(items.filter(item => item.id !== id));
@@ -149,10 +135,9 @@ export function CreatePurchaseRequestPage({ onBack, onSave }: CreatePurchaseRequ
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <Button variant="ghost" onClick={onBack} className="mb-2">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Purchase Requests
-          </Button>
+          <Button2 variant="primary" onClick={onBack} className="mb-2">
+            <ArrowLeft className='h-4 w-4 m-1' /> Back to Purchase Request
+          </Button2>
           <h1>Create Purchase Request</h1>
           <p className="text-muted-foreground">
             Add items to your purchase request
@@ -162,115 +147,11 @@ export function CreatePurchaseRequestPage({ onBack, onSave }: CreatePurchaseRequ
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left side - Add Items */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Package className="h-5 w-5 mr-2" />
-              Add Items to Request
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Article Selection with Search and Images */}
-            <div>
-              <Label>Select Article *</Label>
-              <div className="relative mb-2">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by code, name or category..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-              <div className="border rounded-lg max-h-[400px] overflow-y-auto">
-                {filteredArticles.map((article) => (
-                  <div
-                    key={article.code}
-                    className={`flex items-center space-x-3 p-3 cursor-pointer hover:bg-muted/50 transition-colors ${
-                      currentItem.articleCode === article.code ? 'bg-muted border-l-4 border-primary' : ''
-                    }`}
-                    onClick={() => {
-                      setCurrentItem({
-                        ...currentItem,
-                        articleCode: article.code,
-                        estimatedCost: article.cost.toString()
-                      });
-                    }}
-                  >
-                    <ImageWithFallback 
-                      src={article.imageUrl}
-                      alt={article.description}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                    <div className="flex-1">
-                      <p className="font-medium">{article.code}</p>
-                      <p className="text-sm text-muted-foreground">{article.description}</p>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Badge variant="outline" className="text-xs">{article.category}</Badge>
-                        <span className="text-xs text-muted-foreground">${article.cost.toFixed(2)}/{article.unit}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Item Details */}
-            {selectedArticle && (
-              <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="quantity">Quantity *</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      value={currentItem.quantity}
-                      onChange={(e) => setCurrentItem({...currentItem, quantity: e.target.value})}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="estimatedCost">Unit Cost *</Label>
-                    <Input
-                      id="estimatedCost"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={currentItem.estimatedCost}
-                      onChange={(e) => setCurrentItem({...currentItem, estimatedCost: e.target.value})}
-                      placeholder={selectedArticle.cost.toString()}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="purchaseUrl">Purchase URL (optional)</Label>
-                  <Input
-                    id="purchaseUrl"
-                    value={currentItem.purchaseUrl}
-                    onChange={(e) => setCurrentItem({...currentItem, purchaseUrl: e.target.value})}
-                    placeholder="https://..."
-                  />
-                </div>
-
-                {currentItem.quantity && currentItem.estimatedCost && (
-                  <div className="flex items-center justify-between p-3 bg-primary/10 rounded">
-                    <span className="font-medium">Total for this item:</span>
-                    <span className="font-medium">
-                      ${(parseInt(currentItem.quantity) * parseFloat(currentItem.estimatedCost)).toFixed(2)}
-                    </span>
-                  </div>
-                )}
-
-                <Button onClick={handleAddItem} className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add to Request
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ArticleSelector 
+          articles={filteredArticles}
+          onAddItem={handleAddItem}
+        />
+        
 
         {/* Right side - Request Details & Items List */}
         <div className="space-y-6">

@@ -7,18 +7,13 @@ import { PurchaseRequest } from './types/purchase'
 import { MOCK_ORDERS } from './data/mockNewPurchase'
 import { Plus } from 'lucide-react'
 import { CreatePurchaseRequestPage } from './CreatePurchaseRequestPage'
+import {authService} from '../../../services/authService'
 
 export function Main({ onViewDetail }: PurchaseOrdersProps) {
     const [activeTab, setActiveTab] = useState('active orders');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseRequest[]>(MOCK_ORDERS);
     const [creatingRequest, setCreatingRequest] = useState(false);
-
-    useEffect(() => {
-        console.log(activeTab);
-
-
-    }, [activeTab])
 
 
     const handleStatusUpdate = (orderId: number, newStatus: number) => {
@@ -31,7 +26,7 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
                         // If approved (1), we can simulate setting the approval date
                         ...(newStatus === 1 && {
                             approvedAt: new Date().toISOString(),
-                            approvedByName: "Current Admin" // You can replace this with actual user name
+                            approvedByName: authService.getUser()?.name
                         })
                     };
                 }
@@ -42,8 +37,6 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
     };
 
     const filteredOrders = useMemo(() => {
-        // 1. Step 1: Filter by TAB (Active vs History)
-        // We define which IDs belong to which tab
         let data = purchaseOrders;
 
         if (activeTab === 'active orders') {
@@ -126,7 +119,3 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
 }
 
 
-
-/**
- * poner la tabla dinamica que dependiendo de la tab donde este muestre una u otra pestaña
- */

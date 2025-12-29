@@ -20,8 +20,6 @@ export const OrderTable: React.FC<ActivePurchaseTableProps> = ({
     activeTab 
 }) => {
 
-    // 2. DYNAMIC OPTIONS LOGIC
-    // We determine which filters to show based on the Tab Name
     const filterOptions = useMemo(() => {
         if (activeTab === 'active orders') {
             return [
@@ -61,7 +59,7 @@ export const OrderTable: React.FC<ActivePurchaseTableProps> = ({
                 <FilterSelect 
                     value={statusFilter}
                     onChange={setStatusFilter}
-                    options={filterOptions} // <--- 3. USE DYNAMIC OPTIONS
+                    options={filterOptions} 
                     className='pr-[60px]'
                 />
             </div>

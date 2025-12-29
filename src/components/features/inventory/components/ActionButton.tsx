@@ -10,12 +10,13 @@ import {
     CopyPlus,
     Check,
     X,
+    ArrowLeft
 } from 'lucide-react';
 
 export type ActionVariant = 'primary' | 'primarySolid' | 'cyan' | 'purple' | 'success' | 'warning' | 'danger' | 'neutral' | 'slate';
 
 // 2. Definimos los nombres de iconos permitidos
-export type IconType = 'assemble' | 'dismantle' | 'duplicate' | 'delete' | 'approve' | 'reject';
+export type IconType = 'assemble' | 'dismantle' | 'duplicate' | 'delete' | 'approve' | 'reject' | 'arrowLeft';
 
 interface ActionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     icon: IconType;
@@ -46,6 +47,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
             // 👇 ADD THESE TWO CASES
             case 'approve': return <Check {...iconProps} />;
             case 'reject': return <X {...iconProps} />;
+            case 'arrowLeft': return <ArrowLeft {...iconProps} />;
 
             default: return <MoreHorizontal {...iconProps} />;
         }
