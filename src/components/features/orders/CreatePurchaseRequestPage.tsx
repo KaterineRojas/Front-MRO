@@ -12,7 +12,12 @@ import { Calendar as CalendarIcon, Plus, Trash2, ArrowLeft, Package, Search } fr
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import { format } from 'date-fns';
 import { Button as Button2 } from '../inventory/components/Button';
-import {ArticleSelector, NewRequestItem} from './components/ArticleSelector'
+import { ArticleSelector } from './components/ArticleSelector'
+import { NewRequestItem } from './types/purchase'
+import { RequestSummary } from './components/RequestSummary'
+import { RequestDetailsForm } from './components/RequestDetailsForm'
+import {RequestFormData} from './types/purchase'
+
 
 interface Article {
   code: string;
@@ -54,23 +59,39 @@ interface CreatePurchaseRequestPageProps {
   onSave: (request: any) => void;
 }
 
+export const getCategoryVariant = (category: string, isDarkMode: boolean): any => {
+  const cat = category.toLowerCase();
+  
+  // Use the 'isDarkMode' argument instead of the hook
+  if (cat.includes('office') || cat.includes('computer')) return isDarkMode ? 'brand' : 'brand-soft';
+  if (cat.includes('tech') || cat.includes('paper')) return isDarkMode ? 'info' : 'info-soft';
+  if (cat.includes('furniture')) return isDarkMode ? 'warning' : 'warning-soft';
+  if (cat.includes('safety') || cat.includes('maintenance')) return isDarkMode ? 'emerald' : 'emerald-soft';
+  if (cat.includes('tool') || cat.includes('hard')) return isDarkMode ? 'neutral' : 'neutral-soft';
+  
+  return 'secondary';
+};
+
+
 export function CreatePurchaseRequestPage({ onBack, onSave }: CreatePurchaseRequestPageProps) {
   const [items, setItems] = useState<PurchaseRequestItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState<Date | undefined>();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<RequestFormData>({
     requestedBy: '',
     department: '',
     project: '',
     priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
-    notes: ''
+    notes: '',
+    expectedDate: ''
   });
+
 
   const [currentItem, setCurrentItem] = useState({
     articleCode: '',
     quantity: '',
     estimatedCost: '',
-    purchaseUrl: ''
+    purchaseUrl: '',
   });
 
   const filteredArticles = mockArticles.filter(article =>
@@ -78,6 +99,7 @@ export function CreatePurchaseRequestPage({ onBack, onSave }: CreatePurchaseRequ
     article.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     article.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
 
   const selectedArticle = mockArticles.find(a => a.code === currentItem.articleCode);
 
@@ -87,7 +109,7 @@ export function CreatePurchaseRequestPage({ onBack, onSave }: CreatePurchaseRequ
     const newItem: PurchaseRequestItem = {
       id: Date.now(),
       articleCode: itemData.articleCode,
-      articleDescription: itemData.description || '', 
+      articleDescription: itemData.description || '',
       quantity: itemData.quantity,
       unit: itemData.unit || 'pcs',
       estimatedCost: itemData.estimatedCost,
@@ -97,7 +119,7 @@ export function CreatePurchaseRequestPage({ onBack, onSave }: CreatePurchaseRequ
     };
 
     setItems((prevItems) => [...prevItems, newItem]);
-};
+  };
 
   const handleRemoveItem = (id: number) => {
     setItems(items.filter(item => item.id !== id));
@@ -147,164 +169,30 @@ export function CreatePurchaseRequestPage({ onBack, onSave }: CreatePurchaseRequ
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left side - Add Items */}
-        <ArticleSelector 
+        <ArticleSelector
           articles={filteredArticles}
           onAddItem={handleAddItem}
         />
-        
 
-        {/* Right side - Request Details & Items List */}
-        <div className="space-y-6">
-          {/* Request Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Request Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="requestedBy">Requested By *</Label>
-                <Input
-                  id="requestedBy"
-                  value={formData.requestedBy}
-                  onChange={(e) => setFormData({...formData, requestedBy: e.target.value})}
-                  placeholder="Your name"
-                  required
-                />
-              </div>
+        {/* RIGHT COL: Form & Summary */}
+        <div className=" space-y-6">
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="department">Department *</Label>
-                  <Input
-                    id="department"
-                    value={formData.department}
-                    onChange={(e) => setFormData({...formData, department: e.target.value})}
-                    placeholder="e.g., IT"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="priority">Priority *</Label>
-                  <Select value={formData.priority} onValueChange={(value: any) => setFormData({...formData, priority: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+          {/* Step 1: Who is requesting? */}
+          <RequestDetailsForm
+            formData={formData}
+            setFormData={setFormData}
+          />
 
-              <div>
-                <Label htmlFor="project">Project *</Label>
-                <Input
-                  id="project"
-                  value={formData.project}
-                  onChange={(e) => setFormData({...formData, project: e.target.value})}
-                  placeholder="Project name"
-                  required
-                />
-              </div>
+          {/* Step 2: What are they requesting? */}
+          <RequestSummary
+            items={items}
+            onRemoveItem={handleRemoveItem}
+            onSubmit={handleSubmit}
+          />
 
-              <div>
-                <Label>Expected Delivery Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {expectedDeliveryDate ? format(expectedDeliveryDate, 'PPP') : 'Select date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={expectedDeliveryDate}
-                      onSelect={setExpectedDeliveryDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                  placeholder="Additional notes..."
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Items in Request */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Items in Request ({items.length})</CardTitle>
-                <Badge variant="secondary" className="text-base">
-                  Total: ${totalAmount.toFixed(2)}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {items.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No items added yet</p>
-                  <p className="text-sm">Select articles from the left to add them</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                      <ImageWithFallback 
-                        src={item.imageUrl}
-                        alt={item.articleDescription}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm">{item.articleCode}</p>
-                        <p className="text-xs text-muted-foreground truncate">{item.articleDescription}</p>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Badge variant="outline" className="text-xs">
-                            {item.quantity} {item.unit}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            ${item.estimatedCost.toFixed(2)} ea = ${item.totalCost.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveItem(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Submit Button */}
-          <Button 
-            onClick={handleSubmit} 
-            className="w-full" 
-            size="lg"
-            disabled={items.length === 0}
-          >
-            Submit Purchase Request
-          </Button>
         </div>
+
+
       </div>
     </div>
   );

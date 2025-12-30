@@ -2,15 +2,9 @@ import React, { useMemo } from 'react';
 import { ShoppingCart, SearchX, Inbox, History } from 'lucide-react';
 import { FilterSelect } from '../../inventory/components/FilterSelect';
 import { OrderRow } from './OrderRow';
-import { PurchaseRequest } from '../types/purchase';
+import { ActivePurchaseTableProps } from '../types/purchase';
 
-interface ActivePurchaseTableProps {
-    orders: PurchaseRequest[];
-    statusFilter: string;
-    setStatusFilter: (val: string) => void;
-    onStatusUpdate: (id: number, status: number) => void;
-    activeTab: string; 
-}
+
 
 export const OrderTable: React.FC<ActivePurchaseTableProps> = ({ 
     orders, 

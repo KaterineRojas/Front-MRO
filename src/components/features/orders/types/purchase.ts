@@ -32,3 +32,39 @@ export interface PurchaseRequest {
 export interface PurchaseOrdersProps {
     onViewDetail?: (order: any) => void;
 }
+
+// the article interface
+// --- TYPES ---
+export interface Article {
+    code: string;
+    description: string;
+    category: string;
+    cost: number;
+    unit: string;
+    imageUrl?: string;
+}
+
+export interface NewRequestItem {
+    articleCode: string;
+    quantity: number;
+    estimatedCost: number;
+    purchaseUrl: string;
+    description?: string;
+    unit?: string;
+    imageUrl?: string;
+}
+
+export interface ArticleSelectorProps {
+    articles: Article[];
+    onAddItem: (item: NewRequestItem) => void;
+}
+
+// order table interface
+
+export interface ActivePurchaseTableProps {
+    orders: PurchaseRequest[];
+    statusFilter: string;
+    setStatusFilter: (val: string) => void;
+    onStatusUpdate: (id: number, status: number) => void;
+    activeTab: string; 
+}

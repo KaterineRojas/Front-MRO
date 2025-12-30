@@ -2,33 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { Package, Search, Plus, ExternalLink } from 'lucide-react';
 import { Button } from '../../inventory/components/Button';
 import { Badge } from '../../inventory/components/Badge';
+import { Article, ArticleSelectorProps} from '../types/purchase'
+import {getCategoryVariant} from '../CreatePurchaseRequestPage'
 import { useSelector } from 'react-redux';
-
-
-// --- TYPES ---
-export interface Article {
-    code: string;
-    description: string;
-    category: string;
-    cost: number;
-    unit: string;
-    imageUrl?: string;
-}
-
-export interface NewRequestItem {
-    articleCode: string;
-    quantity: number;
-    estimatedCost: number;
-    purchaseUrl: string;
-    description?: string;
-    unit?: string;
-    imageUrl?: string;
-}
-
-interface ArticleSelectorProps {
-    articles: Article[];
-    onAddItem: (item: NewRequestItem) => void;
-}
 
 
 
@@ -41,16 +17,7 @@ export const ArticleSelector: React.FC<ArticleSelectorProps> = ({
     const [selectedArticleCode, setSelectedArticleCode] = useState<string | null>(null);
     const darkMode = useSelector((state: any) => state.ui.darkMode);
 
-    const getCategoryVariant = (category: string): any => {
-        const cat = category.toLowerCase();
-        if (cat.includes('office') || cat.includes('computer')) return darkMode ? 'brand' : 'brand-soft';
-        if (cat.includes('tech') || cat.includes('paper')) return darkMode ? 'info' : 'info-soft';
-        if (cat.includes('furniture')) return darkMode ? 'warning' : 'warning-soft';
-        if (cat.includes('safety') || cat.includes('maintenance')) return darkMode ? 'emerald' : 'emerald-soft';
-        if (cat.includes('tool') || cat.includes('hard')) return darkMode ? 'neutral' : 'neutral-soft';
-
-        return 'secondary';
-    };
+    
 
     const [formState, setFormState] = useState({
         quantity: '',
@@ -185,7 +152,7 @@ export const ArticleSelector: React.FC<ArticleSelectorProps> = ({
                                             </span>
 
                                             <Badge
-                                                variant={getCategoryVariant(article.category)}
+                                                variant={getCategoryVariant(article.category, darkMode)}
                                                 className="text-[10px] px-1.5 h-5 rounded"
                                             >
                                                 {article.category}
@@ -205,7 +172,7 @@ export const ArticleSelector: React.FC<ArticleSelectorProps> = ({
                         <div className="flex items-center justify-between mb-4">
                             <h4 className="font-medium text-sm text-gray-900 dark:text-white">Configure Item</h4>
 
-                            <Badge variant={getCategoryVariant(selectedArticle.category)} className="text-[10px]">
+                            <Badge variant={getCategoryVariant(selectedArticle.category, darkMode)} className="text-[10px]">
                                 {selectedArticle.category}
                             </Badge>
                         </div>
