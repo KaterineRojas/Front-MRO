@@ -12,11 +12,12 @@ import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
 import type { User as UserType } from '../../enginner/types';
 import { getWarehouses, getProjects, type Warehouse, type Project } from '../../enginner/services';
-import { getExistingItems, type ExistingItem } from './purchaseService';
+import { getExistingItems, type ExistingItem, type PurchaseRequest } from './purchaseService';
 
 interface PurchaseFormProps {
   currentUser: UserType;
   onBack: (() => void) | null;
+  initialRequest?: PurchaseRequest | null;
 }
 
 interface PurchaseItem {
@@ -31,7 +32,6 @@ interface PurchaseFormData {
   items: PurchaseItem[];
   department: string;
   project: string;
-  priority: string;
   selfPurchase: boolean; 
   warehouseId: string;
   purchaseReason: string;
@@ -44,25 +44,54 @@ interface PurchaseFormData {
   justification: string;
 }
 
-export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
-  const [formData, setFormData] = useState<PurchaseFormData>({
-      items: [{ name: '', isExisting: true, quantity: 1, estimatedCost: 0, link: '' }],
-    department: currentUser.departmentId || currentUser.department || '',
-    project: '',
-    priority: 'medium',
-    selfPurchase: false,
-    warehouseId: '',
-    purchaseReason: '',
-    expectedDeliveryDate: '',
-    clientBilled: 'no',
-    company: '',
-    customer: '',
-    projectReference: '',
-    workOrder: '',
-    justification: ''
-  });
+const createDefaultPurchaseItem = (): PurchaseItem => ({
+  name: '',
+  isExisting: true,
+  quantity: 1,
+  estimatedCost: 0,
+  link: ''
+});
 
-  const [itemSearches, setItemSearches] = useState<{ [key: number]: string }>({});
+const buildInitialFormData = (
+  user: UserType,
+  request?: PurchaseRequest | null
+): PurchaseFormData => ({
+  items: request
+    ? request.items.map((item) => ({
+        name: item.name,
+        isExisting: true,
+        quantity: item.quantity,
+        estimatedCost: item.estimatedCost ?? 0,
+        link: item.productUrl ?? ''
+      }))
+    : [createDefaultPurchaseItem()],
+  department: request?.department || user.departmentId || user.department || '',
+  project: request?.project || '',
+  selfPurchase: request?.selfPurchase ?? false,
+  warehouseId: request?.warehouseId || '',
+  purchaseReason: request?.reason || '',
+  expectedDeliveryDate: '',
+  clientBilled: 'no',
+  company: '',
+  customer: '',
+  projectReference: '',
+  workOrder: '',
+  justification: request?.notes || ''
+});
+
+const buildInitialItemSearches = (request?: PurchaseRequest | null) => {
+  const searches: { [key: number]: string } = {};
+  if (!request) return searches;
+  request.items.forEach((item, index) => {
+    searches[index] = item.name;
+  });
+  return searches;
+};
+
+export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFormProps) {
+  const [formData, setFormData] = useState<PurchaseFormData>(() => buildInitialFormData(currentUser, initialRequest));
+
+  const [itemSearches, setItemSearches] = useState<{ [key: number]: string }>(() => buildInitialItemSearches(initialRequest));
   const [filteredItems, setFilteredItems] = useState<{ [key: number]: ExistingItem[] }>({});
   const [dropdownOpen, setDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
@@ -70,6 +99,7 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [existingItems, setExistingItems] = useState<ExistingItem[]>([]);
+  const isEditing = Boolean(initialRequest);
   // Load warehouses, projects, existing items and departments
   useEffect(() => {
     const loadData = async () => {
@@ -93,6 +123,28 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
     };
     loadData();
   }, []);
+
+  useEffect(() => {
+    setFormData(buildInitialFormData(currentUser, initialRequest));
+    setItemSearches(buildInitialItemSearches(initialRequest));
+    previousPurchaseReasonRef.current = initialRequest && initialRequest.reason !== 'urgent'
+      ? initialRequest.reason
+      : '';
+    setDropdownOpen({});
+  }, [initialRequest, currentUser]);
+
+  useEffect(() => {
+    if (!initialRequest) {
+      setFilteredItems({});
+      return;
+    }
+
+    const mapped: { [key: number]: ExistingItem[] } = {};
+    initialRequest.items.forEach((_, index) => {
+      mapped[index] = existingItems;
+    });
+    setFilteredItems(mapped);
+  }, [initialRequest, existingItems]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -142,7 +194,7 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
     const newIndex = formData.items.length;
     setFormData(prev => ({
       ...prev,
-      items: [...prev.items, { name: '', isExisting: true, quantity: 1, estimatedCost: 0, link: '' }]
+      items: [...prev.items, createDefaultPurchaseItem()]
     }));
     setItemSearches(prev => ({ ...prev, [newIndex]: '' }));
     setFilteredItems(prev => ({ ...prev, [newIndex]: existingItems }));
@@ -206,10 +258,14 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
       }
     }
 
-    toast.success('Purchase requests will be marked as "Pending review" and will be evaluated by the purchasing department. You will be notified of the status by email.');
-    
+    if (isEditing) {
+      toast.success('Purchase request changes will be reviewed by the purchasing department. You will be notified by email.');
+    } else {
+      toast.success('Purchase requests will be marked as "Pending review" and will be evaluated by the purchasing department. You will be notified of the status by email.');
+    }
+
     setTimeout(() => {
-      toast.success('Purchase request submitted successfully');
+      toast.success(isEditing ? 'Purchase request updated successfully' : 'Purchase request submitted successfully');
       if (onBack) onBack();
     }, 2000);
   };
@@ -224,7 +280,6 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
         return {
           ...prev,
           selfPurchase: true,
-          priority: 'urgent',
           purchaseReason: 'urgent'
         };
       }
@@ -486,7 +541,7 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
                             onChange={(e) => updateItem(index, 'link', e.target.value)}
                           />
                           {item.link && !validateUrl(item.link) && (
-                            <p className="text-sm text-red-600 mt-1">
+                            <p className="text-sm text-destructive mt-1">
                               Invalid URL format
                             </p>
                           )}
@@ -513,7 +568,7 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
 
           <Card className="flex flex-col h-[calc(100vh-16rem)]">
             <CardHeader>
-              <CardTitle>Request Details</CardTitle>
+              <CardTitle>Purchase Details</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto space-y-6 pr-1">
               <div>
@@ -539,7 +594,7 @@ export function PurchaseForm({ currentUser, onBack }: PurchaseFormProps) {
                   <Alert className="mt-4">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                      By selecting this option, priority is automatically changed to "Urgent" and cannot be edited.
+                      By selecting this option, the reason is automatically set to "Urgent" and cannot be edited.
                     </AlertDescription>
                   </Alert>
                 )}

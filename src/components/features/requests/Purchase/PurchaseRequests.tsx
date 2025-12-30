@@ -7,7 +7,7 @@ import { Label } from '../../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
-import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle, ArrowLeft, Pencil } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { PurchaseForm } from './PurchaseForm';
 import { FormPurchase } from './FormPurchase'; 
@@ -17,7 +17,7 @@ import { useAppSelector } from '../../../../store';
 import { selectCurrentUser } from '../../../../store';
 import { getWarehouses, type Warehouse } from '../../enginner/services';
 import { usePurchaseRequests } from './usePurchaseRequests';
-import { formatDate, getStatusColor, getStatusText, getPriorityColor, getPriorityText } from './purchaseUtils';
+import { formatDate, getStatusColor, getStatusText, getReasonColor, getReasonText } from './purchaseUtils';
 import type { PurchaseRequest } from './purchaseService';
 
 
@@ -26,6 +26,7 @@ export function PurchaseRequests() {
   const [activeView, setActiveView] = useState<'list' | 'request' | 'make'>('list');
   const [isMobile, setIsMobile] = useState(false);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [requestToEdit, setRequestToEdit] = useState<PurchaseRequest | null>(null);
 
   // Dialog states
   const [confirmPurchaseOpen, setConfirmPurchaseOpen] = useState(false);
@@ -86,6 +87,26 @@ export function PurchaseRequests() {
     setConfirmPurchaseOpen(true);
   };
 
+  const handleEditRequest = (request: PurchaseRequest) => {
+    setRequestToEdit(request);
+    setActiveView('request');
+  };
+
+  const backToList = () => {
+    setRequestToEdit(null);
+    setActiveView('list');
+  };
+
+  const openCreateRequest = () => {
+    setRequestToEdit(null);
+    setActiveView('request');
+  };
+
+  const openMakePurchase = () => {
+    setRequestToEdit(null);
+    setActiveView('make');
+  };
+
   const updatePurchaseQuantity = (index: string, newQuantity: number, maxQuantity: number) => {
     if (newQuantity > maxQuantity) return;
     if (newQuantity < 1) return;
@@ -112,7 +133,7 @@ export function PurchaseRequests() {
           <Card>
             <CardContent className="p-12 text-center">
               <p className="text-muted-foreground">User information not available</p>
-              <Button variant="outline" onClick={() => setActiveView('list')} className="mt-4">
+              <Button variant="outline" onClick={backToList} className="mt-4">
                 ← Back to Requests
               </Button>
             </CardContent>
@@ -125,7 +146,8 @@ export function PurchaseRequests() {
       <div className="space-y-6">
         <PurchaseForm
           currentUser={currentUser}
-          onBack={() => setActiveView('list')}
+          onBack={backToList}
+          initialRequest={requestToEdit}
         />
       </div>
     );
@@ -134,7 +156,7 @@ export function PurchaseRequests() {
   if (activeView === 'make') {
     return (
       <div className="space-y-6">
-        <FormPurchase onBack={() => setActiveView('list')} />
+        <FormPurchase onBack={backToList} />
       </div>
     );
   }
@@ -151,10 +173,10 @@ export function PurchaseRequests() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setActiveView('make')}>
+          <Button variant="outline" onClick={openMakePurchase}>
             Make Purchase
           </Button>
-          <Button onClick={() => setActiveView('request')}>
+          <Button onClick={openCreateRequest}>
             <Plus className="h-4 w-4 mr-2" />
             Request Purchase
           </Button>
@@ -240,9 +262,9 @@ export function PurchaseRequests() {
                       </h3>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
                         <Badge variant="outline">{request.warehouseName}</Badge>
-                        {request.priority && (
-                          <Badge className={getPriorityColor(request.priority)} variant="secondary">
-                            {getPriorityText(request.priority)}
+                        {request.reason && (
+                          <Badge className={getReasonColor(request.reason)} variant="secondary">
+                            {getReasonText(request.reason)}
                           </Badge>
                         )}
                         <Badge className={getStatusColor(request.status)} variant="secondary">
@@ -251,6 +273,14 @@ export function PurchaseRequests() {
                       </div>
                     </div>
                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="outline"
+                        className="gap-2 h-auto py-2 px-4"
+                        onClick={() => handleEditRequest(request)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </Button>
                       {canConfirmBought(request) && (
                         <Button
                           className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
@@ -320,7 +350,7 @@ export function PurchaseRequests() {
                     <TableHead>Warehouse</TableHead>
                     <TableHead>Project</TableHead>
                     <TableHead>Cost</TableHead>
-                    <TableHead>Priority / Status</TableHead>
+                    <TableHead>Reason / Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -348,9 +378,9 @@ export function PurchaseRequests() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1 flex-wrap">
-                            {request.priority && (
-                              <Badge className={getPriorityColor(request.priority)} variant="secondary">
-                                {getPriorityText(request.priority)}
+                            {request.reason && (
+                              <Badge className={getReasonColor(request.reason)} variant="secondary">
+                                {getReasonText(request.reason)}
                               </Badge>
                             )}
                             <Badge className={getStatusColor(request.status)} variant="secondary">
@@ -360,6 +390,17 @@ export function PurchaseRequests() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              className="gap-2 h-auto py-2 px-4"
+                              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                e.stopPropagation();
+                                handleEditRequest(request);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              Edit
+                            </Button>
                             {canConfirmBought(request) && (
                               <Button
                                 className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
