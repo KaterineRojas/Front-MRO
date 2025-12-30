@@ -81,9 +81,7 @@ export function ItemRow({
             <img
               src={article.imageUrl}
               alt={article.name}
-              className={`w-12 h-12 object-cover rounded ${
-                itemIsNew ? 'ring-1 ring-green-300 pulse-ring-animation' : ''
-              }`}
+              className={`w-12 h-12 object-cover rounded`}
               onError={() => onImageError(article.id)}
             />
           ) : (
@@ -95,7 +93,7 @@ export function ItemRow({
         <TableCell className="font-mono text-sm">
           <div className="flex flex-col gap-0.5">
             {itemIsNew && (
-              <Badge className="bg-green-400 text-[11px] font-semibold px-1.5 py-0 hover:bg-green-400 w-fit leading-tight">
+              <Badge className="bg-green-600 text-[11px] font-semibold px-1.5 py-0 hover:bg-green-400 w-fit leading-tight">
                 <span className="pulse-text-animation">New</span>
               </Badge>
             )}
