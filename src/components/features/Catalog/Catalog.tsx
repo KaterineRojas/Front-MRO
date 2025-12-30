@@ -23,6 +23,8 @@ import type { AppError } from '../enginner/services/errorHandler';
 import { useAppDispatch } from '../../../store';
 import { AICameraModal } from './AICameraModal';
 
+const FALLBACK_IMAGE_SRC = `${import.meta.env.BASE_URL}images/items.png`;
+
 const styles: { [key: string]: React.CSSProperties } = {
 container: {
         padding: '24px',
@@ -203,6 +205,20 @@ badgeOutOfStock: {
         fontWeight: '500',
         width: '32px',
         textAlign: 'center'
+    },
+    fallbackLabel: {
+      position: 'absolute',
+      bottom: '8px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      padding: '4px 8px',
+      borderRadius: '6px',
+      fontSize: '0.75rem',
+      fontWeight: '600',
+      backgroundColor: 'rgba(17, 24, 39, 0.75)',
+      color: '#fff',
+      textTransform: 'uppercase',
+      letterSpacing: '0.02em'
     }
 };
 
@@ -515,6 +531,8 @@ export function Catalog() {
             const totalQty = item.totalQuantity || 0;
             const isAvailable = totalQty > 0;
             const badgeStyle = isAvailable ? styles.badgeAvailable : styles.badgeOutOfStock;
+            const hasImage = Boolean(item.imageUrl);
+            const imageSrc = hasImage ? item.imageUrl : FALLBACK_IMAGE_SRC;
 
             return (
               <div key={item.itemId} style={styles.cardWrapper}>
@@ -523,10 +541,13 @@ export function Catalog() {
                   {/* Imagen y Badge de Disponibilidad */}
                   <div style={styles.imageContainer}>
                     <ImageWithFallback
-                      src={item.imageUrl}
+                      src={imageSrc}
                       alt={item.itemName}
                       style={styles.image}
                     />
+                    {!hasImage && (
+                      <span style={styles.fallbackLabel}>Image for reference only </span>
+                    )}
                     {/* CÓDIGO MODIFICADO AQUÍ ⬇️ */}
                     <div style={badgeStyle}>
                       {isAvailable ? `Available: ${totalQty}` : 'Out of Stock'}
