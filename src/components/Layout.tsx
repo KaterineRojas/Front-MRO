@@ -9,8 +9,12 @@ import {
   setSidebarOpen,
   toggleDarkMode,
   setNotificationsOpen,
-  markAllAsRead
 } from '../store';
+import {
+  fetchNotifications,
+  fetchUnreadCount,
+  markAllNotificationsAsRead
+} from '../store/slices/notificationsSlice';
 import { clearPackingRequests, clearReturns } from '../store/slices/requestsSlice';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -50,6 +54,7 @@ export function Layout() {
   const darkMode = useAppSelector((state) => state.ui.darkMode);
   const notificationsOpen = useAppSelector((state) => state.ui.notificationsOpen);
   const notifications = useAppSelector((state) => state.notifications.items);
+  const unreadCount = useAppSelector((state) => state.notifications.unreadCount);
 
   // Apply dark mode to document root
   useEffect(() => {
@@ -60,14 +65,35 @@ export function Layout() {
     }
   }, [darkMode]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Fetch notifications when user is logged in
+  useEffect(() => {
+    if (currentUser) {
+      // Initial fetch
+      dispatch(fetchNotifications());
+      dispatch(fetchUnreadCount());
 
-  const handleNotificationsOpen = (open: boolean) => {
+      // Poll for new notifications every 30 seconds
+      const interval = setInterval(() => {
+        dispatch(fetchUnreadCount());
+      }, 30000); // 30 seconds
+
+      // Cleanup interval on unmount
+      return () => clearInterval(interval);
+    }
+  }, [currentUser, dispatch]);
+
+  const handleNotificationsOpen = async (open: boolean) => {
     dispatch(setNotificationsOpen(open));
     if (open) {
-      // Mark all notifications as read when opening
-      dispatch(markAllAsRead());
+      // Fetch latest notifications when opening
+      await dispatch(fetchNotifications());
     }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    await dispatch(markAllNotificationsAsRead());
+    // Refresh unread count after marking all as read
+    dispatch(fetchUnreadCount());
   };
 
   const handleLogout = async () => {
@@ -299,7 +325,19 @@ export function Layout() {
                 >
                   <div className="flex items-center justify-between p-4 border-b dark:border-border">
                     <h3 className="font-semibold">Notifications</h3>
-                    <Badge variant="secondary">{notifications.length}</Badge>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleMarkAllAsRead}
+                          className="text-xs h-7"
+                        >
+                          Mark all as read
+                        </Button>
+                      )}
+                      <Badge variant="secondary">{notifications.length}</Badge>
+                    </div>
                   </div>
                   <ScrollArea className="h-[400px]">
                     <div className="divide-y">
