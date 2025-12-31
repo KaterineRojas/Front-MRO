@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://localhost:5044';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5044/api';
 
 // Types matching backend DTOs
 export interface NotificationDto {
@@ -124,7 +124,7 @@ class NotificationsService {
     });
 
     const response = await fetch(
-      `${API_URL}/api/notifications?${params}`,
+      `${API_URL}/notifications?${params}`,
       {
         method: 'GET',
         headers: this.getAuthHeaders(),
@@ -139,7 +139,7 @@ class NotificationsService {
    */
   async getUnreadCount(): Promise<number> {
     const response = await fetch(
-      `${API_URL}/api/notifications/unread-count`,
+      `${API_URL}/notifications/unread-count`,
       {
         method: 'GET',
         headers: this.getAuthHeaders(),
@@ -154,7 +154,7 @@ class NotificationsService {
    */
   async markAsRead(notificationId: number): Promise<void> {
     const response = await fetch(
-      `${API_URL}/api/notifications/${notificationId}/mark-as-read`,
+      `${API_URL}/notifications/${notificationId}/mark-as-read`,
       {
         method: 'PUT',
         headers: this.getAuthHeaders(),
@@ -169,7 +169,7 @@ class NotificationsService {
    */
   async markAllAsRead(): Promise<{ markedCount: number }> {
     const response = await fetch(
-      `${API_URL}/api/notifications/mark-all-as-read`,
+      `${API_URL}/notifications/mark-all-as-read`,
       {
         method: 'PUT',
         headers: this.getAuthHeaders(),
@@ -184,7 +184,7 @@ class NotificationsService {
    */
   async deleteNotification(notificationId: number): Promise<void> {
     const response = await fetch(
-      `${API_URL}/api/notifications/${notificationId}`,
+      `${API_URL}/notifications/${notificationId}`,
       {
         method: 'DELETE',
         headers: this.getAuthHeaders(),
@@ -199,7 +199,7 @@ class NotificationsService {
    */
   async createNotification(dto: CreateNotificationDto): Promise<NotificationDto> {
     const response = await fetch(
-      `${API_URL}/api/notifications`,
+      `${API_URL}/notifications`,
       {
         method: 'POST',
         headers: this.getAuthHeaders(),

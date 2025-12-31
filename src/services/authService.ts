@@ -132,17 +132,17 @@ export const authService = {
    * Guardar token en localStorage
    */
   saveToken(token: string): void {
-    localStorage.setItem('auth_token', token);
+    localStorage.setItem('mro_token', token);
   },
 
   // Guardar datos del usuario
   saveUser(user: BackendUser): void {
-    localStorage.setItem('auth_user', JSON.stringify(user));
+    localStorage.setItem('mro_user', JSON.stringify(user));
   },
 
-  // Get User Data 
+  // Get User Data
   getUser(): BackendUser | null {
-    const userStr = localStorage.getItem('auth_user');
+    const userStr = localStorage.getItem('mro_user');
     if (!userStr) return null;
     try {
       return JSON.parse(userStr);
@@ -153,22 +153,22 @@ export const authService = {
 
   // Limpiar auth
   removeUser(): void {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
+    localStorage.removeItem('mro_token');
+    localStorage.removeItem('mro_user');
   },
 
   /**
    * Obtener token de localStorage
    */
   getToken(): string | null {
-    return localStorage.getItem('auth_token');
+    return localStorage.getItem('mro_token');
   },
 
   /**
    * Eliminar token de localStorage
    */
   removeToken(): void {
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem('mro_token');
   },
 
   /**

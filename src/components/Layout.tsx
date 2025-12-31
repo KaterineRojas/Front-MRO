@@ -103,7 +103,7 @@ export function Layout() {
       dispatch(logout());
       dispatch(clearPackingRequests());
       dispatch(clearReturns());
-      authService.removeToken();
+      authService.removeToken(); // Esto ya elimina 'mro_token'
 
       // Only redirect to Azure logout if user authenticated with Azure
       if (authType === 'azure') {
