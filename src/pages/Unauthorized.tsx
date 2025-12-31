@@ -6,7 +6,7 @@ export const Unauthorized = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="min-h-[80vh] flex flex-col items-center justify-center bg-gray-50 dark:bg-[#0A0A0A] px-4">
+        <div className="h-[100vh] min-h-[80vh] flex flex-col items-center justify-center bg-gray-50 dark:bg-[#0A0A0A] px-4">
             <div className="text-center">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-6">
                     <ShieldAlert className="w-8 h-8 text-red-600 dark:text-red-500" />

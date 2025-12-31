@@ -16,12 +16,12 @@ import { CreatePurchaseRequestPage } from './CreatePurchaseRequestPage';
 import { format } from 'date-fns';
 import { mockPurchaseOrders, PurchaseOrder, PurchaseItem } from './data/mockPurchaseOrders'
 
+
 import { useSelector } from 'react-redux';
 import { Button as ActionButton } from '../inventory/components/Button'
-import { getUrgencyBadge, getStatusBadge, getTypeBadge } from '../inventory/components/RequestBadges'
+import {getUrgencyBadge, getStatusBadge, getTypeBadge} from '../inventory/components/RequestBadges'
 import TabsGroup from '../requests/components/Tabs'
-import { OrderTable } from './components/OrderTable'
-import { PurchaseRequest } from './types/purchase'
+
 
 const mockArticles = [
   { code: 'OFF-001', description: 'Office Paper A4 - 80gsm', unit: 'sheets', cost: 0.02, supplier: 'Office Supplies Inc.' },
@@ -37,7 +37,7 @@ interface PurchaseOrdersProps {
 }
 
 export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseRequest[]>(mockPurchaseOrders);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(mockPurchaseOrders);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [creatingRequest, setCreatingRequest] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -47,13 +47,13 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [confirmPurchaseDialogOpen, setConfirmPurchaseDialogOpen] = useState(false);
   const [activateConfirmDialogOpen, setActivateConfirmDialogOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<PurchaseRequest | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [cancelNotes, setCancelNotes] = useState('');
   const [purchasedQuantities, setPurchasedQuantities] = useState<Record<number, number>>({});
   const [actualCost, setActualCost] = useState<number>(0);
 
-  const darkMode = useSelector((state: any) => state.ui.darkMode);
-  const [activeTab, setActiveTab] = useState('Active Orders');
+    const darkMode = useSelector((state: any) => state.ui.darkMode);
+    const [activeTab, setActiveTab] = useState('Active Orders');
 
 
   const handleToggleExpandActive = (orderId: number) => {
@@ -92,31 +92,21 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
     notes: ''
   });
 
-  // Based on your backend: 0=Pending, 1=Approved
-  const ACTIVE_STATUS_IDS = [0, 1];
-
-  // Based on your backend: 2=Rejected, 3=Completed (adjust if you have more IDs)
-  const INACTIVE_STATUS_IDS = [2, 3];
-
-  // 1. Separation Logic (using numbers)
   const activeOrders = purchaseOrders.filter(order =>
-    ACTIVE_STATUS_IDS.includes(order.status)
+    order.status === 'pending' || order.status === 'approved' || order.status === 'activated'
   );
-
   const inactiveOrders = purchaseOrders.filter(order =>
-    INACTIVE_STATUS_IDS.includes(order.status)
+    order.status === 'delivered' || order.status === 'cancelled' || order.status === 'completed'
   );
 
-  // 2. Filtering Logic (converting number to string for comparison)
   const filteredActiveOrders = activeOrders.filter(order => {
     if (statusFilter === 'all') return true;
-    // FIX: Convert the order's number status to string to match the filter value
-    return order.status.toString() === statusFilter;
+    return order.status === statusFilter;
   });
 
   const filteredInactiveOrders = inactiveOrders.filter(order => {
     if (statusFilter === 'all') return true;
-    return order.status.toString() === statusFilter;
+    return order.status === statusFilter;
   });
 
   const selectedArticle = mockArticles.find(article => article.code === formData.articleCode);
@@ -170,26 +160,17 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
     resetForm();
   };
 
-  const handleStatusUpdate = (orderId: number, newStatus: number) => {
-    setPurchaseOrders(prevOrders =>
-      prevOrders.map(order => {
-        if (order.id === orderId) {
-          return {
-            ...order,
-            status: newStatus, // 1 for Approved, 2 for Rejected
-            // If approved (1), we can simulate setting the approval date
-            ...(newStatus === 1 && {
-              approvedAt: new Date().toISOString(),
-              approvedByName: "Current Admin" // You can replace this with actual user name
-            })
-          };
+  const handleStatusUpdate = (orderId: number, newStatus: PurchaseOrder['status'], approvedBy?: string) => {
+    setPurchaseOrders(purchaseOrders.map(order =>
+      order.id === orderId
+        ? {
+          ...order,
+          status: newStatus,
+          ...(approvedBy && { approvedBy }),
+          ...(newStatus === 'delivered' && { actualDelivery: format(new Date(), 'yyyy-MM-dd') })
         }
-        return order;
-      })
-    );
-
-    // NOTE: Usually, you would also make an API call here:
-    // api.patch(`/purchases/${orderId}`, { status: newStatus });
+        : order
+    ));
   };
 
   const handleItemReceive = (orderId: number, itemId: number, receivedQuantity: number) => {
@@ -374,28 +355,289 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsGroup
+        <TabsGroup 
           tabsList={[{
-            name: 'Active Orders',
-            iconType: 'shoppingCart'
-          }, {
-            name: 'Orders History',
-            iconType: 'history'
-          }
+              name: 'Active Orders',
+              iconType: 'shoppingCart'
+            },{
+              name: 'Orders History',
+              iconType: 'history'
+            }
           ]}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
         />
-
+          
 
         <TabsContent value="active" className="space-y-6">
           {/* Active Orders Filter */}
-          <OrderTable
-            orders={filteredActiveOrders}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            onStatusUpdate={handleStatusUpdate}
-          />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex gap-4">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Active</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="activated">Activated</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Active Orders Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <ShoppingCart className="h-5 w-5" />
+                <span>Active Purchase Requests ({filteredActiveOrders.length})</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead>PO Number</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Applicant</TableHead>
+                      <TableHead>Total Value</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Expected Delivery</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredActiveOrders.map((order) => (
+                      <React.Fragment key={order.id}>
+                        <TableRow className="hover:bg-muted/50">
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleExpandActive(order.id)}
+                            >
+                              {expandedActiveOrders.has(order.id) ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                          <TableCell className="font-mono">{order.poNumber}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              {getStatusIcon(order.status)}
+                              {getStatusBadge(order.status)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p>{order.requestedBy}</p>
+                              <p className="text-xs text-muted-foreground">{order.department}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <p>${order.totalOrderValue.toFixed(2)}</p>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p>{order.department}</p>
+                              <p className="text-xs text-muted-foreground">{order.project}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>{getPriorityBadge(order.priority)}</TableCell>
+                          <TableCell>
+                            <div>
+                              {order.expectedDelivery && (
+                                <p className="text-sm">{order.expectedDelivery}</p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              {order.status === 'pending' && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedOrder(order);
+                                      setActivateConfirmDialogOpen(true);
+                                    }}
+                                  >
+                                    Activate
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedOrder(order);
+                                      setCancelDialogOpen(true);
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </>
+                              )}
+                              {order.status === 'approved' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedOrder(order);
+                                    setCancelDialogOpen(true);
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              )}
+                              {order.status === 'activated' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedOrder(order);
+                                    setPurchasedQuantities(
+                                      order.items.reduce((acc, item) => ({
+                                        ...acc,
+                                        [item.id]: item.quantity
+                                      }), {})
+                                    );
+                                    setActualCost(order.totalOrderValue);
+                                    setConfirmPurchaseDialogOpen(true);
+                                  }}
+                                >
+                                  I Already Bought It
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Expanded Items Section */}
+                        {expandedActiveOrders.has(order.id) && (
+                          <TableRow>
+                            <TableCell colSpan={9} className="bg-muted/30 p-0">
+                              <div className="p-4">
+                                <h4 className="flex items-center mb-3">
+                                  <Package className="h-4 w-4 mr-2" />
+                                  Items in this order ({order.items.length})
+                                </h4>
+                                <div className="rounded-md border bg-card">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="w-20">Image</TableHead>
+                                        <TableHead>Article Code</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead>Quantity</TableHead>
+                                        <TableHead>Unit Cost</TableHead>
+                                        <TableHead>Total Cost</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        {order.items.some(item => item.purchaseUrl) && (
+                                          <TableHead>Link</TableHead>
+                                        )}
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {order.items.map((item) => (
+                                        <TableRow key={item.id}>
+                                          <TableCell>
+                                            <ImageWithFallback
+                                              src={item.imageUrl || ''}
+                                              alt={item.articleDescription}
+                                              className="w-12 h-12 object-cover rounded"
+                                            />
+                                          </TableCell>
+                                          <TableCell className="font-mono">{item.articleCode}</TableCell>
+                                          <TableCell>{item.articleDescription}</TableCell>
+                                          <TableCell>{item.quantity} {item.unit}</TableCell>
+                                          <TableCell>${item.unitCost.toFixed(2)}</TableCell>
+                                          <TableCell>${item.totalCost.toFixed(2)}</TableCell>
+                                          <TableCell>
+                                            <Badge variant="outline">
+                                              {item.status}
+                                            </Badge>
+                                          </TableCell>
+                                          {item.purchaseUrl && (
+                                            <TableCell>
+                                              <a
+                                                href={item.purchaseUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-600 hover:underline text-sm"
+                                              >
+                                                View
+                                              </a>
+                                            </TableCell>
+                                          )}
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex justify-end space-x-2 mt-4">
+                                  {order.status === 'pending' && (
+                                    <>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleStatusUpdate(order.id, 'approved', 'Current User')}
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleStatusUpdate(order.id, 'cancelled')}
+                                      >
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                        Cancel
+                                      </Button>
+                                    </>
+                                  )}
+                                  {order.status === 'approved' && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleStatusUpdate(order.id, 'ordered')}
+                                    >
+                                      <ShoppingCart className="h-4 w-4 mr-1" />
+                                      Mark Ordered
+                                    </Button>
+                                  )}
+                                  {order.status === 'ordered' && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleStatusUpdate(order.id, 'delivered')}
+                                    >
+                                      <Package className="h-4 w-4 mr-1" />
+                                      Mark Delivered
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="inactive" className="space-y-6">

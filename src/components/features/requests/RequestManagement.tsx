@@ -42,7 +42,7 @@ export function RequestManagement() {
   });
 
   useEffect(() => {
-    console.log(authService.getUser());
+    console.log(loading);
   }, [])
   
 
@@ -74,11 +74,10 @@ export function RequestManagement() {
         if (error instanceof Error && error.name !== 'AbortError') {
           console.error("Fetch error:", error);
         }
-      } finally {
-        setLoading(false);
-      }
+      } 
+      setLoading(false);
     };
-
+    
     loadRequests();
 
     return () => controller.abort();

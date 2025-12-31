@@ -38,10 +38,11 @@ export interface PurchaseOrdersProps {
 export interface Article {
     code: string;
     description: string;
-    category: string;
-    cost: number;
     unit: string;
-    imageUrl?: string;
+    cost: number;
+    supplier: string;
+    imageUrl: string;
+    category: string;
 }
 
 export interface NewRequestItem {
@@ -66,5 +67,15 @@ export interface ActivePurchaseTableProps {
     statusFilter: string;
     setStatusFilter: (val: string) => void;
     onStatusUpdate: (id: number, status: number) => void;
-    activeTab: string; 
+    activeTab: string;
+}
+
+// request form data interface
+export interface RequestFormData {
+    requestedBy: string;
+    department: string;
+    priority: string;
+    project: string;
+    notes: string;
+    expectedDate: string; 
 }
