@@ -10,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle, ArrowLeft, Pencil } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { PurchaseForm } from './PurchaseForm';
-import { FormPurchase } from './FormPurchase'; 
 import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
 //import { toast } from 'sonner';
 import { useAppSelector } from '../../../../store';
@@ -23,7 +22,7 @@ import type { PurchaseRequest } from './purchaseService';
 
 export function PurchaseRequests() {
   const currentUser = useAppSelector(selectCurrentUser);
-  const [activeView, setActiveView] = useState<'list' | 'request' | 'make'>('list');
+  const [activeView, setActiveView] = useState<'list' | 'request'>('list');
   const [isMobile, setIsMobile] = useState(false);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [requestToEdit, setRequestToEdit] = useState<PurchaseRequest | null>(null);
@@ -102,11 +101,6 @@ export function PurchaseRequests() {
     setActiveView('request');
   };
 
-  const openMakePurchase = () => {
-    setRequestToEdit(null);
-    setActiveView('make');
-  };
-
   const updatePurchaseQuantity = (index: string, newQuantity: number, maxQuantity: number) => {
     if (newQuantity > maxQuantity) return;
     if (newQuantity < 1) return;
@@ -153,14 +147,6 @@ export function PurchaseRequests() {
     );
   }
 
-  if (activeView === 'make') {
-    return (
-      <div className="space-y-6">
-        <FormPurchase onBack={backToList} />
-      </div>
-    );
-  }
-
   // Main purchase requests list view
   return (
     <div className="space-y-6">
@@ -173,9 +159,6 @@ export function PurchaseRequests() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={openMakePurchase}>
-            Make Purchase
-          </Button>
           <Button onClick={openCreateRequest}>
             <Plus className="h-4 w-4 mr-2" />
             Request Purchase
