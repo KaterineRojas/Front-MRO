@@ -77,5 +77,23 @@ export interface RequestFormData {
     priority: string;
     project: string;
     notes: string;
-    expectedDate: string; 
+    expectedDate: string;
+}
+
+// ==========================================
+//  ITEMS / INVENTORY TYPES
+// ==========================================
+export interface Item {
+    id: number;
+    sku: string;
+    name: string;
+    description: string;
+    category: string;
+    unit: string;
+    minStock: number;
+    isActive: boolean;
+    consumible: boolean; 
+    imageUrl: string;
+    createdAt: string;
+    updatedAt: string;
 }

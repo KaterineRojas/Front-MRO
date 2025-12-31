@@ -141,7 +141,7 @@ export const ArticleSelector: React.FC<ArticleSelectorProps> = ({
                                             <span className={`font-semibold text-sm truncate pr-2 ${selectedArticleCode === article.code ? 'text-indigo-900 dark:text-indigo-100' : 'text-gray-900 dark:text-gray-100'}`}>
                                                 {article.description}
                                             </span>
-                                            <span className="text-xs font-mono font-medium text-gray-500 whitespace-nowrap">
+                                            <span className="text-xs font-mono font-medium text-gray-900 dark:text-gray-400 whitespace-nowrap">
                                                 ${article.cost}
                                             </span>
                                         </div>
