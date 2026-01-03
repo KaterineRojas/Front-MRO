@@ -212,13 +212,22 @@ function CycleCountWrapper() {
     try {
       const { createCycleCount, getCycleCountEntries, mapZoneToZoneId } = await import('./components/features/cycle-count/services/cycleCountService');
       const warehouseId = user?.warehouseId || 1;
+      const userId = Number(user?.id) || 5; // Use logged in user's ID, fallback to 5
+      
+      console.log('📄 Creating cycle count with:', { 
+        countName: data.countName, 
+        warehouseId, 
+        zone: data.zone,
+        zoneId: mapZoneToZoneId(data.zone), 
+        userId 
+      });
       
       // Create cycle count via API
       const cycleCountResponse = await createCycleCount({
         countName: data.countName,
         warehouseId: warehouseId,
         zoneId: mapZoneToZoneId(data.zone),
-        createdByUserId: 5, // Hardcoded as requested
+        createdByUserId: userId,
         showSystemQuantity: true,
         notes: ''
       });
@@ -227,7 +236,13 @@ function CycleCountWrapper() {
 
       // Fetch entries for the created cycle count
       const entriesResponse = await getCycleCountEntries(cycleCountResponse.id);
-      console.log('✅ Cycle count entries fetched:', entriesResponse);
+      console.log('✅ Cycle count entries fetched:', {
+        entriesCount: entriesResponse.data.length,
+        totalCount: entriesResponse.totalCount,
+        cycleCountZoneName: cycleCountResponse.zoneName,
+        cycleCountZoneId: cycleCountResponse.zoneId,
+        firstEntry: entriesResponse.data[0]
+      });
 
       // Navigate to active count view with the created cycle count data
       // Use logged in user's name as auditor instead of the one from modal
@@ -273,16 +288,75 @@ function CycleCountWrapper() {
     navigate('/cycle-count');
   };
 
-  const handleContinueCycleCount = (record: any) => {
-    // Navegar a la vista de conteo con los datos existentes
-    handleNavigate('/cycle-count/active', { existingCountData: record });
+  const handleContinueCycleCount = async (record: any) => {
+    try {
+      const { getCycleCountDetail, resumeCycleCount } = await import('./components/features/cycle-count/services/cycleCountService');
+      
+      console.log('🔧 [handleContinueCycleCount] Loading cycle count ID:', record.id);
+      console.log('🔧 [handleContinueCycleCount] Record:', record);
+      
+      // Fetch the latest data from API
+      const cycleCountDetail = await getCycleCountDetail(record.id);
+      
+      console.log('✅ [handleContinueCycleCount] Loaded cycle count:', {
+        id: cycleCountDetail.id,
+        statusName: cycleCountDetail.statusName,
+        zoneName: cycleCountDetail.zoneName,
+        zoneId: cycleCountDetail.zoneId,
+        entriesCount: cycleCountDetail.entries.length,
+        countedEntries: cycleCountDetail.countedEntries
+      });
+      
+      // If the cycle count is paused, resume it first
+      if (cycleCountDetail.statusName === 'Paused' || cycleCountDetail.status === 1) {
+        console.log('🔧 [handleContinueCycleCount] Cycle count is paused, resuming...');
+        await resumeCycleCount(record.id);
+        console.log('✅ [handleContinueCycleCount] Cycle count resumed successfully');
+      }
+      
+      // Normalize zone name for the UI
+      // API returns: null/'All Zones' -> 'all', 'Good Condition' -> 'Good Condition', etc.
+      let normalizedZone: string;
+      
+      if (!cycleCountDetail.zoneName) {
+        // Null means All Zones
+        normalizedZone = 'all';
+      } else if (cycleCountDetail.zoneName.toLowerCase().includes('all')) {
+        // 'All Zones' string means all zones
+        normalizedZone = 'all';
+      } else {
+        // Specific zone names: 'Good Condition', 'Damaged', 'Quarantine'
+        normalizedZone = cycleCountDetail.zoneName;
+      }
+      
+      console.log('🔧 [handleContinueCycleCount] Original zoneName:', cycleCountDetail.zoneName, '-> Normalized:', normalizedZone);
+      
+      // Store in sessionStorage for CycleCountActiveWrapper to use
+      sessionStorage.setItem('cycleCountActiveData', JSON.stringify({
+        cycleCount: cycleCountDetail,
+        entries: cycleCountDetail.entries,
+        initialConfig: {
+          zone: normalizedZone,
+          countType: record.countType || 'Annual',
+          auditor: keeperName
+        }
+      }));
+      
+      console.log('🔧 [handleContinueCycleCount] Stored in sessionStorage, navigating to /cycle-count/active');
+      
+      navigate('/cycle-count/active');
+    } catch (error) {
+      console.error('❌ Error loading cycle count for continuation:', error);
+      alert('Failed to load cycle count. Please try again.');
+    }
   };
   
   return (
     <CycleCount
       onStartCycleCount={handleStartCycleCount}
       onViewCycleCount={(record) => {
-        handleNavigate('/cycle-count/detail', { countData: record });
+        // Pass the record with ID so CycleCountDetailView can load from API
+        handleNavigate('/cycle-count/detail', { countData: { id: record.id } });
       }}
       onCompleteCycleCount={handleCompleteCycleCount}
       onContinueCycleCount={handleContinueCycleCount}
@@ -293,6 +367,8 @@ function CycleCountWrapper() {
 
 function CycleCountDetailPage() {
   const navigate = useNavigate();
+  const user = useAppSelector(state => state.auth.user);
+  const keeperName = user?.name || 'Unknown';
   
   const stateData = sessionStorage.getItem('cycleCountState');
   const state = stateData ? JSON.parse(stateData) : null;
@@ -331,6 +407,7 @@ function CycleCountDetailPage() {
         navigate('/cycle-count');
       }}
       onAdjustmentsApplied={handleAdjustmentsApplied}
+      keeperName={keeperName}
     />
   );
 }
@@ -344,6 +421,14 @@ function CycleCountActiveWrapper() {
   const activeDataString = sessionStorage.getItem('cycleCountActiveData');
   const activeData = activeDataString ? JSON.parse(activeDataString) : null;
   
+  console.log('🔧 [CycleCountActiveWrapper] activeData:', activeData ? {
+    hasCycleCount: !!activeData.cycleCount,
+    cycleCountId: activeData.cycleCount?.id,
+    hasEntries: !!activeData.entries,
+    entriesCount: activeData.entries?.length,
+    hasInitialConfig: !!activeData.initialConfig
+  } : null);
+  
   // Obtener datos existentes si se está continuando un conteo (from history)
   const stateData = sessionStorage.getItem('cycleCountState');
   const state = stateData ? JSON.parse(stateData) : null;
@@ -355,25 +440,78 @@ function CycleCountActiveWrapper() {
     ? { ...activeData.initialConfig, auditor: keeperName }
     : undefined;
   
+  console.log('🔧 [CycleCountActiveWrapper] initialConfig:', initialConfig);
+  
   // Convert API entries to Article format if we have activeData
-  // This mapping will be done inline since we can't use async in component body
   let countDataWithArticles = existingCountData;
   
-  if (activeData?.entries && activeData?.cycleCount && activeData.entries.length > 0) {
-    // Map entries to Article format inline
-    const zoneName = activeData.cycleCount.zoneName || 'Good Condition';
+  if (activeData?.entries && activeData?.cycleCount) {
+    // Check if there are no entries for this zone
+    if (activeData.entries.length === 0) {
+      console.warn('⚠️ [CycleCountActiveWrapper] No entries found for this cycle count');
+      console.warn('⚠️ This usually means there are no items in the selected zone');
+      
+      // Still pass the cycleCountId so the system knows it's a real cycle count
+      countDataWithArticles = {
+        id: activeData.cycleCount.id,
+        articles: [],
+        countType: initialConfig?.countType || 'Annual',
+        auditor: keeperName,
+        zone: initialConfig?.zone || 'all'
+      };
+    } else {
+      // Normalize zone name for the UI
+      const cycleZoneName = activeData.cycleCount.zoneName;
+    let normalizedZone: string;
+    
+    if (!cycleZoneName) {
+      normalizedZone = 'all';
+    } else if (cycleZoneName.toLowerCase().includes('all')) {
+      normalizedZone = 'all';
+    } else {
+      // Preserve specific zone names: 'Good Condition', 'Damaged', 'Quarantine'
+      normalizedZone = cycleZoneName;
+    }
+    
+    // Map zone name for articles
     let zone: 'Good Condition' | 'Damaged' | 'Quarantine' = 'Good Condition';
-    if (zoneName === 'Damaged') zone = 'Damaged';
-    else if (zoneName === 'Quarantine') zone = 'Quarantine';
+    if (cycleZoneName) {
+      const zoneNameLower = cycleZoneName.toLowerCase();
+      if (!zoneNameLower.includes('all')) {
+        if (cycleZoneName === 'Damaged' || cycleZoneName === 'damaged') {
+          zone = 'Damaged';
+        } else if (cycleZoneName === 'Quarantine' || cycleZoneName === 'quarantine') {
+          zone = 'Quarantine';
+        } else {
+          zone = 'Good Condition';
+        }
+      }
+    }
+    
+    console.log('🔧 [CycleCountActiveWrapper] Zone mapping:', {
+      originalZoneName: cycleZoneName,
+      normalizedZone,
+      articleZone: zone
+    });
     
     const mappedArticles = activeData.entries.map((entry: any) => {
+      // Determine if entry has been counted
+      const hasBeenCounted = entry.countedAt !== null || entry.countedByUserId !== null;
+      
       let status: 'match' | 'discrepancy' | undefined = undefined;
       const statusNameLower = entry.statusName?.toLowerCase() || '';
       if (statusNameLower === 'match' || statusNameLower === 'matched') {
         status = 'match';
       } else if (statusNameLower === 'discrepancy' || statusNameLower === 'variance') {
         status = 'discrepancy';
+      } else if (hasBeenCounted && entry.variance === 0) {
+        status = 'match';
+      } else if (hasBeenCounted && entry.variance !== 0) {
+        status = 'discrepancy';
       }
+      
+      // Include physicalCount if the entry has been counted (even if it's 0)
+      const physicalCount = hasBeenCounted ? entry.physicalCount : undefined;
       
       return {
         id: entry.itemSku || entry.id.toString(),
@@ -382,19 +520,28 @@ function CycleCountActiveWrapper() {
         type: 'non-consumable' as const,
         zone,
         totalRegistered: entry.systemQuantity,
-        physicalCount: entry.physicalCount > 0 ? entry.physicalCount : undefined,
+        physicalCount,
         status,
         observations: entry.notes || undefined
       };
     });
     
-    countDataWithArticles = {
-      id: activeData.cycleCount.id,
-      articles: mappedArticles,
-      countType: initialConfig?.countType || 'Annual',
-      auditor: keeperName,
-      zone: activeData.cycleCount.zoneName || 'All Zones'
-    };
+    console.log('🔧 [CycleCountActiveWrapper] Mapped articles:', {
+      count: mappedArticles.length,
+      countedArticles: mappedArticles.filter(a => a.physicalCount !== undefined).length,
+      zones: [...new Set(mappedArticles.map(a => a.zone))],
+      selectedZone: normalizedZone,
+      sampleCountedArticle: mappedArticles.find(a => a.physicalCount !== undefined)
+    });
+    
+      countDataWithArticles = {
+        id: activeData.cycleCount.id,
+        articles: mappedArticles,
+        countType: initialConfig?.countType || 'Annual',
+        auditor: keeperName,
+        zone: normalizedZone
+      };
+    } // Cierre del else que tiene entries
   }
   
   // Don't clear config immediately - let it be used by the hook first

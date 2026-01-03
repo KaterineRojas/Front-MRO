@@ -45,16 +45,50 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
     onViewCycleCount(record);
   };
 
-  const handlePrintReport = (record: CycleCountRecord) => {
-    generatePrintReport(record);
+  const handlePrintReport = async (record: CycleCountRecord) => {
+    // Load full record with keeperName as auditor
+    const { getCycleCountWithArticles } = await import('../services/cycleCountService');
+    try {
+      const fullRecord = await getCycleCountWithArticles(record.id, keeperName);
+      generatePrintReport(fullRecord);
+    } catch (error) {
+      console.error('Error loading cycle count for printing:', error);
+      // Fallback to the record as-is
+      generatePrintReport(record);
+    }
   };
 
-  const handleDownloadReport = (record: CycleCountRecord) => {
-    generateExcelReport(record);
+  const handleDownloadReport = async (record: CycleCountRecord) => {
+    // Load full record with keeperName as auditor
+    const { getCycleCountWithArticles } = await import('../services/cycleCountService');
+    try {
+      const fullRecord = await getCycleCountWithArticles(record.id, keeperName);
+      generateExcelReport(fullRecord);
+    } catch (error) {
+      console.error('Error loading cycle count for download:', error);
+      // Fallback to the record as-is
+      generateExcelReport(record);
+    }
   };
 
-  const handlePrintAllHistory = () => {
-    generatePrintAllHistory(history);
+  const handlePrintAllHistory = async () => {
+    // Need to load full article details for each cycle count before printing
+    const { getCycleCountWithArticles } = await import('../services/cycleCountService');
+    
+    try {
+      const recordsWithArticles = await Promise.all(
+        history.map(async (record) => {
+          // Load articles from API, use keeperName as auditor
+          const fullRecord = await getCycleCountWithArticles(record.id, keeperName);
+          return fullRecord;
+        })
+      );
+      
+      generatePrintAllHistory(recordsWithArticles);
+    } catch (error) {
+      console.error('Error loading cycle count details for printing:', error);
+      alert('Failed to load cycle count details for printing. Please try again.');
+    }
   };
 
   return (

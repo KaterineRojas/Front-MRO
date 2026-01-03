@@ -3,18 +3,25 @@ import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
 import { Input } from '../../../ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
-import { ArrowLeft, Printer, Download, CheckCircle, AlertTriangle, Save } from 'lucide-react';
+import { ArrowLeft, Printer, Download, CheckCircle, AlertTriangle, Save, Loader2 } from 'lucide-react';
 import { CycleCountDetailViewProps } from '../types';
 import { downloadCycleCountReport } from '../utils/excelUtils';
 import { StatusBadge } from '../components/StatusBadge';
 import { AuditHeader } from '../components/AuditHeader';
 import { ExecutiveSummary } from '../components/ExecutiveSummary';
 import { useCycleCountAdjustments } from '../hooks/useCycleCountAdjustments';
+import { useState, useEffect } from 'react';
+import { getCycleCountDetail, getCycleCountStatistics, mapEntryToArticle } from '../services/cycleCountService';
 
-export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied }: CycleCountDetailViewProps) {
-  const accuracy = Math.round((1 - countData.discrepancies / countData.totalItems) * 100);
-  const discrepancyArticles = countData.articles.filter(a => a.status === 'discrepancy');
+export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, keeperName }: CycleCountDetailViewProps & { keeperName?: string }) {
+  const [isLoadingFromApi, setIsLoadingFromApi] = useState(false);
+  const [loadedCountData, setLoadedCountData] = useState(countData);
   
+  // Use loadedCountData (from API or passed in)
+  const currentCountData = loadedCountData || countData;
+  
+  // IMPORTANT: Call ALL hooks before any early returns
+  // This hook must be called even if currentCountData is null (will handle it inside)
   const {
     adjustments,
     adjustmentReasons,
@@ -22,18 +29,133 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied }
     handleAdjustmentChange,
     handleReasonChange,
     handleApplyAdjustments: applyAdjustments
-  } = useCycleCountAdjustments(countData);
+  } = useCycleCountAdjustments(currentCountData);
+  
+  // Load from API if countData has an id but no articles
+  useEffect(() => {
+    const loadFromApi = async () => {
+      console.log('🔧 [CycleCountDetailView] useEffect triggered with countData:', countData);
+      
+      if (countData?.id && (!countData.articles || countData.articles.length === 0)) {
+        try {
+          setIsLoadingFromApi(true);
+          console.log('🔧 [CycleCountDetailView] Loading count data from API for ID:', countData.id);
+          
+          // Fetch full cycle count details
+          const cycleCountDetail = await getCycleCountDetail(countData.id);
+          console.log('✅ [CycleCountDetailView] Fetched cycle count detail:', cycleCountDetail);
+          
+          // Fetch statistics
+          const stats = await getCycleCountStatistics(countData.id);
+          console.log('✅ [CycleCountDetailView] Fetched statistics:', stats);
+          
+          // Map entries to articles
+          const mappedArticles = cycleCountDetail.entries.map(entry => 
+            mapEntryToArticle(entry, cycleCountDetail.zoneName || 'Good Condition')
+          );
+          
+          console.log('🔧 [CycleCountDetailView] Mapped articles:', {
+            count: mappedArticles.length,
+            first: mappedArticles[0],
+            firstImageUrl: mappedArticles[0]?.imageUrl,
+            articlesWithImages: mappedArticles.filter(a => a.imageUrl).length
+          });
+          
+          // Transform to CountedArticle format for the detail view
+          const countedArticles = mappedArticles.map(article => ({
+            code: article.code,
+            description: article.description,
+            zone: article.zone,
+            totalRegistered: article.totalRegistered,
+            physicalCount: article.physicalCount || 0,
+            status: article.status || 'match',
+            observations: article.observations,
+            imageUrl: article.imageUrl
+          }));
+          
+          // Determine countType from countName
+          let countType: 'Annual' | 'Biannual' | 'Spot Check' = 'Annual';
+          if (cycleCountDetail.countName) {
+            const countNameLower = cycleCountDetail.countName.toLowerCase();
+            if (countNameLower.includes('biannual') || countNameLower.includes('semiannual')) {
+              countType = 'Biannual';
+            } else if (countNameLower.includes('spot') || countNameLower.includes('spot check')) {
+              countType = 'Spot Check';
+            }
+          }
+          
+          // Build complete count data
+          const completeCountData = {
+            id: cycleCountDetail.id,
+            date: new Date(cycleCountDetail.createdAt).toISOString().split('T')[0],
+            completedDate: cycleCountDetail.completedAt 
+              ? new Date(cycleCountDetail.completedAt).toLocaleString('sv-SE').replace('T', ' ').substring(0, 19)
+              : undefined,
+            zone: cycleCountDetail.zoneName || 'All Zones',
+            countType,
+            auditor: keeperName || cycleCountDetail.completedByName || cycleCountDetail.createdByName,
+            articles: countedArticles,
+            totalItems: stats.totalEntries,
+            counted: stats.countedEntries,
+            discrepancies: stats.entriesWithVariance,
+            adjustmentsApplied: false
+          };
+          
+          setLoadedCountData(completeCountData);
+          console.log('✅ [CycleCountDetailView] Loaded count data from API');
+        } catch (error) {
+          console.error('❌ [CycleCountDetailView] Error loading from API:', error);
+          // Keep existing countData on error
+        } finally {
+          setIsLoadingFromApi(false);
+        }
+      }
+    };
+    
+    loadFromApi();
+  }, [countData?.id]);
+  
+  // NOW we can do early returns after all hooks are called
+  if (isLoadingFromApi) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96">
+        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mb-4" />
+        <p className="text-lg text-muted-foreground">Loading cycle count details...</p>
+      </div>
+    );
+  }
+  
+  if (!currentCountData) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96">
+        <p className="text-lg text-muted-foreground">No count data available</p>
+        <Button onClick={onBack} className="mt-4">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+      </div>
+    );
+  }
+  
+  // Validate that we have articles array
+  if (!currentCountData.articles || !Array.isArray(currentCountData.articles)) {
+    console.error('❌ [CycleCountDetailView] No articles in currentCountData:', currentCountData);
+    return (
+      <div className="flex flex-col items-center justify-center h-96">
+        <p className="text-lg text-muted-foreground">No articles data available</p>
+        <Button onClick={onBack} className="mt-4">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+      </div>
+    );
+  }
+  
+  const accuracy = Math.round((1 - currentCountData.discrepancies / currentCountData.totalItems) * 100);
+  const discrepancyArticles = currentCountData.articles.filter(a => a.status === 'discrepancy');
 
   const handleApplyAdjustments = () => {
-    applyAdjustments(discrepancyArticles, countData, onAdjustmentsApplied);
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDownload = () => {
-    downloadCycleCountReport(countData);
+    applyAdjustments(discrepancyArticles, currentCountData, onAdjustmentsApplied);
   };
 
   return (
@@ -50,16 +172,7 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied }
             <p className="text-muted-foreground">Detailed inventory count results</p>
           </div>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-2" />
-            Print Report
-          </Button>
-          <Button variant="outline" onClick={handleDownload}>
-            <Download className="h-4 w-4 mr-2" />
-            Download Excel
-          </Button>
-        </div>
+
       </div>
 
       {/* Print Header */}
@@ -69,18 +182,18 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied }
 
       {/* Audit Header */}
       <AuditHeader 
-        completedDate={countData.completedDate}
-        date={countData.date}
-        countType={countData.countType}
-        auditor={countData.auditor}
-        zone={countData.zone}
+        completedDate={currentCountData.completedDate}
+        date={currentCountData.date}
+        countType={currentCountData.countType}
+        auditor={currentCountData.auditor}
+        zone={currentCountData.zone}
       />
 
       {/* Executive Summary (KPIs) */}
       <ExecutiveSummary 
         accuracy={accuracy}
-        totalItems={countData.totalItems}
-        discrepancies={countData.discrepancies}
+        totalItems={currentCountData.totalItems}
+        discrepancies={currentCountData.discrepancies}
       />
 
       {/* Discrepancies Table */}
@@ -112,6 +225,7 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied }
                 <TableHeader>
                   <TableRow>
                     <TableHead>Code</TableHead>
+                    <TableHead>Image</TableHead>
                     <TableHead>Item</TableHead>
                     <TableHead className="text-right">Total Registered</TableHead>
                     <TableHead className="text-right">Physical Count</TableHead>
@@ -126,9 +240,24 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied }
                     <TableRow key={index}>
                       <TableCell className="font-mono">{article.code}</TableCell>
                       <TableCell>
+                        {article.imageUrl ? (
+                          <img 
+                            src={article.imageUrl} 
+                            alt={article.description}
+                            className="w-12 h-12 object-cover rounded"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://via.placeholder.com/48?text=No+Image';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">
+                            No img
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <div>
                           <p>{article.description}</p>
-                          <p className="text-xs text-muted-foreground">{article.zone}</p>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">{article.totalRegistered}</TableCell>
@@ -172,7 +301,7 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied }
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <CheckCircle className="h-5 w-5" />
-            <span>All Items Detail ({countData.articles.length})</span>
+            <span>All Items Detail ({currentCountData.articles.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -181,6 +310,7 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied }
               <TableHeader>
                 <TableRow>
                   <TableHead>Code</TableHead>
+                  <TableHead>Image</TableHead>
                   <TableHead>Item</TableHead>
                   <TableHead className="text-right">Total Registered</TableHead>
                   <TableHead className="text-right">Physical Count</TableHead>
@@ -189,13 +319,28 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied }
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {countData.articles.map((article, index) => (
+                {currentCountData.articles.map((article, index) => (
                   <TableRow key={index}>
                     <TableCell className="font-mono">{article.code}</TableCell>
                     <TableCell>
+                      {article.imageUrl ? (
+                        <img 
+                          src={article.imageUrl} 
+                          alt={article.description}
+                          className="w-12 h-12 object-cover rounded"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://via.placeholder.com/48?text=No+Image';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">
+                          No img
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <div>
                         <p>{article.description}</p>
-                        <p className="text-xs text-muted-foreground">{article.zone}</p>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">{article.totalRegistered}</TableCell>

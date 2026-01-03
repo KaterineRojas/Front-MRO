@@ -8,6 +8,7 @@ export interface CountedArticle {
   observations?: string;
   adjustment?: number;
   adjustmentReason?: string;
+  imageUrl?: string;
 }
 
 export interface DiscrepancyAdjustment {
@@ -47,6 +48,7 @@ export interface Article {
   physicalCount?: number;
   status?: 'match' | 'discrepancy';
   observations?: string;
+  imageUrl?: string;
 }
 
 export interface CycleCountViewProps {

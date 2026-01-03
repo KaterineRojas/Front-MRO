@@ -67,6 +67,67 @@ export interface CycleCountEntry {
 }
 
 /**
+ * Loads a cycle count with full article details for display/printing
+ * @param cycleCountId - The ID of the cycle count to load
+ * @param auditorName - Optional: The name of the logged-in user to use as auditor (overrides backend data)
+ */
+export async function getCycleCountWithArticles(cycleCountId: number, auditorName?: string) {
+  try {
+    // Fetch cycle count detail
+    const cycleCountDetail = await getCycleCountDetail(cycleCountId);
+    
+    // Fetch statistics
+    const stats = await getCycleCountStatistics(cycleCountId);
+    
+    // Determine countType from countName
+    let countType: 'Annual' | 'Biannual' | 'Spot Check' = 'Annual';
+    if (cycleCountDetail.countName) {
+      const countNameLower = cycleCountDetail.countName.toLowerCase();
+      if (countNameLower.includes('biannual') || countNameLower.includes('semiannual')) {
+        countType = 'Biannual';
+      } else if (countNameLower.includes('spot') || countNameLower.includes('spot check')) {
+        countType = 'Spot Check';
+      }
+    }
+    
+    // Map entries to articles
+    const articles = cycleCountDetail.entries.map(entry => {
+      const mappedArticle = mapEntryToArticle(entry, cycleCountDetail.zoneName || 'Good Condition');
+      return {
+        code: mappedArticle.code,
+        description: mappedArticle.description,
+        zone: mappedArticle.zone,
+        totalRegistered: mappedArticle.totalRegistered,
+        physicalCount: mappedArticle.physicalCount || 0,
+        status: mappedArticle.status || 'match',
+        observations: mappedArticle.observations,
+        imageUrl: mappedArticle.imageUrl
+      };
+    });
+    
+    return {
+      id: cycleCountDetail.id,
+      date: new Date(cycleCountDetail.createdAt).toISOString().split('T')[0],
+      completedDate: cycleCountDetail.completedAt 
+        ? new Date(cycleCountDetail.completedAt).toLocaleString('sv-SE').replace('T', ' ').substring(0, 19)
+        : undefined,
+      zone: cycleCountDetail.zoneName || 'All Zones',
+      status: mapStatusNameToUIStatus(cycleCountDetail.statusName),
+      countType,
+      auditor: auditorName || cycleCountDetail.completedByName || cycleCountDetail.createdByName,
+      totalItems: stats.totalEntries,
+      counted: stats.countedEntries,
+      discrepancies: stats.entriesWithVariance,
+      articles,
+      adjustmentsApplied: false
+    };
+  } catch (error) {
+    console.error('Error fetching cycle count with articles:', error);
+    throw error;
+  }
+}
+
+/**
  * Maps CycleCountEntry from API to Article format for UI
  */
 export function mapEntryToArticle(entry: CycleCountEntry, zoneName: string): {
@@ -79,36 +140,75 @@ export function mapEntryToArticle(entry: CycleCountEntry, zoneName: string): {
   physicalCount?: number;
   status?: 'match' | 'discrepancy';
   observations?: string;
+  imageUrl?: string;
 } {
-  // Determine status based on statusName
+  // Determine if entry has been counted (countedAt is not null or physicalCount is set)
+  const hasBeenCounted = entry.countedAt !== null || entry.countedByUserId !== null;
+  
+  // Determine status based on statusName OR if counted, compare values
   let status: 'match' | 'discrepancy' | undefined = undefined;
   if (entry.statusName?.toLowerCase() === 'match' || entry.statusName?.toLowerCase() === 'matched') {
     status = 'match';
   } else if (entry.statusName?.toLowerCase() === 'discrepancy' || entry.statusName?.toLowerCase() === 'variance') {
     status = 'discrepancy';
+  } else if (hasBeenCounted && entry.variance === 0) {
+    status = 'match';
+  } else if (hasBeenCounted && entry.variance !== 0) {
+    status = 'discrepancy';
   }
 
-  // Map zone name - if entry has zone info, use it; otherwise use provided zoneName
+  // Map zone name - Use the provided zoneName parameter
+  // For specific zone counts (Damaged, Quarantine, Good Condition), all entries should have that zone
+  // For All Zones counts, zoneName will be null or contain 'all' - assign default zone
+  // but the UI filter will show all items when selectedZone is 'all'
   let zone: 'Good Condition' | 'Damaged' | 'Quarantine' = 'Good Condition';
+  
   if (zoneName) {
-    if (zoneName === 'Damaged') zone = 'Damaged';
-    else if (zoneName === 'Quarantine') zone = 'Quarantine';
-    else zone = 'Good Condition';
+    const zoneNameLower = zoneName.toLowerCase();
+    
+    // Don't process if it's 'All Zones' - keep default
+    if (!zoneNameLower.includes('all')) {
+      // Map specific zone names
+      if (zoneName === 'Damaged' || zoneName === 'damaged') {
+        zone = 'Damaged';
+      } else if (zoneName === 'Quarantine' || zoneName === 'quarantine') {
+        zone = 'Quarantine';
+      } else if (zoneName === 'Good Condition' || zoneNameLower.includes('good')) {
+        zone = 'Good Condition';
+      }
+    }
   }
+  // If zoneName is null or 'All Zones', keep default 'Good Condition'
+  // The UI will show all items when selectedZone === 'all'
 
   // Determine type based on SKU (similar to other parts of the codebase)
   const type: 'consumable' | 'non-consumable' = entry.itemSku?.startsWith('KIT-') ? 'non-consumable' : 'non-consumable';
 
+  // Include physicalCount if the entry has been counted (even if it's 0)
+  // Only set to undefined if it hasn't been counted yet
+  const physicalCount = hasBeenCounted ? entry.physicalCount : undefined;
+
+  // Debug: Log image URL to verify it's coming from the API
+  if (!entry.itemImageUrl) {
+    console.log('⚠️ [mapEntryToArticle] No imageUrl for item:', {
+      itemSku: entry.itemSku,
+      itemName: entry.itemName,
+      itemImageUrl: entry.itemImageUrl,
+      fullEntry: entry
+    });
+  }
+
   return {
-    id: entry.itemSku || entry.id.toString(),
-    code: entry.itemSku,
+    id: entry.binFullCode || entry.id.toString(),
+    code: entry.binFullCode,
     description: entry.itemName,
     type,
     zone,
     totalRegistered: entry.systemQuantity,
-    physicalCount: entry.physicalCount > 0 ? entry.physicalCount : undefined,
+    physicalCount,
     status,
-    observations: entry.notes || undefined
+    observations: entry.notes || undefined,
+    imageUrl: entry.itemImageUrl || undefined
   };
 }
 
@@ -173,18 +273,27 @@ export interface MappedCycleCountRecord {
 }
 
 /**
+ * Maps API statusName to UI status format
+ * @param statusName - Status name from API (e.g., "InProgress", "Completed", "Paused", "Pending")
+ * @returns UI status ('in-progress' | 'completed')
+ */
+export function mapStatusNameToUIStatus(statusName: string | undefined): 'in-progress' | 'completed' {
+  const statusNameLower = statusName?.toLowerCase() || '';
+  return statusNameLower === 'inprogress' || 
+    statusNameLower.includes('progress') || 
+    statusNameLower.includes('pending') ||
+    statusNameLower.includes('paused')
+      ? 'in-progress'
+      : 'completed';
+}
+
+/**
  * Maps API response to UI format
  */
 function mapApiResponseToRecord(apiResponse: CycleCountApiResponse): MappedCycleCountRecord {
   // Map statusName to status ('in-progress' | 'completed')
-  // API returns "InProgress" or "Completed"
-  const statusNameLower = apiResponse.statusName?.toLowerCase() || '';
-  const status: 'in-progress' | 'completed' = 
-    statusNameLower === 'inprogress' || 
-    statusNameLower.includes('progress') || 
-    statusNameLower.includes('pending')
-      ? 'in-progress'
-      : 'completed';
+  // API returns "InProgress", "Completed", "Paused", etc.
+  const status = mapStatusNameToUIStatus(apiResponse.statusName);
 
   // Extract date from completedAt or createdAt
   const completedDate = apiResponse.completedAt || undefined;
@@ -425,6 +534,303 @@ export async function getCycleCountEntries(
     return pagedResponse;
   } catch (error) {
     console.error('Error fetching cycle count entries:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetches a specific cycle count with full details including entries
+ * GET /api/cycle-counts/{id}
+ * 
+ * @param cycleCountId - Cycle count ID
+ * @returns Promise with cycle count detail
+ */
+export async function getCycleCountDetail(
+  cycleCountId: number
+): Promise<CycleCountDetailResponse> {
+  try {
+    const url = `${API_URL}/cycle-counts/${cycleCountId}`;
+    
+    const response = await fetchWithAuth(url, {
+      method: 'GET'
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API Error on GET ${url}. Status: ${response.status}`, errorText);
+      throw new Error(`Failed to fetch cycle count detail: ${response.statusText}`);
+    }
+
+    const data: CycleCountDetailResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching cycle count detail:', error);
+    throw error;
+  }
+}
+
+/**
+ * Pauses a cycle count
+ * PUT /api/cycle-counts/{id}/pause
+ * 
+ * @param cycleCountId - Cycle count ID
+ * @returns Promise with updated cycle count detail
+ */
+export async function pauseCycleCount(
+  cycleCountId: number
+): Promise<CycleCountDetailResponse> {
+  try {
+    const url = `${API_URL}/cycle-counts/${cycleCountId}/pause`;
+    
+    const response = await fetchWithAuth(url, {
+      method: 'PUT'
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API Error on PUT ${url}. Status: ${response.status}`, errorText);
+      throw new Error(`Failed to pause cycle count: ${response.statusText}`);
+    }
+
+    const data: CycleCountDetailResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error pausing cycle count:', error);
+    throw error;
+  }
+}
+
+/**
+ * Resumes a paused cycle count
+ * PUT /api/cycle-counts/{id}/resume
+ * 
+ * @param cycleCountId - Cycle count ID
+ * @returns Promise with updated cycle count detail
+ */
+export async function resumeCycleCount(
+  cycleCountId: number
+): Promise<CycleCountDetailResponse> {
+  try {
+    const url = `${API_URL}/cycle-counts/${cycleCountId}/resume`;
+    
+    const response = await fetchWithAuth(url, {
+      method: 'PUT'
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API Error on PUT ${url}. Status: ${response.status}`, errorText);
+      throw new Error(`Failed to resume cycle count: ${response.statusText}`);
+    }
+
+    const data: CycleCountDetailResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error resuming cycle count:', error);
+    throw error;
+  }
+}
+
+/**
+ * Completes a cycle count
+ * PUT /api/cycle-counts/{id}/complete
+ * 
+ * @param cycleCountId - Cycle count ID
+ * @returns Promise with updated cycle count detail
+ */
+export async function completeCycleCount(
+  cycleCountId: number
+): Promise<CycleCountDetailResponse> {
+  try {
+    const url = `${API_URL}/cycle-counts/${cycleCountId}/complete`;
+    
+    const response = await fetchWithAuth(url, {
+      method: 'PUT'
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API Error on PUT ${url}. Status: ${response.status}`, errorText);
+      
+      // Try to extract the specific error message from the response
+      // The error message from the API is typically just plain text
+      const errorMessage = errorText || response.statusText;
+      throw new Error(`Status: ${response.status} ${errorMessage}`);
+    }
+
+    const data: CycleCountDetailResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error completing cycle count:', error);
+    throw error;
+  }
+}
+
+/**
+ * Cancels a cycle count
+ * PUT /api/cycle-counts/{id}/cancel
+ * 
+ * @param cycleCountId - Cycle count ID
+ * @returns Promise with updated cycle count detail
+ */
+export async function cancelCycleCount(
+  cycleCountId: number
+): Promise<CycleCountDetailResponse> {
+  try {
+    const url = `${API_URL}/cycle-counts/${cycleCountId}/cancel`;
+    
+    const response = await fetchWithAuth(url, {
+      method: 'PUT'
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API Error on PUT ${url}. Status: ${response.status}`, errorText);
+      throw new Error(`Failed to cancel cycle count: ${response.statusText}`);
+    }
+
+    const data: CycleCountDetailResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error canceling cycle count:', error);
+    throw error;
+  }
+}
+
+export interface RecordCountRequest {
+  entryId: number;
+  physicalCount: number;
+  countedByUserId: number;
+  notes?: string;
+}
+
+/**
+ * Records a count for a single entry
+ * POST /api/cycle-counts/entries/record-count
+ * 
+ * @param request - Count recording data
+ * @returns Promise with updated cycle count entry
+ */
+export async function recordCount(
+  request: RecordCountRequest
+): Promise<CycleCountEntry> {
+  try {
+    const url = `${API_URL}/cycle-counts/entries/record-count`;
+    
+    const payload = {
+      entryId: request.entryId,
+      physicalCount: request.physicalCount,
+      countedByUserId: request.countedByUserId,
+      notes: request.notes || ''
+    };
+
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API Error on POST ${url}. Status: ${response.status}`, errorText);
+      throw new Error(`Failed to record count: ${response.statusText}`);
+    }
+
+    const data: CycleCountEntry = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error recording count:', error);
+    throw error;
+  }
+}
+
+export interface RecordBatchCountRequest {
+  countedByUserId: number;
+  counts: Array<{
+    entryId: number;
+    physicalCount: number;
+    notes?: string;
+  }>;
+}
+
+/**
+ * Records counts for multiple entries in batch
+ * POST /api/cycle-counts/entries/record-batch
+ * 
+ * @param request - Batch count recording data
+ * @returns Promise with array of updated cycle count entries
+ */
+export async function recordBatchCount(
+  request: RecordBatchCountRequest
+): Promise<CycleCountEntry[]> {
+  try {
+    const url = `${API_URL}/cycle-counts/entries/record-batch`;
+    
+    const payload = {
+      countedByUserId: request.countedByUserId,
+      counts: request.counts.map(c => ({
+        entryId: c.entryId,
+        physicalCount: c.physicalCount,
+        notes: c.notes || ''
+      }))
+    };
+
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API Error on POST ${url}. Status: ${response.status}`, errorText);
+      throw new Error(`Failed to record batch count: ${response.statusText}`);
+    }
+
+    const data: CycleCountEntry[] = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error recording batch count:', error);
+    throw error;
+  }
+}
+
+export interface CycleCountStatistics {
+  totalEntries: number;
+  countedEntries: number;
+  verifiedEntries: number;
+  pendingEntries: number;
+  entriesWithVariance: number;
+  percentageComplete: number;
+  totalVariancePositive: number;
+  totalVarianceNegative: number;
+}
+
+/**
+ * Fetches statistics for a cycle count
+ * GET /api/cycle-counts/{id}/statistics
+ * 
+ * @param cycleCountId - Cycle count ID
+ * @returns Promise with cycle count statistics
+ */
+export async function getCycleCountStatistics(
+  cycleCountId: number
+): Promise<CycleCountStatistics> {
+  try {
+    const url = `${API_URL}/cycle-counts/${cycleCountId}/statistics`;
+    
+    const response = await fetchWithAuth(url, {
+      method: 'GET'
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API Error on GET ${url}. Status: ${response.status}`, errorText);
+      throw new Error(`Failed to fetch cycle count statistics: ${response.statusText}`);
+    }
+
+    const data: CycleCountStatistics = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching cycle count statistics:', error);
     throw error;
   }
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppSelector } from '../../../../store/hooks';
-import { getCycleCounts, MappedCycleCountRecord } from '../services/cycleCountService';
+import { getCycleCounts, MappedCycleCountRecord, getCycleCountStatistics } from '../services/cycleCountService';
 
 interface CountedArticle {
   code: string;
@@ -70,8 +70,27 @@ export function useCycleCountHistory() {
         // Fetch cycle counts from API
         const { records } = await getCycleCounts(warehouseId, 1, 20);
         
-        // Convert API records to UI format
-        const uiRecords = records.map(mapApiRecordToUI);
+        // Convert API records to UI format and fetch statistics for each
+        const uiRecords = await Promise.all(
+          records.map(async (record) => {
+            try {
+              // Fetch statistics for this cycle count
+              const stats = await getCycleCountStatistics(record.id);
+              
+              // Update the record with correct statistics
+              return {
+                ...mapApiRecordToUI(record),
+                totalItems: stats.totalEntries,
+                counted: stats.countedEntries,
+                discrepancies: stats.entriesWithVariance
+              };
+            } catch (error) {
+              console.warn(`Failed to fetch statistics for cycle count ${record.id}:`, error);
+              // Fallback to the record as-is if statistics fail
+              return mapApiRecordToUI(record);
+            }
+          })
+        );
         
         // Merge with any local records from sessionStorage (for in-progress counts saved locally)
         const savedHistory = sessionStorage.getItem('cycleCountHistory');

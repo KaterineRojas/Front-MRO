@@ -16,31 +16,37 @@ interface UseCycleCountAdjustmentsReturn {
 }
 
 export function useCycleCountAdjustments(
-  countData: CycleCountDetailData
+  countData: CycleCountDetailData | null | undefined
 ): UseCycleCountAdjustmentsReturn {
   // Initialize from existing data if adjustments were already applied
   const [adjustments, setAdjustments] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
-    countData.articles.forEach(article => {
-      if (article.adjustment !== undefined) {
-        initial[article.code] = article.adjustment.toString();
-      }
-    });
+    // Check if countData and articles exist before accessing
+    if (countData?.articles) {
+      countData.articles.forEach(article => {
+        if (article.adjustment !== undefined) {
+          initial[article.code] = article.adjustment.toString();
+        }
+      });
+    }
     return initial;
   });
 
   const [adjustmentReasons, setAdjustmentReasons] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
-    countData.articles.forEach(article => {
-      if (article.adjustmentReason) {
-        initial[article.code] = article.adjustmentReason;
-      }
-    });
+    // Check if countData and articles exist before accessing
+    if (countData?.articles) {
+      countData.articles.forEach(article => {
+        if (article.adjustmentReason) {
+          initial[article.code] = article.adjustmentReason;
+        }
+      });
+    }
     return initial;
   });
 
   const [isAdjustmentsApplied, setIsAdjustmentsApplied] = useState(
-    countData.adjustmentsApplied || false
+    countData?.adjustmentsApplied || false
   );
 
   const handleAdjustmentChange = (code: string, value: string) => {

@@ -10,6 +10,7 @@ interface CountedArticle {
   observations?: string;
   adjustment?: number;
   adjustmentReason?: string;
+  imageUrl?: string;
 }
 
 interface CycleCountRecord {
@@ -38,8 +39,13 @@ export function generatePrintReport(record: CycleCountRecord) {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Cycle Count Audit Report</title>
+        <title>&nbsp;</title>
         <style>
+                  @media print {
+              @page { 
+                margin: 0; /* Esto elimina los encabezados y pies de página del navegador */
+              }            
+            }
           body { font-family: 'Segoe UI', sans-serif; padding: 20px; }
           h1 { font-size: 24px; margin-bottom: 20px; }
           h2 { font-size: 18px; margin-top: 30px; margin-bottom: 10px; }
@@ -60,7 +66,7 @@ export function generatePrintReport(record: CycleCountRecord) {
         
         <div class="header-info">
           <h2>Audit Header</h2>
-          <div><strong>Date and Time:</strong> ${record.completedDate || record.date}</div>
+          <div><strong>Date:</strong> ${record.date}</div>
           <div><strong>Count Type:</strong> ${record.countType}</div>
           <div><strong>Auditor Responsible:</strong> ${record.auditor}</div>
           <div><strong>Zone:</strong> ${record.zone === 'all' ? 'All Zones' : record.zone}</div>
@@ -87,6 +93,7 @@ export function generatePrintReport(record: CycleCountRecord) {
             <thead>
               <tr>
                 <th>Code</th>
+                <th>Image</th>
                 <th>Item</th>
                 <th>Zone</th>
                 <th>Total Registered</th>
@@ -99,6 +106,7 @@ export function generatePrintReport(record: CycleCountRecord) {
               ${discrepancyArticles.map(article => `
                 <tr>
                   <td>${article.code}</td>
+                  <td>${article.imageUrl ? `<img src="${article.imageUrl}" alt="${article.description}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/40?text=No+Image'" />` : '<div style="width: 40px; height: 40px; background: #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #9ca3af;">No img</div>'}</td>
                   <td>${article.description}</td>
                   <td>${article.zone}</td>
                   <td>${article.totalRegistered}</td>
@@ -116,6 +124,7 @@ export function generatePrintReport(record: CycleCountRecord) {
           <thead>
             <tr>
               <th>Code</th>
+              <th>Image</th>
               <th>Item</th>
               <th>Zone</th>
               <th>Total Registered</th>
@@ -128,6 +137,7 @@ export function generatePrintReport(record: CycleCountRecord) {
             ${record.articles.map(article => `
               <tr>
                 <td>${article.code}</td>
+                <td>${article.imageUrl ? `<img src="${article.imageUrl}" alt="${article.description}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/40?text=No+Image'" />` : '<div style="width: 40px; height: 40px; background: #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #9ca3af;">No img</div>'}</td>
                 <td>${article.description}</td>
                 <td>${article.zone}</td>
                 <td>${article.totalRegistered}</td>
@@ -139,9 +149,6 @@ export function generatePrintReport(record: CycleCountRecord) {
           </tbody>
         </table>
         
-        <div style="margin-top: 40px;">
-          <p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
-        </div>
       </body>
     </html>
   `);
@@ -179,7 +186,7 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
         
         <div class="header-info">
           <h2>Audit Header</h2>
-          <div><strong>Date and Time:</strong> ${record.completedDate || record.date}</div>
+          <div><strong>Date:</strong> ${record.date}</div>
           <div><strong>Count Type:</strong> ${record.countType}</div>
           <div><strong>Auditor Responsible:</strong> ${record.auditor}</div>
           <div><strong>Zone:</strong> ${record.zone === 'all' ? 'All Zones' : record.zone}</div>
@@ -207,6 +214,7 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
             <thead>
               <tr>
                 <th>Code</th>
+                <th>Image</th>
                 <th>Item</th>
                 <th>Zone</th>
                 <th>Total Registered</th>
@@ -219,6 +227,7 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
               ${discrepancyArticles.map(article => `
                 <tr>
                   <td>${article.code}</td>
+                  <td>${article.imageUrl ? `<img src="${article.imageUrl}" alt="${article.description}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/40?text=No+Image'" />` : '<div style="width: 40px; height: 40px; background: #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #9ca3af;">No img</div>'}</td>
                   <td>${article.description}</td>
                   <td>${article.zone}</td>
                   <td>${article.totalRegistered}</td>
@@ -236,6 +245,7 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
           <thead>
             <tr>
               <th>Code</th>
+              <th>Image</th>
               <th>Item</th>
               <th>Zone</th>
               <th>Total Registered</th>
@@ -248,6 +258,7 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
             ${record.articles.map(article => `
               <tr>
                 <td>${article.code}</td>
+                <td>${article.imageUrl ? `<img src="${article.imageUrl}" alt="${article.description}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/40?text=No+Image'" />` : '<div style="width: 40px; height: 40px; background: #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #9ca3af;">No img</div>'}</td>
                 <td>${article.description}</td>
                 <td>${article.zone}</td>
                 <td>${article.totalRegistered}</td>
@@ -492,6 +503,7 @@ interface Article {
   physicalCount?: number;
   status?: 'match' | 'discrepancy';
   observations?: string;
+  imageUrl?: string;
 }
 
 interface CountInProgressData {
@@ -513,9 +525,14 @@ export function generatePrintCountInProgress(data: CountInProgressData) {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Physical Inventory Count Report</title>
+        <title>&nbsp;</title>
         <style>
-          body { font-family: 'Segoe UI', sans-serif; padding: 20px; }
+                @media print {
+            @page { 
+              margin: 0; /* Esto elimina los encabezados y pies de página del navegador */
+            }
+          }
+                  body { font-family: 'Segoe UI', sans-serif; padding: 20px; }
           h1 { font-size: 24px; margin-bottom: 20px; }
           h2 { font-size: 18px; margin-top: 30px; margin-bottom: 10px; }
           .header-info { margin-bottom: 20px; }
@@ -542,30 +559,12 @@ export function generatePrintCountInProgress(data: CountInProgressData) {
           <div><strong>Zone:</strong> ${data.zone === 'all' ? 'All Zones' : data.zone}</div>
         </div>
         
-        <div class="summary">
-          <div class="summary-item">
-            <div><strong>Total Items</strong></div>
-            <div style="font-size: 32px;">${data.articles.length}</div>
-          </div>
-          <div class="summary-item">
-            <div><strong>Counted</strong></div>
-            <div style="font-size: 32px; color: #22c55e;">${countedArticles.length}</div>
-          </div>
-          <div class="summary-item">
-            <div><strong>Pending</strong></div>
-            <div style="font-size: 32px; color: #f59e0b;">${data.articles.length - countedArticles.length}</div>
-          </div>
-          <div class="summary-item">
-            <div><strong>Discrepancies</strong></div>
-            <div style="font-size: 32px; color: #ef4444;">${discrepancies.length}</div>
-          </div>
-        </div>
-        
         <h2>All Items (${data.articles.length})</h2>
         <table>
           <thead>
             <tr>
               <th>Code</th>
+              <th>Image</th>
               <th>Item</th>
               <th>Total Registered</th>
               <th>Physical Count</th>
@@ -585,6 +584,7 @@ export function generatePrintCountInProgress(data: CountInProgressData) {
               return `
                 <tr>
                   <td>${article.code}</td>
+                  <td>${article.imageUrl ? `<img src="${article.imageUrl}" alt="${article.description}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/40?text=No+Image'" />` : '<div style="width: 40px; height: 40px; background: #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #9ca3af;">No img</div>'}</td>
                   <td>${article.description}</td>
                   <td>${article.totalRegistered}</td>
                   <td>${article.physicalCount !== undefined ? article.physicalCount : '-'}</td>
@@ -595,10 +595,6 @@ export function generatePrintCountInProgress(data: CountInProgressData) {
             }).join('')}
           </tbody>
         </table>
-        
-        <div style="margin-top: 40px;">
-          <p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
-        </div>
       </body>
     </html>
   `);
@@ -610,3 +606,5 @@ export function generatePrintCountInProgress(data: CountInProgressData) {
     printWindow.close();
   }, 250);
 }
+
+
