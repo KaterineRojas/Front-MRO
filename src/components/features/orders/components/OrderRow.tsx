@@ -5,14 +5,14 @@ import {
     Package,
     Check,
     X,
-    Building2,   // Added icon for Supplier
-    Layers,      // Added icon for Items
-    FolderKanban, // Added icon for Project
-    UserCheck,    // Added icon for Approver
+    Building2,
+    Layers,
+    FolderKanban,
+    UserCheck,
 
 } from 'lucide-react';
-import { getStatusBadge, getUrgencyBadge } from '../../inventory/components/RequestBadges';
-import { STATUS_MAP, PRIORITY_MAP, formatDate, formatCurrency } from '../utils/purchase-utils';
+import { getStatusBadge, getReasonBadge } from '../../inventory/components/RequestBadges';
+import { STATUS_MAP, REASON_MAP, formatDate, formatCurrency } from '../utils/purchase-utils';
 import { PurchaseRequest } from '../types/purchaseType';
 import { useSelector } from 'react-redux';
 import { ActionButton } from '../../inventory/components/ActionButton'
@@ -27,7 +27,7 @@ export const OrderRow: React.FC<Props> = ({ order, handleStatusUpdate }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     const statusString = STATUS_MAP[order.status] || 'unknown';
-    const priorityString = PRIORITY_MAP[order.priority] || 'low';
+    const reasonString = REASON_MAP[order.reason] || 'Standard';
     const darkMode = useSelector((state: any) => state.ui.darkMode);
 
     return (
@@ -53,15 +53,15 @@ export const OrderRow: React.FC<Props> = ({ order, handleStatusUpdate }) => {
                 </td>
                 <td className="p-4">
                     <div className="flex flex-col">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{order.requesterName}</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{order.requesterId}</span>
                         <span className="text-[10px] text-gray-500 uppercase">{order.warehouseName}</span>
                     </div>
                 </td>
                 <td className="p-4 text-sm font-bold text-right text-emerald-600 dark:text-emerald-400 font-mono">
-                    {formatCurrency(order.totalAmount)}
+                    {formatCurrency(order.estimatedTotalCost)}
                 </td>
-                <td className="p-4">
-                    {getUrgencyBadge(priorityString, `${darkMode ? '' : 'soft'}`)}
+                <td className="p-4 text-center">
+                    {getReasonBadge(reasonString, `${darkMode ? '' : 'soft'}`)}
                 </td>
                 <td className="p-4 text-sm text-gray-500">
                     {formatDate(order.createdAt)}
@@ -107,20 +107,20 @@ export const OrderRow: React.FC<Props> = ({ order, handleStatusUpdate }) => {
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-blue-300">Project</p>
                                     </div>
                                     <p className="text-sm font-semibold text-gray-900 dark:text-blue-100 pl-6">
-                                        {order.projectName || 'General Inventory'}
+                                        {order.projectId || 'General Inventory'}
                                     </p>
                                 </div>
 
                                 {/* 2. ITEMS (Purple Theme) */}
-                                <div className="p-4 rounded-xl border transition-all
-                                    bg-white border-gray-200 shadow-sm 
-                                    dark:bg-purple-500/5 dark:border-purple-500/20 dark:shadow-none">
+                                <div className="p-4 rounded-xl border transition-all bg-white border-gray-200 shadow-sm dark:bg-purple-500/5 dark:border-purple-500/20 dark:shadow-none">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Layers className="w-4 h-4 text-gray-400 dark:text-purple-400" />
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-purple-300">Composition</p>
                                     </div>
+
+                                    {/* "8 Units across 2 Items" */}
                                     <p className="text-sm font-semibold text-gray-900 dark:text-purple-100 pl-6">
-                                        {order.totalItems} lines <span className="text-gray-400 dark:text-purple-400/50">|</span> {order.totalQuantity} units
+                                        {order.totalQuantity} Units <span className="font-normal text-gray-400 dark:text-purple-400/60">in {order.totalItems} items</span>
                                     </p>
                                 </div>
 
@@ -130,10 +130,10 @@ export const OrderRow: React.FC<Props> = ({ order, handleStatusUpdate }) => {
                                     dark:bg-amber-500/5 dark:border-amber-500/20 dark:shadow-none">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Building2 className="w-4 h-4 text-gray-400 dark:text-amber-400" />
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-amber-300">Supplier</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-amber-300">Company</p>
                                     </div>
                                     <p className="text-sm font-semibold text-gray-900 dark:text-amber-100 pl-6">
-                                        {order.supplier || 'Unassigned'}
+                                        {order.companyId || 'Unassigned'}
                                     </p>
                                 </div>
 
@@ -175,11 +175,3 @@ export const OrderRow: React.FC<Props> = ({ order, handleStatusUpdate }) => {
 };
 
 
-
-/**
- * hover row #F5F5F7
- * bg expanded row #F2F2F4
- * 
- * darkmode hover row #191F26
- * darkmode actived extended row #1F2937 
- */

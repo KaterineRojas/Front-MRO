@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Trash2, Send } from 'lucide-react';
+import { Package, Trash2, Send, Loader2 } from 'lucide-react';
 import { Button } from '../../inventory/components/Button';
 import { Badge } from '../../inventory/components/Badge';
 import { useSelector } from 'react-redux';
@@ -10,12 +10,14 @@ interface RequestSummaryProps {
     items: PurchaseRequestItem[]; // ✅ Typed correctly
     onRemoveItem: (id: number) => void;
     onSubmit: (e: React.FormEvent) => void;
+    isLoading: boolean;
 }
 
 export const RequestSummary: React.FC<RequestSummaryProps> = ({
     items,
     onRemoveItem,
-    onSubmit
+    onSubmit,
+    isLoading
 }) => {
 
     // Calculate total
@@ -106,10 +108,19 @@ export const RequestSummary: React.FC<RequestSummaryProps> = ({
                 onClick={onSubmit}
                 className="w-full h-12 text-base shadow-lg shadow-indigo-500/20"
                 size="md"
-                disabled={items.length === 0}
+                disabled={items.length === 0 || isLoading} 
             >
-                <Send className="h-4 w-4 mr-2" />
-                Submit Purchase Request
+                {isLoading ? (
+                    <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Sending Request...
+                    </>
+                ) : (
+                    <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Submit Purchase Request
+                    </>
+                )}
             </Button>
 
         </div>

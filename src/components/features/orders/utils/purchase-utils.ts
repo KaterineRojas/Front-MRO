@@ -12,11 +12,10 @@ export const STATUS_MAP: Record<number, string> = {
     5: 'sent'
 };
 
-export const PRIORITY_MAP: Record<number, string> = {
-    0: 'low',
-    1: 'medium',
-    2: 'high',
-    3: 'urgent'
+export const REASON_MAP: Record<number, string> = {
+    0: 'Low Stock',
+    1: 'Urgent',
+    2: 'New project',
 };
 
 /**

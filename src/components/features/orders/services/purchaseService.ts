@@ -1,4 +1,4 @@
-import { Item, CreatePurchaseRequestPayload } from '../types/purchaseType'
+import { Item, CreatePurchaseRequestPayload, PurchaseRequest, PaginatedResponse } from '../types/purchaseType'
 import { fetchClient } from './fetchClient';
 
 /**
@@ -20,10 +20,10 @@ export const getActiveItems = async (signal?: AbortSignal): Promise<Item[]> => {
 
 /**
  * POST - Creates a new Purchase Request
- * Endpoint: /api/PurchaseRequests 
+ * Endpoint: /api/p urchase-requests 
  */
 export const createPurchaseRequest = async (payload: CreatePurchaseRequestPayload): Promise<any> => {
-    const response = await fetchClient('/PurchaseRequests', {
+    const response = await fetchClient('/purchase-requests', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -39,4 +39,24 @@ export const createPurchaseRequest = async (payload: CreatePurchaseRequestPayloa
     }
 
     return await response.json();
+};
+
+
+/**
+ * GET - Fetches ALL purchase requests for the Main Table
+ * Endpoint: /api/PurchaseRequests
+ */
+export const getAllPurchaseRequests = async (signal?: AbortSignal): Promise<PurchaseRequest[]> => {
+    const response = await fetchClient('/purchase-requests', {
+        method: 'GET',
+        signal,
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch orders: ${response.statusText}`);
+    }
+
+    const json: PaginatedResponse<PurchaseRequest> = await response.json();
+    
+    return json.data; 
 };

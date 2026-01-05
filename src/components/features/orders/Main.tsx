@@ -1,29 +1,50 @@
-
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { PurchaseOrdersProps } from './types/purchaseType'
 import TabsGroup from '../requests/components/Tabs'
 import { OrderTable } from './components/OrderTable'
 import { PurchaseRequest } from './types/purchaseType'
-import { MOCK_ORDERS } from './data/mockNewPurchase'
-import { Plus } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react' 
 import { CreatePurchaseRequestPage } from './CreatePurchaseRequestPage'
-import {authService} from '../../../services/authService'
+import { authService } from '../../../services/authService'
+import { getAllPurchaseRequests } from './services/purchaseService' 
 
 export function Main({ onViewDetail }: PurchaseOrdersProps) {
     const [activeTab, setActiveTab] = useState('active orders');
     const [statusFilter, setStatusFilter] = useState<string>('all');
-    const [purchaseOrders, setPurchaseOrders] = useState<PurchaseRequest[]>(MOCK_ORDERS);
+    
+    const [purchaseOrders, setPurchaseOrders] = useState<PurchaseRequest[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    
     const [creatingRequest, setCreatingRequest] = useState(false);
 
+    // Fetch Function
+    const fetchOrders = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const data = await getAllPurchaseRequests();
+            setPurchaseOrders(data);
+            console.log(data);
+            
+        } catch (error) {
+            console.error("Failed to load orders:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // Load data on mount
+    useEffect(() => {
+        fetchOrders();
+    }, [fetchOrders]);
 
     const handleStatusUpdate = (orderId: number, newStatus: number) => {
+        // Note: This only updates local state. You will need an API endpoint to save this change later.
         setPurchaseOrders(prevOrders =>
             prevOrders.map(order => {
                 if (order.id === orderId) {
                     return {
                         ...order,
-                        status: newStatus, // 1 for Approved, 2 for Rejected
-                        // If approved (1), we can simulate setting the approval date
+                        status: newStatus,
                         ...(newStatus === 1 && {
                             approvedAt: new Date().toISOString(),
                             approvedByName: authService.getUser()?.name
@@ -33,21 +54,17 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
                 return order;
             })
         );
-
     };
 
     const filteredOrders = useMemo(() => {
         let data = purchaseOrders;
 
         if (activeTab === 'active orders') {
-            // Show Pending (0) and Approved (1)
             data = data.filter(order => [0, 1].includes(order.status));
         } else {
-            // Show Rejected (2), Completed (3)
             data = data.filter(order => [2, 3].includes(order.status));
         }
 
-        // 2. Step 2: Filter by DROPDOWN selection
         if (statusFilter !== 'all') {
             data = data.filter(order => order.status.toString() === statusFilter);
         }
@@ -63,17 +80,19 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
         setCreatingRequest(false);
     };
 
-
+    const handleRequestSaved = () => {
+        setCreatingRequest(false);
+        fetchOrders();
+    };
 
     if (creatingRequest) {
         return (
             <CreatePurchaseRequestPage
                 onBack={handleBackFromCreate}
-                onSave={() => { }}//poner la funcion para crear el purchase request
+                onSave={handleRequestSaved} 
             />
         );
     }
-
 
     return (
         <div className="p-6 max-w-[1600px] mx-auto space-y-6">
@@ -106,16 +125,22 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
                 setActiveTab={setActiveTab}
             />
 
-            <OrderTable
-                orders={filteredOrders}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-                onStatusUpdate={handleStatusUpdate}
-                activeTab={activeTab}
-            />
+            {isLoading ? (
+                <div className="flex justify-center items-center h-64 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="flex flex-col items-center text-gray-400">
+                        <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                        <p>Loading requests...</p>
+                    </div>
+                </div>
+            ) : (
+                <OrderTable
+                    orders={filteredOrders}
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    onStatusUpdate={handleStatusUpdate}
+                    activeTab={activeTab}
+                />
+            )}
         </div>
     );
-
 }
-
-

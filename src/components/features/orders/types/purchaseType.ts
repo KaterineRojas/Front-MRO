@@ -2,27 +2,71 @@
  * interface defined for purqchase request sent by backend
  */
 
+// export interface PurchaseRequest {
+//     id: number;
+//     requestNumber: string;
+//     requesterId: number;
+//     requesterName: string;
+//     warehouseId: number;
+//     warehouseName: string;
+//     departmentName: string;
+//     projectName: string;
+//     status: number;
+//     priority: number;
+//     selfPurchase: boolean;
+//     totalAmount: number;
+//     totalItems: number;
+//     totalQuantity: number;
+//     approvedByName: string | null;
+//     approvedAt: string | null;
+//     supplier: string | null;
+//     createdAt: string;
+//     orderedAt: string | null;
+//     receivedAt: string | null;
+// }
+
 export interface PurchaseRequest {
     id: number;
     requestNumber: string;
-    requesterId: number;
-    requesterName: string;
+    requesterId: string;     // Backend sends string
+    
+    // Warehouse info
     warehouseId: number;
-    warehouseName: string;
-    departmentName: string;
-    projectName: string;
-    status: number;
-    priority: number;
+    warehouseName: string;   // Useful for the table!
+
+    // Context info
+    companyId: string;
+    customerId: string;
+    departmentId: string;    // Backend sends ID, not Name
+    projectId: string;       // Backend sends ID, not Name
+
+    // Status & Logic
+    status: number;          // 0=Pending, 1=Approved, etc.
+    reason: number;          // 0=Standard, etc. (Previously 'priority')
     selfPurchase: boolean;
-    totalAmount: number;
+
+    // Totals
+    estimatedTotalCost: number; // Matches backend (was totalAmount)
     totalItems: number;
     totalQuantity: number;
+
+    // Dates & Approvals
     approvedByName: string | null;
     approvedAt: string | null;
     supplier: string | null;
     createdAt: string;
     orderedAt: string | null;
     receivedAt: string | null;
+}
+
+export interface PaginatedResponse<T> {
+    data: T[];
+    pageNumber: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasPreviousPage: boolean;
+    hasNextPage: boolean;
 }
 
 /**
@@ -59,6 +103,12 @@ export interface ArticleSelectorProps {
     articles: Article[];
     onAddItem: (item: NewRequestItem) => void;
 }
+
+
+
+
+
+
 
 // order table interface
 
@@ -120,10 +170,10 @@ export interface CreatePurchaseRequestPayload {
     departmentId: string;
     projectId: string;
     workOrderId: string;
-    address: string;
-    googleMapsUrl: string;
-    zipCode: string;
-    reason: number; // Assuming 0 = Standard, etc.
+    // address: string;
+    // googleMapsUrl: string;
+    // zipCode: string;
+    reason: number; //pending
     selfPurchase: boolean;
     notes: string;
     expectedDeliveryDate: string; // ISO String
