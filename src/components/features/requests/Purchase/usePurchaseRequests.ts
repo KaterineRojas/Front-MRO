@@ -27,6 +27,35 @@ interface UsePurchaseRequestsReturn {
   refreshRequests: () => Promise<void>;
 }
 
+const STATUS_CODE_MAP: Record<number, 'pending' | 'approved' | 'rejected' | 'completed'> = {
+  0: 'pending',
+  1: 'approved',
+  2: 'rejected',
+  3: 'completed'
+};
+
+function resolveStatusKey(request: PurchaseRequest): string {
+  if (request.statusName) {
+    const normalized = request.statusName.toLowerCase();
+    if (normalized.includes('pend')) return 'pending';
+    if (normalized.includes('aprob') || normalized.includes('approv')) return 'approved';
+    if (normalized.includes('rech') || normalized.includes('reject')) return 'rejected';
+    if (normalized.includes('complet') || normalized.includes('entreg')) return 'completed';
+    return normalized;
+  }
+
+  const statusValue = request.status;
+  if (typeof statusValue === 'number') {
+    return STATUS_CODE_MAP[statusValue] ?? statusValue.toString();
+  }
+
+  if (typeof statusValue === 'string') {
+    return statusValue.toLowerCase();
+  }
+
+  return 'unknown';
+}
+
 export function usePurchaseRequests(): UsePurchaseRequestsReturn {
   const [purchaseRequests, setPurchaseRequests] = useState<PurchaseRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,24 +88,41 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
 
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(request =>
-        request.requestId.toLowerCase().includes(searchLower) ||
-        request.project.toLowerCase().includes(searchLower) ||
-        request.department.toLowerCase().includes(searchLower) ||
-        request.reason.toLowerCase().includes(searchLower) ||
-        request.warehouseName.toLowerCase().includes(searchLower) ||
-        request.items.some(item => 
-          item.name.toLowerCase().includes(searchLower)
-        )
-      );
+      filtered = filtered.filter(request => {
+        const identifier = (request.requestNumber ?? request.requestId ?? '').toString().toLowerCase();
+        const project = (request.projectId ?? request.project ?? '').toString().toLowerCase();
+        const department = (request.departmentId ?? request.department ?? '').toString().toLowerCase();
+        const reason = (request.reasonName ?? (typeof request.reason === 'string' ? request.reason : '')).toString().toLowerCase();
+        const warehouse = (request.warehouseName ?? '').toString().toLowerCase();
+        const company = (request.companyId ?? '').toString().toLowerCase();
+        const customer = (request.customerId ?? '').toString().toLowerCase();
+        const notes = (request.notes ?? '').toString().toLowerCase();
+
+        const inItems = request.items?.some(item => (item.name ?? '').toLowerCase().includes(searchLower));
+
+        return (
+          identifier.includes(searchLower) ||
+          project.includes(searchLower) ||
+          department.includes(searchLower) ||
+          reason.includes(searchLower) ||
+          warehouse.includes(searchLower) ||
+          company.includes(searchLower) ||
+          customer.includes(searchLower) ||
+          notes.includes(searchLower) ||
+          inItems
+        );
+      });
     }
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(request => request.status === statusFilter);
+      filtered = filtered.filter(request => resolveStatusKey(request) === statusFilter);
     }
 
     if (warehouseFilter !== 'all') {
-      filtered = filtered.filter(request => request.warehouseId === warehouseFilter);
+      filtered = filtered.filter(request => {
+        const warehouseValue = request.warehouseId ?? request.warehouseName;
+        return warehouseValue?.toString() === warehouseFilter;
+      });
     }
 
     return filtered;
@@ -100,7 +146,10 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
     try {
       const result = await deletePurchaseRequest(requestId);
       if (result.success) {
-        setPurchaseRequests(prev => prev.filter(req => req.requestId !== requestId));
+        setPurchaseRequests(prev => prev.filter(req => {
+          const reqKey = req.requestId ?? req.requestNumber;
+          return reqKey !== requestId;
+        }));
         toast.success('Request cancelled successfully');
       } else {
         toast.error(result.message);
@@ -115,7 +164,10 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
     try {
       const result = await confirmPurchaseBought(requestId, quantities);
       if (result.success) {
-        setPurchaseRequests(prev => prev.filter(req => req.requestId !== requestId));
+        setPurchaseRequests(prev => prev.filter(req => {
+          const reqKey = req.requestId ?? req.requestNumber;
+          return reqKey !== requestId;
+        }));
         toast.success(result.message);
       } else {
         toast.error(result.message);
@@ -127,18 +179,18 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
 
   // Check if request can be cancelled
   const canCancelRequest = (request: PurchaseRequest): boolean => {
-    return request.status === 'pending';
+    return resolveStatusKey(request) === 'pending';
   };
 
   // Check if purchase can be confirmed as bought
   const canConfirmBought = (request: PurchaseRequest): boolean => {
-    return request.status === 'approved' && request.selfPurchase;
+    return resolveStatusKey(request) === 'approved' && request.selfPurchase;
   };
 
   // Get status count
   const getStatusCount = (status: string): number => {
     if (status === 'all') return purchaseRequests.length;
-    return purchaseRequests.filter(req => req.status === status).length;
+    return purchaseRequests.filter(req => resolveStatusKey(req) === status).length;
   };
 
   return {

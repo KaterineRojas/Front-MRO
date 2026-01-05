@@ -19,30 +19,46 @@ export interface Department {
 
 export interface PurchaseItem {
   id: number;
+  itemId?: number;
   imageUrl: string;
   sku: string;
   name: string;
   description: string;
   quantity: number;
   estimatedCost?: number;
+  cost?: number;
   productUrl?: string;
-  warehouseId?: string;
+  warehouseId?: string | number;
   warehouseName?: string;
 }
 
 export interface PurchaseRequest {
-  requestId: string;
-  department: string;
-  project: string;
-  notes: string;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
-  reason: 'low-stock' | 'urgent' | 'new-project';
+  requestId?: string;
+  requestNumber?: string;
+  department?: string;
+  departmentId?: string;
+  project?: string;
+  projectId?: string;
+  notes?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed' | number | string;
+  statusName?: string;
+  reason?: 'low-stock' | 'urgent' | 'new-project' | number | string;
+  reasonName?: string;
   selfPurchase: boolean;
   items: PurchaseItem[];
-  totalCost: number;
+  totalCost?: number;
+  estimatedTotalCost?: number;
+  totalItems?: number;
+  totalQuantity?: number;
   createdAt?: string;
-  warehouseId: string;
-  warehouseName: string;
+  orderedAt?: string | null;
+  receivedAt?: string | null;
+  expectedDeliveryDate?: string;
+  warehouseId?: string | number;
+  warehouseName?: string;
+  companyId?: string;
+  customerId?: string;
+  clientBilled?: boolean;
 }
 
 export interface PurchaseRequestItemPayload {
@@ -231,12 +247,185 @@ const mockPurchaseRequests: PurchaseRequest[] = [
 
 // API Simulation Functions
 
+function getStoredUserId(): string {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  try {
+    return window.localStorage?.getItem('userId') ?? '';
+  } catch (error) {
+    console.warn('Unable to access localStorage for userId', error);
+    return '';
+  }
+}
+
+function resolveRequesterId(): string {
+  try {
+    const state = store.getState() as any;
+    const employeeId: string | undefined = state?.auth?.user?.employeeId;
+    const userId: string | undefined = state?.auth?.user?.id;
+
+    return employeeId || userId || getStoredUserId();
+  } catch (error) {
+    console.error('Failed to resolve requesterId from store', error);
+    return getStoredUserId();
+  }
+}
+
+function normalizePurchaseRequest(raw: any, index: number): PurchaseRequest {
+  const itemsSource = Array.isArray(raw?.items)
+    ? raw.items
+    : Array.isArray(raw?.requestItems)
+      ? raw.requestItems
+      : Array.isArray(raw?.details)
+        ? raw.details
+        : [];
+
+  const items: PurchaseItem[] = itemsSource.map((item: any, itemIndex: number) => {
+    const fallbackId = item?.id ?? item?.itemId ?? itemIndex + 1;
+    const numericId = Number(fallbackId);
+    const resolvedId = Number.isFinite(numericId) ? numericId : itemIndex + 1;
+
+    const rawItemId = Number(item?.itemId ?? fallbackId);
+    const itemId = Number.isFinite(rawItemId) ? rawItemId : resolvedId;
+
+    const quantity = Number(item?.quantity ?? item?.qty ?? 0);
+    const estimatedCost = Number(item?.estimatedCost ?? item?.cost ?? item?.price);
+    const cost = Number(item?.cost);
+
+    return {
+      id: resolvedId,
+      itemId,
+      imageUrl: item?.imageUrl ?? item?.itemImageUrl ?? '',
+      sku: item?.sku ?? item?.skuCode ?? '',
+      name: item?.name ?? item?.itemName ?? 'Unnamed item',
+      description: item?.description ?? item?.itemDescription ?? '',
+      quantity: Number.isFinite(quantity) ? quantity : 0,
+      estimatedCost: Number.isFinite(estimatedCost) ? estimatedCost : undefined,
+      cost: Number.isFinite(cost) ? cost : undefined,
+      productUrl: item?.productUrl ?? item?.url ?? undefined,
+      warehouseId: item?.warehouseId ?? raw?.warehouseId,
+      warehouseName: item?.warehouseName ?? raw?.warehouseName,
+    };
+  });
+
+  const totalItemsValue = Number(raw?.totalItems);
+  const totalQuantityValue = Number(raw?.totalQuantity);
+  const statusRaw = raw?.status ?? raw?.statusId ?? raw?.statusCode;
+  const reasonRaw = raw?.reason ?? raw?.reasonId ?? raw?.reasonCode;
+  const statusValue = typeof statusRaw === 'string' && statusRaw.trim() !== '' && !Number.isNaN(Number(statusRaw))
+    ? Number(statusRaw)
+    : statusRaw ?? 'pending';
+  const reasonValue = typeof reasonRaw === 'string' && reasonRaw.trim() !== '' && !Number.isNaN(Number(reasonRaw))
+    ? Number(reasonRaw)
+    : reasonRaw;
+  const totalCostValue = Number(raw?.totalCost);
+  const estimatedTotalCostValue = Number(raw?.estimatedTotalCost ?? raw?.totalEstimatedCost ?? raw?.estimatedCost);
+
+  return {
+    requestId: raw?.requestId ?? raw?.id ?? undefined,
+    requestNumber: raw?.requestNumber ?? raw?.requestNo ?? raw?.number ?? undefined,
+    department: raw?.department ?? raw?.departmentName ?? undefined,
+    departmentId: raw?.departmentId ?? undefined,
+    project: raw?.project ?? raw?.projectName ?? undefined,
+    projectId: raw?.projectId ?? undefined,
+    notes: raw?.notes ?? raw?.comment ?? raw?.comments ?? undefined,
+    status: statusValue,
+    statusName: raw?.statusName ?? raw?.statusDescription ?? undefined,
+    reason: reasonValue,
+    reasonName: raw?.reasonName ?? raw?.reasonDescription ?? undefined,
+    selfPurchase: Boolean(raw?.selfPurchase ?? raw?.isSelfPurchase ?? false),
+    items,
+    totalCost: Number.isFinite(totalCostValue) ? totalCostValue : undefined,
+    estimatedTotalCost: Number.isFinite(estimatedTotalCostValue) ? estimatedTotalCostValue : undefined,
+    totalItems: Number.isFinite(totalItemsValue) ? totalItemsValue : items.length,
+    totalQuantity: Number.isFinite(totalQuantityValue)
+      ? totalQuantityValue
+      : items.reduce((sum, item) => sum + (item.quantity ?? 0), 0),
+    createdAt: raw?.createdAt ?? raw?.createdDate ?? raw?.createdOn ?? undefined,
+    orderedAt: raw?.orderedAt ?? raw?.orderedDate ?? raw?.orderedOn ?? null,
+    receivedAt: raw?.receivedAt ?? raw?.receivedDate ?? raw?.receivedOn ?? null,
+    expectedDeliveryDate: raw?.expectedDeliveryDate ?? raw?.expectedDelivery ?? raw?.deliveryDate ?? undefined,
+    warehouseId: raw?.warehouseId ?? raw?.warehouseCode ?? undefined,
+    warehouseName: raw?.warehouseName ?? raw?.warehouse ?? items[0]?.warehouseName ?? undefined,
+    companyId: raw?.companyId ?? raw?.company ?? undefined,
+    customerId: raw?.customerId ?? raw?.customer ?? raw?.clientId ?? undefined,
+    clientBilled: Boolean(raw?.clientBilled ?? raw?.isClientBilled ?? false),
+  };
+}
+
 /**
  * Get all purchase requests
  */
 export async function getPurchaseRequests(): Promise<PurchaseRequest[]> {
-  await delay(300);
-  return [...mockPurchaseRequests];
+  const state = store.getState();
+  const token = state.auth?.accessToken ?? null;
+  const requesterId = resolveRequesterId();
+
+  if (!token) {
+    throw new Error('Authentication token not found');
+  }
+
+  if (!requesterId) {
+    throw new Error('Requester ID not found');
+  }
+
+  const url = `${API_URL}/purchase-requests?requesterId=${encodeURIComponent(requesterId)}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const responseText = await response.text();
+    if (!responseText) {
+      if (!response.ok) {
+        throw new Error(`Failed to fetch purchase requests: ${response.status}`);
+      }
+
+      return [];
+    }
+
+    let responseData: any;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (error) {
+      console.error('purchaseService: Failed to parse purchase request response', responseText);
+      throw new Error('Unexpected response while fetching purchase requests');
+    }
+
+    if (!response.ok) {
+      const message = responseData?.message ?? responseData?.error ?? `Failed to fetch purchase requests: ${response.status}`;
+      throw new Error(message);
+    }
+
+    const payload = Array.isArray(responseData?.data)
+      ? responseData.data
+      : Array.isArray(responseData?.purchaseRequests)
+        ? responseData.purchaseRequests
+        : Array.isArray(responseData?.items)
+          ? responseData.items
+          : Array.isArray(responseData?.results)
+            ? responseData.results
+            : Array.isArray(responseData)
+              ? responseData
+              : [];
+
+    if (!Array.isArray(payload)) {
+      console.warn('purchaseService: Unexpected purchase requests payload shape', responseData);
+      return [];
+    }
+
+    return payload.map((item, index) => normalizePurchaseRequest(item, index));
+  } catch (error) {
+    console.error('purchaseService: Failed to retrieve purchase requests', error);
+    throw error;
+  }
 }
 
 /**

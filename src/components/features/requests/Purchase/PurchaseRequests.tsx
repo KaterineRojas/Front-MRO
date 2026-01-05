@@ -1,39 +1,111 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
 import { Input } from '../../../ui/input';
-import { Label } from '../../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
+import { Label } from '../../../ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
-import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle, ArrowLeft, Pencil } from 'lucide-react';
+import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle, Pencil } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { PurchaseForm } from './PurchaseForm';
-import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
-//import { toast } from 'sonner';
-import { useAppSelector } from '../../../../store';
-import { selectCurrentUser } from '../../../../store';
-import { getWarehouses, type Warehouse } from '../../enginner/services';
 import { usePurchaseRequests } from './usePurchaseRequests';
-import { formatDate, getStatusColor, getStatusText, getReasonColor, getReasonText } from './purchaseUtils';
+import { useIsMobile } from '../../../ui/use-mobile';
+import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
+import { formatCurrency, formatDate, getReasonColor, getReasonText, getStatusColor, getStatusText } from './purchaseUtils';
+import { getWarehouses } from '../services/sharedServices';
+import { useAppSelector } from '../../../../store/hooks';
 import type { PurchaseRequest } from './purchaseService';
+import type { User as EngineerUser } from '../../enginner/types';
+import { toast } from 'sonner';
 
+type ActiveView = 'list' | 'request';
+
+interface WarehouseOption {
+  id: string;
+  name: string;
+}
+
+interface RequestMeta {
+  rowKey: string;
+  actionKey: string;
+  identifier: string;
+  warehouseName: string;
+  statusLabel: string;
+  statusClass: string;
+  reasonLabel?: string;
+  reasonClass?: string;
+  expectedDelivery: string;
+  orderedDate: string;
+  receivedDate: string;
+  createdDate: string;
+  totalCostDisplay: string;
+  totalItems: number;
+  totalQuantity: number;
+  notesText?: string;
+  hasNotes: boolean;
+  projectLabel: string;
+  departmentLabel?: string;
+  companyId?: string;
+  customerId?: string;
+  selfPurchase: boolean;
+  clientBilled: boolean;
+}
+
+function computeRequestMeta(request: PurchaseRequest, index: number): RequestMeta {
+  const rowKey = request.requestId ?? request.requestNumber ?? `purchase-row-${index}`;
+  const actionKey = request.requestId ?? request.requestNumber ?? rowKey;
+
+  const totalCost = typeof request.totalCost === 'number' ? request.totalCost : request.estimatedTotalCost;
+  const normalizedNotes = (request.notes ?? '').trim();
+
+  const totalItems = request.totalItems ?? (Array.isArray(request.items) ? request.items.length : 0);
+  const totalQuantity = request.totalQuantity ?? (Array.isArray(request.items)
+    ? request.items.reduce((sum, item) => sum + (item.quantity ?? 0), 0)
+    : 0);
+
+  const hasReason = request.reason !== undefined && request.reason !== null && request.reason !== '';
+
+  return {
+    rowKey,
+    actionKey,
+    identifier: request.requestNumber ?? request.requestId ?? `REQ${String(index + 1).padStart(3, '0')}`,
+    warehouseName: request.warehouseName ?? 'No warehouse assigned',
+    statusLabel: getStatusText(request.status, request.statusName),
+    statusClass: getStatusColor(request.status, request.statusName),
+    reasonLabel: hasReason ? getReasonText(request.reason as any, request.reasonName) : undefined,
+    reasonClass: hasReason ? getReasonColor(request.reason as any, request.reasonName) : undefined,
+    expectedDelivery: formatDate(request.expectedDeliveryDate),
+    orderedDate: formatDate(request.orderedAt),
+    receivedDate: formatDate(request.receivedAt),
+    createdDate: formatDate(request.createdAt),
+    totalCostDisplay: typeof totalCost === 'number' ? formatCurrency(totalCost) : '—',
+    totalItems,
+    totalQuantity,
+    notesText: normalizedNotes || undefined,
+    hasNotes: Boolean(normalizedNotes),
+    projectLabel: request.project ?? request.projectId ?? 'Untitled project',
+    departmentLabel: request.department ?? request.departmentId ?? undefined,
+    companyId: request.companyId,
+    customerId: request.customerId,
+    selfPurchase: Boolean(request.selfPurchase),
+    clientBilled: Boolean(request.clientBilled),
+  };
+}
 
 export function PurchaseRequests() {
-  const currentUser = useAppSelector(selectCurrentUser);
-  const [activeView, setActiveView] = useState<'list' | 'request'>('list');
-  const [isMobile, setIsMobile] = useState(false);
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [activeView, setActiveView] = useState<ActiveView>('list');
   const [requestToEdit, setRequestToEdit] = useState<PurchaseRequest | null>(null);
-
-  // Dialog states
   const [confirmPurchaseOpen, setConfirmPurchaseOpen] = useState(false);
-  const [purchaseToConfirm, setPurchaseToConfirm] = useState<PurchaseRequest | null>(null);
-  const [purchaseEditedQuantities, setPurchaseEditedQuantities] = useState<{ [key: string]: number }>({});
+  const [purchaseToConfirm, setPurchaseToConfirm] = useState<{ request: PurchaseRequest; actionKey: string } | null>(null);
+  const [purchaseEditedQuantities, setPurchaseEditedQuantities] = useState<Record<string, number>>({});
+  const [warehouseChoices, setWarehouseChoices] = useState<WarehouseOption[]>([]);
 
-  // Use purchase requests hook
+  const isMobile = useIsMobile();
+
   const {
+    purchaseRequests,
     filteredPurchaseRequests,
     isLoading,
     searchTerm,
@@ -48,42 +120,86 @@ export function PurchaseRequests() {
     handleConfirmBought,
     canCancelRequest,
     canConfirmBought,
-    getStatusCount
+    getStatusCount,
+    refreshRequests,
   } = usePurchaseRequests();
 
-  // Load warehouses
-  useEffect(() => {
-    const loadWarehouses = async () => {
-      const data = await getWarehouses();
-      setWarehouses(data);
-    };
-    loadWarehouses();
-  }, []);
+  const authUser = useAppSelector((state) => state.auth.user);
 
-  // Check mobile
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  const handleCancelPurchaseRequest = (requestId: string) => {
-    if (window.confirm('Are you sure you want to cancel this request?')) {
-      handleCancel(requestId);
+  const currentUser = useMemo<EngineerUser | null>(() => {
+    if (!authUser) {
+      return null;
     }
+
+    return {
+      id: authUser.id ?? '',
+      name: authUser.name ?? '',
+      email: authUser.email ?? '',
+      role: authUser.roleName ?? 'Engineer',
+      department: authUser.department ?? authUser.departmentId ?? '',
+      departmentId: authUser.departmentId ?? authUser.department ?? '',
+      departmentName: authUser.departmentName ?? '',
+      employeeId: authUser.employeeId ?? '',
+    };
+  }, [authUser]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadWarehouses = async () => {
+      try {
+        const data = await getWarehouses();
+        if (!isMounted) {
+          return;
+        }
+
+        const mapped = data
+          .map((wh) => ({
+            id: wh.id.toString(),
+            name: wh.name ?? wh.code ?? wh.id.toString(),
+          }))
+          .filter((wh) => Boolean(wh.id));
+
+        setWarehouseChoices(mapped);
+      } catch (error) {
+        console.error('Failed to load warehouses for filters', error);
+        toast.error('Failed to load warehouses');
+      }
+    };
+
+    void loadWarehouses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const derivedWarehouseChoices = useMemo<WarehouseOption[]>(() => {
+    const seen = new Map<string, string>();
+    purchaseRequests.forEach((request) => {
+      const rawId = (request.warehouseId ?? request.warehouseName)?.toString();
+      if (!rawId || seen.has(rawId)) {
+        return;
+      }
+
+      const name = request.warehouseName ?? rawId;
+      seen.set(rawId, name);
+    });
+
+    return Array.from(seen, ([id, name]) => ({ id, name }));
+  }, [purchaseRequests]);
+
+  const warehousesForFilter = warehouseChoices.length > 0 ? warehouseChoices : derivedWarehouseChoices;
+
+  const openCreateRequest = () => {
+    setRequestToEdit(null);
+    setActiveView('request');
   };
 
-  const handleAlreadyBought = (request: PurchaseRequest) => {
-    setPurchaseToConfirm(request);
-    const initialQuantities: { [key: string]: number } = {};
-    request.items.forEach((item, index) => {
-      initialQuantities[index.toString()] = item.quantity;
-    });
-    setPurchaseEditedQuantities(initialQuantities);
-    setConfirmPurchaseOpen(true);
+  const backToList = () => {
+    setActiveView('list');
+    setRequestToEdit(null);
+    void refreshRequests();
   };
 
   const handleEditRequest = (request: PurchaseRequest) => {
@@ -91,35 +207,65 @@ export function PurchaseRequests() {
     setActiveView('request');
   };
 
-  const backToList = () => {
-    setRequestToEdit(null);
-    setActiveView('list');
+  const handleCancelPurchaseRequest = async (requestId: string) => {
+    if (!requestId) {
+      toast.error('Unable to identify the request to cancel');
+      return;
+    }
+
+    await handleCancel(requestId);
   };
 
-  const openCreateRequest = () => {
-    setRequestToEdit(null);
-    setActiveView('request');
+  const handleAlreadyBought = (request: PurchaseRequest) => {
+    const actionKey = request.requestId ?? request.requestNumber;
+    if (!actionKey) {
+      toast.error('Unable to identify the request to confirm');
+      return;
+    }
+
+    const initialQuantities: Record<string, number> = {};
+    request.items.forEach((item, index) => {
+      initialQuantities[index.toString()] = item.quantity;
+    });
+
+    setPurchaseToConfirm({ request, actionKey });
+    setPurchaseEditedQuantities(initialQuantities);
+    setConfirmPurchaseOpen(true);
   };
 
-  const updatePurchaseQuantity = (index: string, newQuantity: number, maxQuantity: number) => {
-    if (newQuantity > maxQuantity) return;
-    if (newQuantity < 1) return;
-    
-    setPurchaseEditedQuantities(prev => ({
+  const handleConfirmDialogChange = (open: boolean) => {
+    setConfirmPurchaseOpen(open);
+    if (!open) {
+      setPurchaseToConfirm(null);
+      setPurchaseEditedQuantities({});
+    }
+  };
+
+  const updatePurchaseQuantity = (key: string, nextValue: number, maxQuantity: number) => {
+    const sanitized = Number.isNaN(nextValue) ? 1 : Math.max(1, Math.min(nextValue, maxQuantity));
+    setPurchaseEditedQuantities((prev) => ({
       ...prev,
-      [index]: newQuantity
+      [key]: sanitized,
     }));
   };
 
   const confirmAlreadyBought = async () => {
-    if (!purchaseToConfirm) return;
-    
-    await handleConfirmBought(purchaseToConfirm.requestId, purchaseEditedQuantities);
-    setConfirmPurchaseOpen(false);
-    setPurchaseToConfirm(null);
+    if (!purchaseToConfirm) {
+      return;
+    }
+
+    const payload: Record<string, number> = {};
+    purchaseToConfirm.request.items.forEach((item, index) => {
+      const key = index.toString();
+      const maxQuantity = item.quantity ?? 1;
+      const desiredQuantity = purchaseEditedQuantities[key] ?? maxQuantity;
+      payload[key] = Math.max(1, Math.min(desiredQuantity, maxQuantity));
+    });
+
+    await handleConfirmBought(purchaseToConfirm.actionKey, payload);
+    handleConfirmDialogChange(false);
   };
 
-  // Show request or direct purchase forms
   if (activeView === 'request') {
     if (!currentUser) {
       return (
@@ -138,25 +284,18 @@ export function PurchaseRequests() {
 
     return (
       <div className="space-y-6">
-        <PurchaseForm
-          currentUser={currentUser}
-          onBack={backToList}
-          initialRequest={requestToEdit}
-        />
+        <PurchaseForm currentUser={currentUser} onBack={backToList} initialRequest={requestToEdit} />
       </div>
     );
   }
 
-  // Main purchase requests list view
   return (
     <div className="space-y-6">
       <style>{actionButtonAnimationStyles}</style>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1>Purchase Requests</h1>
-          <p className="text-muted-foreground">
-            Manage your equipment purchase requests
-          </p>
+          <p className="text-muted-foreground">Manage your equipment purchase requests</p>
         </div>
         <div className="flex gap-3">
           <Button onClick={openCreateRequest}>
@@ -166,7 +305,6 @@ export function PurchaseRequests() {
         </div>
       </div>
 
-      {/* Search and Filter Bar */}
       <Card>
         <CardContent className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -181,7 +319,7 @@ export function PurchaseRequests() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Warehouses</SelectItem>
-                {warehouses.map((wh) => (
+                {warehousesForFilter.map((wh) => (
                   <SelectItem key={wh.id} value={wh.id}>
                     {wh.name}
                   </SelectItem>
@@ -197,13 +335,13 @@ export function PurchaseRequests() {
                 <SelectItem value="pending">Pending ({getStatusCount('pending')})</SelectItem>
                 <SelectItem value="approved">Approved ({getStatusCount('approved')})</SelectItem>
                 <SelectItem value="rejected">Rejected ({getStatusCount('rejected')})</SelectItem>
+                <SelectItem value="completed">Completed ({getStatusCount('completed')})</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </CardContent>
       </Card>
 
-      {/* Request List - Mobile Card View or Desktop Table */}
       {isLoading ? (
         <Card>
           <CardContent className="p-12 text-center">
@@ -217,250 +355,357 @@ export function PurchaseRequests() {
             <h3>No purchase requests found</h3>
             <p className="text-sm text-muted-foreground">
               {searchTerm || statusFilter !== 'all' || warehouseFilter !== 'all'
-                ? 'Try adjusting your search or filters' 
+                ? 'Try adjusting your search or filters'
                 : 'When you make purchase requests, they will appear here'}
             </p>
           </CardContent>
         </Card>
       ) : isMobile ? (
-        // Mobile Card View
         <div className="space-y-4">
-          {filteredPurchaseRequests.map((request) => (
-            <Card key={request.requestId}>
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <div 
-                    className="flex justify-between items-start cursor-pointer"
-                    onClick={() => toggleRow(request.requestId)}
-                  >
-                    <div className="flex-1">
-                      <h3 className="flex items-center gap-2">
-                        <Package className="h-4 w-4" />
-                        Purchase #{request.requestId}
-                        {expandedRows.has(request.requestId) ? (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <Badge variant="outline">{request.warehouseName}</Badge>
-                        {request.reason && (
-                          <Badge className={getReasonColor(request.reason)} variant="secondary">
-                            {getReasonText(request.reason)}
+          {filteredPurchaseRequests.map((request, index) => {
+            const meta = computeRequestMeta(request, index);
+            const isExpanded = expandedRows.has(meta.rowKey);
+            const toggleDetails = () => toggleRow(meta.rowKey);
+            const totalSummary = `${meta.totalItems} items • ${meta.totalQuantity} pieces`;
+
+            return (
+              <Card key={meta.rowKey}>
+                <CardContent className="p-4 space-y-4">
+                  <div className="flex items-start justify-between gap-3 cursor-pointer" onClick={toggleDetails}>
+                    <div className="space-y-1">
+                      <p className="font-mono text-sm font-semibold">Request {meta.identifier}</p>
+                      <p className="text-xs text-muted-foreground">{meta.warehouseName}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        {meta.reasonLabel && (
+                          <Badge className={meta.reasonClass} variant="secondary">
+                            {meta.reasonLabel}
                           </Badge>
                         )}
-                        <Badge className={getStatusColor(request.status)} variant="secondary">
-                          {getStatusText(request.status)}
+                        <Badge className={meta.statusClass} variant="secondary">
+                          {meta.statusLabel}
                         </Badge>
+                        {meta.selfPurchase && <Badge variant="outline">Self purchase</Badge>}
+                        {meta.clientBilled && <Badge variant="outline">Client billed</Badge>}
                       </div>
-                    </div>
-                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="outline"
-                        className="gap-2 h-auto py-2 px-4"
-                        onClick={() => handleEditRequest(request)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Edit
-                      </Button>
-                      {canConfirmBought(request) && (
-                        <Button
-                          className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
-                          onClick={() => handleAlreadyBought(request)}
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                          Confirm
-                        </Button>
-                      )}
-                      {canCancelRequest(request) && (
-                        <Button
-                          className="action-btn-enhance btn-cancel p-2 h-auto"
-                          onClick={() => handleCancelPurchaseRequest(request.requestId)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      {isExpanded ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       )}
                     </div>
                   </div>
 
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>Requested: {formatDate(request.createdAt || '')}</p>
-                    <p>Project: {request.project}</p>
-                    {request.totalCost && <p>Cost: ${request.totalCost}</p>}
-                  </div>
-
-                  {expandedRows.has(request.requestId) && (
+                  <div className="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                      <h4 className="text-sm mb-2">Items:</h4>
+                      <p className="text-muted-foreground uppercase tracking-wide">Project</p>
+                      <p className="font-medium text-foreground">{meta.projectLabel}</p>
+                      {meta.departmentLabel && <p className="text-muted-foreground mt-1">{meta.departmentLabel}</p>}
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground uppercase tracking-wide">Client</p>
+                      <p>{meta.companyId || '—'}</p>
+                      {meta.customerId && <p>{meta.customerId}</p>}
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground uppercase tracking-wide">Estimated delivery</p>
+                      <p>{meta.expectedDelivery}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground uppercase tracking-wide">Estimated cost</p>
+                      <p className="font-medium text-foreground">{meta.totalCostDisplay}</p>
+                      <p className="text-muted-foreground mt-1">{totalSummary}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      className="gap-2 h-auto py-2 px-4"
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        e.stopPropagation();
+                        handleEditRequest(request);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Edit
+                    </Button>
+                    {canConfirmBought(request) && (
+                      <Button
+                        className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          handleAlreadyBought(request);
+                        }}
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Confirm
+                      </Button>
+                    )}
+                    {canCancelRequest(request) && (
+                      <Button
+                        className="action-btn-enhance btn-cancel p-2 h-auto"
+                        disabled={!meta.actionKey}
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          void handleCancelPurchaseRequest(meta.actionKey || meta.rowKey);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {isExpanded && (
+                    <div className="space-y-3 border-t pt-3">
+                      <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground">
+                        <p>Created: {meta.createdDate}</p>
+                        <p>Ordered: {meta.orderedDate}</p>
+                        <p>Expected delivery: {meta.expectedDelivery}</p>
+                        <p>Received: {meta.receivedDate}</p>
+                        {meta.notesText && <p className="text-foreground">Notes: {meta.notesText}</p>}
+                      </div>
                       <div className="space-y-2">
-                        {request.items.map((item, index) => (
-                          <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
-                            {item.imageUrl && (
-                              <ImageWithFallback
-                                src={item.imageUrl}
-                                alt={item.name}
-                                className="w-10 h-10 object-cover rounded"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm truncate">{item.name}</p>
-                              {item.description && (
-                                <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                        <h4 className="text-sm font-semibold">Items ({request.items.length})</h4>
+                        {request.items.map((item, itemIndex) => {
+                          const itemCost = item.cost ?? item.estimatedCost;
+                          return (
+                            <div key={itemIndex} className="flex items-start gap-3 rounded-lg border p-3">
+                              {item.imageUrl ? (
+                                <ImageWithFallback
+                                  src={item.imageUrl}
+                                  alt={item.name}
+                                  className="w-12 h-12 object-cover rounded"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 flex items-center justify-center rounded bg-muted">
+                                  <Package className="h-5 w-5 text-muted-foreground" />
+                                </div>
                               )}
+                              <div className="flex-1 space-y-1">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="text-sm font-medium">{item.name}</p>
+                                  <Badge variant="secondary">x{item.quantity}</Badge>
+                                </div>
+                                {item.sku && <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>}
+                                {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
+                                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                  {typeof itemCost === 'number' && <span>{formatCurrency(itemCost)}</span>}
+                                  {item.productUrl && (
+                                    <a href={item.productUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                                      View product
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                            <Badge variant="secondary">x{item.quantity}</Badge>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       ) : (
-        // Desktop Table View
         <Card>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[50px]"></TableHead>
-                    <TableHead>Request ID</TableHead>
-                    <TableHead>Warehouse</TableHead>
-                    <TableHead>Project</TableHead>
+                    <TableHead className="w-[40px]" />
+                    <TableHead>Request</TableHead>
+                    <TableHead>Project &amp; client</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Timeline</TableHead>
                     <TableHead>Cost</TableHead>
-                    <TableHead>Reason / Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPurchaseRequests.map((request) => (
-                    <React.Fragment key={request.requestId}>
-                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => toggleRow(request.requestId)}>
-                        <TableCell>
-                          {expandedRows.has(request.requestId) ? (
-                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">#{request.requestId}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{request.warehouseName}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <p className="text-sm">{request.project}</p>
-                          <p className="text-xs text-muted-foreground">{request.department}</p>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {request.totalCost ? `$${request.totalCost}` : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1 flex-wrap">
-                            {request.reason && (
-                              <Badge className={getReasonColor(request.reason)} variant="secondary">
-                                {getReasonText(request.reason)}
+                  {filteredPurchaseRequests.map((request, index) => {
+                    const meta = computeRequestMeta(request, index);
+                    const isExpanded = expandedRows.has(meta.rowKey);
+                    const toggleDetails = () => toggleRow(meta.rowKey);
+                    const totalSummary = `${meta.totalItems} items • ${meta.totalQuantity} pieces`;
+
+                    return (
+                      <React.Fragment key={meta.rowKey}>
+                        <TableRow className="cursor-pointer hover:bg-muted/50" onClick={toggleDetails}>
+                          <TableCell className="align-top">
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="space-y-1">
+                              <p className="font-mono text-sm font-semibold">#{meta.identifier}</p>
+                              <p className="text-xs text-muted-foreground">{meta.warehouseName}</p>
+                              <div className="flex gap-1 flex-wrap">
+                                {meta.selfPurchase && <Badge variant="outline">Self purchase</Badge>}
+                                {meta.clientBilled && <Badge variant="outline">Client billed</Badge>}
+                                {meta.hasNotes && <Badge variant="outline">Notes</Badge>}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium text-foreground">{meta.projectLabel}</p>
+                              {meta.departmentLabel && <p className="text-xs text-muted-foreground">{meta.departmentLabel}</p>}
+                              <div className="text-xs text-muted-foreground flex flex-wrap gap-2">
+                                {meta.companyId && <span>{meta.companyId}</span>}
+                                {meta.customerId && <span>{meta.customerId}</span>}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="flex flex-wrap gap-1">
+                              {meta.reasonLabel && (
+                                <Badge className={meta.reasonClass} variant="secondary">
+                                  {meta.reasonLabel}
+                                </Badge>
+                              )}
+                              <Badge className={meta.statusClass} variant="secondary">
+                                {meta.statusLabel}
                               </Badge>
-                            )}
-                            <Badge className={getStatusColor(request.status)} variant="secondary">
-                              {getStatusText(request.status)}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              className="gap-2 h-auto py-2 px-4"
-                              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                e.stopPropagation();
-                                handleEditRequest(request);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                              Edit
-                            </Button>
-                            {canConfirmBought(request) && (
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="space-y-1 text-xs text-muted-foreground">
+                              <p>
+                                <span className="font-medium text-foreground">Delivery:</span> {meta.expectedDelivery}
+                              </p>
+                              <p>Ordenado: {meta.orderedDate}</p>
+                              <p>Recibido: {meta.receivedDate}</p>
+                              <p>Creado: {meta.createdDate}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="space-y-1">
+                              <p className="text-sm font-semibold text-foreground">{meta.totalCostDisplay}</p>
+                              <p className="text-xs text-muted-foreground">{totalSummary}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="flex items-start justify-end gap-2">
                               <Button
-                                className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
+                                variant="outline"
+                                className="gap-2 h-auto py-2 px-4"
                                 onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                   e.stopPropagation();
-                                  handleAlreadyBought(request);
+                                  handleEditRequest(request);
                                 }}
                               >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Bought
+                                <Pencil className="h-4 w-4" />
+                                Edit
                               </Button>
-                            )}
-                            {canCancelRequest(request) && (
-                              <Button
-                                className="action-btn-enhance btn-cancel p-2 h-auto"
-                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                  e.stopPropagation();
-                                  handleCancelPurchaseRequest(request.requestId);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {expandedRows.has(request.requestId) && (
-                        <TableRow>
-                          <TableCell colSpan={7} className="bg-muted/20 p-0">
-                            <div className="p-4">
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead className="w-[80px]">Image</TableHead>
-                                    <TableHead className="hidden md:table-cell">SKU</TableHead>
-                                    <TableHead>Name & Description</TableHead>
-                                    <TableHead className="text-right">Cost</TableHead>
-                                    <TableHead className="text-right">Quantity</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {request.items.map((item, index) => (
-                                    <TableRow key={index}>
-                                      <TableCell>
-                                        {item.imageUrl ? (
-                                          <ImageWithFallback
-                                            src={item.imageUrl}
-                                            alt={item.name}
-                                            className="w-12 h-12 object-cover rounded"
-                                          />
-                                        ) : (
-                                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                                            <Package className="h-6 w-6 text-muted-foreground" />
-                                          </div>
-                                        )}
-                                      </TableCell>
-                                      <TableCell className="font-mono text-sm hidden md:table-cell">{item.sku || '-'}</TableCell>
-                                      <TableCell>
-                                        <p className="text-sm">{item.name}</p>
-                                        {item.description && (
-                                          <p className="text-xs text-muted-foreground">{item.description}</p>
-                                        )}
-                                      </TableCell>
-                                      <TableCell className="text-right text-sm">
-                                        {item.estimatedCost ? `$${item.estimatedCost}` : '-'}
-                                      </TableCell>
-                                      <TableCell className="text-right text-sm">x{item.quantity}</TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
+                              {canConfirmBought(request) && (
+                                <Button
+                                  className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
+                                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                    e.stopPropagation();
+                                    handleAlreadyBought(request);
+                                  }}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                  Confirm
+                                </Button>
+                              )}
+                              {canCancelRequest(request) && (
+                                <Button
+                                  className="action-btn-enhance btn-cancel p-2 h-auto"
+                                  disabled={!meta.actionKey}
+                                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                    e.stopPropagation();
+                                    void handleCancelPurchaseRequest(meta.actionKey || meta.rowKey);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
-                      )}
-                    </React.Fragment>
-                  ))}
+                        {isExpanded && (
+                          <TableRow>
+                            <TableCell colSpan={7} className="bg-muted/20 p-0">
+                              <div className="p-4 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                  <div>
+                                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Notes</p>
+                                    <p className="mt-1 text-foreground">{meta.notesText || 'No additional notes'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Owner</p>
+                                    <p className="mt-1">{meta.selfPurchase ? 'Requester purchases' : 'Keeper purchases'}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {meta.clientBilled ? 'Billed to client' : 'Not billed to client'}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Dates</p>
+                                    <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                                      <li>Created: {meta.createdDate}</li>
+                                      <li>Ordered: {meta.orderedDate}</li>
+                                      <li>Expected delivery: {meta.expectedDelivery}</li>
+                                      <li>Received: {meta.receivedDate}</li>
+                                    </ul>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <h4 className="text-sm font-semibold mb-3">Items ({request.items.length})</h4>
+                                  <div className="grid gap-3 sm:grid-cols-2">
+                                    {request.items.map((item, itemIndex) => {
+                                      const itemCost = item.cost ?? item.estimatedCost;
+
+                                      return (
+                                        <div key={itemIndex} className="flex gap-3 rounded-lg border bg-background p-3">
+                                          {item.imageUrl ? (
+                                            <ImageWithFallback
+                                              src={item.imageUrl}
+                                              alt={item.name}
+                                              className="w-16 h-16 object-cover rounded"
+                                            />
+                                          ) : (
+                                            <div className="w-16 h-16 flex items-center justify-center rounded bg-muted">
+                                              <Package className="h-6 w-6 text-muted-foreground" />
+                                            </div>
+                                          )}
+                                          <div className="flex-1 space-y-1">
+                                            <div className="flex items-start justify-between gap-2">
+                                              <p className="text-sm font-medium">{item.name}</p>
+                                              <Badge variant="secondary">x{item.quantity}</Badge>
+                                            </div>
+                                            {item.sku && <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>}
+                                            {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
+                                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                              {typeof itemCost === 'number' && <span>{formatCurrency(itemCost)}</span>}
+                                              {item.productUrl && (
+                                                <a href={item.productUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                                                  View product
+                                                </a>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -468,52 +713,46 @@ export function PurchaseRequests() {
         </Card>
       )}
 
-      {/* Confirm Purchase Dialog */}
-      <Dialog open={confirmPurchaseOpen} onOpenChange={setConfirmPurchaseOpen}>
+      <Dialog open={confirmPurchaseOpen} onOpenChange={handleConfirmDialogChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Purchase</DialogTitle>
-            <DialogDescription>
-              Confirm quantities purchased and mark as ready for return
-            </DialogDescription>
+            <DialogDescription>Confirm quantities purchased and mark as ready for return</DialogDescription>
           </DialogHeader>
           {purchaseToConfirm && (
             <div className="space-y-4">
-              {purchaseToConfirm.items.map((item, index) => (
-                <div key={index} className="flex items-center gap-4 p-3 border rounded">
-                  {item.imageUrl && (
-                    <ImageWithFallback
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="w-12 h-12 object-cover rounded"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <p className="text-sm">{item.name}</p>
+              {purchaseToConfirm.request.items.map((item, index) => {
+                const key = index.toString();
+                return (
+                  <div key={key} className="flex items-center gap-4 p-3 border rounded">
+                    {item.imageUrl && (
+                      <ImageWithFallback src={item.imageUrl} alt={item.name} className="w-12 h-12 object-cover rounded" />
+                    )}
+                    <div className="flex-1">
+                      <p className="text-sm">{item.name}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label>Qty:</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={item.quantity}
+                        value={purchaseEditedQuantities[key] ?? item.quantity}
+                        onChange={(e) => {
+                          const parsed = parseInt(e.target.value, 10);
+                          updatePurchaseQuantity(key, Number.isNaN(parsed) ? 1 : parsed, item.quantity);
+                        }}
+                        className="w-20"
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Label>Qty:</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max={item.quantity}
-                      value={purchaseEditedQuantities[index.toString()] || item.quantity}
-                      onChange={(e) => {
-                        const newQuantity = parseInt(e.target.value) || 1;
-                        updatePurchaseQuantity(index.toString(), newQuantity, item.quantity);
-                      }}
-                      className="w-20"
-                    />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setConfirmPurchaseOpen(false)}>
+                <Button variant="outline" onClick={() => handleConfirmDialogChange(false)}>
                   Cancel
                 </Button>
-                <Button onClick={confirmAlreadyBought}>
-                  Confirm
-                </Button>
+                <Button onClick={confirmAlreadyBought}>Confirm</Button>
               </div>
             </div>
           )}
@@ -523,5 +762,4 @@ export function PurchaseRequests() {
   );
 }
 
-// Default export para compatibilidad con diferentes tipos de import
 export default PurchaseRequests;
