@@ -19,7 +19,7 @@ export {
   createPurchaseRequest,
   updatePurchaseRequestStatus,
   deletePurchaseRequest,
-  updatePurchaseRequestPriority,
+  updatePurchaseRequestReason,
   confirmPurchaseBought
 } from './purchaseService';
 
@@ -34,7 +34,7 @@ export {
   formatDate,
   getStatusColor,
   getStatusText,
-  getPriorityColor,
-  getPriorityText,
+  getReasonColor,
+  getReasonText,
   formatCurrency
 } from './purchaseUtils';
