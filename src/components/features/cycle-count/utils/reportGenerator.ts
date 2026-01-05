@@ -93,7 +93,6 @@ export function generatePrintReport(record: CycleCountRecord) {
             <thead>
               <tr>
                 <th>Code</th>
-                <th>Image</th>
                 <th>Item</th>
                 <th>Zone</th>
                 <th>Total Registered</th>
@@ -106,7 +105,6 @@ export function generatePrintReport(record: CycleCountRecord) {
               ${discrepancyArticles.map(article => `
                 <tr>
                   <td>${article.code}</td>
-                  <td>${article.imageUrl ? `<img src="${article.imageUrl}" alt="${article.description}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/40?text=No+Image'" />` : '<div style="width: 40px; height: 40px; background: #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #9ca3af;">No img</div>'}</td>
                   <td>${article.description}</td>
                   <td>${article.zone}</td>
                   <td>${article.totalRegistered}</td>
@@ -124,7 +122,6 @@ export function generatePrintReport(record: CycleCountRecord) {
           <thead>
             <tr>
               <th>Code</th>
-              <th>Image</th>
               <th>Item</th>
               <th>Zone</th>
               <th>Total Registered</th>
@@ -137,7 +134,6 @@ export function generatePrintReport(record: CycleCountRecord) {
             ${record.articles.map(article => `
               <tr>
                 <td>${article.code}</td>
-                <td>${article.imageUrl ? `<img src="${article.imageUrl}" alt="${article.description}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/40?text=No+Image'" />` : '<div style="width: 40px; height: 40px; background: #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #9ca3af;">No img</div>'}</td>
                 <td>${article.description}</td>
                 <td>${article.zone}</td>
                 <td>${article.totalRegistered}</td>
@@ -214,7 +210,6 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
             <thead>
               <tr>
                 <th>Code</th>
-                <th>Image</th>
                 <th>Item</th>
                 <th>Zone</th>
                 <th>Total Registered</th>
@@ -227,7 +222,6 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
               ${discrepancyArticles.map(article => `
                 <tr>
                   <td>${article.code}</td>
-                  <td>${article.imageUrl ? `<img src="${article.imageUrl}" alt="${article.description}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/40?text=No+Image'" />` : '<div style="width: 40px; height: 40px; background: #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #9ca3af;">No img</div>'}</td>
                   <td>${article.description}</td>
                   <td>${article.zone}</td>
                   <td>${article.totalRegistered}</td>
@@ -245,7 +239,6 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
           <thead>
             <tr>
               <th>Code</th>
-              <th>Image</th>
               <th>Item</th>
               <th>Zone</th>
               <th>Total Registered</th>
@@ -258,7 +251,6 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
             ${record.articles.map(article => `
               <tr>
                 <td>${article.code}</td>
-                <td>${article.imageUrl ? `<img src="${article.imageUrl}" alt="${article.description}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/40?text=No+Image'" />` : '<div style="width: 40px; height: 40px; background: #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #9ca3af;">No img</div>'}</td>
                 <td>${article.description}</td>
                 <td>${article.zone}</td>
                 <td>${article.totalRegistered}</td>
@@ -279,6 +271,13 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
     <head>
       <title>All Cycle Count Reports - ${currentDate}</title>
       <style>
+      @media print {
+  @page {
+    /* Esto elimina los encabezados (título/URL) y pies de página (fecha/página) */
+    margin: 0;
+  }
+    
+}
         body { 
           font-family: 'Segoe UI', sans-serif; 
           padding: 20px;
@@ -395,11 +394,6 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
       </div>
 
       ${reportsHTML}
-
-      <div style="margin-top: 40px; text-align: center; border-top: 2px solid #ddd; padding-top: 20px;">
-        <p><strong>End of Reports</strong></p>
-        <p>Generated on: ${new Date().toLocaleString()}</p>
-      </div>
     </body>
     </html>
   `);
@@ -564,7 +558,6 @@ export function generatePrintCountInProgress(data: CountInProgressData) {
           <thead>
             <tr>
               <th>Code</th>
-              <th>Image</th>
               <th>Item</th>
               <th>Total Registered</th>
               <th>Physical Count</th>
@@ -584,7 +577,6 @@ export function generatePrintCountInProgress(data: CountInProgressData) {
               return `
                 <tr>
                   <td>${article.code}</td>
-                  <td>${article.imageUrl ? `<img src="${article.imageUrl}" alt="${article.description}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/40?text=No+Image'" />` : '<div style="width: 40px; height: 40px; background: #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #9ca3af;">No img</div>'}</td>
                   <td>${article.description}</td>
                   <td>${article.totalRegistered}</td>
                   <td>${article.physicalCount !== undefined ? article.physicalCount : '-'}</td>

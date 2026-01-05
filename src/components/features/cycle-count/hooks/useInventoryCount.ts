@@ -400,7 +400,10 @@ export function useInventoryCount(
         });
         
         if (onSaveProgress) {
-          onSaveProgress(progressData);
+          onSaveProgress({
+          ...progressData,
+          status: 'in-progress' as const // Forzamos el literal exacto
+        });
         }
         
         alert('Cycle count progress saved successfully!');
@@ -564,9 +567,10 @@ export function useInventoryCount(
             observations: a.observations
           }))
         };
+        
 
         if (onComplete) {
-          onComplete(completedData);
+          onComplete(completedData as any);
         }
         
         alert('Cycle count completed successfully!');

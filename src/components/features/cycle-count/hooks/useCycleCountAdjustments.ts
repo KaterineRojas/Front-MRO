@@ -148,7 +148,9 @@ export function useCycleCountAdjustments(
         const reason = adjustmentReasons[article.code];
         if (newCount && !isNaN(parseInt(newCount))) {
           const newPhysicalCount = parseInt(newCount);
-          const newStatus = newPhysicalCount === article.totalRegistered ? 'match' : 'discrepancy';
+          const newStatus = (newPhysicalCount === article.totalRegistered 
+      ? 'match' 
+      : 'discrepancy') as 'match' | 'discrepancy';
           return {
             ...article,
             physicalCount: newPhysicalCount,

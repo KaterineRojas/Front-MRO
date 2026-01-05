@@ -132,6 +132,7 @@ export async function getCycleCountWithArticles(cycleCountId: number, auditorNam
  */
 export function mapEntryToArticle(entry: CycleCountEntry, zoneName: string): {
   id: string;
+  entryId: number;
   code: string;
   description: string;
   type: 'consumable' | 'non-consumable';
@@ -391,6 +392,9 @@ export async function getCycleCounts(
     });
 
     const url = `${API_URL}/cycle-counts?${params.toString()}`;
+    
+    console.log('🔍 [getCycleCounts] Calling API with URL:', url);
+    console.log('🔍 [getCycleCounts] Parameters:', { warehouseId, pageNumber, pageSize });
     
     const response = await fetchWithAuth(url, {
       method: 'GET'

@@ -1,5 +1,6 @@
 export interface CountedArticle {
   code: string;
+  entryId: number;
   description: string;
   zone: string;
   totalRegistered: number;
@@ -22,6 +23,7 @@ export interface CycleCountDetailData {
   date: string;
   completedDate?: string;
   zone: string;
+  status: 'pending' | 'in-progress' | 'completed';
   countType: 'Annual' | 'Biannual' | 'Spot Check';
   auditor: string;
   articles: CountedArticle[];
@@ -29,6 +31,7 @@ export interface CycleCountDetailData {
   counted: number;
   discrepancies: number;
   adjustmentsApplied?: boolean;
+  countedByUserId: number;
 }
 
 export interface CycleCountDetailViewProps {
@@ -45,6 +48,7 @@ export interface Article {
   type: 'consumable' | 'non-consumable';
   zone: 'Good Condition' | 'Damaged' | 'Quarantine';
   totalRegistered: number;
+  entryId?: number;
   physicalCount?: number;
   status?: 'match' | 'discrepancy';
   observations?: string;

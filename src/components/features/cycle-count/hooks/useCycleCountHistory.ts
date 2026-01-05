@@ -55,7 +55,10 @@ function mapApiRecordToUI(mappedRecord: MappedCycleCountRecord): CycleCountRecor
 export function useCycleCountHistory() {
   const location = useLocation();
   const user = useAppSelector(state => state.auth.user);
-  const warehouseId = user?.warehouseId || 1;
+  const warehouseId = user?.warehouseId;
+  
+  console.log('🔍 [useCycleCountHistory] User:', user);
+  console.log('🔍 [useCycleCountHistory] warehouseId:', warehouseId);
   
   const [history, setHistory] = useState<CycleCountRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,9 +66,18 @@ export function useCycleCountHistory() {
 
   useEffect(() => {
     const fetchCycleCounts = async () => {
+      // Don't fetch if no warehouseId available
+      if (!warehouseId) {
+        console.warn('⚠️ [useCycleCountHistory] No warehouseId available, skipping fetch');
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
         setError(null);
+
+        console.log('🔍 [useCycleCountHistory] Fetching cycle counts for warehouseId:', warehouseId);
 
         // Fetch cycle counts from API
         const { records } = await getCycleCounts(warehouseId, 1, 20);
@@ -108,9 +120,13 @@ export function useCycleCountHistory() {
         uiRecords.forEach(record => mergedHistory.push(record));
         
         // Add local records that don't exist in API (e.g., newly created in-progress counts)
+        // BUT ONLY if they belong to the current warehouse
         localHistory.forEach(localRecord => {
           if (!apiMap.has(localRecord.id)) {
-            mergedHistory.unshift(localRecord); // Add at the beginning
+            // TODO: Filter by warehouse - for now we skip local records if warehouse info is not available
+            // In the future, store warehouse info with local records
+            console.log('⚠️ [useCycleCountHistory] Skipping local record (warehouse filter not implemented):', localRecord.id);
+            // mergedHistory.unshift(localRecord); // Commented out to prevent cross-warehouse contamination
           }
         });
 
@@ -127,9 +143,12 @@ export function useCycleCountHistory() {
         setError(err instanceof Error ? err : new Error('Failed to fetch cycle counts'));
         
         // Fallback to sessionStorage if API fails
+        // NOTE: This is not ideal as sessionStorage might contain records from other warehouses
+        // A better solution would be to store warehouse info with each record
         const savedHistory = sessionStorage.getItem('cycleCountHistory');
         if (savedHistory) {
           const localHistory: CycleCountRecord[] = JSON.parse(savedHistory);
+          console.warn('⚠️ [useCycleCountHistory] Using sessionStorage fallback - cannot filter by warehouse');
           setHistory(localHistory);
         }
       } finally {

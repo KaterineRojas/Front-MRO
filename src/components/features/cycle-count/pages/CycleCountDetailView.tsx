@@ -66,7 +66,7 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
           // Transform to CountedArticle format for the detail view
           const countedArticles = mappedArticles.map(article => ({
             code: article.code,
-            entryId: article.entryId, // Include entryId for recount operations
+            entryId: (article as any).entryId || (article as any).id,
             description: article.description,
             zone: article.zone,
             totalRegistered: article.totalRegistered,
@@ -103,7 +103,7 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
             counted: stats.countedEntries,
             discrepancies: stats.entriesWithVariance,
             adjustmentsApplied: false,
-            countedByUserId: user?.id || 0 // Add userId for recount operations
+            countedByUserId: Number(user?.id) || 0 // Add userId for recount operations
           };
           
           setLoadedCountData(completeCountData);
@@ -226,7 +226,6 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
                 <TableHeader>
                   <TableRow>
                     <TableHead>Code</TableHead>
-                    <TableHead>Image</TableHead>
                     <TableHead>Item</TableHead>
                     <TableHead className="text-right">Total Registered</TableHead>
                     <TableHead className="text-right">Physical Count</TableHead>
@@ -238,22 +237,6 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
                   {discrepancyArticles.map((article, index) => (
                     <TableRow key={index}>
                       <TableCell className="font-mono">{article.code}</TableCell>
-                      <TableCell>
-                        {article.imageUrl ? (
-                          <img 
-                            src={article.imageUrl} 
-                            alt={article.description}
-                            className="w-12 h-12 object-cover rounded"
-                            onError={(e) => {
-                              e.currentTarget.src = 'https://via.placeholder.com/48?text=No+Image';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">
-                            No img
-                          </div>
-                        )}
-                      </TableCell>
                       <TableCell>
                         <div>
                           <p>{article.description}</p>
@@ -290,7 +273,6 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
               <TableHeader>
                 <TableRow>
                   <TableHead>Code</TableHead>
-                  <TableHead>Image</TableHead>
                   <TableHead>Item</TableHead>
                   <TableHead className="text-right">Total Registered</TableHead>
                   <TableHead className="text-right">Physical Count</TableHead>
@@ -302,22 +284,7 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
                 {currentCountData.articles.map((article, index) => (
                   <TableRow key={index}>
                     <TableCell className="font-mono">{article.code}</TableCell>
-                    <TableCell>
-                      {article.imageUrl ? (
-                        <img 
-                          src={article.imageUrl} 
-                          alt={article.description}
-                          className="w-12 h-12 object-cover rounded"
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://via.placeholder.com/48?text=No+Image';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">
-                          No img
-                        </div>
-                      )}
-                    </TableCell>
+                    
                     <TableCell>
                       <div>
                         <p>{article.description}</p>

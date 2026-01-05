@@ -11,7 +11,7 @@ import { CountFilters } from '../components/CountFilters';
 import { CountInput } from '../components/CountInput';
 import { generatePrintCountInProgress } from '../utils/reportGenerator';
 import { ResolveDiscrepanciesModal } from '../modals/ResolveDiscrepanciesModal';
-import { recordCycleCountEntry, completeCycleCount, recordBatchCountAPI, getCycleCountDetail, resumeCycleCount } from '../services/cycleCountService';
+import { recordCycleCountEntry, completeCycleCount, recordBatchCount, getCycleCountDetail, resumeCycleCount } from '../services/cycleCountService';
 import { toast } from 'sonner';
 import { useAppSelector } from '../../../../store/hooks';
 
@@ -100,7 +100,7 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
           entryId: article.entryId!,
           physicalCount: recount.newCount,
           notes: recount.reason || '',
-          countedByUserId: user?.id || 0
+         countedByUserId: Number(user?.id) || 0
         });
       });
 
@@ -138,7 +138,7 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
             status: 'match' as const,
             observations: a.observations
           }))
-        });
+        } as any );
       }
     } catch (error) {
       console.error('Error completing cycle count:', error);
@@ -246,7 +246,6 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
               <TableHeader>
                 <TableRow>
                   <TableHead>Code</TableHead>
-                  <TableHead>Image</TableHead>
                   <TableHead>Item</TableHead>
                   <TableHead className="text-right">Total Registered</TableHead>
                   <TableHead className="text-right">Physical Count</TableHead>
@@ -259,22 +258,6 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
                 {filteredArticles.map((article) => (
                   <TableRow key={article.id}>
                     <TableCell className="font-mono">{article.code}</TableCell>
-                    <TableCell>
-                      {article.imageUrl ? (
-                        <img 
-                          src={article.imageUrl} 
-                          alt={article.description}
-                          className="w-12 h-12 object-cover rounded"
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://via.placeholder.com/48?text=No+Image';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">
-                          No img
-                        </div>
-                      )}
-                    </TableCell>
                     <TableCell>
                       <div>
                         <p>{article.description}</p>
@@ -317,7 +300,7 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
       <ResolveDiscrepanciesModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        discrepancies={discrepancies}
+        discrepancies={discrepancies as any}
         onConfirm={handleConfirmDiscrepancies}
         isSubmitting={isSubmitting}
       />
