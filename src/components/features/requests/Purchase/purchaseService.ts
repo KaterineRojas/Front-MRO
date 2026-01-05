@@ -1,4 +1,8 @@
-// Simulate API delay
+
+
+import { API_URL } from "../../../../url";
+import { store } from "../../../../store/store";
+
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Types
@@ -39,6 +43,38 @@ export interface PurchaseRequest {
   createdAt?: string;
   warehouseId: string;
   warehouseName: string;
+}
+
+export interface PurchaseRequestItemPayload {
+  itemId: number;
+  quantity: number;
+  productUrl?: string;
+}
+
+export interface CreatePurchaseRequestPayload {
+  requesterId: string;
+  clientBilled: boolean;
+  companyId: string;
+  customerId: string;
+  departmentId: string;
+  projectId: string;
+  workOrderId: string;
+  address?: string;
+  googleMapsUrl?: string;
+  zipCode?: string;
+  reason: 0 | 1 | 2;
+  selfPurchase: boolean;
+  notes: string;
+  expectedDeliveryDate: string;
+  estimatedTotalCost: number;
+  warehouseId: number;
+  items: PurchaseRequestItemPayload[];
+}
+
+export interface CreatePurchaseRequestResponse {
+  success: boolean;
+  message: string;
+  requestNumber?: string;
 }
 
 // Mock Data - Existing Items
@@ -216,30 +252,70 @@ export async function getPurchaseRequestById(requestId: string): Promise<Purchas
  * Create a new purchase request
  */
 export async function createPurchaseRequest(
-  request: Omit<PurchaseRequest, 'requestId' | 'status' | 'createdAt'>
-): Promise<PurchaseRequest> {
-  await delay(500);
-  
-  // Validate required fields
-  if (!request.department || !request.project) {
-    throw new Error('Department and project are required');
+  request: CreatePurchaseRequestPayload
+): Promise<CreatePurchaseRequestResponse> {
+  const state = store.getState();
+  const token = state.auth.accessToken;
+
+  if (!token) {
+    throw new Error('Authentication token not found');
   }
-  
+
+  if (!request.requesterId) {
+    throw new Error('Requester ID is required');
+  }
+
+  if (!request.departmentId) {
+    throw new Error('Department is required');
+  }
+
+  if (!request.projectId) {
+    throw new Error('Project is required');
+  }
+
   if (request.items.length === 0) {
     throw new Error('At least one item must be included');
   }
 
-  // Generate new request ID
-  const newId = `PUR${String(mockPurchaseRequests.length + 1).padStart(3, '0')}`;
-  
-  const newRequest: PurchaseRequest = {
-    ...request,
-    requestId: newId,
-    status: 'pending',
-    createdAt: new Date().toISOString()
+  const url = `${API_URL}/purchase-requests`;
+  console.log('Submitting purchase request to API:', url);
+  console.log('Payload:', request);
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(request)
+  });
+
+  const responseText = await response.text();
+  let responseData: any = null;
+
+  if (responseText) {
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (error) {
+      console.error('purchaseService: non-JSON response body', responseText);
+      throw new Error(`Server error ${response.status}: ${responseText}`);
+    }
+  }
+
+  if (!response.ok) {
+    const message = responseData?.message || responseData?.error || `Failed to create purchase request: ${response.status}`;
+    throw new Error(message);
+  }
+
+  const dataPayload = responseData?.data ?? responseData ?? {};
+  const requestNumber = dataPayload?.requestNumber || dataPayload?.requestId || undefined;
+  const message = responseData?.message || 'Purchase request submitted successfully';
+
+  return {
+    success: true,
+    message,
+    requestNumber
   };
-  
-  return newRequest;
 }
 
 /**
@@ -318,7 +394,7 @@ export async function updatePurchaseRequestReason(
  */
 export async function confirmPurchaseBought(
   requestId: string,
-  quantities: { [itemId: number]: number }
+  _quantities: { [itemId: number]: number }
 ): Promise<{ success: boolean; message: string }> {
   await delay(400);
   
