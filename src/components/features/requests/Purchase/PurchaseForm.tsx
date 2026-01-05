@@ -11,6 +11,9 @@ import { Alert, AlertDescription } from '../../../ui/alert';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
 import type { User as UserType } from '../../enginner/types';
+import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
+import { submitPurchaseRequest } from '../../../../store/slices/purchaseSlice';
+import { store } from "../../../../store/store";
 import {
   getWarehouses,
   getCatalogItemsByWarehouse,
@@ -25,7 +28,7 @@ import {
   type Project,
   type WorkOrder
 } from '../services/sharedServices';
-import { type PurchaseRequest } from './purchaseService';
+import { type PurchaseRequest, type CreatePurchaseRequestPayload } from './purchaseService';
 
 interface PurchaseFormProps {
   currentUser: UserType;
@@ -55,6 +58,9 @@ interface PurchaseFormData {
   projectReference: string;
   workOrder: string;
   justification: string;
+  address: string;
+  googleMapsUrl: string;
+  zipCode: string;
 }
 
 const createDefaultPurchaseItem = (): PurchaseItem => ({
@@ -89,7 +95,10 @@ const buildInitialFormData = (
   customer: '',
   projectReference: '',
   workOrder: '',
-  justification: request?.notes || ''
+  justification: request?.notes || '',
+  address: '',
+  googleMapsUrl: '',
+  zipCode: ''
 });
 
 const buildInitialItemSearches = (request?: PurchaseRequest | null) => {
@@ -121,6 +130,12 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
   const [loadingWorkOrders, setLoadingWorkOrders] = useState(false);
   const [companiesLoaded, setCompaniesLoaded] = useState(false);
   const isEditing = Boolean(initialRequest);
+  const dispatch = useAppDispatch();
+  const submitting = useAppSelector(state => state.purchase.submitting);
+  const authUser = useAppSelector(state => state.auth.user);
+  const submitLabel = isEditing
+    ? (submitting ? 'Saving changes...' : 'Save Changes')
+    : (submitting ? 'Submitting...' : 'Submit Purchase Request');
   // Load warehouses on mount
   useEffect(() => {
     const loadWarehouses = async () => {
@@ -446,31 +461,145 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
     return formData.items.reduce((sum, item) => sum + (item.estimatedCost * item.quantity), 0);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (!formData.department) {
+      toast.error('Please provide the department');
+      return;
+    }
+
+    if (!formData.warehouseId) {
+      toast.error('Please select a warehouse');
+      return;
+    }
+
+    const selectedWarehouse = warehouses.find(wh => wh.id === formData.warehouseId);
+    if (!selectedWarehouse) {
+      toast.error('Selected warehouse is no longer available');
+      return;
+    }
+
     if (!formData.project) {
       toast.error('Please select a project');
       return;
     }
-    
+
+    if (!formData.purchaseReason) {
+      toast.error('Please select a purchase reason');
+      return;
+    }
+
     for (const item of formData.items) {
+      if (!item.name) {
+        toast.error('Please complete all item names before submitting');
+        return;
+      }
+
       if (item.link && !validateUrl(item.link)) {
         toast.error(`Invalid URL for item: ${item.name}`);
         return;
       }
     }
 
-    if (isEditing) {
-      toast.success('Purchase request changes will be reviewed by the purchasing department. You will be notified by email.');
-    } else {
-      toast.success('Purchase requests will be marked as "Pending review" and will be evaluated by the purchasing department. You will be notified of the status by email.');
+    if (formData.googleMapsUrl && !validateUrl(formData.googleMapsUrl)) {
+      toast.error('Please enter a valid location URL');
+      return;
     }
 
-    setTimeout(() => {
+    if (!formData.company) {
+      toast.error('Please select a company');
+      return;
+    }
+
+    if (!formData.customer) {
+      toast.error('Please select a customer');
+      return;
+    }
+
+    if (!formData.expectedDeliveryDate) {
+      toast.error('Please select an expected delivery date');
+      return;
+    }
+
+    const requesterId = authUser?.employeeId || currentUser.employeeId || '';
+    if (!requesterId) {
+      toast.error('Requester information is missing');
+      return;
+    }
+
+    const warehouseIdNumber = Number(formData.warehouseId);
+    if (Number.isNaN(warehouseIdNumber)) {
+      toast.error('Selected warehouse is invalid');
+      return;
+    }
+
+    const reasonMap: Record<string, 0 | 1 | 2> = {
+      'low-stock': 0,
+      'urgent': 1,
+      'new-project': 2
+    };
+
+    const reasonValue = reasonMap[formData.purchaseReason];
+    if (typeof reasonValue === 'undefined') {
+      toast.error('Invalid purchase reason');
+      return;
+    }
+
+    const totalCost = getTotalCost();
+    const payloadItems: CreatePurchaseRequestPayload['items'] = [];
+
+    for (const item of formData.items) {
+      const catalogMatch = catalogItems.find(ci => ci.name === item.name);
+      const numericItemId = catalogMatch ? Number(catalogMatch.id) : 0;
+
+      if (item.isExisting && (!catalogMatch || Number.isNaN(numericItemId))) {
+        toast.error(`Unable to determine catalog item for ${item.name}`);
+        return;
+      }
+
+      payloadItems.push({
+        itemId: Number.isNaN(numericItemId) ? 0 : numericItemId,
+        quantity: item.quantity,
+        productUrl: item.link || undefined
+      });
+    }
+
+    const selectedCustomer = customers.find(customer => customer.name === formData.customer);
+    const selectedProject = projects.find(project => project.name === formData.project);
+
+    const payload: CreatePurchaseRequestPayload = {
+      requesterId,
+      clientBilled: formData.clientBilled === 'yes',
+      companyId: formData.company,
+      customerId: selectedCustomer?.id?.toString() ?? formData.customer,
+      departmentId: formData.department,
+      projectId: selectedProject?.id ?? formData.project,
+      workOrderId: formData.workOrder,
+      address: formData.address || '',
+      googleMapsUrl: formData.googleMapsUrl || '',
+      zipCode: formData.zipCode || '',
+      reason: reasonValue,
+      selfPurchase: formData.selfPurchase,
+      notes: formData.justification,
+      expectedDeliveryDate: new Date(formData.expectedDeliveryDate).toISOString(),
+      estimatedTotalCost: totalCost,
+      warehouseId: warehouseIdNumber,
+      items: payloadItems
+    };
+
+    try {
+      await dispatch(submitPurchaseRequest(payload)).unwrap();
       toast.success(isEditing ? 'Purchase request updated successfully' : 'Purchase request submitted successfully');
       if (onBack) onBack();
-    }, 2000);
+    } catch (error) {
+      const message = typeof error === 'string'
+        ? error
+        : error instanceof Error
+          ? error.message
+          : 'Failed to submit purchase request';
+      toast.error(message);
+    }
   };
 
   const handleSelfPurchaseChange = (value: string) => {
@@ -950,7 +1079,7 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
                 <Select
                   value={formData.company}
                   onValueChange={handleCompanyChange}
-                  onOpenChange={(open) => {
+                  onOpenChange={(open: boolean) => {
                     if (open && !companiesLoaded) {
                       void loadCompanies();
                     }
@@ -1139,6 +1268,47 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
               </div>
 
               <div>
+                <Label htmlFor="address">Address (optional)</Label>
+                <Input
+                  id="address"
+                  type="text"
+                  placeholder="Enter delivery address"
+                  value={formData.address}
+                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="location">Location URL (optional)</Label>
+                <Input
+                  id="location"
+                  type="text"
+                  placeholder="Enter Google Maps link or location URL"
+                  value={formData.googleMapsUrl}
+                  onChange={(e) => setFormData(prev => ({ ...prev, googleMapsUrl: e.target.value }))}
+                />
+                {formData.googleMapsUrl && !validateUrl(formData.googleMapsUrl) && (
+                  <p className="text-xs text-red-500 mt-1">Please enter a valid URL</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="zipCode">ZIP Code (optional)</Label>
+                <Input
+                  id="zipCode"
+                  type="text"
+                  placeholder="Enter ZIP code (max 6 characters)"
+                  value={formData.zipCode}
+                  onChange={(e) => {
+                    const value = e.target.value.slice(0, 6);
+                    setFormData(prev => ({ ...prev, zipCode: value }));
+                  }}
+                  maxLength={6}
+                />
+                <p className="text-xs text-muted-foreground mt-1">{formData.zipCode.length}/6</p>
+              </div>
+
+              <div>
                 <Label htmlFor="justification">
                   <div className="flex items-center gap-2 mb-1.5">
                     <FileText className="h-4 w-4" />
@@ -1162,8 +1332,8 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
           <Button type="button" variant="outline" onClick={onBack}>
             Cancel
           </Button>
-          <Button type="submit" className="flex-1">
-            Submit Purchase Request
+          <Button type="submit" className="flex-1" disabled={submitting}>
+            {submitLabel}
           </Button>
         </div>
       </form>

@@ -4,6 +4,7 @@ import uiReducer from './slices/uiSlice';
 import notificationsReducer from './slices/notificationsSlice';
 import inventoryReducer from './slices/inventorySlice';
 import requestsReducer from './slices/requestsSlice';
+import purchaseReducer from './slices/purchaseSlice';
 // Engineer Module Slices
 import engineerCartReducer from '../components/features/enginner/store/slices/cartSlice';
 import engineerUserReducer from '../components/features/enginner/store/slices/userSlice';
@@ -45,6 +46,7 @@ export const store = configureStore({
     notifications: notificationsReducer,
     inventory: inventoryReducer,
     requests: requestsReducer,
+    purchase: purchaseReducer,
     // Engineer Module State
     engineerCart: engineerCartReducer,
     engineerUser: engineerUserReducer,
