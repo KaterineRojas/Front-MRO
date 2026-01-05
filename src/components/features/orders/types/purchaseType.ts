@@ -97,3 +97,37 @@ export interface Item {
     createdAt: string;
     updatedAt: string;
 }
+
+export interface PurchaseRequestItem extends Item {
+    requestQuantity: number;  // How many they want to buy
+    estimatedCost: number;    // The price they entered
+    totalCost: number;        // quantity * estimatedCost
+    purchaseUrl: string;      // The link they provided
+}
+
+// BACKEND PAYLOAD TYPES 
+
+export interface BackendItemPayload {
+    itemId: number;
+    quantity: number;
+}
+
+export interface CreatePurchaseRequestPayload {
+    requesterId: string;
+    clientBilled: boolean;
+    companyId: string;
+    customerId: string;
+    departmentId: string;
+    projectId: string;
+    workOrderId: string;
+    address: string;
+    googleMapsUrl: string;
+    zipCode: string;
+    reason: number; // Assuming 0 = Standard, etc.
+    selfPurchase: boolean;
+    notes: string;
+    expectedDeliveryDate: string; // ISO String
+    estimatedTotalCost: number;
+    warehouseId: number;
+    items: BackendItemPayload[];
+}

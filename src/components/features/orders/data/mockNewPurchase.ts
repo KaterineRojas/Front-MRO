@@ -1,4 +1,4 @@
-import { PurchaseRequest } from '../types/purchase';
+import { PurchaseRequest } from '../types/purchaseType';
 
 export const MOCK_ORDERS: PurchaseRequest[] = [
     {

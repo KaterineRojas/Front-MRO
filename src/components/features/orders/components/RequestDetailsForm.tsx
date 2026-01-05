@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calendar as CalendarIcon, FileText, User, Building, AlertCircle } from 'lucide-react';
-import {RequestFormData} from '../types/purchase'
+import {RequestFormData} from '../types/purchaseType'
 
 
 interface RequestDetailsFormProps {

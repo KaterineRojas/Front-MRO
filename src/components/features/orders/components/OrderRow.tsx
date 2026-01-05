@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { getStatusBadge, getUrgencyBadge } from '../../inventory/components/RequestBadges';
 import { STATUS_MAP, PRIORITY_MAP, formatDate, formatCurrency } from '../utils/purchase-utils';
-import { PurchaseRequest } from '../types/purchase';
+import { PurchaseRequest } from '../types/purchaseType';
 import { useSelector } from 'react-redux';
 import { ActionButton } from '../../inventory/components/ActionButton'
 

@@ -3,13 +3,11 @@ import { Package, Trash2, Send } from 'lucide-react';
 import { Button } from '../../inventory/components/Button';
 import { Badge } from '../../inventory/components/Badge';
 import { useSelector } from 'react-redux';
-
-
-// Import the type from your Parent or ArticleSelector
-// assuming: interface PurchaseRequestItem { id: number; articleCode: string; ... } 
+// Import the correct interface
+import { PurchaseRequestItem } from '../types/purchaseType';
 
 interface RequestSummaryProps {
-    items: any[]; // Replace 'any' with your actual PurchaseRequestItem type
+    items: PurchaseRequestItem[]; // ✅ Typed correctly
     onRemoveItem: (id: number) => void;
     onSubmit: (e: React.FormEvent) => void;
 }
@@ -20,9 +18,8 @@ export const RequestSummary: React.FC<RequestSummaryProps> = ({
     onSubmit
 }) => {
 
-    // Calculate total locally or receive as prop
+    // Calculate total
     const totalAmount = items.reduce((sum, item) => sum + item.totalCost, 0);
-
     const darkMode = useSelector((state: any) => state.ui.darkMode);
 
     return (
@@ -67,20 +64,23 @@ export const RequestSummary: React.FC<RequestSummaryProps> = ({
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-start">
                                             <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate pr-2">
-                                                {item.articleCode}
+                                                {/* ✅ CHANGED: articleCode -> sku */}
+                                                {item.sku}
                                             </p>
                                             <p className="font-medium text-sm text-emerald-600 dark:text-gray-100">
                                                 ${item.totalCost.toFixed(2)}
                                             </p>
                                         </div>
 
-                                        <p className="text-xs text-gray-500 truncate mb-1">{item.articleDescription}</p>
+                                        {/* ✅ CHANGED: articleDescription -> name */}
+                                        <p className="text-xs text-gray-500 truncate mb-1">{item.name}</p>
 
                                         <div className="flex items-center space-x-2">
                                             <Badge variant={`${darkMode ? 'info' : 'info-soft'}`} className="text-[10px] h-5 px-1.5">
-                                                {item.quantity} {item.unit}
+                                                {/* ✅ CHANGED: quantity -> requestQuantity */}
+                                                {item.requestQuantity} {item.unit}
                                             </Badge>
-                                            <span className="text-[10px] text-gray-400">
+                                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
                                                 x ${item.estimatedCost.toFixed(2)}
                                             </span>
                                         </div>

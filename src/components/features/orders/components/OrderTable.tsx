@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { ShoppingCart, SearchX, Inbox, History } from 'lucide-react';
 import { FilterSelect } from '../../inventory/components/FilterSelect';
 import { OrderRow } from './OrderRow';
-import { ActivePurchaseTableProps } from '../types/purchase';
+import { ActivePurchaseTableProps } from '../types/purchaseType';
 
 
 

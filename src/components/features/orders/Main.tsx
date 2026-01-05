@@ -1,9 +1,9 @@
 
 import React, { useState, useMemo, useEffect } from 'react'
-import { PurchaseOrdersProps } from './types/purchase'
+import { PurchaseOrdersProps } from './types/purchaseType'
 import TabsGroup from '../requests/components/Tabs'
 import { OrderTable } from './components/OrderTable'
-import { PurchaseRequest } from './types/purchase'
+import { PurchaseRequest } from './types/purchaseType'
 import { MOCK_ORDERS } from './data/mockNewPurchase'
 import { Plus } from 'lucide-react'
 import { CreatePurchaseRequestPage } from './CreatePurchaseRequestPage'
