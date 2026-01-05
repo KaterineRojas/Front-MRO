@@ -11,11 +11,13 @@ import { AuditHeader } from '../components/AuditHeader';
 import { ExecutiveSummary } from '../components/ExecutiveSummary';
 import { useCycleCountAdjustments } from '../hooks/useCycleCountAdjustments';
 import { useState, useEffect } from 'react';
-import { getCycleCountDetail, getCycleCountStatistics, mapEntryToArticle } from '../services/cycleCountService';
+import { getCycleCountDetail, getCycleCountStatistics, mapEntryToArticle, mapStatusNameToUIStatus } from '../services/cycleCountService';
+import { useAppSelector } from '../../../../store/hooks';
 
 export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, keeperName }: CycleCountDetailViewProps & { keeperName?: string }) {
   const [isLoadingFromApi, setIsLoadingFromApi] = useState(false);
   const [loadedCountData, setLoadedCountData] = useState(countData);
+  const user = useAppSelector(state => state.auth.user);
   
   // Use loadedCountData (from API or passed in)
   const currentCountData = loadedCountData || countData;
@@ -64,6 +66,7 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
           // Transform to CountedArticle format for the detail view
           const countedArticles = mappedArticles.map(article => ({
             code: article.code,
+            entryId: article.entryId, // Include entryId for recount operations
             description: article.description,
             zone: article.zone,
             totalRegistered: article.totalRegistered,
@@ -92,13 +95,15 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
               ? new Date(cycleCountDetail.completedAt).toLocaleString('sv-SE').replace('T', ' ').substring(0, 19)
               : undefined,
             zone: cycleCountDetail.zoneName || 'All Zones',
+            status: mapStatusNameToUIStatus(cycleCountDetail.statusName),
             countType,
             auditor: keeperName || cycleCountDetail.completedByName || cycleCountDetail.createdByName,
             articles: countedArticles,
             totalItems: stats.totalEntries,
             counted: stats.countedEntries,
             discrepancies: stats.entriesWithVariance,
-            adjustmentsApplied: false
+            adjustmentsApplied: false,
+            countedByUserId: user?.id || 0 // Add userId for recount operations
           };
           
           setLoadedCountData(completeCountData);
@@ -154,6 +159,14 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
   const accuracy = Math.round((1 - currentCountData.discrepancies / currentCountData.totalItems) * 100);
   const discrepancyArticles = currentCountData.articles.filter(a => a.status === 'discrepancy');
 
+  // Log status to help debug
+  console.log('🔍 [CycleCountDetailView] Current cycle count status:', {
+    status: currentCountData.status,
+    id: currentCountData.id,
+    isCompleted: currentCountData.status === 'completed',
+    hasDiscrepancies: discrepancyArticles.length
+  });
+
   const handleApplyAdjustments = () => {
     applyAdjustments(discrepancyArticles, currentCountData, onAdjustmentsApplied);
   };
@@ -205,18 +218,6 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
                 <AlertTriangle className="h-5 w-5 text-red-600" />
                 <span>Discrepancies Detail ({discrepancyArticles.length})</span>
               </CardTitle>
-              {!isAdjustmentsApplied && (
-                <Button variant="default" onClick={handleApplyAdjustments} className="border-2 border-primary">
-                  <Save className="h-4 w-4 mr-2" />
-                  Apply Adjustments
-                </Button>
-              )}
-              {isAdjustmentsApplied && (
-                <Badge variant="default" className="bg-green-600 text-lg px-4 py-2">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Adjustments Applied
-                </Badge>
-              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -231,8 +232,6 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
                     <TableHead className="text-right">Physical Count</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Observations</TableHead>
-                    <TableHead>Adjustment</TableHead>
-                    <TableHead>Reason</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -267,25 +266,6 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
                         <div className="truncate" title={article.observations || '-'}>
                           {article.observations || '-'}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={adjustments[article.code] || ''}
-                          onChange={(e) => handleAdjustmentChange(article.code, e.target.value)}
-                          disabled={isAdjustmentsApplied}
-                          className={`w-32 ${isAdjustmentsApplied ? 'bg-muted cursor-not-allowed' : ''}`}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="text"
-                          value={adjustmentReasons[article.code] || ''}
-                          onChange={(e) => handleReasonChange(article.code, e.target.value)}
-                          disabled={isAdjustmentsApplied}
-                          placeholder="Enter reason"
-                          className={`w-48 ${isAdjustmentsApplied ? 'bg-muted cursor-not-allowed' : ''}`}
-                        />
                       </TableCell>
                     </TableRow>
                   ))}

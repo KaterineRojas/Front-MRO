@@ -28,6 +28,7 @@ interface UseInventoryCountReturn {
   handleCountUpdate: (articleId: string, physicalCount: number, notes?: string) => void;
   handleSaveCycleCount: () => void;
   handleCompleteCycleCount: () => void;
+  sendPendingCounts: () => Promise<void>;
 }
 
 interface InitialConfig {
@@ -242,6 +243,56 @@ export function useInventoryCount(
         console.log('🔧 [handleCountUpdate] Marked article as dirty. Total dirty counts:', updated.size);
         return updated;
       });
+    }
+  };
+
+  /**
+   * Sends pending counts to backend without pausing or navigating
+   * Used before completing cycle count to ensure all counts are saved
+   */
+  const sendPendingCounts = async () => {
+    if (!cycleCountId || dirtyCounts.size === 0) {
+      console.log('🔧 [sendPendingCounts] No counts to send');
+      return;
+    }
+
+    console.log('🔧 [sendPendingCounts] Sending', dirtyCounts.size, 'dirty counts...');
+    
+    try {
+      // Check if cycle count is paused and resume if needed
+      const currentState = await getCycleCountDetail(cycleCountId);
+      if (currentState.statusName === 'Paused' || currentState.status === 1) {
+        console.log('🔧 [sendPendingCounts] Resuming paused cycle count...');
+        await resumeCycleCount(cycleCountId);
+      }
+
+      // Send counts in batch
+      const counts = Array.from(dirtyCounts.entries()).map(([articleId, { physicalCount, notes }]) => {
+        const entryId = entryIdMap.get(articleId);
+        if (!entryId) {
+          console.warn('⚠️ [sendPendingCounts] Article', articleId, 'missing from entryIdMap!');
+          return null;
+        }
+        return {
+          entryId,
+          physicalCount,
+          notes: notes || undefined
+        };
+      }).filter(c => c !== null) as Array<{ entryId: number; physicalCount: number; notes?: string }>;
+
+      if (counts.length > 0) {
+        await recordBatchCountAPI({
+          countedByUserId: userId,
+          counts
+        });
+        console.log('✅ [sendPendingCounts] Batch counts saved successfully');
+        
+        // Clear dirty counts after successful save
+        setDirtyCounts(new Map());
+      }
+    } catch (error) {
+      console.error('❌ [sendPendingCounts] Error:', error);
+      throw error;
     }
   };
 
@@ -585,6 +636,7 @@ export function useInventoryCount(
     setSearchTerm,
     handleCountUpdate,
     handleSaveCycleCount,
-    handleCompleteCycleCount
+    handleCompleteCycleCount,
+    sendPendingCounts
   };
 }

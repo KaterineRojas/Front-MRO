@@ -200,6 +200,7 @@ export function mapEntryToArticle(entry: CycleCountEntry, zoneName: string): {
 
   return {
     id: entry.binFullCode || entry.id.toString(),
+    entryId: entry.id, // Add entryId for recount operations
     code: entry.binFullCode,
     description: entry.itemName,
     type,
@@ -835,3 +836,44 @@ export async function getCycleCountStatistics(
   }
 }
 
+/**
+ * DTO for recording a count entry
+ */
+export interface RecordCountDto {
+  entryId: number;
+  physicalCount: number;
+  countedByUserId: number;
+  notes?: string;
+}
+
+/**
+ * Records a physical count for a cycle count entry
+ * POST /api/cycle-counts/entries/record-count
+ * 
+ * @param data - Record count data
+ * @returns Promise with updated entry
+ */
+export async function recordCycleCountEntry(
+  data: RecordCountDto
+): Promise<CycleCountEntry> {
+  try {
+    const url = `${API_URL}/cycle-counts/entries/record-count`;
+    
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API Error on POST ${url}. Status: ${response.status}`, errorText);
+      throw new Error(`Failed to record count: ${response.statusText}`);
+    }
+
+    const updatedEntry: CycleCountEntry = await response.json();
+    return updatedEntry;
+  } catch (error) {
+    console.error('Error recording cycle count entry:', error);
+    throw error;
+  }
+}

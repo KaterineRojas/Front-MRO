@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
@@ -9,8 +10,16 @@ import { CountSummaryCards } from '../components/CountSummaryCards';
 import { CountFilters } from '../components/CountFilters';
 import { CountInput } from '../components/CountInput';
 import { generatePrintCountInProgress } from '../utils/reportGenerator';
+import { ResolveDiscrepanciesModal } from '../modals/ResolveDiscrepanciesModal';
+import { recordCycleCountEntry, completeCycleCount, recordBatchCountAPI, getCycleCountDetail, resumeCycleCount } from '../services/cycleCountService';
+import { toast } from 'sonner';
+import { useAppSelector } from '../../../../store/hooks';
 
 export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCountData, initialConfig }: CycleCountViewProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const user = useAppSelector(state => state.auth.user);
+  
   const {
     filteredArticles,
     countedArticles,
@@ -24,8 +33,96 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
     setSearchTerm,
     handleCountUpdate,
     handleSaveCycleCount,
-    handleCompleteCycleCount
+    handleCompleteCycleCount,
+    sendPendingCounts
   } = useInventoryCount(existingCountData, onComplete, onSaveProgress, initialConfig);
+
+  const handleCompleteClick = async () => {
+    // Check if there are pending items - must be counted first
+    if (pendingArticles.length > 0) {
+      toast.error(`Cannot complete: ${pendingArticles.length} items still need to be counted in the table`);
+      return;
+    }
+
+    // First, send any pending counts to backend (without pausing/navigating)
+    try {
+      await sendPendingCounts();
+    } catch (error) {
+      console.error('Error saving counts before completion:', error);
+      toast.error('Failed to save counts. Please try again.');
+      return;
+    }
+
+    if (discrepancies.length > 0) {
+      // Open modal to resolve discrepancies with final values
+      setIsModalOpen(true);
+    } else {
+      // All items counted and no discrepancies, complete directly
+      handleCompleteCycleCount();
+    }
+  };
+
+  const handleConfirmDiscrepancies = async (recounts: Record<string, { newCount: number; reason: string }>) => {
+    if (!existingCountData?.id) {
+      toast.error('Cycle count ID not found');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Record final counts for discrepancy items only
+      const recountPromises = discrepancies
+        .filter(article => recounts[article.code]?.newCount !== undefined)
+        .map(article => {
+          const recount = recounts[article.code];
+          return recordCycleCountEntry({
+            entryId: article.entryId!,
+            physicalCount: recount.newCount,
+            notes: recount.reason || '',
+            countedByUserId: user?.id || 0
+          });
+        });
+
+      await Promise.all(recountPromises);
+      
+      // Now complete the cycle count directly (without using hook's handler)
+      await completeCycleCount(existingCountData.id);
+      
+      toast.success('Cycle count completed successfully!');
+      setIsModalOpen(false);
+      
+      // Navigate back to history
+      if (onComplete) {
+        onComplete({
+          id: existingCountData.id,
+          date: new Date().toISOString().split('T')[0],
+          zone: selectedZone,
+          status: 'completed' as const,
+          countType,
+          auditor,
+          totalItems: articles.length,
+          counted: countedArticles.length,
+          discrepancies: 0, // All resolved now
+          articles: articles.map(a => ({
+            id: a.id,
+            type: a.type,
+            code: a.code,
+            description: a.description,
+            zone: a.zone,
+            totalRegistered: a.totalRegistered,
+            physicalCount: a.physicalCount || 0,
+            status: 'match' as const,
+            observations: a.observations
+          }))
+        });
+      }
+    } catch (error) {
+      console.error('Error completing cycle count:', error);
+      toast.error('Failed to complete cycle count. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handlePrintAll = () => {
     generatePrintCountInProgress({
@@ -86,7 +183,7 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
             <Save className="h-4 w-4 mr-2" />
             Save Progress
           </Button>
-          <Button onClick={handleCompleteCycleCount}>
+          <Button onClick={handleCompleteClick}>
             <CheckCircle className="h-4 w-4 mr-2" />
             Complete Count
           </Button>
@@ -191,6 +288,15 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
           </div>
         </CardContent>
       </Card>
+
+      {/* Resolve Discrepancies Modal */}
+      <ResolveDiscrepanciesModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        discrepancies={discrepancies}
+        onConfirm={handleConfirmDiscrepancies}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 }
