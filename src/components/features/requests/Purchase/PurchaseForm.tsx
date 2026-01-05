@@ -11,8 +11,21 @@ import { Alert, AlertDescription } from '../../../ui/alert';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
 import type { User as UserType } from '../../enginner/types';
-import { getWarehouses, getProjects, type Warehouse, type Project } from '../../enginner/services';
-import { getExistingItems, type ExistingItem, type PurchaseRequest } from './purchaseService';
+import {
+  getWarehouses,
+  getCatalogItemsByWarehouse,
+  getCompanies,
+  getCustomersByCompany,
+  getProjectsByCustomer,
+  getWorkOrdersByProject,
+  type Warehouse,
+  type CatalogItem,
+  type Company,
+  type Customer,
+  type Project,
+  type WorkOrder
+} from '../services/sharedServices';
+import { type PurchaseRequest } from './purchaseService';
 
 interface PurchaseFormProps {
   currentUser: UserType;
@@ -92,37 +105,207 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
   const [formData, setFormData] = useState<PurchaseFormData>(() => buildInitialFormData(currentUser, initialRequest));
 
   const [itemSearches, setItemSearches] = useState<{ [key: number]: string }>(() => buildInitialItemSearches(initialRequest));
-  const [filteredItems, setFilteredItems] = useState<{ [key: number]: ExistingItem[] }>({});
+  const [filteredItems, setFilteredItems] = useState<{ [key: number]: CatalogItem[] }>({});
   const [dropdownOpen, setDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const previousPurchaseReasonRef = useRef<string>('');
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [existingItems, setExistingItems] = useState<ExistingItem[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [loadingWorkOrders, setLoadingWorkOrders] = useState(false);
+  const [companiesLoaded, setCompaniesLoaded] = useState(false);
   const isEditing = Boolean(initialRequest);
-  // Load warehouses, projects, existing items and departments
+  // Load warehouses on mount
   useEffect(() => {
-    const loadData = async () => {
+    const loadWarehouses = async () => {
       try {
-        const [whData, projData, itemsData] = await Promise.all([
-          getWarehouses(),
-          getProjects(),
-          getExistingItems()
-        ]);
-        
+        const whData = await getWarehouses();
         setWarehouses(whData);
-        setProjects(projData);
-        setExistingItems(itemsData);
-        
-        if (whData.length > 0 && !formData.warehouseId) {
-          setFormData(prev => ({ ...prev, warehouseId: whData[0].id }));
+
+        if (whData.length > 0) {
+          setFormData(prev => {
+            if (prev.warehouseId) {
+              return prev;
+            }
+            return { ...prev, warehouseId: whData[0].id };
+          });
         }
       } catch (error) {
-        toast.error('Failed to load form data');
+        toast.error('Failed to load warehouses');
       }
     };
-    loadData();
+
+    void loadWarehouses();
   }, []);
+
+  useEffect(() => {
+    if (!formData.warehouseId) {
+      setCatalogItems([]);
+      setFilteredItems({});
+      return;
+    }
+
+    const loadCatalogItems = async () => {
+      try {
+        const items = await getCatalogItemsByWarehouse(formData.warehouseId);
+        setCatalogItems(items);
+      } catch (error) {
+        toast.error('Failed to load items for the selected warehouse');
+      }
+    };
+
+    void loadCatalogItems();
+  }, [formData.warehouseId]);
+
+  useEffect(() => {
+    // Keep dropdown options aligned with current catalog selections
+    const nextFiltered: { [key: number]: CatalogItem[] } = {};
+
+    formData.items.forEach((item, index) => {
+      if (!item.isExisting) {
+        return;
+      }
+
+      const selectedNames = formData.items
+        .map((it, idx) => (idx !== index && it.isExisting ? it.name : null))
+        .filter((name): name is string => Boolean(name));
+
+      nextFiltered[index] = catalogItems.filter(ci => !selectedNames.includes(ci.name));
+    });
+
+    setFilteredItems(nextFiltered);
+  }, [catalogItems, formData.items]);
+
+  const loadCompanies = React.useCallback(async () => {
+    if (companiesLoaded || loadingCompanies) return;
+    setLoadingCompanies(true);
+    try {
+      const companyData = await getCompanies();
+      setCompanies(companyData);
+      setCompaniesLoaded(true);
+    } catch (error) {
+      toast.error('Failed to load companies');
+    } finally {
+      setLoadingCompanies(false);
+    }
+  }, [companiesLoaded, loadingCompanies]);
+
+  useEffect(() => {
+    if (formData.company && !companiesLoaded) {
+      void loadCompanies();
+    }
+  }, [formData.company, companiesLoaded, loadCompanies]);
+
+  useEffect(() => {
+    setCustomers([]);
+    setProjects([]);
+    setWorkOrders([]);
+
+    if (!formData.company) {
+      setLoadingCustomers(false);
+      return;
+    }
+
+    let isActive = true;
+    const fetchCustomers = async () => {
+      setLoadingCustomers(true);
+      try {
+        const customerData = await getCustomersByCompany(formData.company);
+        if (isActive) {
+          setCustomers(customerData);
+        }
+      } catch (error) {
+        if (isActive) {
+          toast.error('Failed to load customers');
+        }
+      } finally {
+        if (isActive) {
+          setLoadingCustomers(false);
+        }
+      }
+    };
+
+    void fetchCustomers();
+
+    return () => {
+      isActive = false;
+    };
+  }, [formData.company]);
+
+  useEffect(() => {
+    setProjects([]);
+    setWorkOrders([]);
+
+    if (!formData.customer || !formData.company) {
+      setLoadingProjects(false);
+      return;
+    }
+
+    let isActive = true;
+    const fetchProjects = async () => {
+      setLoadingProjects(true);
+      try {
+        const projectData = await getProjectsByCustomer(formData.company, formData.customer);
+        if (isActive) {
+          setProjects(projectData);
+        }
+      } catch (error) {
+        if (isActive) {
+          toast.error('Failed to load projects');
+        }
+      } finally {
+        if (isActive) {
+          setLoadingProjects(false);
+        }
+      }
+    };
+
+    void fetchProjects();
+
+    return () => {
+      isActive = false;
+    };
+  }, [formData.company, formData.customer]);
+
+  useEffect(() => {
+    setWorkOrders([]);
+
+    if (!formData.project || !formData.company || !formData.customer) {
+      setLoadingWorkOrders(false);
+      return;
+    }
+
+    let isActive = true;
+    const fetchWorkOrders = async () => {
+      setLoadingWorkOrders(true);
+      try {
+        const workOrderData = await getWorkOrdersByProject(formData.company, formData.customer, formData.project);
+        if (isActive) {
+          setWorkOrders(workOrderData);
+        }
+      } catch (error) {
+        if (isActive) {
+          toast.error('Failed to load work orders');
+        }
+      } finally {
+        if (isActive) {
+          setLoadingWorkOrders(false);
+        }
+      }
+    };
+
+    void fetchWorkOrders();
+
+    return () => {
+      isActive = false;
+    };
+  }, [formData.company, formData.customer, formData.project]);
 
   useEffect(() => {
     setFormData(buildInitialFormData(currentUser, initialRequest));
@@ -131,20 +314,10 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
       ? initialRequest.reason
       : '';
     setDropdownOpen({});
+    setCustomers([]);
+    setProjects([]);
+    setWorkOrders([]);
   }, [initialRequest, currentUser]);
-
-  useEffect(() => {
-    if (!initialRequest) {
-      setFilteredItems({});
-      return;
-    }
-
-    const mapped: { [key: number]: ExistingItem[] } = {};
-    initialRequest.items.forEach((_, index) => {
-      mapped[index] = existingItems;
-    });
-    setFilteredItems(mapped);
-  }, [initialRequest, existingItems]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -163,31 +336,57 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
   }, [dropdownOpen]);
 
   const handleItemSearch = (index: number, value: string) => {
-    setItemSearches(prev => ({ ...prev, [index]: value }));
-    if (value.length >= 2) {
-      const filtered = existingItems.filter(item =>
-        item.name.toLowerCase().includes(value.toLowerCase())
-      );
-      setFilteredItems(prev => ({ ...prev, [index]: filtered }));
-    } else {
-      setFilteredItems(prev => ({ ...prev, [index]: existingItems }));
+    if (!formData.warehouseId) {
+      toast.error('Select a warehouse first.');
+      return;
     }
+
+    setItemSearches(prev => ({ ...prev, [index]: value }));
+
+    const selectedNames = formData.items
+      .map((item, idx) => (idx !== index && item.isExisting ? item.name : null))
+      .filter((name): name is string => Boolean(name));
+
+    const baseItems = catalogItems.filter(item => !selectedNames.includes(item.name));
+
+    const filtered =
+      value.length >= 2
+        ? baseItems.filter(item =>
+            item.name.toLowerCase().includes(value.toLowerCase()) ||
+            item.sku.toLowerCase().includes(value.toLowerCase()) ||
+            item.description.toLowerCase().includes(value.toLowerCase())
+          )
+        : baseItems;
+
+    setFilteredItems(prev => ({ ...prev, [index]: filtered }));
     setDropdownOpen(prev => ({ ...prev, [index]: true }));
   };
 
-  const selectExistingItem = (index: number, item: ExistingItem) => {
+  const selectExistingItem = (index: number, item: CatalogItem) => {
     updateItem(index, 'name', item.name);
     setItemSearches(prev => ({ ...prev, [index]: item.name }));
     setDropdownOpen(prev => ({ ...prev, [index]: false }));
   };
 
   const toggleDropdown = (index: number) => {
-    const currentItem = formData.items[index];
-    if (currentItem.name && currentItem.isExisting) {
-      setDropdownOpen(prev => ({ ...prev, [index]: !prev[index] }));
-    } else {
-      setDropdownOpen(prev => ({ ...prev, [index]: true }));
+    if (!formData.warehouseId) {
+      toast.error('Select a warehouse first.');
+      return;
     }
+
+    const currentItem = formData.items[index];
+    if (!currentItem.isExisting) {
+      return;
+    }
+
+    const selectedNames = formData.items
+      .map((item, idx) => (idx !== index && item.isExisting ? item.name : null))
+      .filter((name): name is string => Boolean(name));
+
+    const baseItems = catalogItems.filter(item => !selectedNames.includes(item.name));
+
+    setFilteredItems(prev => ({ ...prev, [index]: baseItems }));
+    setDropdownOpen(prev => ({ ...prev, [index]: !prev[index] }));
   };
 
   const addNewItem = () => {
@@ -197,7 +396,11 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
       items: [...prev.items, createDefaultPurchaseItem()]
     }));
     setItemSearches(prev => ({ ...prev, [newIndex]: '' }));
-    setFilteredItems(prev => ({ ...prev, [newIndex]: existingItems }));
+    const selectedNames = formData.items
+      .map(item => (item.isExisting ? item.name : null))
+      .filter((name): name is string => Boolean(name));
+    const availableItems = catalogItems.filter(item => !selectedNames.includes(item.name));
+    setFilteredItems(prev => ({ ...prev, [newIndex]: availableItems }));
     setDropdownOpen(prev => ({ ...prev, [newIndex]: false }));
   };
 
@@ -323,7 +526,10 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
     setFilteredItems(prev => {
       const next = { ...prev };
       if (isExisting) {
-        next[index] = existingItems;
+        const selectedNames = formData.items
+          .map((item, idx) => (idx !== index && item.isExisting ? item.name : null))
+          .filter((name): name is string => Boolean(name));
+        next[index] = catalogItems.filter(item => !selectedNames.includes(item.name));
       } else {
         delete next[index];
       }
@@ -339,6 +545,70 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
       }
 
       return prev;
+    });
+  };
+
+  const handleWarehouseChange = (value: string) => {
+    if (formData.warehouseId === value) {
+      return;
+    }
+
+    const hadSelections = formData.items.some(item => item.name);
+
+    setFormData(prev => ({
+      ...prev,
+      warehouseId: value,
+      items: [createDefaultPurchaseItem()]
+    }));
+    setItemSearches({ 0: '' });
+    setDropdownOpen({});
+    setFilteredItems({});
+
+    if (hadSelections) {
+      toast.warning('The list of items was reset because you changed the warehouse.');
+    }
+  };
+
+  const handleCompanyChange = (value: string) => {
+    setFormData(prev => {
+      if (prev.company === value) return prev;
+      return {
+        ...prev,
+        company: value,
+        customer: '',
+        project: '',
+        workOrder: ''
+      };
+    });
+  };
+
+  const handleCustomerChange = (value: string) => {
+    setFormData(prev => {
+      if (prev.customer === value) return prev;
+      return {
+        ...prev,
+        customer: value,
+        project: '',
+        workOrder: ''
+      };
+    });
+  };
+
+  const handleProjectChange = (value: string) => {
+    setFormData(prev => {
+      if (prev.project === value) return prev;
+      return {
+        ...prev,
+        project: value,
+        workOrder: ''
+      };
+    });
+  };
+
+  const handleWorkOrderChange = (value: string) => {
+    setFormData(prev => {
+      if (prev.workOrder === value) return prev;
+      return { ...prev, workOrder: value };
     });
   };
 
@@ -367,14 +637,14 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
             <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
               <div>
                 <Label>Warehouse</Label>
-                <Select value={formData.warehouseId} onValueChange={(value: string) => setFormData(prev => ({ ...prev, warehouseId: value }))}>
+                <Select value={formData.warehouseId} onValueChange={handleWarehouseChange}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select warehouse" />
                   </SelectTrigger>
                   <SelectContent>
                     {warehouses.map((warehouse) => (
                       <SelectItem key={warehouse.id} value={warehouse.id}>
-                        {warehouse.name}
+                        {warehouse.code ? `${warehouse.name} (${warehouse.code})` : warehouse.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -383,7 +653,7 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
 
               <div className="flex-1 overflow-y-auto space-y-4 pr-1">
                 {formData.items.map((item, index) => {
-                  const selectedExistingItem = item.isExisting ? existingItems.find(ei => ei.name === item.name) : null;
+                  const selectedExistingItem = item.isExisting ? catalogItems.find(ci => ci.name === item.name) : null;
 
                   return (
                     <div key={index} className="p-4 border rounded-lg space-y-4">
@@ -436,26 +706,26 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
                                   />
                                   {dropdownOpen[index] && (
                                     <div className="absolute z-10 w-full border rounded-md bg-background shadow-lg max-h-40 overflow-y-auto">
-                                      {(filteredItems[index] || existingItems).length === 0 ? (
+                                      {(filteredItems[index] || catalogItems).length === 0 ? (
                                         <div className="px-3 py-2 text-sm text-muted-foreground">
                                           No items found matching "{itemSearches[index]}"
                                         </div>
                                       ) : (
-                                        (filteredItems[index] || existingItems).map((existingItem) => (
+                                        (filteredItems[index] || catalogItems).map((catalogItem) => (
                                           <button
-                                            key={existingItem.id}
+                                            key={catalogItem.id}
                                             type="button"
                                             className={`w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center gap-2 ${
-                                              item.name === existingItem.name ? 'bg-accent' : ''
+                                              item.name === catalogItem.name ? 'bg-accent' : ''
                                             }`}
-                                            onClick={() => selectExistingItem(index, existingItem)}
+                                            onClick={() => selectExistingItem(index, catalogItem)}
                                           >
                                             <ImageWithFallback
-                                              src={existingItem.image}
-                                              alt={existingItem.name}
+                                              src={catalogItem.image}
+                                              alt={catalogItem.name}
                                               className="w-8 h-8 object-cover rounded"
                                             />
-                                            <span>{existingItem.name}</span>
+                                            <span>{catalogItem.name}</span>
                                           </button>
                                         ))
                                       )}
@@ -668,31 +938,108 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
               </div>
 
               <div>
-                <Label>
+                <Label htmlFor="company">
                   <div className="flex items-center gap-2 mb-1.5">
                     <Building className="h-4 w-4" />
-                    Company
+                    Company *
+                    {loadingCompanies && (
+                      <span className="text-xs text-muted-foreground">(Loading...)</span>
+                    )}
                   </div>
                 </Label>
-                <Input
-                  placeholder="Enter company name"
+                <Select
                   value={formData.company}
-                  onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
-                />
+                  onValueChange={handleCompanyChange}
+                  onOpenChange={(open) => {
+                    if (open && !companiesLoaded) {
+                      void loadCompanies();
+                    }
+                  }}
+                >
+                  <SelectTrigger id="company">
+                    <SelectValue
+                      placeholder={
+                        loadingCompanies
+                          ? 'Loading companies...'
+                          : 'Select a company'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingCompanies ? (
+                      <SelectItem value="_loading" disabled>
+                        Loading companies...
+                      </SelectItem>
+                    ) : (
+                      <>
+                        {!companiesLoaded && (
+                          <SelectItem value="_prefetch" disabled>
+                            Click to load companies...
+                          </SelectItem>
+                        )}
+                        {companies.map((company) => (
+                          <SelectItem key={company.name} value={company.name}>
+                            {company.name}
+                          </SelectItem>
+                        ))}
+                        {companiesLoaded && companies.length === 0 && (
+                          <SelectItem value="_no_companies" disabled>
+                            No companies available
+                          </SelectItem>
+                        )}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
-                <Label>
+                <Label htmlFor="customer">
                   <div className="flex items-center gap-2 mb-1.5">
                     <User className="h-4 w-4" />
-                    Customer
+                    Customer *
+                    {loadingCustomers && (
+                      <span className="text-xs text-muted-foreground">(Loading...)</span>
+                    )}
                   </div>
                 </Label>
-                <Input
-                  placeholder="Enter customer name"
+                <Select
                   value={formData.customer}
-                  onChange={(e) => setFormData(prev => ({ ...prev, customer: e.target.value }))}
-                />
+                  onValueChange={handleCustomerChange}
+                >
+                  <SelectTrigger
+                    id="customer"
+                    disabled={!formData.company || loadingCustomers}
+                  >
+                    <SelectValue
+                      placeholder={
+                        !formData.company
+                          ? 'Select a company first'
+                          : loadingCustomers
+                            ? 'Loading customers...'
+                            : 'Select a customer'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingCustomers ? (
+                      <SelectItem value="_loading" disabled>
+                        Loading customers...
+                      </SelectItem>
+                    ) : customers.length > 0 ? (
+                      customers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.name}>
+                          {customer.name}
+                          {customer.code ? ` (${customer.code})` : ''}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="_no_customers" disabled>
+                        {formData.company ? 'No customers available' : 'Select a company first'}
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -700,37 +1047,95 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
                   <div className="flex items-center gap-2 mb-1.5">
                     <FolderOpen className="h-4 w-4" />
                     Project *
+                    {loadingProjects && (
+                      <span className="text-xs text-muted-foreground">(Loading...)</span>
+                    )}
                   </div>
                 </Label>
-                <Select
-                  value={formData.project}
-                  onValueChange={(value: string) => setFormData(prev => ({ ...prev, project: value }))}
-                >
-                  <SelectTrigger id="project">
-                    <SelectValue placeholder="Select a project" />
+                <Select value={formData.project} onValueChange={handleProjectChange}>
+                  <SelectTrigger
+                    id="project"
+                    disabled={!formData.customer || loadingProjects}
+                  >
+                    <SelectValue
+                      placeholder={
+                        !formData.customer
+                          ? 'Select a customer first'
+                          : loadingProjects
+                            ? 'Loading projects...'
+                            : 'Select a project'
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name} ({project.code})
+                    {loadingProjects ? (
+                      <SelectItem value="_loading" disabled>
+                        Loading projects...
                       </SelectItem>
-                    ))}
+                    ) : projects.length > 0 ? (
+                      projects.map((project) => (
+                        <SelectItem key={project.id} value={project.name}>
+                          {project.name}
+                          {project.code ? ` (${project.code})` : ''}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="_no_projects" disabled>
+                        {formData.customer ? 'No projects available' : 'Select a customer first'}
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label>
+                <Label htmlFor="workOrder">
                   <div className="flex items-center gap-2 mb-1.5">
                     <Hash className="h-4 w-4" />
                     Work Order #
+                    {loadingWorkOrders && (
+                      <span className="text-xs text-muted-foreground">(Loading...)</span>
+                    )}
                   </div>
                 </Label>
-                <Input
-                  placeholder="Enter WO number"
-                  value={formData.workOrder}
-                  onChange={(e) => setFormData(prev => ({ ...prev, workOrder: e.target.value }))}
-                />
+                <Select value={formData.workOrder} onValueChange={handleWorkOrderChange}>
+                  <SelectTrigger
+                    id="workOrder"
+                    disabled={!formData.project || loadingWorkOrders}
+                  >
+                    <SelectValue
+                      placeholder={
+                        !formData.project
+                          ? 'Select a project first'
+                          : loadingWorkOrders
+                            ? 'Loading work orders...'
+                            : 'Select a work order'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingWorkOrders ? (
+                      <SelectItem value="_loading" disabled>
+                        Loading work orders...
+                      </SelectItem>
+                    ) : workOrders.length > 0 ? (
+                      workOrders.map((wo) => (
+                        <SelectItem key={wo.id ?? wo.wo} value={wo.wo}>
+                          <span className="flex flex-col gap-0.5">
+                            <span className="font-medium">{wo.wo}</span>
+                            {wo.serviceDesc && (
+                              <span className="text-xs text-muted-foreground">{wo.serviceDesc}</span>
+                            )}
+                          </span>
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="_no_workorders" disabled>
+                        {formData.project ? 'No work orders available' : 'Select a project first'}
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
