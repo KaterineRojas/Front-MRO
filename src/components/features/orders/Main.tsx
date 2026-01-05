@@ -3,19 +3,51 @@ import { PurchaseOrdersProps } from './types/purchaseType'
 import TabsGroup from '../requests/components/Tabs'
 import { OrderTable } from './components/OrderTable'
 import { PurchaseRequest } from './types/purchaseType'
-import { Plus, Loader2 } from 'lucide-react' 
+import { Plus, Loader2 } from 'lucide-react'
 import { CreatePurchaseRequestPage } from './CreatePurchaseRequestPage'
 import { authService } from '../../../services/authService'
-import { getAllPurchaseRequests } from './services/purchaseService' 
+import { getAllPurchaseRequests } from './services/purchaseService'
+import { ReviewRequestModal } from './modals/ApproveRequestModal'
 
 export function Main({ onViewDetail }: PurchaseOrdersProps) {
     const [activeTab, setActiveTab] = useState('active orders');
     const [statusFilter, setStatusFilter] = useState<string>('all');
-    
+
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    
+
     const [creatingRequest, setCreatingRequest] = useState(false);
+
+    const [reviewState, setReviewState] = useState<{
+        isOpen: boolean;
+        order: PurchaseRequest | null;
+        action: 'approve' | 'reject';
+    }>({
+        isOpen: false,
+        order: null,
+        action: 'approve'
+    });
+
+    const handleOpenReview = (order: PurchaseRequest, action: 'approve' | 'reject') => {
+        setReviewState({
+            isOpen: true,
+            order,
+            action
+        });
+    };
+
+    const handleCloseReview = () => {
+        setReviewState(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const handleConfirmReview = async (action: 'approve' | 'reject', notes: string) => {
+        console.log(`Processing ${action} for ID ${reviewState.order?.id} with notes: ${notes}`);
+
+        // TODO: Call your API here
+        // await api.updateStatus(reviewState.order.id, action, notes);
+
+        handleCloseReview();
+    };
 
     // Fetch Function
     const fetchOrders = useCallback(async () => {
@@ -24,7 +56,7 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
             const data = await getAllPurchaseRequests();
             setPurchaseOrders(data);
             console.log(data);
-            
+
         } catch (error) {
             console.error("Failed to load orders:", error);
         } finally {
@@ -89,7 +121,7 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
         return (
             <CreatePurchaseRequestPage
                 onBack={handleBackFromCreate}
-                onSave={handleRequestSaved} 
+                onSave={handleRequestSaved}
             />
         );
     }
@@ -137,10 +169,18 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
                     orders={filteredOrders}
                     statusFilter={statusFilter}
                     setStatusFilter={setStatusFilter}
-                    onStatusUpdate={handleStatusUpdate}
                     activeTab={activeTab}
+                    onReview={handleOpenReview}
                 />
             )}
+
+            <ReviewRequestModal
+                isOpen={reviewState.isOpen}
+                order={reviewState.order}
+                initialAction={reviewState.action}
+                onClose={handleCloseReview}
+                onConfirm={handleConfirmReview}
+            />
         </div>
     );
 }

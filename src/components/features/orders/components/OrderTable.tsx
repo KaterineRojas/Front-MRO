@@ -11,7 +11,8 @@ export const OrderTable: React.FC<ActivePurchaseTableProps> = ({
     statusFilter, 
     setStatusFilter, 
     onStatusUpdate,
-    activeTab 
+    activeTab ,
+    onReview,
 }) => {
 
     const filterOptions = useMemo(() => {
@@ -76,7 +77,7 @@ export const OrderTable: React.FC<ActivePurchaseTableProps> = ({
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                         {orders.length > 0 ? (
                             orders.map((order) => (
-                                <OrderRow key={order.id} order={order} handleStatusUpdate={onStatusUpdate} />
+                                <OrderRow key={order.id} order={order} handleReview={onReview} />
                             ))
                         ) : (
                             <tr>

@@ -45,6 +45,8 @@ export interface PurchaseRequest {
     reason: number;          // 0=Standard, etc. (Previously 'priority')
     selfPurchase: boolean;
 
+    notes?: string;
+
     // Totals
     estimatedTotalCost: number; // Matches backend (was totalAmount)
     totalItems: number;
@@ -57,6 +59,8 @@ export interface PurchaseRequest {
     createdAt: string;
     orderedAt: string | null;
     receivedAt: string | null;
+
+    items?: PurchaseRequestDetailItem[];
 }
 
 export interface PaginatedResponse<T> {
@@ -116,8 +120,8 @@ export interface ActivePurchaseTableProps {
     orders: PurchaseRequest[];
     statusFilter: string;
     setStatusFilter: (val: string) => void;
-    onStatusUpdate: (id: number, status: number) => void;
     activeTab: string;
+    onReview: (order: PurchaseRequest, action: 'approve' | 'reject') => void;
 }
 
 // request form data interface
@@ -153,6 +157,19 @@ export interface PurchaseRequestItem extends Item {
     estimatedCost: number;    // The price they entered
     totalCost: number;        // quantity * estimatedCost
     purchaseUrl: string;      // The link they provided
+}
+
+export interface PurchaseRequestDetailItem {
+    id: number;           // The ID of this specific line item record
+    itemId: number;       // The ID of the product in inventory
+    sku: string;
+    name: string;
+    description: string;
+    imageUrl: string | null;
+    productUrl: string | null;
+    quantity: number;
+    createdAt: string;
+    updatedAt: string;
 }
 
 // BACKEND PAYLOAD TYPES 

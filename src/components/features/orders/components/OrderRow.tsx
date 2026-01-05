@@ -1,29 +1,25 @@
 import React, { useState } from 'react';
 import {
     ChevronRight,
-    ChevronDown,
     Package,
-    Check,
-    X,
     Building2,
     Layers,
     FolderKanban,
     UserCheck,
-
+    ImageOff, // Added for missing images
 } from 'lucide-react';
 import { getStatusBadge, getReasonBadge } from '../../inventory/components/RequestBadges';
 import { STATUS_MAP, REASON_MAP, formatDate, formatCurrency } from '../utils/purchase-utils';
 import { PurchaseRequest } from '../types/purchaseType';
 import { useSelector } from 'react-redux';
-import { ActionButton } from '../../inventory/components/ActionButton'
-
+import { ActionButton } from '../../inventory/components/ActionButton';
 
 interface Props {
     order: PurchaseRequest;
-    handleStatusUpdate: (id: number, status: number) => void;
+    handleReview: (order: PurchaseRequest, action: 'approve' | 'reject') => void;
 }
 
-export const OrderRow: React.FC<Props> = ({ order, handleStatusUpdate }) => {
+export const OrderRow: React.FC<Props> = ({ order, handleReview }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     const statusString = STATUS_MAP[order.status] || 'unknown';
@@ -40,7 +36,7 @@ export const OrderRow: React.FC<Props> = ({ order, handleStatusUpdate }) => {
                 <td className="p-4">
                     <button
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className="p-2 hover:bg-gray-200 dark:hover:bg-white] rounded transition-colors text-gray-400 dark:text-white dark:hover:text-[#191c31]"
+                        className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded transition-colors text-gray-400 dark:text-white"
                     >
                         <ChevronRight className={`w-4 h-4 transition duration-200 ease-out ${isExpanded ? 'rotate-90' : ''} `} />
                     </button>
@@ -68,22 +64,19 @@ export const OrderRow: React.FC<Props> = ({ order, handleStatusUpdate }) => {
                 </td>
                 <td className="p-4 text-right">
                     <div className="flex justify-end gap-2">
-                        {/* APPROVE: Green Outline, fills on hover */}
                         <ActionButton
                             icon="approve"
-                            variant="success" // Border-green, Text-green
-                            className="w-8 h-8 p-0 rounded-md" // Force square shape
-                            title="Approve Request" // Tooltip behavior
-                            onClick={() => console.log('Purchase Approved successfully')}
+                            variant="success"
+                            className="w-8 h-8 p-0 rounded-md"
+                            title="Approve Request"
+                            onClick={() => handleReview(order, 'approve')}
                         />
-
-                        {/* REJECT: Red Outline, fills on hover */}
                         <ActionButton
                             icon='reject'
-                            variant="danger" // Border-red, Text-red
+                            variant="danger"
                             className="w-8 h-8 p-0 rounded-md"
                             title="Reject Request"
-                            onClick={() => console.log('Purchase Reject')}
+                            onClick={() => handleReview(order, 'reject')}
                         />
                     </div>
                 </td>
@@ -95,15 +88,12 @@ export const OrderRow: React.FC<Props> = ({ order, handleStatusUpdate }) => {
                     <td colSpan={8} className="p-0 border-b border-gray-100 dark:border-gray-800">
                         <div className="p-6 animate-in fade-in slide-in-from-top-1 duration-200">
 
-                            {/* COLORFUL CARDS GRID */}
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-
-                                {/* 1. PROJECT (Blue Theme) */}
-                                <div className="p-4 rounded-xl border transition-all
-                                    bg-white border-gray-200 shadow-sm 
-                                    dark:bg-blue-500/5 dark:border-blue-500/20 dark:shadow-none">
+                            {/* UPPER STATS CARDS */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                                {/* 1. Project */}
+                                <div className="p-4 rounded-xl border  border-blue-500 shadow-sm bg-blue-500/5 dark:border-blue-500/20 dark:shadow-none">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <FolderKanban className="w-4 h-4 text-gray-400 dark:text-blue-400" />
+                                        <FolderKanban className="w-4 h-4 text-blue-400" />
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-blue-300">Project</p>
                                     </div>
                                     <p className="text-sm font-semibold text-gray-900 dark:text-blue-100 pl-6">
@@ -111,25 +101,21 @@ export const OrderRow: React.FC<Props> = ({ order, handleStatusUpdate }) => {
                                     </p>
                                 </div>
 
-                                {/* 2. ITEMS (Purple Theme) */}
-                                <div className="p-4 rounded-xl border transition-all bg-white border-gray-200 shadow-sm dark:bg-purple-500/5 dark:border-purple-500/20 dark:shadow-none">
+                                {/* 2. Composition */}
+                                <div className="p-4 rounded-xl border shadow-sm bg-purple-500/5 border-purple-500/20 dark:shadow-none">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <Layers className="w-4 h-4 text-gray-400 dark:text-purple-400" />
+                                        <Layers className="w-4 h-4  text-purple-400" />
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-purple-300">Composition</p>
                                     </div>
-
-                                    {/* "8 Units across 2 Items" */}
                                     <p className="text-sm font-semibold text-gray-900 dark:text-purple-100 pl-6">
-                                        {order.totalQuantity} Units <span className="font-normal text-gray-400 dark:text-purple-400/60">in {order.totalItems} items</span>
+                                        {order.totalQuantity} Units <span className="font-normal text-purple-700 dark:text-purple-400/60">in {order.totalItems} items</span>
                                     </p>
                                 </div>
 
-                                {/* 3. SUPPLIER (Amber/Orange Theme) */}
-                                <div className="p-4 rounded-xl border transition-all
-                                    bg-white border-gray-200 shadow-sm 
-                                    dark:bg-amber-500/5 dark:border-amber-500/20 dark:shadow-none">
+                                {/* 3. Company */}
+                                <div className="p-4 rounded-xl border shadow-sm bg-amber-500/5 border-amber-500/20 dark:shadow-none">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <Building2 className="w-4 h-4 text-gray-400 dark:text-amber-400" />
+                                        <Building2 className="w-4 h-4 text-amber-400" />
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-amber-300">Company</p>
                                     </div>
                                     <p className="text-sm font-semibold text-gray-900 dark:text-amber-100 pl-6">
@@ -137,10 +123,8 @@ export const OrderRow: React.FC<Props> = ({ order, handleStatusUpdate }) => {
                                     </p>
                                 </div>
 
-                                {/* 4. APPROVED BY (Emerald Theme) */}
-                                <div className="p-4 rounded-xl border transition-all
-                                    bg-white border-gray-200 shadow-sm 
-                                    dark:bg-emerald-500/5 dark:border-emerald-500/20 dark:shadow-none">
+                                {/* 4. Approval */}
+                                <div className="p-4 rounded-xl border shadow-sm bg-emerald-500/5 border-emerald-500/20 dark:shadow-none">
                                     <div className="flex items-center gap-2 mb-2">
                                         <UserCheck className="w-4 h-4 text-gray-400 dark:text-emerald-400" />
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-emerald-300">Approval</p>
@@ -149,23 +133,85 @@ export const OrderRow: React.FC<Props> = ({ order, handleStatusUpdate }) => {
                                         {order.approvedByName || 'Pending Review'}
                                     </p>
                                 </div>
-
                             </div>
 
-                            {/* DETAIL SECTION HEADER */}
+                            {/* NOTES SECTION (Only if notes exist) */}
+                            {order.notes && (
+                                <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-900/30 rounded-lg">
+                                    <h4 className="text-xs font-bold uppercase text-yellow-800 dark:text-yellow-500 mb-1">
+                                        Request Notes
+                                    </h4>
+                                    <p className="text-sm text-gray-700 dark:text-yellow-100/80">
+                                        {order.notes}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* ITEMS GRID SECTION */}
                             <div className="flex items-center gap-2 mb-4 pl-1">
                                 <Package className="h-4 w-4 text-gray-400" />
                                 <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500">
-                                    Request Line Items
+                                    Included Items ({order.items?.length || 0})
                                 </h4>
                             </div>
 
-                            {/* PLACEHOLDER FOR ITEMS TABLE */}
-                            <div className="text-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-transparent">
-                                <p className="text-sm text-gray-500">
-                                    Full line item details would be rendered here.
-                                </p>
-                            </div>
+                            {(!order.items || order.items.length === 0) ? (
+                                <div className="text-center py-6 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+                                    <p className="text-sm text-gray-400">No items found in this request.</p>
+                                </div>
+                            ) : (
+                                /* COLUMN GRID */
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {order.items.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="group flex gap-4 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131A27] hover:shadow-md transition-all"
+                                        >
+                                            {/* Image Container */}
+                                            <div className="relative w-16 h-16 shrink-0 bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden flex items-center justify-center">
+                                                {item.imageUrl ? (
+                                                    <img
+                                                        src={item.imageUrl}
+                                                        alt={item.name}
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).style.display = 'none';
+                                                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                                        }}
+                                                    />
+                                                ) : null}
+                                                {/* Fallback Icon (Hidden by default if img exists, shown if onError fires or no img) */}
+                                                <ImageOff className={`w-6 h-6 text-gray-400 ${item.imageUrl ? 'hidden' : ''}`} />
+                                            </div>
+
+                                            {/* Item Details */}
+                                            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                <div className="flex justify-between items-start">
+                                                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate pr-2" title={item.name}>
+                                                        {item.name}
+                                                    </p>
+                                                </div>
+
+                                                <p className="text-xs font-mono text-gray-500 dark:text-gray-400 mb-1">
+                                                    {item.sku}
+                                                </p>
+
+                                                <div className="flex items-center gap-2 mt-auto">
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                                        Qty: {item.quantity}
+                                                    </span>
+                                                    {item.description && (
+                                                        <span className="text-[10px] text-gray-400 truncate max-w-[120px]" title={item.description}>
+                                                            {item.description}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                         </div>
                     </td>
                 </tr>
@@ -173,5 +219,3 @@ export const OrderRow: React.FC<Props> = ({ order, handleStatusUpdate }) => {
         </>
     );
 };
-
-

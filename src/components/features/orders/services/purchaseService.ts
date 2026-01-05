@@ -47,7 +47,10 @@ export const createPurchaseRequest = async (payload: CreatePurchaseRequestPayloa
  * Endpoint: /api/PurchaseRequests
  */
 export const getAllPurchaseRequests = async (signal?: AbortSignal): Promise<PurchaseRequest[]> => {
-    const response = await fetchClient('/purchase-requests', {
+    /**
+     * this is hardcoded with warehouseId=1 but we need to change this to the dynamic one with authService.getUser().warehouseId
+     */
+    const response = await fetchClient('/purchase-requests?warehouseId=1', {
         method: 'GET',
         signal,
     });
