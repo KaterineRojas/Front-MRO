@@ -5,7 +5,7 @@ import { getPackingRequests, updateLoanRequestStatus, startPacking, sendLoanRequ
 import { handlePrintSinglePacking as utilPrintSingle } from '../utils/requestManagementUtils';
 import { toast } from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
-import { fetchPackingRequests, refreshPackingRequests } from '../../../../store/slices/requestsSlice';
+import { fetchPackingRequests, refreshPackingRequests, refreshReturns } from '../../../../store/slices/requestsSlice';
 
 // Interfaz para el DTO de envío (necesario solo para handleConfirmPackingDialog)
 interface SendLoanRequestDto {
@@ -409,16 +409,22 @@ const handleConfirmPackingDialog = useCallback((
         setPackingConfirmDialogOpen(false);
         setCurrentPackingRequest(null);
         
-        // 4. Recargar Returns desde el API
+        // 4. Recargar Returns desde el API y Redux
         // Usar el requesterId del request enviado (el ingeniero que recibirá los items)
         // Si no se especificó engineerId en parámetros, usar el del request enviado
         const targetEngineerId = engineerId || currentPackingRequest.requesterId || 'amx0142';
         console.log(`🔄 Reloading engineer holdings for: ${targetEngineerId}`);
         
         try {
+            // Actualizar estado local
             const freshData = await getEngineerReturns(targetEngineerId, warehouseId || 1);
             setAllReturns(freshData || []);
             console.log(`✅ Reloaded ${freshData?.length || 0} returns for engineer ${targetEngineerId}`);
+            
+            // Actualizar Redux para que la UI de Returns se actualice automáticamente
+            console.log(`🔄 Refreshing Redux returns for engineerId: ${targetEngineerId}, warehouseId: ${warehouseId || 1}`);
+            await dispatch(refreshReturns({ engineerId: targetEngineerId, warehouseId: warehouseId || 1 })).unwrap();
+            console.log(`✅ Redux returns refreshed successfully`);
         } catch (err) {
             console.error('Error reloading returns after packing confirmation:', err);
         }

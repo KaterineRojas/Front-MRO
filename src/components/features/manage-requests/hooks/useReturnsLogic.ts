@@ -194,11 +194,20 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
   }, []);
 
   // Handlers
-  const handleBorrowerSelect = useCallback((value: string) => { 
+  const handleBorrowerSelect = useCallback(async (value: string) => { 
     console.log('🎯 [handleBorrowerSelect] Selected borrower:', value);
     setSelectedReturnBorrower(value); 
     setBorrowerSelectSearchTerm(''); 
-  }, []);
+    
+    // Recargar datos desde el API para el ingeniero seleccionado
+    console.log('🔄 [handleBorrowerSelect] Reloading returns for engineer:', value);
+    try {
+      await dispatch(refreshReturns({ engineerId: value, warehouseId })).unwrap();
+      console.log('✅ [handleBorrowerSelect] Returns refreshed successfully for engineer:', value);
+    } catch (error) {
+      console.error('❌ [handleBorrowerSelect] Error refreshing returns:', error);
+    }
+  }, [dispatch, warehouseId]);
   const handleToggleExpandReturns = useCallback((id: number) => { setExpandedReturns(prev => { const newExpanded = new Set(prev); if (newExpanded.has(id)) newExpanded.delete(id); else newExpanded.add(id); return newExpanded; }); }, []);
   const handleToggleExpandKitItem = useCallback((requestId: number, itemId: number) => { const kitKey = `${requestId}-${itemId}`; setExpandedKitItems(prev => { const newExpanded = new Set(prev); if (newExpanded.has(kitKey)) newExpanded.delete(kitKey); else newExpanded.add(kitKey); return newExpanded; }); }, []);
 
