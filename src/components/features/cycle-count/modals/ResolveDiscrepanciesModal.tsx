@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '../../../ui/sheet';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
@@ -22,7 +22,29 @@ export function ResolveDiscrepanciesModal({
   onConfirm,
   isSubmitting = false
 }: ResolveDiscrepanciesModalProps) {
-  const [recounts, setRecounts] = useState<Record<string, { newCount: number; reason: string }>>({});
+  // Initialize recounts with existing physicalCount values
+  const [recounts, setRecounts] = useState<Record<string, { newCount: number; reason: string }>>(() => {
+    const initial: Record<string, { newCount: number; reason: string }> = {};
+    discrepancies.forEach(article => {
+      initial[article.code] = {
+        newCount: article.physicalCount || 0,
+        reason: ''
+      };
+    });
+    return initial;
+  });
+
+  // Update recounts when discrepancies change
+  useEffect(() => {
+    const initial: Record<string, { newCount: number; reason: string }> = {};
+    discrepancies.forEach(article => {
+      initial[article.code] = {
+        newCount: article.physicalCount || 0,
+        reason: ''
+      };
+    });
+    setRecounts(initial);
+  }, [discrepancies]);
 
   const handleCountChange = (code: string, value: string) => {
     const newCount = value === '' ? 0 : parseInt(value, 10);
@@ -42,6 +64,18 @@ export function ResolveDiscrepanciesModal({
   };
 
   const handleConfirm = async () => {
+    // Validate all discrepancies have final counts
+    const missingCounts = discrepancies.filter(article => {
+      const recount = recounts[article.code];
+      return recount?.newCount === undefined || recount?.newCount === null;
+    });
+
+    if (missingCounts.length > 0) {
+      alert(`Please provide final counts for all ${missingCounts.length} discrepancies before confirming.`);
+      return;
+    }
+
+    console.log('🔍 [Modal] Confirming with recounts:', recounts);
     await onConfirm(recounts);
     setRecounts({}); // Reset after confirm
   };

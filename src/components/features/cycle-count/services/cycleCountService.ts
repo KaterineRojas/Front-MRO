@@ -199,7 +199,7 @@ export function mapEntryToArticle(entry: CycleCountEntry, zoneName: string): {
   }
 
   return {
-    id: entry.binFullCode || entry.id.toString(),
+    id: entry.id.toString(), // Use unique entry ID instead of binFullCode
     entryId: entry.id, // Add entryId for recount operations
     code: entry.binFullCode,
     description: entry.itemName,

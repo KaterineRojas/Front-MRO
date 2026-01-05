@@ -39,6 +39,11 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
 
   const handleCompleteClick = async () => {
     // Check if there are pending items - must be counted first
+    console.log('🔍 [handleCompleteClick] Total articles:', articles.length);
+    console.log('🔍 [handleCompleteClick] Pending articles:', pendingArticles.length);
+    console.log('🔍 [handleCompleteClick] Counted articles:', countedArticles.length);
+    console.log('🔍 [handleCompleteClick] Pending items:', pendingArticles);
+    
     if (pendingArticles.length > 0) {
       toast.error(`Cannot complete: ${pendingArticles.length} items still need to be counted in the table`);
       return;
@@ -68,24 +73,43 @@ export function CycleCountView({ onBack, onComplete, onSaveProgress, existingCou
       return;
     }
 
+    console.log('🔍 [handleConfirmDiscrepancies] Starting...');
+    console.log('🔍 [handleConfirmDiscrepancies] Discrepancies:', discrepancies);
+    console.log('🔍 [handleConfirmDiscrepancies] Recounts received:', recounts);
+
     setIsSubmitting(true);
     try {
       // Record final counts for discrepancy items only
-      const recountPromises = discrepancies
-        .filter(article => recounts[article.code]?.newCount !== undefined)
-        .map(article => {
-          const recount = recounts[article.code];
-          return recordCycleCountEntry({
-            entryId: article.entryId!,
-            physicalCount: recount.newCount,
-            notes: recount.reason || '',
-            countedByUserId: user?.id || 0
-          });
-        });
+      const discrepanciesWithRecounts = discrepancies.filter(article => {
+        const hasRecount = recounts[article.code]?.newCount !== undefined;
+        console.log(`🔍 Article ${article.code}: hasRecount=${hasRecount}, recount=`, recounts[article.code]);
+        return hasRecount;
+      });
 
+      console.log('🔍 [handleConfirmDiscrepancies] Discrepancies with recounts:', discrepanciesWithRecounts.length);
+
+      const recountPromises = discrepanciesWithRecounts.map(article => {
+        const recount = recounts[article.code];
+        console.log(`🔍 Recording recount for ${article.code}:`, {
+          entryId: article.entryId,
+          physicalCount: recount.newCount,
+          notes: recount.reason,
+          countedByUserId: user?.id
+        });
+        return recordCycleCountEntry({
+          entryId: article.entryId!,
+          physicalCount: recount.newCount,
+          notes: recount.reason || '',
+          countedByUserId: user?.id || 0
+        });
+      });
+
+      console.log('🔍 [handleConfirmDiscrepancies] Sending', recountPromises.length, 'recounts...');
       await Promise.all(recountPromises);
+      console.log('✅ [handleConfirmDiscrepancies] All recounts sent successfully');
       
       // Now complete the cycle count directly (without using hook's handler)
+      console.log('🔍 [handleConfirmDiscrepancies] Calling completeCycleCount...');
       await completeCycleCount(existingCountData.id);
       
       toast.success('Cycle count completed successfully!');

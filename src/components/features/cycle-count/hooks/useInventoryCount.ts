@@ -128,10 +128,12 @@ export function useInventoryCount(
         // ALWAYS create entry ID map for recording counts
         const newEntryIdMap = new Map<string, number>();
         cycleCountDetail.entries.forEach(entry => {
-          newEntryIdMap.set(entry.binFullCode, entry.id);
+          // Use entry.id as the key to match article.id
+          newEntryIdMap.set(entry.id.toString(), entry.id);
         });
         
         console.log('🔧 [useInventoryCount] Created entryIdMap with', newEntryIdMap.size, 'entries');
+        console.log('🔧 [useInventoryCount] First 3 entryIdMap keys:', Array.from(newEntryIdMap.keys()).slice(0, 3));
         setEntryIdMap(newEntryIdMap);
         
         // ALWAYS remap articles from API entries to ensure we have the latest data structure
@@ -251,6 +253,13 @@ export function useInventoryCount(
    * Used before completing cycle count to ensure all counts are saved
    */
   const sendPendingCounts = async () => {
+    console.log('🔧 [sendPendingCounts] Called');
+    console.log('🔧 [sendPendingCounts] cycleCountId:', cycleCountId);
+    console.log('🔧 [sendPendingCounts] dirtyCounts.size:', dirtyCounts.size);
+    console.log('🔧 [sendPendingCounts] dirtyCounts:', Array.from(dirtyCounts.entries()));
+    console.log('🔧 [sendPendingCounts] entryIdMap.size:', entryIdMap.size);
+    console.log('🔧 [sendPendingCounts] entryIdMap:', Array.from(entryIdMap.entries()));
+    
     if (!cycleCountId || dirtyCounts.size === 0) {
       console.log('🔧 [sendPendingCounts] No counts to send');
       return;

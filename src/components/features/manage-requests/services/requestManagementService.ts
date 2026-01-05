@@ -30,6 +30,17 @@ async function getPagedData<T>(
 
         const pagedData: PagedResponseDto<T> = await response.json();
         console.log(`[API Check] Total ${statusFilter} requests loaded for WH ${warehouseId}: ${pagedData.totalCount}`);
+        
+        // Debug: check imageUrl in raw data
+        if (pagedData.data && pagedData.data.length > 0) {
+            const firstRequest: any = pagedData.data[0];
+            console.log(`🔍 [${statusFilter}] First request from API:`, firstRequest);
+            if (firstRequest.items && firstRequest.items.length > 0) {
+                console.log(`🔍 [${statusFilter}] First item:`, firstRequest.items[0]);
+                console.log(`🔍 [${statusFilter}] First item imageUrl:`, firstRequest.items[0].imageUrl);
+            }
+        }
+        
         return pagedData.data || []; 
         
     } catch (error) {
@@ -69,6 +80,10 @@ export async function getPackingRequests(warehouseId: number = DEFAULT_WAREHOUSE
     if (processedRequests.length > 0) {
       console.log('🔍 First request structure:', processedRequests[0]);
       console.log('🔍 First request keys:', Object.keys(processedRequests[0]));
+      if (processedRequests[0].items && processedRequests[0].items.length > 0) {
+        console.log('🔍 First item in first request:', processedRequests[0].items[0]);
+        console.log('🔍 First item imageUrl:', processedRequests[0].items[0].imageUrl);
+      }
     }
     
     return processedRequests;
@@ -109,6 +124,13 @@ export async function getEngineerReturns(engineerId: string, warehouseId: number
 
         const data: EngineerHoldingsResponse = await response.json();
         console.log('🔍 API Response data:', JSON.stringify(data, null, 2));
+        
+        // Debug raw items imageUrl
+        if (data.holdingsByWarehouse.length > 0 && data.holdingsByWarehouse[0].items.length > 0) {
+            const firstItem = data.holdingsByWarehouse[0].items[0];
+            console.log('🔍 Raw first item from backend:', firstItem);
+            console.log('🔍 Raw first item imageUrl:', firstItem.imageUrl);
+        }
         
         const engineer = data.engineer;
         
@@ -175,6 +197,10 @@ export async function getEngineerReturns(engineerId: string, warehouseId: number
         console.log('🔍 Transformed returnsList:', returnsList.length, 'items');
         if (returnsList.length > 0) {
             console.log('🔍 First return item:', returnsList[0]);
+            if (returnsList[0].items && returnsList[0].items.length > 0) {
+                console.log('🔍 First item in first return:', returnsList[0].items[0]);
+                console.log('🔍 First item imageUrl:', returnsList[0].items[0].imageUrl);
+            }
         }
         
         return returnsList;
