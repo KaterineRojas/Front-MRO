@@ -84,17 +84,17 @@ const buildInitialFormData = (
         link: item.productUrl ?? ''
       }))
     : [createDefaultPurchaseItem()],
-  department: request?.department || user.departmentId || user.department || '',
-  project: request?.project || '',
+  department: request?.departmentId || user.departmentId || user.department || '',
+  project: request?.projectName || '',
   selfPurchase: request?.selfPurchase ?? false,
-  warehouseId: request?.warehouseId || '',
-  purchaseReason: request?.reason || '',
-  expectedDeliveryDate: '',
-  clientBilled: 'no',
-  company: '',
-  customer: '',
+  warehouseId: request?.warehouseId ? String(request.warehouseId) : '',
+  purchaseReason: request?.reasonId !== undefined ? String(request.reasonId) : '',
+  expectedDeliveryDate: request?.expectedDeliveryDate ?? '',
+  clientBilled: request?.clientBilled ? 'yes' : 'no',
+  company: request?.companyId ?? '',
+  customer: request?.customerId ?? '',
   projectReference: '',
-  workOrder: '',
+  workOrder: request?.workOrderId ?? '',
   justification: request?.notes || '',
   address: '',
   googleMapsUrl: '',
@@ -325,8 +325,9 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
   useEffect(() => {
     setFormData(buildInitialFormData(currentUser, initialRequest));
     setItemSearches(buildInitialItemSearches(initialRequest));
-    previousPurchaseReasonRef.current = initialRequest && initialRequest.reason !== 'urgent'
-      ? initialRequest.reason
+    const initialReason = initialRequest?.reasonId ?? (initialRequest as any)?.reason;
+    previousPurchaseReasonRef.current = initialReason && initialReason !== 'urgent'
+      ? String(initialReason)
       : '';
     setDropdownOpen({});
     setCustomers([]);

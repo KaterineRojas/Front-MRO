@@ -90,12 +90,12 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(request => {
         const identifier = (request.requestNumber ?? request.requestId ?? '').toString().toLowerCase();
-        const project = (request.projectId ?? request.project ?? '').toString().toLowerCase();
-        const department = (request.departmentId ?? request.department ?? '').toString().toLowerCase();
-        const reason = (request.reasonName ?? (typeof request.reason === 'string' ? request.reason : '')).toString().toLowerCase();
+        const project = (request.projectName ?? request.projectId ?? '').toString().toLowerCase();
+        const department = (request.departmentName ?? request.departmentId ?? '').toString().toLowerCase();
+        const reason = (request.reasonName ?? (typeof request.reasonId === 'string' ? request.reasonId : '')).toString().toLowerCase();
         const warehouse = (request.warehouseName ?? '').toString().toLowerCase();
-        const company = (request.companyId ?? '').toString().toLowerCase();
-        const customer = (request.customerId ?? '').toString().toLowerCase();
+        const company = (request.companyName ?? request.companyId ?? '').toString().toLowerCase();
+        const customer = (request.customerName ?? request.customerId ?? '').toString().toLowerCase();
         const notes = (request.notes ?? '').toString().toLowerCase();
 
         const inItems = request.items?.some(item => (item.name ?? '').toLowerCase().includes(searchLower));

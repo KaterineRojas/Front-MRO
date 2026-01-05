@@ -20,29 +20,33 @@ export interface Department {
 export interface PurchaseItem {
   id: number;
   itemId?: number;
-  imageUrl: string;
-  sku: string;
+  imageUrl?: string;
+  sku?: string;
   name: string;
-  description: string;
+  description?: string;
   quantity: number;
   estimatedCost?: number;
   cost?: number;
   productUrl?: string;
   warehouseId?: string | number;
+  warehouseCode?: string;
   warehouseName?: string;
 }
 
 export interface PurchaseRequest {
   requestId?: string;
   requestNumber?: string;
-  department?: string;
+  requesterId?: string;
+  requesterName?: string;
   departmentId?: string;
-  project?: string;
+  departmentName?: string;
   projectId?: string;
+  projectName?: string;
+  workOrderId?: string;
   notes?: string;
   status: 'pending' | 'approved' | 'rejected' | 'completed' | number | string;
   statusName?: string;
-  reason?: 'low-stock' | 'urgent' | 'new-project' | number | string;
+  reasonId?: number | string;
   reasonName?: string;
   selfPurchase: boolean;
   items: PurchaseItem[];
@@ -55,9 +59,12 @@ export interface PurchaseRequest {
   receivedAt?: string | null;
   expectedDeliveryDate?: string;
   warehouseId?: string | number;
+  warehouseCode?: string;
   warehouseName?: string;
   companyId?: string;
+  companyName?: string;
   customerId?: string;
+  customerName?: string;
   clientBilled?: boolean;
 }
 
@@ -119,11 +126,14 @@ const mockDepartments: Department[] = [
 const mockPurchaseRequests: PurchaseRequest[] = [
   {
     requestId: 'PUR001',
-    department: 'Engineering',
-    project: 'Proyecto Amazonas',
+    departmentId: 'eng',
+    departmentName: 'Engineering',
+    projectId: 'PRJ-AMAZONAS',
+    projectName: 'Proyecto Amazonas',
     notes: 'Urgente para desarrollo',
     status: 'pending',
-    reason: 'urgent',
+    reasonId: 'urgent',
+    reasonName: 'Urgent',
     selfPurchase: false,
     items: [
       {
@@ -152,15 +162,23 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     totalCost: 650,
     createdAt: '2024-01-15',
     warehouseId: 'wh-1',
-    warehouseName: 'Amax'
+    warehouseCode: 'AMX',
+    warehouseName: 'Amax',
+    companyId: 'COMP-001',
+    companyName: 'Amax Holdings',
+    customerId: 'CUS-100',
+    customerName: 'Amazonas Corp'
   },
   {
     requestId: 'PUR002',
-    department: 'Design',
-    project: 'Proyecto Web',
+    departmentId: 'des',
+    departmentName: 'Design',
+    projectId: 'PRJ-WEB',
+    projectName: 'Proyecto Web',
     notes: 'Para nueva estación de trabajo',
     status: 'approved',
-    reason: 'new-project',
+    reasonId: 'new-project',
+    reasonName: 'New project',
     selfPurchase: true,
     items: [
       {
@@ -178,15 +196,23 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     totalCost: 800,
     createdAt: '2024-01-14',
     warehouseId: 'wh-2',
-    warehouseName: 'Best'
+    warehouseCode: 'BST',
+    warehouseName: 'Best',
+    companyId: 'COMP-002',
+    companyName: 'Best Supplies',
+    customerId: 'CUS-200',
+    customerName: 'Web Designs Co'
   },
   {
     requestId: 'PUR003',
-    department: 'Development',
-    project: 'Proyecto Innova',
+    departmentId: 'dev',
+    departmentName: 'Development',
+    projectId: 'PRJ-INNOVA',
+    projectName: 'Proyecto Innova',
     notes: 'Cables y accesorios varios',
     status: 'rejected',
-    reason: 'low-stock',
+    reasonId: 'low-stock',
+    reasonName: 'Low stock',
     selfPurchase: false,
     items: [
       {
@@ -204,15 +230,23 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     totalCost: 75,
     createdAt: '2024-01-12',
     warehouseId: 'wh-3',
-    warehouseName: 'Central'
+    warehouseCode: 'CTR',
+    warehouseName: 'Central',
+    companyId: 'COMP-003',
+    companyName: 'Central Supplies',
+    customerId: 'CUS-300',
+    customerName: 'Innovate LLC'
   },
   {
     requestId: 'PUR004',
-    department: 'Engineering',
-    project: 'Proyecto Construcción',
+    departmentId: 'eng',
+    departmentName: 'Engineering',
+    projectId: 'PRJ-CONSTRUCT',
+    projectName: 'Proyecto Construcción',
     notes: 'Herramientas para taller',
     status: 'approved',
-    reason: 'urgent',
+    reasonId: 'urgent',
+    reasonName: 'Urgent',
     selfPurchase: true,
     items: [
       {
@@ -241,7 +275,12 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     totalCost: 315,
     createdAt: '2024-01-10',
     warehouseId: 'wh-2',
-    warehouseName: 'Best'
+    warehouseCode: 'BST',
+    warehouseName: 'Best',
+    companyId: 'COMP-002',
+    companyName: 'Best Supplies',
+    customerId: 'CUS-210',
+    customerName: 'Constructora MX'
   }
 ];
 
@@ -305,8 +344,9 @@ function normalizePurchaseRequest(raw: any, index: number): PurchaseRequest {
       estimatedCost: Number.isFinite(estimatedCost) ? estimatedCost : undefined,
       cost: Number.isFinite(cost) ? cost : undefined,
       productUrl: item?.productUrl ?? item?.url ?? undefined,
-      warehouseId: item?.warehouseId ?? raw?.warehouseId,
-      warehouseName: item?.warehouseName ?? raw?.warehouseName,
+      warehouseId: item?.warehouseId ?? item?.warehouse?.id ?? raw?.warehouseId,
+      warehouseCode: item?.warehouseCode ?? item?.warehouse?.code ?? raw?.warehouseCode,
+      warehouseName: item?.warehouseName ?? item?.warehouse?.name ?? raw?.warehouseName,
     };
   });
 
@@ -322,18 +362,30 @@ function normalizePurchaseRequest(raw: any, index: number): PurchaseRequest {
     : reasonRaw;
   const totalCostValue = Number(raw?.totalCost);
   const estimatedTotalCostValue = Number(raw?.estimatedTotalCost ?? raw?.totalEstimatedCost ?? raw?.estimatedCost);
+  const departmentName = raw?.departmentName ?? raw?.department ?? undefined;
+  const departmentId = raw?.departmentId ?? raw?.departmentCode ?? undefined;
+  const projectName = raw?.projectName ?? raw?.project ?? raw?.projectTitle ?? undefined;
+  const projectId = raw?.projectId ?? raw?.projectCode ?? undefined;
+  const companyName = raw?.companyName ?? raw?.company ?? undefined;
+  const customerName = raw?.customerName ?? raw?.customer ?? raw?.clientName ?? undefined;
+  const requesterId = raw?.requesterId ?? raw?.requestedBy ?? raw?.employeeId ?? undefined;
+  const requesterName = raw?.requesterName ?? raw?.requestedByName ?? raw?.employeeName ?? undefined;
+  const warehouseCode = raw?.warehouseCode ?? raw?.warehouse?.code ?? undefined;
 
   return {
     requestId: raw?.requestId ?? raw?.id ?? undefined,
     requestNumber: raw?.requestNumber ?? raw?.requestNo ?? raw?.number ?? undefined,
-    department: raw?.department ?? raw?.departmentName ?? undefined,
-    departmentId: raw?.departmentId ?? undefined,
-    project: raw?.project ?? raw?.projectName ?? undefined,
-    projectId: raw?.projectId ?? undefined,
+    requesterId,
+    requesterName,
+    departmentId,
+    departmentName,
+    projectId,
+    projectName,
+    workOrderId: raw?.workOrderId ?? raw?.workOrder ?? undefined,
     notes: raw?.notes ?? raw?.comment ?? raw?.comments ?? undefined,
     status: statusValue,
     statusName: raw?.statusName ?? raw?.statusDescription ?? undefined,
-    reason: reasonValue,
+    reasonId: reasonValue,
     reasonName: raw?.reasonName ?? raw?.reasonDescription ?? undefined,
     selfPurchase: Boolean(raw?.selfPurchase ?? raw?.isSelfPurchase ?? false),
     items,
@@ -347,10 +399,13 @@ function normalizePurchaseRequest(raw: any, index: number): PurchaseRequest {
     orderedAt: raw?.orderedAt ?? raw?.orderedDate ?? raw?.orderedOn ?? null,
     receivedAt: raw?.receivedAt ?? raw?.receivedDate ?? raw?.receivedOn ?? null,
     expectedDeliveryDate: raw?.expectedDeliveryDate ?? raw?.expectedDelivery ?? raw?.deliveryDate ?? undefined,
-    warehouseId: raw?.warehouseId ?? raw?.warehouseCode ?? undefined,
-    warehouseName: raw?.warehouseName ?? raw?.warehouse ?? items[0]?.warehouseName ?? undefined,
+    warehouseId: raw?.warehouseId ?? raw?.warehouse?.id ?? undefined,
+    warehouseCode,
+    warehouseName: raw?.warehouseName ?? raw?.warehouse?.name ?? items[0]?.warehouseName ?? undefined,
     companyId: raw?.companyId ?? raw?.company ?? undefined,
+    companyName,
     customerId: raw?.customerId ?? raw?.customer ?? raw?.clientId ?? undefined,
+    customerName,
     clientBilled: Boolean(raw?.clientBilled ?? raw?.isClientBilled ?? false),
   };
 }

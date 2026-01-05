@@ -47,8 +47,8 @@ interface RequestMeta {
   hasNotes: boolean;
   projectLabel: string;
   departmentLabel?: string;
-  companyId?: string;
-  customerId?: string;
+  companyLabel?: string;
+  customerLabel?: string;
   selfPurchase: boolean;
   clientBilled: boolean;
 }
@@ -65,7 +65,8 @@ function computeRequestMeta(request: PurchaseRequest, index: number): RequestMet
     ? request.items.reduce((sum, item) => sum + (item.quantity ?? 0), 0)
     : 0);
 
-  const hasReason = request.reason !== undefined && request.reason !== null && request.reason !== '';
+  const reasonValue = request.reasonId ?? (request as any).reason;
+  const hasReason = reasonValue !== undefined && reasonValue !== null && reasonValue !== '';
 
   return {
     rowKey,
@@ -74,8 +75,8 @@ function computeRequestMeta(request: PurchaseRequest, index: number): RequestMet
     warehouseName: request.warehouseName ?? 'No warehouse assigned',
     statusLabel: getStatusText(request.status, request.statusName),
     statusClass: getStatusColor(request.status, request.statusName),
-    reasonLabel: hasReason ? getReasonText(request.reason as any, request.reasonName) : undefined,
-    reasonClass: hasReason ? getReasonColor(request.reason as any, request.reasonName) : undefined,
+    reasonLabel: hasReason ? getReasonText(reasonValue as any, request.reasonName) : undefined,
+    reasonClass: hasReason ? getReasonColor(reasonValue as any, request.reasonName) : undefined,
     expectedDelivery: formatDate(request.expectedDeliveryDate),
     orderedDate: formatDate(request.orderedAt),
     receivedDate: formatDate(request.receivedAt),
@@ -85,10 +86,10 @@ function computeRequestMeta(request: PurchaseRequest, index: number): RequestMet
     totalQuantity,
     notesText: normalizedNotes || undefined,
     hasNotes: Boolean(normalizedNotes),
-    projectLabel: request.project ?? request.projectId ?? 'Untitled project',
-    departmentLabel: request.department ?? request.departmentId ?? undefined,
-    companyId: request.companyId,
-    customerId: request.customerId,
+    projectLabel: request.projectName ?? request.projectId ?? 'Untitled project',
+    departmentLabel: request.departmentName ?? request.departmentId ?? undefined,
+    companyLabel: request.companyName ?? request.companyId,
+    customerLabel: request.customerName ?? request.customerId,
     selfPurchase: Boolean(request.selfPurchase),
     clientBilled: Boolean(request.clientBilled),
   };
@@ -405,8 +406,8 @@ export function PurchaseRequests() {
                     </div>
                     <div>
                       <p className="text-muted-foreground uppercase tracking-wide">Client</p>
-                      <p>{meta.companyId || '—'}</p>
-                      {meta.customerId && <p>{meta.customerId}</p>}
+                      <p>{meta.companyLabel || '—'}</p>
+                      {meta.customerLabel && <p>{meta.customerLabel}</p>}
                     </div>
                     <div>
                       <p className="text-muted-foreground uppercase tracking-wide">Estimated delivery</p>
@@ -559,8 +560,8 @@ export function PurchaseRequests() {
                               <p className="text-sm font-medium text-foreground">{meta.projectLabel}</p>
                               {meta.departmentLabel && <p className="text-xs text-muted-foreground">{meta.departmentLabel}</p>}
                               <div className="text-xs text-muted-foreground flex flex-wrap gap-2">
-                                {meta.companyId && <span>{meta.companyId}</span>}
-                                {meta.customerId && <span>{meta.customerId}</span>}
+                                {meta.companyLabel && <span>{meta.companyLabel}</span>}
+                                {meta.customerLabel && <span>{meta.customerLabel}</span>}
                               </div>
                             </div>
                           </TableCell>
