@@ -32,7 +32,7 @@ export interface PurchaseRequest {
   project: string;
   notes: string;
   status: 'pending' | 'approved' | 'rejected' | 'completed';
-  priority: 'low' | 'medium' | 'urgent';
+  reason: 'low-stock' | 'urgent' | 'new-project';
   selfPurchase: boolean;
   items: PurchaseItem[];
   totalCost: number;
@@ -71,7 +71,7 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     project: 'Proyecto Amazonas',
     notes: 'Urgente para desarrollo',
     status: 'pending',
-    priority: 'urgent',
+    reason: 'urgent',
     selfPurchase: false,
     items: [
       {
@@ -108,7 +108,7 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     project: 'Proyecto Web',
     notes: 'Para nueva estación de trabajo',
     status: 'approved',
-    priority: 'medium',
+    reason: 'new-project',
     selfPurchase: true,
     items: [
       {
@@ -134,7 +134,7 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     project: 'Proyecto Innova',
     notes: 'Cables y accesorios varios',
     status: 'rejected',
-    priority: 'low',
+    reason: 'low-stock',
     selfPurchase: false,
     items: [
       {
@@ -160,7 +160,7 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     project: 'Proyecto Construcción',
     notes: 'Herramientas para taller',
     status: 'approved',
-    priority: 'urgent',
+    reason: 'urgent',
     selfPurchase: true,
     items: [
       {
@@ -293,11 +293,11 @@ export async function deletePurchaseRequest(requestId: string): Promise<{ succes
 }
 
 /**
- * Update purchase request priority
+ * Update purchase request reason
  */
-export async function updatePurchaseRequestPriority(
+export async function updatePurchaseRequestReason(
   requestId: string,
-  priority: PurchaseRequest['priority']
+  reason: PurchaseRequest['reason']
 ): Promise<PurchaseRequest | null> {
   await delay(300);
   
@@ -309,7 +309,7 @@ export async function updatePurchaseRequestPriority(
   
   return {
     ...request,
-    priority
+    reason
   };
 }
 

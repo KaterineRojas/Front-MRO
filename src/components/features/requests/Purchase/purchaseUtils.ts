@@ -46,26 +46,35 @@ export function getStatusText(status: string): string {
 }
 
 /**
- * Get color classes for priority badge
+ * Get color classes for reason badge
  */
-export function getPriorityColor(priority?: string): string {
-  switch (priority) {
+export function getReasonColor(reason?: string): string {
+  switch (reason) {
     case 'urgent':
       return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-    case 'medium':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-    case 'low':
-      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+    case 'low-stock':
+      return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
+    case 'new-project':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
   }
 }
 
 /**
- * Get human-readable priority text
+ * Get human-readable reason text
  */
-export function getPriorityText(priority: string): string {
-  return priority.charAt(0).toUpperCase() + priority.slice(1);
+export function getReasonText(reason: string): string {
+  switch (reason) {
+    case 'low-stock':
+      return 'Low stock';
+    case 'urgent':
+      return 'Urgent';
+    case 'new-project':
+      return 'New project';
+    default:
+      return reason;
+  }
 }
 
 /**

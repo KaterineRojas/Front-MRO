@@ -33,7 +33,7 @@ export interface PurchaseRequest {
   project: string;
   notes: string;
   status: 'pending' | 'approved' | 'rejected' | 'completed';
-  priority: 'low' | 'medium' | 'urgent';
+  reason: 'low-stock' | 'urgent' | 'new-project';
   selfPurchase: boolean;
   items: RequestItem[];
   totalCost: number;
@@ -149,7 +149,7 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     project: "Infrastructure Upgrade",
     notes: "Urgent hardware needed for server room",
     status: "pending",
-    priority: "urgent",
+    reason: "urgent",
     selfPurchase: false,
     totalCost: 2500,
     createdAt: "2025-01-11",
@@ -184,7 +184,7 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     project: "Creative Studio",
     notes: "New equipment for design team",
     status: "approved",
-    priority: "medium",
+    reason: "new-project",
     selfPurchase: false,
     totalCost: 1800,
     createdAt: "2025-01-09",
@@ -209,7 +209,7 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     project: "Construction Tools",
     notes: "Will purchase locally for immediate use",
     status: "pending",
-    priority: "urgent",
+    reason: "urgent",
     selfPurchase: true,
     totalCost: 450,
     createdAt: "2025-01-13",
@@ -414,11 +414,11 @@ export const deletePurchaseRequest = async (requestId: string): Promise<{ succes
 };
 
 /**
- * PUT - Actualiza la prioridad de una solicitud de compra (auto-purchase)
+ * PUT - Actualiza la razón de una solicitud de compra (auto-purchase)
  */
-export const updatePurchaseRequestPriority = async (
+export const updatePurchaseRequestReason = async (
   requestId: string,
-  priority: PurchaseRequest['priority']
+  reason: PurchaseRequest['reason']
 ): Promise<PurchaseRequest | null> => {
   return apiCall(async () => {
     await simulateNetworkDelay();
@@ -426,7 +426,7 @@ export const updatePurchaseRequestPriority = async (
     const index = mockPurchaseRequests.findIndex(req => req.requestId === requestId);
     if (index === -1) return null;
     
-    mockPurchaseRequests[index].priority = priority;
+    mockPurchaseRequests[index].reason = reason;
     return mockPurchaseRequests[index];
   });
 };
