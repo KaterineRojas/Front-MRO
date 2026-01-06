@@ -97,3 +97,31 @@ export const approvePurchaseRequest = async (id: number): Promise<string> => {
     return successMessage;
 };
 
+/**
+ * Rejects a specific purchase request.
+ * @param id - The ID of the purchase request.
+ * @param reason - The mandatory reason for rejection.
+ */
+export const rejectPurchaseRequest = async (id: number, reason: string): Promise<string> => {
+    const response = await fetchClient(`/purchase-requests/${id}/reject`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason }),
+    });
+
+    if (!response.ok) {
+        let errorMessage = `Failed to reject request #${id}`;
+        try {
+            const errorBody = await response.json();
+            errorMessage = errorBody.message || errorBody.error || errorMessage;
+        } catch {
+            errorMessage = response.statusText;
+        }
+        throw new Error(errorMessage);
+    }
+
+    // Handle text/plain response
+    return await response.text();
+};

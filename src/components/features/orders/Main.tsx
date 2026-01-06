@@ -10,6 +10,7 @@ import { getAllPurchaseRequests } from './services/purchaseService'
 import { ReviewRequestModal } from './modals/ApproveRequestModal'
 import { TableErrorBoundary } from './components/TableErrorBoundary'
 import { TableErrorState } from './components/TableErrorState'
+import { approvePurchaseRequest, rejectPurchaseRequest } from './services/purchaseService'
 
 export function Main({ onViewDetail }: PurchaseOrdersProps) {
     const [activeTab, setActiveTab] = useState('active orders');
@@ -20,6 +21,8 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
 
     const [creatingRequest, setCreatingRequest] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // Track if the API call is in progress to show the spinner in the modal
+    const [isReviewProcessing, setIsReviewProcessing] = useState(false);
 
     const [reviewState, setReviewState] = useState<{
         isOpen: boolean;
@@ -44,12 +47,28 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
     };
 
     const handleConfirmReview = async (action: 'approve' | 'reject', notes: string) => {
-        console.log(`Processing ${action} for ID ${reviewState.order?.id} with notes: ${notes}`);
+        if (!reviewState.order) return;
 
-        // TODO: Call your API here
-        // await api.updateStatus(reviewState.order.id, action, notes);
+        try {
+            setIsReviewProcessing(true); 
 
-        handleCloseReview();
+            if (action === 'approve') {
+                await approvePurchaseRequest(reviewState.order.id);
+            } else {
+                await rejectPurchaseRequest(reviewState.order.id, notes);
+            }
+
+            handleCloseReview();
+
+            fetchOrders();
+
+        } catch (error: any) {
+            console.error(`Failed to ${action} request:`, error);
+            alert(error.message || "Something went wrong while processing the request.");
+
+        } finally {
+            setIsReviewProcessing(false);
+        }
     };
 
     // Fetch Function
@@ -214,6 +233,7 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
                 initialAction={reviewState.action}
                 onClose={handleCloseReview}
                 onConfirm={handleConfirmReview}
+                isProcessing={isReviewProcessing}
             />
         </div>
     );
