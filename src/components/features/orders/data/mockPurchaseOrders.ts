@@ -24,7 +24,7 @@ export interface PurchaseOrder {
     orderDate: string;
     expectedDelivery?: string;
     actualDelivery?: string;
-    status: 'pending' | 'approved' | 'ordered' | 'delivered' | 'cancelled' | 'activated' | 'completed';
+    status: 'pending' | 'approved' | 'ordered' | 'delivered' | 'cancelled' | 'activated' | 'completed' | 'received';
     priority: 'low' | 'medium' | 'high' | 'urgent';
     notes: string;
     createdAt: string;
@@ -45,7 +45,7 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
         approvedBy: 'Sarah Johnson',
         orderDate: '2025-01-18',
         expectedDelivery: '2025-01-25',
-        status: 'activated',
+        status: 'ordered',
         priority: 'medium',
         notes: 'Regular monthly paper stock replenishment',
         createdAt: '2025-01-18T09:00:00Z',
@@ -115,7 +115,7 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
         requestedBy: 'David Wilson',
         department: 'Training',
         project: 'Training Room Upgrade',
-        status: 'pending',
+        status: 'approved',
         priority: 'medium',
         orderDate: '2025-01-21',
         notes: 'For new training rooms setup',

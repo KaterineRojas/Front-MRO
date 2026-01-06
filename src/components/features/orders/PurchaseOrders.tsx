@@ -93,10 +93,10 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
   });
 
   const activeOrders = purchaseOrders.filter(order =>
-    order.status === 'pending' || order.status === 'approved' || order.status === 'activated'
+    order.status === 'approved' || order.status === 'ordered'
   );
   const inactiveOrders = purchaseOrders.filter(order =>
-    order.status === 'delivered' || order.status === 'cancelled' || order.status === 'completed'
+    order.status === 'delivered' || order.status === 'cancelled' || order.status === 'completed' || order.status === 'received'
   );
 
   const filteredActiveOrders = activeOrders.filter(order => {
@@ -136,7 +136,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
       project: formData.project,
       orderDate: format(new Date(), 'yyyy-MM-dd'),
       expectedDelivery: expectedDeliveryDate ? format(expectedDeliveryDate, 'yyyy-MM-dd') : undefined,
-      status: 'pending',
+      status: 'approved',
       priority: formData.priority,
       notes: formData.notes,
       createdAt: new Date().toISOString(),
@@ -211,10 +211,6 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
     setDialogOpen(false);
   };
 
-  const handleCreateNewRequest = () => {
-    setCreatingRequest(true);
-  };
-
   const handleBackFromCreate = () => {
     setCreatingRequest(false);
   };
@@ -230,7 +226,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
       project: requestData.project,
       orderDate: format(new Date(), 'yyyy-MM-dd'),
       expectedDelivery: requestData.expectedDelivery,
-      status: 'pending',
+      status: 'approved',
       priority: requestData.priority,
       notes: requestData.notes,
       createdAt: requestData.createdAt,
@@ -261,13 +257,15 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
       case 'approved':
         return <Badge variant="secondary">Approved</Badge>;
       case 'ordered':
-        return <Badge variant="default">Ordered</Badge>;
+        return <Badge variant="outline" className="text-blue-600 border-blue-600">Ordered</Badge>;
       case 'activated':
         return <Badge variant="outline" className="text-blue-600 border-blue-600">Activated</Badge>;
       case 'delivered':
         return <Badge variant="outline" className="text-green-600 border-green-600">Delivered</Badge>;
       case 'completed':
         return <Badge variant="outline" className="text-green-600 border-green-600">Completed</Badge>;
+      case 'received':
+        return <Badge variant="outline" className="text-green-600 border-green-600">Received</Badge>;
       case 'cancelled':
         return <Badge variant="destructive">Cancelled</Badge>;
     }
@@ -294,6 +292,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
         return <ShoppingCart className="h-4 w-4 text-blue-600" />;
       case 'delivered':
       case 'completed':
+      case 'received':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'cancelled':
         return <XCircle className="h-4 w-4 text-red-600" />;
@@ -331,11 +330,6 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
             Manage purchase requests and orders
           </p>
         </div>
-
-        <ActionButton variant='success' size='md' onClick={handleCreateNewRequest} >
-          <Plus className="h-4 w-4 mr-2" />
-          Register Kit
-        </ActionButton>
 
         {/* <Button onClick={handleCreateNewRequest}>
           <Plus className="mr-2 h-4 w-4" />
@@ -380,7 +374,6 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Active</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="approved">Approved</SelectItem>
                     <SelectItem value="activated">Activated</SelectItem>
                   </SelectContent>
@@ -462,7 +455,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
-                              {order.status === 'pending' && (
+                              {order.status === 'approved' && (
                                 <>
                                   <Button
                                     variant="outline"
@@ -472,7 +465,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                                       setActivateConfirmDialogOpen(true);
                                     }}
                                   >
-                                    Activate
+                                    Order
                                   </Button>
                                   <Button
                                     variant="outline"
@@ -486,19 +479,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                                   </Button>
                                 </>
                               )}
-                              {order.status === 'approved' && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedOrder(order);
-                                    setCancelDialogOpen(true);
-                                  }}
-                                >
-                                  Cancel
-                                </Button>
-                              )}
-                              {order.status === 'activated' && (
+                              {order.status === 'ordered' && (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -586,26 +567,6 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
 
                                 {/* Action Buttons */}
                                 <div className="flex justify-end space-x-2 mt-4">
-                                  {order.status === 'pending' && (
-                                    <>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleStatusUpdate(order.id, 'approved', 'Current User')}
-                                      >
-                                        <CheckCircle className="h-4 w-4 mr-1" />
-                                        Approve
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleStatusUpdate(order.id, 'cancelled')}
-                                      >
-                                        <XCircle className="h-4 w-4 mr-1" />
-                                        Cancel
-                                      </Button>
-                                    </>
-                                  )}
                                   {order.status === 'approved' && (
                                     <Button
                                       variant="outline"
@@ -613,17 +574,27 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                                       onClick={() => handleStatusUpdate(order.id, 'ordered')}
                                     >
                                       <ShoppingCart className="h-4 w-4 mr-1" />
-                                      Mark Ordered
+                                      Mark as Ordered
                                     </Button>
                                   )}
                                   {order.status === 'ordered' && (
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => handleStatusUpdate(order.id, 'delivered')}
+                                      onClick={() => {
+                                        setSelectedOrder(order);
+                                        setPurchasedQuantities(
+                                          order.items.reduce((acc, item) => ({
+                                            ...acc,
+                                            [item.id]: item.quantity
+                                          }), {})
+                                        );
+                                        setActualCost(order.totalOrderValue);
+                                        setConfirmPurchaseDialogOpen(true);
+                                      }}
                                     >
                                       <Package className="h-4 w-4 mr-1" />
-                                      Mark Delivered
+                                      Confirm Receipt
                                     </Button>
                                   )}
                                 </div>
@@ -652,7 +623,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                   <SelectContent>
                     <SelectItem value="all">All Inactive</SelectItem>
                     <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="received">Received</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
@@ -873,9 +844,9 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
       <Dialog open={activateConfirmDialogOpen} onOpenChange={setActivateConfirmDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Activation</DialogTitle>
+            <DialogTitle>Order Confirmation</DialogTitle>
             <DialogDescription>
-              Are you sure you want to activate this purchase request?
+              Are you sure you want to mark this purchase request as ordered?
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end space-x-2 pt-4">
@@ -891,7 +862,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
             <Button
               onClick={() => {
                 if (selectedOrder) {
-                  handleStatusUpdate(selectedOrder.id, 'activated');
+                  handleStatusUpdate(selectedOrder.id, 'ordered');
                 }
                 setActivateConfirmDialogOpen(false);
                 setSelectedOrder(null);
@@ -1004,13 +975,13 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                   if (selectedOrder) {
                     // Create loan request from purchase order
                     // This will be visible in Request Orders / Packing List
-                    // For now, we just mark it as completed
+                    // Mark as received and move to inactive orders
                     setPurchaseOrders(prev => prev.map(order =>
                       order.id === selectedOrder.id
-                        ? { ...order, status: 'completed' }
+                        ? { ...order, status: 'received', actualDelivery: format(new Date(), 'yyyy-MM-dd') }
                         : order
                     ));
-                    alert(`Purchase confirmed! This will now appear in Request Orders / Packing List as a loan.`);
+                    alert(`Purchase confirmed! Items marked as received.`);
                   }
                   setConfirmPurchaseDialogOpen(false);
                   setSelectedOrder(null);
