@@ -6,6 +6,7 @@ import RequestsTable from './components/DataTable';
 import RequestModal from './components/ApproveRequestDialog';
 import { LoanRequest } from './types/loanTypes'
 import { approveLoanRequest, rejectLoanRequest, getLoanRequests } from './services/requestService'
+import {authService} from '../../../services/authService'
 
 
 
@@ -42,7 +43,8 @@ export function RequestManagement() {
 
   useEffect(() => {
     console.log(loading);
-  }, [loading])
+  }, [])
+  
 
 
   useEffect(() => {
@@ -72,11 +74,10 @@ export function RequestManagement() {
         if (error instanceof Error && error.name !== 'AbortError') {
           console.error("Fetch error:", error);
         }
-      } finally {
-        setLoading(false);
-      }
+      } 
+      setLoading(false);
     };
-
+    
     loadRequests();
 
     return () => controller.abort();
@@ -170,12 +171,13 @@ export function RequestManagement() {
         // ...responseData 
       };
 
+      // for changing state in redux and update state in data table
       setRequests(prev => prev.map(req =>
         req.requestNumber === selectedRequest.requestNumber ? updatedRequest : req
       ));
 
       setSelectedRequest(null);
-      console.log("Request approved successfully");
+      // console.log("Request approved successfully");
 
     } catch (error) {
       console.error("Error approving request:", error);

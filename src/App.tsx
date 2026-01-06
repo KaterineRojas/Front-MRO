@@ -13,6 +13,7 @@ import { Dashboard } from './components/features/dashboard/Dashboard';
 import { InventoryManager } from './components/features/inventory/InventoryManager';
 import { RequestOrders } from './components/features/loans/RequestOrders';
 import { PurchaseOrders } from './components/features/orders/PurchaseOrders';
+import { Main } from './components/features/orders/Main';
 import { RequestManagement } from './components/features/requests/RequestManagement';
 import { Reports } from './components/features/reports/Reports';
 import { UserManagement } from './components/features/users/UserManagement';
@@ -274,16 +275,16 @@ function CycleCountWrapper() {
     // Guardar el conteo completado en sessionStorage para agregarlo al historial
     const existingHistory = sessionStorage.getItem('cycleCountHistory');
     const history = existingHistory ? JSON.parse(existingHistory) : [];
-    
+
     // Agregar el nuevo registro con un ID único
     const newRecord = {
       id: Date.now(), // ID temporal basado en timestamp
       ...completedData
     };
-    
+
     history.unshift(newRecord); // Agregar al inicio del array
     sessionStorage.setItem('cycleCountHistory', JSON.stringify(history));
-    
+
     // Regresar a la página principal de Cycle Count
     navigate('/cycle-count');
   };
@@ -350,7 +351,7 @@ function CycleCountWrapper() {
       alert('Failed to load cycle count. Please try again.');
     }
   };
-  
+
   return (
     <CycleCount
       onStartCycleCount={handleStartCycleCount}
@@ -372,15 +373,15 @@ function CycleCountDetailPage() {
   
   const stateData = sessionStorage.getItem('cycleCountState');
   const state = stateData ? JSON.parse(stateData) : null;
-  
+
   const handleAdjustmentsApplied = (updatedData: any) => {
     // Update the sessionStorage with the updated data
     const currentHistory = sessionStorage.getItem('cycleCountHistory');
     const history = currentHistory ? JSON.parse(currentHistory) : [];
-    
+
     // Check if the record already exists in the history
     const existingIndex = history.findIndex((record: any) => record.id === updatedData.id);
-    
+
     if (existingIndex !== -1) {
       // Update existing record
       history[existingIndex] = updatedData;
@@ -388,19 +389,19 @@ function CycleCountDetailPage() {
       // Add new record (coming from mock data)
       history.push(updatedData);
     }
-    
+
     // Save updated history
     sessionStorage.setItem('cycleCountHistory', JSON.stringify(history));
-    
+
     // Update the current state
     sessionStorage.setItem('cycleCountState', JSON.stringify({ countData: updatedData }));
-    
+
     // Navigate back to cycle count
     navigate('/cycle-count');
   };
-  
+
   return (
-    <CycleCountDetailView 
+    <CycleCountDetailView
       countData={state?.countData}
       onBack={() => {
         sessionStorage.removeItem('cycleCountState');
@@ -618,9 +619,9 @@ function CycleCountActiveWrapper() {
     sessionStorage.removeItem('cycleCountActiveData');
     navigate('/cycle-count');
   };
-  
+
   return (
-    <CycleCountView 
+    <CycleCountView
       onBack={() => {
         sessionStorage.removeItem('cycleCountState');
         sessionStorage.removeItem('cycleCountInitialConfig');
@@ -668,7 +669,7 @@ function PurchaseOrdersWrapper() {
   };
 
   return (
-    <PurchaseOrders
+    <Main
       onViewDetail={(order) => {
         handleNavigate('/orders/detail', { order });
       }}
@@ -742,13 +743,15 @@ function EngineerRequestOrdersWrapper() {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public Routes */}
+      {/* 1. PUBLIC ROUTES                                          */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
-      <Route path="*" element={<NotFound />} /> {/* Your new 404 page */}
 
-      {/* Protected Routes (Requires Login) */}
+      {/* Catch-all for 404 */}
+      <Route path="*" element={<NotFound />} />
+
+      {/* 2. PROTECTED ROUTES (Require Login)*/}
       <Route
         path="/"
         element={
@@ -757,11 +760,17 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        {/* --- COMMON ROUTES (Everyone) --- */}
+        {/* Dashboard - Accessible by all logged in users */}
         <Route index element={<Dashboard />} />
 
-        {/* --- 1. ENGINEER ROUTES --- */}
-        {/* Access: Engineer, Collaborator (and Admin) */}
+        {/* Backend Rule: [Authorize(Roles = "Keeper,Engineer,Manager,Director")] */}
+        <Route element={<RoleGuard allowedRoles={[ROLES.KEEPER, ROLES.ENGINEER, ROLES.MANAGER, ROLES.DIRECTOR, ROLES.ADMIN]} />}>
+          <Route path="orders" element={<PurchaseOrdersWrapper />} />
+          <Route path="orders/detail" element={<OrderDetailWrapper />} />
+          <Route path="requests" element={<RequestManagement />} />
+        </Route>
+
+        {/* 3. ENGINEER SPECIFIC ROUTES                               */}
         <Route element={<RoleGuard allowedRoles={[ROLES.ENGINEER, ROLES.COLLABORATOR, ROLES.ADMIN]} />}>
           <Route path="engineer/catalog" element={<EngineerModuleWrapper><EngineerCatalog /></EngineerModuleWrapper>} />
           <Route path="engineer/requests" element={<EngineerModuleWrapper><EngineerRequestOrdersWrapper /></EngineerModuleWrapper>} />
@@ -769,34 +778,20 @@ function AppRoutes() {
           <Route path="engineer/history" element={<EngineerModuleWrapper><EngineerCompleteHistory /></EngineerModuleWrapper>} />
         </Route>
 
-        {/* --- 2. KEEPER ROUTES --- */}
-        {/* Access: Keeper (and Admin) */}
-        {/* Includes: Inventory, Orders, Cycle Counts, Quick Find, Manage Requests */}
+        {/* 4. KEEPER SPECIFIC ROUTES                                 */}
         <Route element={<RoleGuard allowedRoles={[ROLES.KEEPER, ROLES.ADMIN]} />}>
-          {/* Inventory & Finding */}
           <Route path="inventory" element={<InventoryManager />} />
           <Route path="quick-find" element={<QuickFind />} />
-
-          {/* Orders (Purchasing) */}
-          <Route path="orders" element={<PurchaseOrdersWrapper />} />
-          <Route path="orders/detail" element={<OrderDetailWrapper />} />
-
-          {/* Operations */}
           <Route path="cycle-count" element={<CycleCountWrapper />} />
           <Route path="cycle-count/active" element={<CycleCountActiveWrapper />} />
           <Route path="cycle-count/detail" element={<CycleCountDetailPage />} />
           <Route path="manage-requests" element={<ManageRequestsPage />} />
 
-          {/* NOTE: If Keepers need to process Loans/Returns (handing out items), 
-               you might need to add 'loans' routes here too. 
-               If not, they are hidden based on your list. */}
         </Route>
 
-        {/* --- 3. MANAGER & DIRECTOR ROUTES --- */}
-        {/* Access: Manager, Director (and Admin) */}
-        {/* Includes: Requests, Reports, Users */}
+        {/* 5. MANAGER & DIRECTOR SPECIFIC ROUTES                     */}
         <Route element={<RoleGuard allowedRoles={[ROLES.MANAGER, ROLES.DIRECTOR, ROLES.ADMIN]} />}>
-          <Route path="requests" element={<RequestManagement />} />
+
           <Route path="reports" element={<Reports />} />
           <Route path="users" element={<UserManagement />} />
         </Route>

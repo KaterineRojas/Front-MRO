@@ -1,6 +1,6 @@
 import React from 'react';
 
-const BASE_STYLES = "inline-flex items-center justify-center rounded-md border dark:border-border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-colors";
+const BASE_STYLES = "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-colors";
 
 const VARIANTS = {
     default: "border-transparent bg-gray-900 text-white dark:bg-gray-50 dark:text-gray-900",
@@ -11,7 +11,7 @@ const VARIANTS = {
 
     success: "bg-transparent border-emerald-600 text-emerald-600 dark:border-emerald-500 dark:text-emerald-400",
     
-    warning: "bg-transparent border-amber-400 text-amber-500 dark:text-amber-400", 
+    warning: "bg-transparent border-amber-500  text-amber-500 dark:text-amber-400", 
     
     info: "bg-transparent border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400",
     
@@ -24,6 +24,10 @@ const VARIANTS = {
     emerald: "bg-transparent border-emerald-600 text-emerald-600 dark:border-emerald-500 dark:text-emerald-400",
 
     teal: "bg-transparent border-teal-600 text-teal-600 dark:border-teal-500 dark:text-teal-400",
+
+    indigo: "bg-transparent border-indigo-600 text-indigo-600 dark:border-indigo-500 dark:text-indigo-400",
+    rose: "bg-transparent border-rose-600 text-rose-600 dark:border-rose-500 dark:text-rose-400",
+    orange: "bg-transparent border-orange-600 text-orange-600 dark:border-orange-500 dark:text-orange-400",
 
 
     "success-soft": "border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
@@ -41,6 +45,10 @@ const VARIANTS = {
     "emerald-soft": "border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
 
     "teal-soft": "border-transparent bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400",
+    
+    "indigo-soft": "border-transparent bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+    "rose-soft": "border-transparent bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400",
+    "orange-soft": "border-transparent bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
 };
 
 type BadgeVariant = keyof typeof VARIANTS;
