@@ -108,7 +108,7 @@ export const rejectPurchaseRequest = async (id: number, reason: string): Promise
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ reason }),
+        body: JSON.stringify({ rejectionReason: reason }),
     });
 
     if (!response.ok) {

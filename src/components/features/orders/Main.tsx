@@ -14,7 +14,7 @@ import { approvePurchaseRequest, rejectPurchaseRequest } from './services/purcha
 
 export function Main({ onViewDetail }: PurchaseOrdersProps) {
     // Make sure your Tab names here match exactly what is in TabsGroup below
-    const [activeTab, setActiveTab] = useState('Active Orders'); 
+    const [activeTab, setActiveTab] = useState('active orders'); 
     const [statusFilter, setStatusFilter] = useState<string>('all');
 
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseRequest[]>([]);
@@ -94,6 +94,8 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
             setIsLoading(true);
             setError(null);
             const data = await getAllPurchaseRequests(validSignal);
+            console.log(data);
+            
             setPurchaseOrders(data);
         } catch (err: any) {
             if (err.name === 'AbortError') return;
@@ -149,13 +151,13 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
                     </p>
                 </div>
 
-                <button
+                {/* <button
                     onClick={handleCreateNewRequest}
                     className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-indigo-700 hover:bg-indigo-800 rounded-lg shadow-sm transition-colors"
                 >
                     <Plus className="h-4 w-4 mr-2" />
                     New Request
-                </button>
+                </button> */}
             </div>
 
             <TabsGroup

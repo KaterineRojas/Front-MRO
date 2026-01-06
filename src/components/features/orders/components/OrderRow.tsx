@@ -6,7 +6,9 @@ import {
     Layers,
     FolderKanban,
     UserCheck,
-    ImageOff, // Added for missing images
+    ImageOff,
+    XCircle,
+    CheckCheck
 } from 'lucide-react';
 import { getStatusBadge, getReasonBadge } from '../../inventory/components/RequestBadges';
 import { STATUS_MAP, REASON_MAP, formatDate, formatCurrency } from '../utils/purchase-utils';
@@ -25,6 +27,7 @@ export const OrderRow: React.FC<Props> = ({ order, handleReview }) => {
     const statusString = STATUS_MAP[order.status] || 'unknown';
     const reasonString = REASON_MAP[order.reason] || 'Standard';
     const darkMode = useSelector((state: any) => state.ui.darkMode);
+    const actionedBy = order.approvedByName ? order.approvedByName : order.rejectedByName
 
     return (
         <>
@@ -63,22 +66,36 @@ export const OrderRow: React.FC<Props> = ({ order, handleReview }) => {
                     {formatDate(order.createdAt)}
                 </td>
                 <td className="p-4 text-right">
-                    <div className="flex justify-end gap-2">
-                        <ActionButton
-                            icon="approve"
-                            variant="success"
-                            className="w-8 h-8 p-0 rounded-md"
-                            title="Approve Request"
-                            onClick={() => handleReview(order, 'approve')}
-                        />
-                        <ActionButton
-                            icon='reject'
-                            variant="danger"
-                            className="w-8 h-8 p-0 rounded-md"
-                            title="Reject Request"
-                            onClick={() => handleReview(order, 'reject')}
-                        />
-                    </div>
+                    {order.status === 0 ? (
+                        /* --- PENDING STATE: ACTION BUTTONS --- */
+                        <div className="flex justify-end gap-2">
+                            <ActionButton
+                                icon="approve"
+                                variant="success"
+                                className="w-8 h-8 p-0 rounded-md"
+                                title="Approve Request"
+                                onClick={() => handleReview(order, 'approve')}
+                            />
+                            <ActionButton
+                                icon="reject"
+                                variant="danger"
+                                className="w-8 h-8 p-0 rounded-md"
+                                title="Reject Request"
+                                onClick={() => handleReview(order, 'reject')}
+                            />
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-end justify-center h-full">
+                            <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold ${order.status === 1 ? 'text-emerald-400' : 'text-red-500'
+                                }`}>
+                                {order.status === 1 ? 'Approved' : 'Rejected'}
+                                {order.status === 1 ? <CheckCheck className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                            </span>
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                by {actionedBy}
+                            </span>
+                        </div>
+                    )}
                 </td>
             </tr>
 
@@ -143,6 +160,17 @@ export const OrderRow: React.FC<Props> = ({ order, handleReview }) => {
                                     </h4>
                                     <p className="text-sm text-gray-700 dark:text-yellow-100/80">
                                         {order.notes}
+                                    </p>
+                                </div>
+                            )}
+
+                            {order.rejectionReason && (
+                                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-lg">
+                                    <h4 className="text-xs font-bold uppercase text-red-800 dark:text-red-400 mb-1">
+                                        Rejection Reason
+                                    </h4>
+                                    <p className="text-sm text-red-700 dark:text-red-200/90">
+                                        {order.rejectionReason}
                                     </p>
                                 </div>
                             )}
