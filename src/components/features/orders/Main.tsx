@@ -13,7 +13,8 @@ import { TableErrorState } from './components/TableErrorState'
 import { approvePurchaseRequest, rejectPurchaseRequest } from './services/purchaseService'
 
 export function Main({ onViewDetail }: PurchaseOrdersProps) {
-    const [activeTab, setActiveTab] = useState('active orders');
+    // Make sure your Tab names here match exactly what is in TabsGroup below
+    const [activeTab, setActiveTab] = useState('Active Orders'); 
     const [statusFilter, setStatusFilter] = useState<string>('all');
 
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseRequest[]>([]);
@@ -21,7 +22,6 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
 
     const [creatingRequest, setCreatingRequest] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    // Track if the API call is in progress to show the spinner in the modal
     const [isReviewProcessing, setIsReviewProcessing] = useState(false);
 
     const [reviewState, setReviewState] = useState<{
@@ -33,6 +33,24 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
         order: null,
         action: 'approve'
     });
+
+    const filteredOrders = useMemo(() => {
+        let data = purchaseOrders;
+
+        if (activeTab === 'active orders') {
+            data = data.filter(order => order.status === 0);
+        } else {
+            data = data.filter(order => order.status === 1 || order.status === 2);
+        }
+
+        // 2. APPLY DROPDOWN FILTER (If you still use the dropdown inside the tab)
+        if (statusFilter !== 'all') {
+            data = data.filter(order => order.status.toString() === statusFilter);
+        }
+
+        return data;
+    }, [purchaseOrders, activeTab, statusFilter]);
+
 
     const handleOpenReview = (order: PurchaseRequest, action: 'approve' | 'reject') => {
         setReviewState({
@@ -59,43 +77,28 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
             }
 
             handleCloseReview();
-
-            fetchOrders();
+            fetchOrders(); // Refresh list after action
 
         } catch (error: any) {
             console.error(`Failed to ${action} request:`, error);
             alert(error.message || "Something went wrong while processing the request.");
-
         } finally {
             setIsReviewProcessing(false);
         }
     };
 
-    // Fetch Function
     const fetchOrders = useCallback(async (signal?: AbortSignal) => {
         const validSignal = (signal instanceof AbortSignal) ? signal : undefined;
 
         try {
             setIsLoading(true);
             setError(null);
-
             const data = await getAllPurchaseRequests(validSignal);
-
             setPurchaseOrders(data);
-
         } catch (err: any) {
-            if (err.name === 'AbortError') {
-                console.log('Fetch aborted');
-                return;
-            }
-
+            if (err.name === 'AbortError') return;
             console.error("Failed to load orders:", err);
-
-            if (err.message === 'Failed to fetch') {
-                setError("Unable to connect to the server. Please check your connection.");
-            } else {
-                setError(err.message || "An unexpected error occurred.");
-            }
+            setError(err.message || "An unexpected error occurred.");
         } finally {
             if (!validSignal?.aborted) {
                 setIsLoading(false);
@@ -103,51 +106,13 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
         }
     }, []);
 
-    // Load data on mount
     useEffect(() => {
         const controller = new AbortController();
-
         fetchOrders(controller.signal);
-
         return () => {
             controller.abort();
         };
     }, [fetchOrders]);
-
-    const handleStatusUpdate = (orderId: number, newStatus: number) => {
-        // Note: This only updates local state. You will need an API endpoint to save this change later.
-        setPurchaseOrders(prevOrders =>
-            prevOrders.map(order => {
-                if (order.id === orderId) {
-                    return {
-                        ...order,
-                        status: newStatus,
-                        ...(newStatus === 1 && {
-                            approvedAt: new Date().toISOString(),
-                            approvedByName: authService.getUser()?.name
-                        })
-                    };
-                }
-                return order;
-            })
-        );
-    };
-
-    const filteredOrders = useMemo(() => {
-        let data = purchaseOrders;
-
-        if (activeTab === 'active orders') {
-            data = data.filter(order => [0, 1].includes(order.status));
-        } else {
-            data = data.filter(order => [2, 3].includes(order.status));
-        }
-
-        if (statusFilter !== 'all') {
-            data = data.filter(order => order.status.toString() === statusFilter);
-        }
-
-        return data;
-    }, [purchaseOrders, activeTab, statusFilter]);
 
     const handleCreateNewRequest = () => {
         setCreatingRequest(true);
@@ -213,7 +178,6 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
                 error ? (
                     <TableErrorState message={error} onRetry={fetchOrders} />
                 ) : (
-                    /* CASE 2: Render Crash (Safeguard) */
                     <TableErrorBoundary>
                         <OrderTable
                             orders={filteredOrders}
@@ -225,7 +189,6 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
                     </TableErrorBoundary>
                 )
             )}
-
 
             <ReviewRequestModal
                 isOpen={reviewState.isOpen}
