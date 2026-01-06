@@ -8,6 +8,8 @@ import { CreatePurchaseRequestPage } from './CreatePurchaseRequestPage'
 import { authService } from '../../../services/authService'
 import { getAllPurchaseRequests } from './services/purchaseService'
 import { ReviewRequestModal } from './modals/ApproveRequestModal'
+import { TableErrorBoundary } from './components/TableErrorBoundary'
+import { TableErrorState } from './components/TableErrorState'
 
 export function Main({ onViewDetail }: PurchaseOrdersProps) {
     const [activeTab, setActiveTab] = useState('active orders');
@@ -17,6 +19,7 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
     const [isLoading, setIsLoading] = useState(true);
 
     const [creatingRequest, setCreatingRequest] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const [reviewState, setReviewState] = useState<{
         isOpen: boolean;
@@ -50,23 +53,46 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
     };
 
     // Fetch Function
-    const fetchOrders = useCallback(async () => {
+    const fetchOrders = useCallback(async (signal?: AbortSignal) => {
+        const validSignal = (signal instanceof AbortSignal) ? signal : undefined;
+
         try {
             setIsLoading(true);
-            const data = await getAllPurchaseRequests();
-            setPurchaseOrders(data);
-            console.log(data);
+            setError(null);
 
-        } catch (error) {
-            console.error("Failed to load orders:", error);
+            const data = await getAllPurchaseRequests(validSignal);
+
+            setPurchaseOrders(data);
+
+        } catch (err: any) {
+            if (err.name === 'AbortError') {
+                console.log('Fetch aborted');
+                return;
+            }
+
+            console.error("Failed to load orders:", err);
+
+            if (err.message === 'Failed to fetch') {
+                setError("Unable to connect to the server. Please check your connection.");
+            } else {
+                setError(err.message || "An unexpected error occurred.");
+            }
         } finally {
-            setIsLoading(false);
+            if (!validSignal?.aborted) {
+                setIsLoading(false);
+            }
         }
     }, []);
 
     // Load data on mount
     useEffect(() => {
-        fetchOrders();
+        const controller = new AbortController();
+
+        fetchOrders(controller.signal);
+
+        return () => {
+            controller.abort();
+        };
     }, [fetchOrders]);
 
     const handleStatusUpdate = (orderId: number, newStatus: number) => {
@@ -165,14 +191,22 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
                     </div>
                 </div>
             ) : (
-                <OrderTable
-                    orders={filteredOrders}
-                    statusFilter={statusFilter}
-                    setStatusFilter={setStatusFilter}
-                    activeTab={activeTab}
-                    onReview={handleOpenReview}
-                />
+                error ? (
+                    <TableErrorState message={error} onRetry={fetchOrders} />
+                ) : (
+                    /* CASE 2: Render Crash (Safeguard) */
+                    <TableErrorBoundary>
+                        <OrderTable
+                            orders={filteredOrders}
+                            statusFilter={statusFilter}
+                            setStatusFilter={setStatusFilter}
+                            activeTab={activeTab}
+                            onReview={handleOpenReview}
+                        />
+                    </TableErrorBoundary>
+                )
             )}
+
 
             <ReviewRequestModal
                 isOpen={reviewState.isOpen}

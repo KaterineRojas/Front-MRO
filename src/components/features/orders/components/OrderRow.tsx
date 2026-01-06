@@ -137,8 +137,8 @@ export const OrderRow: React.FC<Props> = ({ order, handleReview }) => {
 
                             {/* NOTES SECTION (Only if notes exist) */}
                             {order.notes && (
-                                <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-900/30 rounded-lg">
-                                    <h4 className="text-xs font-bold uppercase text-yellow-800 dark:text-yellow-500 mb-1">
+                                <div className="mb-6 p-4 bg-gray-200 dark:bg-yellow-900/10 border border-gray-900/20  dark:border-yellow-900/30 rounded-lg">
+                                    <h4 className="text-xs font-bold uppercase text-gray-900 dark:text-yellow-500 mb-1">
                                         Request Notes
                                     </h4>
                                     <p className="text-sm text-gray-700 dark:text-yellow-100/80">

@@ -47,19 +47,53 @@ export const createPurchaseRequest = async (payload: CreatePurchaseRequestPayloa
  * Endpoint: /api/PurchaseRequests
  */
 export const getAllPurchaseRequests = async (signal?: AbortSignal): Promise<PurchaseRequest[]> => {
-    /**
-     * this is hardcoded with warehouseId=1 but we need to change this to the dynamic one with authService.getUser().warehouseId
-     */
     const response = await fetchClient('/purchase-requests?warehouseId=1', {
         method: 'GET',
-        signal,
+        signal, 
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to fetch orders: ${response.statusText}`);
+        let errorMessage = response.statusText;
+        try {
+            const errorBody = await response.json();
+            errorMessage = errorBody.message || errorBody.error || response.statusText;
+        } catch {
+            // If response isn't JSON, fallback to statusText
+        }
+        
+        throw new Error(`Error ${response.status}: ${errorMessage}`);
     }
 
     const json: PaginatedResponse<PurchaseRequest> = await response.json();
-    
     return json.data; 
 };
+
+
+/**
+ * Approves a specific purchase request.
+ * @param id - The ID of the purchase request to approve.
+ * @returns A promise that resolves with the server's success message.
+ */
+export const approvePurchaseRequest = async (id: number): Promise<string> => {
+    const response = await fetchClient(`/purchase-requests/${id}/approve`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json', 
+        }
+    });
+
+    if (!response.ok) {
+        let errorMessage = `Failed to approve request #${id}`;
+        try {
+            const errorBody = await response.json();
+            errorMessage = errorBody.message || errorBody.error || errorMessage;
+        } catch {
+            errorMessage = response.statusText;
+        }
+        throw new Error(errorMessage);
+    }
+
+    const successMessage = await response.text();
+    return successMessage;
+};
+
