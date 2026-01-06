@@ -182,7 +182,7 @@ export function Layout() {
   });
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="fixed inset-0 flex bg-background overflow-hidden">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
@@ -378,7 +378,7 @@ export function Layout() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Mobile menu button - floating */}
         <Button
           variant="ghost"

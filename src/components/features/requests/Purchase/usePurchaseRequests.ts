@@ -143,12 +143,13 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
 
   // Cancel purchase request
   const handleCancel = async (requestId: string) => {
+    const normalizedId = requestId.toString();
     try {
-      const result = await deletePurchaseRequest(requestId);
+      const result = await deletePurchaseRequest(normalizedId);
       if (result.success) {
         setPurchaseRequests(prev => prev.filter(req => {
-          const reqKey = req.requestId ?? req.requestNumber;
-          return reqKey !== requestId;
+          const reqKey = (req.requestId ?? req.requestNumber)?.toString();
+          return reqKey !== normalizedId;
         }));
         toast.success('Request cancelled successfully');
       } else {
@@ -161,12 +162,13 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
 
   // Confirm purchase as bought
   const handleConfirmBought = async (requestId: string, quantities: { [key: string]: number }) => {
+    const normalizedId = requestId.toString();
     try {
-      const result = await confirmPurchaseBought(requestId, quantities);
+      const result = await confirmPurchaseBought(normalizedId, quantities);
       if (result.success) {
         setPurchaseRequests(prev => prev.filter(req => {
-          const reqKey = req.requestId ?? req.requestNumber;
-          return reqKey !== requestId;
+          const reqKey = (req.requestId ?? req.requestNumber)?.toString();
+          return reqKey !== normalizedId;
         }));
         toast.success(result.message);
       } else {

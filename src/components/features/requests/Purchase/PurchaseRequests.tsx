@@ -46,16 +46,18 @@ interface RequestMeta {
   notesText?: string;
   hasNotes: boolean;
   projectLabel: string;
-  departmentLabel?: string;
   companyLabel?: string;
   customerLabel?: string;
   selfPurchase: boolean;
   clientBilled: boolean;
+  purchaserLabel: string;
+  billingLabel: string;
 }
 
 function computeRequestMeta(request: PurchaseRequest, index: number): RequestMeta {
-  const rowKey = request.requestId ?? request.requestNumber ?? `purchase-row-${index}`;
-  const actionKey = request.requestId ?? request.requestNumber ?? rowKey;
+  const rawRowKey = request.requestId ?? request.requestNumber ?? `purchase-row-${index}`;
+  const rowKey = rawRowKey?.toString() ?? `purchase-row-${index}`;
+  const actionKey = (request.requestId ?? request.requestNumber ?? rowKey)?.toString() ?? rowKey;
 
   const totalCost = typeof request.totalCost === 'number' ? request.totalCost : request.estimatedTotalCost;
   const normalizedNotes = (request.notes ?? '').trim();
@@ -68,10 +70,12 @@ function computeRequestMeta(request: PurchaseRequest, index: number): RequestMet
   const reasonValue = request.reasonId ?? (request as any).reason;
   const hasReason = reasonValue !== undefined && reasonValue !== null && reasonValue !== '';
 
+  const identifierSource = request.requestNumber ?? request.requestId ?? `REQ${String(index + 1).padStart(3, '0')}`;
+
   return {
     rowKey,
     actionKey,
-    identifier: request.requestNumber ?? request.requestId ?? `REQ${String(index + 1).padStart(3, '0')}`,
+    identifier: identifierSource?.toString() ?? `REQ${String(index + 1).padStart(3, '0')}`,
     warehouseName: request.warehouseName ?? 'No warehouse assigned',
     statusLabel: getStatusText(request.status, request.statusName),
     statusClass: getStatusColor(request.status, request.statusName),
@@ -87,11 +91,12 @@ function computeRequestMeta(request: PurchaseRequest, index: number): RequestMet
     notesText: normalizedNotes || undefined,
     hasNotes: Boolean(normalizedNotes),
     projectLabel: request.projectName ?? request.projectId ?? 'Untitled project',
-    departmentLabel: request.departmentName ?? request.departmentId ?? undefined,
     companyLabel: request.companyName ?? request.companyId,
     customerLabel: request.customerName ?? request.customerId,
     selfPurchase: Boolean(request.selfPurchase),
     clientBilled: Boolean(request.clientBilled),
+    purchaserLabel: request.selfPurchase ? 'Requester purchases' : 'Keeper purchases',
+    billingLabel: request.clientBilled ? 'Billed to client' : 'Not billed to client',
   };
 }
 
@@ -218,7 +223,7 @@ export function PurchaseRequests() {
   };
 
   const handleAlreadyBought = (request: PurchaseRequest) => {
-    const actionKey = request.requestId ?? request.requestNumber;
+    const actionKey = (request.requestId ?? request.requestNumber)?.toString();
     if (!actionKey) {
       toast.error('Unable to identify the request to confirm');
       return;
@@ -402,7 +407,6 @@ export function PurchaseRequests() {
                     <div>
                       <p className="text-muted-foreground uppercase tracking-wide">Project</p>
                       <p className="font-medium text-foreground">{meta.projectLabel}</p>
-                      {meta.departmentLabel && <p className="text-muted-foreground mt-1">{meta.departmentLabel}</p>}
                     </div>
                     <div>
                       <p className="text-muted-foreground uppercase tracking-wide">Client</p>
@@ -521,8 +525,9 @@ export function PurchaseRequests() {
                     <TableHead className="w-[40px]" />
                     <TableHead>Request</TableHead>
                     <TableHead>Project &amp; client</TableHead>
+                    <TableHead>Reason</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Timeline</TableHead>
+                    <TableHead>Purchaser</TableHead>
                     <TableHead>Cost</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -549,7 +554,6 @@ export function PurchaseRequests() {
                               <p className="font-mono text-sm font-semibold">#{meta.identifier}</p>
                               <p className="text-xs text-muted-foreground">{meta.warehouseName}</p>
                               <div className="flex gap-1 flex-wrap">
-                                {meta.selfPurchase && <Badge variant="outline">Self purchase</Badge>}
                                 {meta.clientBilled && <Badge variant="outline">Client billed</Badge>}
                                 {meta.hasNotes && <Badge variant="outline">Notes</Badge>}
                               </div>
@@ -558,7 +562,6 @@ export function PurchaseRequests() {
                           <TableCell className="align-top">
                             <div className="space-y-1">
                               <p className="text-sm font-medium text-foreground">{meta.projectLabel}</p>
-                              {meta.departmentLabel && <p className="text-xs text-muted-foreground">{meta.departmentLabel}</p>}
                               <div className="text-xs text-muted-foreground flex flex-wrap gap-2">
                                 {meta.companyLabel && <span>{meta.companyLabel}</span>}
                                 {meta.customerLabel && <span>{meta.customerLabel}</span>}
@@ -566,25 +569,19 @@ export function PurchaseRequests() {
                             </div>
                           </TableCell>
                           <TableCell className="align-top">
+                            <p className="text-sm text-foreground">{meta.reasonLabel ?? '—'}</p>
+                          </TableCell>
+                          <TableCell className="align-top">
                             <div className="flex flex-wrap gap-1">
-                              {meta.reasonLabel && (
-                                <Badge className={meta.reasonClass} variant="secondary">
-                                  {meta.reasonLabel}
-                                </Badge>
-                              )}
                               <Badge className={meta.statusClass} variant="secondary">
                                 {meta.statusLabel}
                               </Badge>
                             </div>
                           </TableCell>
                           <TableCell className="align-top">
-                            <div className="space-y-1 text-xs text-muted-foreground">
-                              <p>
-                                <span className="font-medium text-foreground">Delivery:</span> {meta.expectedDelivery}
-                              </p>
-                              <p>Ordenado: {meta.orderedDate}</p>
-                              <p>Recibido: {meta.receivedDate}</p>
-                              <p>Creado: {meta.createdDate}</p>
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium text-foreground">{meta.purchaserLabel}</p>
+                              <p className="text-xs text-muted-foreground">{meta.billingLabel}</p>
                             </div>
                           </TableCell>
                           <TableCell className="align-top">
@@ -635,7 +632,7 @@ export function PurchaseRequests() {
                         </TableRow>
                         {isExpanded && (
                           <TableRow>
-                            <TableCell colSpan={7} className="bg-muted/20 p-0">
+                            <TableCell colSpan={8} className="bg-muted/20 p-0">
                               <div className="p-4 space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                   <div>

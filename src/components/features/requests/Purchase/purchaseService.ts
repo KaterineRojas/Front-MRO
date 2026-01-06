@@ -587,34 +587,56 @@ export async function updatePurchaseRequestStatus(
  * Delete purchase request
  */
 export async function deletePurchaseRequest(requestId: string): Promise<{ success: boolean; message: string }> {
-  await delay(300);
-  
-  const request = mockPurchaseRequests.find(r => r.requestId === requestId);
-  
-  if (!request) {
-    return {
-      success: false,
-      message: 'Purchase request not found'
-    };
+  const state = store.getState();
+  const token = state.auth?.accessToken ?? null;
+
+  if (!token) {
+    throw new Error('Authentication token not found');
   }
-  
-  // Only pending requests can be deleted
-  if (request.status !== 'pending') {
-    return {
-      success: false,
-      message: 'Only pending requests can be cancelled'
-    };
+
+  if (!requestId) {
+    throw new Error('Purchase request identifier is required');
   }
+
+  const url = `${API_URL}/purchase-requests/${encodeURIComponent(requestId)}`;
+
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  const responseText = await response.text();
+  let responseData: any = null;
+
+  if (responseText) {
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (error) {
+      console.error('purchaseService: non-JSON response body when deleting request', responseText);
+      throw new Error(`Server error ${response.status}: ${responseText}`);
+    }
+  }
+
+  if (!response.ok) {
+    const message = responseData?.message || responseData?.error || `Failed to delete purchase request: ${response.status}`;
+    throw new Error(message);
+  }
+
+  const message = responseData?.message || 'Request cancelled successfully';
 
   return {
     success: true,
-    message: 'Request cancelled successfully'
+    message
   };
 }
 
 /**
  * Update purchase request reason
  */
+/*
 export async function updatePurchaseRequestReason(
   requestId: string,
   reason: PurchaseRequest['reason']
@@ -632,6 +654,7 @@ export async function updatePurchaseRequestReason(
     reason
   };
 }
+ */
 
 /**
  * Confirm purchase as bought (for self-purchase requests)

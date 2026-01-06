@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import type { User as UserType } from '../../enginner/types';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { submitPurchaseRequest } from '../../../../store/slices/purchaseSlice';
-import { store } from "../../../../store/store";
+import { ConfirmModal, useConfirmModal } from '../../../ui/confirm-modal';
 import {
   getWarehouses,
   getCatalogItemsByWarehouse,
@@ -133,6 +133,7 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
   const dispatch = useAppDispatch();
   const submitting = useAppSelector(state => state.purchase.submitting);
   const authUser = useAppSelector(state => state.auth.user);
+  const { modalState, showConfirm, hideModal, setModalOpen } = useConfirmModal();
   const submitLabel = isEditing
     ? (submitting ? 'Saving changes...' : 'Save Changes')
     : (submitting ? 'Submitting...' : 'Submit Purchase Request');
@@ -462,7 +463,22 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
     return formData.items.reduce((sum, item) => sum + (item.estimatedCost * item.quantity), 0);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submitPurchase = async (payload: CreatePurchaseRequestPayload) => {
+    try {
+      await dispatch(submitPurchaseRequest(payload)).unwrap();
+      toast.success(isEditing ? 'Purchase request updated successfully' : 'Purchase request submitted successfully');
+      if (onBack) onBack();
+    } catch (error) {
+      const message = typeof error === 'string'
+        ? error
+        : error instanceof Error
+          ? error.message
+          : 'Failed to submit purchase request';
+      toast.error(message);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.department) {
@@ -589,18 +605,32 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
       items: payloadItems
     };
 
-    try {
-      await dispatch(submitPurchaseRequest(payload)).unwrap();
-      toast.success(isEditing ? 'Purchase request updated successfully' : 'Purchase request submitted successfully');
-      if (onBack) onBack();
-    } catch (error) {
-      const message = typeof error === 'string'
-        ? error
-        : error instanceof Error
-          ? error.message
-          : 'Failed to submit purchase request';
-      toast.error(message);
-    }
+    const warehouseLabel = selectedWarehouse.name ?? selectedWarehouse.code ?? selectedWarehouse.id;
+    const companyLabel = payload.companyId;
+    const customerLabel = selectedCustomer?.name ?? payload.customerId;
+    const projectLabel = selectedProject?.name ?? payload.projectId;
+    const itemsCount = payload.items.length;
+    const descriptionLines = [
+      `Warehouse: ${warehouseLabel}`,
+      `Company: ${companyLabel}`,
+      `Customer: ${customerLabel}`,
+      `Project: ${projectLabel}`,
+      `Items: ${itemsCount}`,
+      `Estimated total: ${totalCost.toFixed(2)}`
+    ].join('\n');
+
+    showConfirm({
+      title: 'Submit purchase request?',
+      description: descriptionLines,
+      type: 'warning',
+      confirmText: isEditing ? 'Save' : 'Submit',
+      cancelText: 'Cancel',
+      showCancel: true,
+      onConfirm: () => {
+        hideModal();
+        void submitPurchase(payload);
+      }
+    });
   };
 
   const handleSelfPurchaseChange = (value: string) => {
@@ -743,7 +773,8 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       {/* Header estilo Kits: Botón a la izquierda, título a su lado */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={onBack}>
@@ -1321,7 +1352,6 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
                   placeholder="Explain why this purchase is needed..."
                   value={formData.justification}
                   onChange={(e) => setFormData(prev => ({ ...prev, justification: e.target.value }))}
-                  required
                   rows={4}
                 />
               </div>
@@ -1337,7 +1367,21 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
             {submitLabel}
           </Button>
         </div>
-      </form>
-    </div>
+        </form>
+      </div>
+
+      <ConfirmModal
+        open={modalState.open}
+        onOpenChange={setModalOpen}
+        title={modalState.title}
+        description={modalState.description}
+        type={modalState.type}
+        confirmText={modalState.confirmText}
+        cancelText={modalState.cancelText}
+        onConfirm={modalState.onConfirm}
+        showCancel={modalState.showCancel}
+        retryable={modalState.retryable}
+      />
+    </>
   );
 }
