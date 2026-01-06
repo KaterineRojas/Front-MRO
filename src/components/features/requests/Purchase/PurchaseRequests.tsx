@@ -7,7 +7,7 @@ import { Label } from '../../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
-import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle } from 'lucide-react';
+import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle, ArrowLeft, Pencil } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { PurchaseForm } from './PurchaseForm';
 import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
@@ -16,15 +16,16 @@ import { useAppSelector } from '../../../../store';
 import { selectCurrentUser } from '../../../../store';
 import { getWarehouses, type Warehouse } from '../../enginner/services';
 import { usePurchaseRequests } from './usePurchaseRequests';
-import { formatDate, getStatusColor, getStatusText, getPriorityColor, getPriorityText } from './purchaseUtils';
+import { formatDate, getStatusColor, getStatusText, getReasonColor, getReasonText } from './purchaseUtils';
 import type { PurchaseRequest } from './purchaseService';
 
 
 export function PurchaseRequests() {
   const currentUser = useAppSelector(selectCurrentUser);
-  const [showPurchaseForm, setShowPurchaseForm] = useState(false);
+  const [activeView, setActiveView] = useState<'list' | 'request'>('list');
   const [isMobile, setIsMobile] = useState(false);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [requestToEdit, setRequestToEdit] = useState<PurchaseRequest | null>(null);
 
   // Dialog states
   const [confirmPurchaseOpen, setConfirmPurchaseOpen] = useState(false);
@@ -85,6 +86,21 @@ export function PurchaseRequests() {
     setConfirmPurchaseOpen(true);
   };
 
+  const handleEditRequest = (request: PurchaseRequest) => {
+    setRequestToEdit(request);
+    setActiveView('request');
+  };
+
+  const backToList = () => {
+    setRequestToEdit(null);
+    setActiveView('list');
+  };
+
+  const openCreateRequest = () => {
+    setRequestToEdit(null);
+    setActiveView('request');
+  };
+
   const updatePurchaseQuantity = (index: string, newQuantity: number, maxQuantity: number) => {
     if (newQuantity > maxQuantity) return;
     if (newQuantity < 1) return;
@@ -103,15 +119,15 @@ export function PurchaseRequests() {
     setPurchaseToConfirm(null);
   };
 
-  // Show purchase form
-  if (showPurchaseForm) {
+  // Show request or direct purchase forms
+  if (activeView === 'request') {
     if (!currentUser) {
       return (
         <div className="space-y-6">
           <Card>
             <CardContent className="p-12 text-center">
               <p className="text-muted-foreground">User information not available</p>
-              <Button variant="outline" onClick={() => setShowPurchaseForm(false)} className="mt-4">
+              <Button variant="outline" onClick={backToList} className="mt-4">
                 ← Back to Requests
               </Button>
             </CardContent>
@@ -122,33 +138,10 @@ export function PurchaseRequests() {
 
     return (
       <div className="space-y-6">
- {/** 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-
-         <Card className="flex-1 md:ml-4">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Engineer</p>
-                  <p className="font-medium">{currentUser.name || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Department</p>
-                  <p className="font-medium">{currentUser.departmentName || currentUser.department || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Request Type</p>
-                  <p className="font-medium">Purchase</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-     
-        </div>
-             */}
         <PurchaseForm
           currentUser={currentUser}
-          onBack={() => setShowPurchaseForm(false)}
+          onBack={backToList}
+          initialRequest={requestToEdit}
         />
       </div>
     );
@@ -165,10 +158,12 @@ export function PurchaseRequests() {
             Manage your equipment purchase requests
           </p>
         </div>
-        <Button onClick={() => setShowPurchaseForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Request Purchase
-        </Button>
+        <div className="flex gap-3">
+          <Button onClick={openCreateRequest}>
+            <Plus className="h-4 w-4 mr-2" />
+            Request Purchase
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filter Bar */}
@@ -250,9 +245,9 @@ export function PurchaseRequests() {
                       </h3>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
                         <Badge variant="outline">{request.warehouseName}</Badge>
-                        {request.priority && (
-                          <Badge className={getPriorityColor(request.priority)} variant="secondary">
-                            {getPriorityText(request.priority)}
+                        {request.reason && (
+                          <Badge className={getReasonColor(request.reason)} variant="secondary">
+                            {getReasonText(request.reason)}
                           </Badge>
                         )}
                         <Badge className={getStatusColor(request.status)} variant="secondary">
@@ -261,6 +256,14 @@ export function PurchaseRequests() {
                       </div>
                     </div>
                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="outline"
+                        className="gap-2 h-auto py-2 px-4"
+                        onClick={() => handleEditRequest(request)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </Button>
                       {canConfirmBought(request) && (
                         <Button
                           className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
@@ -330,7 +333,7 @@ export function PurchaseRequests() {
                     <TableHead>Warehouse</TableHead>
                     <TableHead>Project</TableHead>
                     <TableHead>Cost</TableHead>
-                    <TableHead>Priority / Status</TableHead>
+                    <TableHead>Reason / Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -358,9 +361,9 @@ export function PurchaseRequests() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1 flex-wrap">
-                            {request.priority && (
-                              <Badge className={getPriorityColor(request.priority)} variant="secondary">
-                                {getPriorityText(request.priority)}
+                            {request.reason && (
+                              <Badge className={getReasonColor(request.reason)} variant="secondary">
+                                {getReasonText(request.reason)}
                               </Badge>
                             )}
                             <Badge className={getStatusColor(request.status)} variant="secondary">
@@ -370,6 +373,17 @@ export function PurchaseRequests() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              className="gap-2 h-auto py-2 px-4"
+                              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                e.stopPropagation();
+                                handleEditRequest(request);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              Edit
+                            </Button>
                             {canConfirmBought(request) && (
                               <Button
                                 className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"

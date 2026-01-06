@@ -5,7 +5,7 @@ import { getPackingRequests, updateLoanRequestStatus, startPacking, sendLoanRequ
 import { handlePrintSinglePacking as utilPrintSingle } from '../utils/requestManagementUtils';
 import { toast } from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
-import { fetchPackingRequests, refreshPackingRequests } from '../../../../store/slices/requestsSlice';
+import { fetchPackingRequests, refreshPackingRequests, refreshReturns } from '../../../../store/slices/requestsSlice';
 
 // Interfaz para el DTO de envío (necesario solo para handleConfirmPackingDialog)
 interface SendLoanRequestDto {
@@ -159,10 +159,10 @@ function generatePackingHtml(request: LoanRequest, quantities: Record<string, nu
       <div class="request-card">
         <div class="request-header">
           <h2>${request.requestNumber} ${isKit ? ' (KIT ORDER)' : ''}</h2>
-          <p><strong>Borrower:</strong> ${request.requesterName} (${request.requesterEmail ?? 'N/A'})</p>
-          <p><strong>Department:</strong> ${request.departmentName ?? 'N/A'} | <strong>Project:</strong> ${request.project ?? 'N/A'}</p>
+          <p><strong>Borrower:</strong> ${request.requesterName} (${request.requesterEmail})</p>
+          <p><strong>Department:</strong> ${request.departmentId} | <strong>Project:</strong> ${request.projectId}</p>
           <p><strong>Priority:</strong> <span class="priority-${request.priority ?? 'low'}">${(request.priority ?? 'low').toUpperCase()}</span></p>
-          <p><strong>Loan Date:</strong> ${new Date(request.requestedLoanDate ?? '').toLocaleDateString()} | <strong>Expected Return:</strong> ${new Date(request.expectedReturnDate ?? '').toLocaleDateString()}</p>
+          <p><strong>Loan Date:</strong> ${request.createdAt} | <strong>Expected Return:</strong> ${request.expectedReturnDate}</p>
         </div>
         
         <h3>Items Checklist:</h3>
@@ -185,9 +185,9 @@ function generatePackingHtml(request: LoanRequest, quantities: Record<string, nu
                 <tr>
                   <td><span class="checkbox"></span></td>
                   <td>${item.sku}</td>
-                  <td>${item.articleDescription || item.name}</td>
+                  <td>${item.articleDescription}</td>
                   <td>${qty}${qty !== item.quantityRequested ? ` (Original: ${item.quantityRequested})` : ''}</td>
-                  <td>${item.unit ?? 'Pcs'}</td>
+                  <td>${item.unit}</td>
                   <td>________________</td>
                 </tr>
               `;
@@ -409,16 +409,22 @@ const handleConfirmPackingDialog = useCallback((
         setPackingConfirmDialogOpen(false);
         setCurrentPackingRequest(null);
         
-        // 4. Recargar Returns desde el API
+        // 4. Recargar Returns desde el API y Redux
         // Usar el requesterId del request enviado (el ingeniero que recibirá los items)
         // Si no se especificó engineerId en parámetros, usar el del request enviado
         const targetEngineerId = engineerId || currentPackingRequest.requesterId || 'amx0142';
         console.log(`🔄 Reloading engineer holdings for: ${targetEngineerId}`);
         
         try {
+            // Actualizar estado local
             const freshData = await getEngineerReturns(targetEngineerId, warehouseId || 1);
             setAllReturns(freshData || []);
             console.log(`✅ Reloaded ${freshData?.length || 0} returns for engineer ${targetEngineerId}`);
+            
+            // Actualizar Redux para que la UI de Returns se actualice automáticamente
+            console.log(`🔄 Refreshing Redux returns for engineerId: ${targetEngineerId}, warehouseId: ${warehouseId || 1}`);
+            await dispatch(refreshReturns({ engineerId: targetEngineerId, warehouseId: warehouseId || 1 })).unwrap();
+            console.log(`✅ Redux returns refreshed successfully`);
         } catch (err) {
             console.error('Error reloading returns after packing confirmation:', err);
         }

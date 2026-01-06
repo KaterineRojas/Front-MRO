@@ -9,8 +9,12 @@ import {
   setSidebarOpen,
   toggleDarkMode,
   setNotificationsOpen,
-  markAllAsRead
 } from '../store';
+import {
+  fetchNotifications,
+  fetchUnreadCount,
+  markAllNotificationsAsRead
+} from '../store/slices/notificationsSlice';
 import { clearPackingRequests, clearReturns } from '../store/slices/requestsSlice';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -50,6 +54,7 @@ export function Layout() {
   const darkMode = useAppSelector((state) => state.ui.darkMode);
   const notificationsOpen = useAppSelector((state) => state.ui.notificationsOpen);
   const notifications = useAppSelector((state) => state.notifications.items);
+  const unreadCount = useAppSelector((state) => state.notifications.unreadCount);
 
   // Apply dark mode to document root
   useEffect(() => {
@@ -60,14 +65,35 @@ export function Layout() {
     }
   }, [darkMode]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Fetch notifications when user is logged in
+  useEffect(() => {
+    if (!currentUser) return;
 
-  const handleNotificationsOpen = (open: boolean) => {
+    // Initial fetch
+    dispatch(fetchNotifications({ pageNumber: 1, pageSize: 50, unreadOnly: false }));
+    dispatch(fetchUnreadCount());
+
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(() => {
+      dispatch(fetchUnreadCount());
+    }, 30000); // 30 seconds
+
+    // Cleanup interval on unmount
+    return () => clearInterval(interval);
+  }, [currentUser, dispatch]);
+
+  const handleNotificationsOpen = async (open: boolean) => {
     dispatch(setNotificationsOpen(open));
     if (open) {
-      // Mark all notifications as read when opening
-      dispatch(markAllAsRead());
+      // Fetch latest notifications when opening
+      await dispatch(fetchNotifications({ pageNumber: 1, pageSize: 50, unreadOnly: false }));
     }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    await dispatch(markAllNotificationsAsRead());
+    // Refresh unread count after marking all as read
+    dispatch(fetchUnreadCount());
   };
 
   const handleLogout = async () => {
@@ -77,7 +103,7 @@ export function Layout() {
       dispatch(logout());
       dispatch(clearPackingRequests());
       dispatch(clearReturns());
-      authService.removeToken();
+      authService.removeToken(); // Esto ya elimina 'mro_token'
 
       // Only redirect to Azure logout if user authenticated with Azure
       if (authType === 'azure') {
@@ -175,14 +201,24 @@ export function Layout() {
       `}>
         <div className="flex items-center justify-between h-16 px-4 border-b dark:border-border">
           <h1 className="text-lg font-semibold">Inventory System</h1>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="lg:hidden"
-            onClick={() => dispatch(setSidebarOpen(false))}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => dispatch(toggleDarkMode())}
+              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => dispatch(setSidebarOpen(false))}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
@@ -206,28 +242,35 @@ export function Layout() {
           })}
         </nav>
 
+        {/* Notifications section */}
+        <div className="px-4 py-2 border-t dark:border-border">
+          <Button
+            variant={notificationsOpen ? "secondary" : "ghost"}
+            className="w-full justify-start relative"
+            onClick={() => handleNotificationsOpen(!notificationsOpen)}
+          >
+            <Bell className="mr-2 h-4 w-4" />
+            <span>Notifications</span>
+            {unreadCount > 0 && (
+              <Badge variant="destructive" className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs">
+                {unreadCount}
+              </Badge>
+            )}
+          </Button>
+        </div>
+
         {currentUser && (
-          <div className="p-4 border-t dark:border-border mt-auto relative">
+          <div className="p-4 border-t dark:border-border relative">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full justify-start p-0 h-auto hover:bg-muted/50">
-                  <div className="flex items-center space-x-2 w-full p-2 rounded">
-                    <div className="relative">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={currentUser.photoUrl} alt={currentUser.name} />
-                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                          {currentUser.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      {unreadCount > 0 && (
-                        <Badge
-                          variant="destructive"
-                          className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 text-[10px]"
-                        >
-                          {unreadCount}
-                        </Badge>
-                      )}
-                    </div>
+                  <div className="flex items-center space-x-3 w-full p-2 rounded">
+                    <Avatar className="w-12 h-12">
+                      <AvatarImage src={currentUser.photoUrl} alt={currentUser.name} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-base">
+                        {currentUser.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-sm font-medium truncate">{currentUser.name}</p>
                       <p className="text-xs text-muted-foreground truncate">
@@ -264,28 +307,6 @@ export function Layout() {
 
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem
-                  onClick={(e: { preventDefault: () => void; }) => {
-                    e.preventDefault();
-                    handleNotificationsOpen(!notificationsOpen);
-                  }}
-                >
-                  <Bell className="mr-2 h-4 w-4" />
-                  <span>Notifications</span>
-                  {unreadCount > 0 && (
-                    <Badge variant="destructive" className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs">
-                      {unreadCount}
-                    </Badge>
-                  )}
-                </DropdownMenuItem>
-
-                <DropdownMenuItem onClick={() => dispatch(toggleDarkMode())}>
-                  {darkMode ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-                  <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log Out</span>
@@ -297,14 +318,26 @@ export function Layout() {
             {notificationsOpen && (
               <div className="fixed inset-0 z-50" onClick={() => handleNotificationsOpen(false)}>
                 <div
-                  className="absolute bottom-20 left-4 w-80 bg-card border dark:border-border rounded-lg shadow-lg"
+                  className="absolute left-64 top-4 w-80 bg-card border dark:border-border rounded-lg shadow-lg lg:left-64 max-lg:left-4"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center justify-between p-4 border-b dark:border-border">
                     <h3 className="font-semibold">Notifications</h3>
-                    <Badge variant="secondary">{notifications.length}</Badge>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleMarkAllAsRead}
+                          className="text-xs h-7"
+                        >
+                          Mark all as read
+                        </Button>
+                      )}
+                      <Badge variant="secondary">{notifications.length}</Badge>
+                    </div>
                   </div>
-                  <ScrollArea className="h-[400px]">
+                  <ScrollArea className="h-[calc(100vh-12rem)]">
                     <div className="divide-y">
                       {notifications.length === 0 ? (
                         <div className="p-4 text-center text-sm text-muted-foreground">
@@ -314,14 +347,23 @@ export function Layout() {
                         notifications.map((notification) => (
                           <div
                             key={notification.id}
-                            className={`p-4 hover:bg-muted/50 cursor-pointer transition-colors ${
-                              !notification.read ? 'bg-muted/30' : ''
+                            className={`p-4 cursor-pointer transition-colors border-l-4 ${
+                              !notification.read
+                                ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-500 hover:bg-blue-100 dark:hover:bg-blue-950/50'
+                                : 'bg-gray-100 dark:bg-gray-800 border-transparent hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
                           >
                             <div className="flex items-start space-x-3">
                               <span className="text-lg">{getNotificationIcon(notification.type)}</span>
                               <div className="flex-1 space-y-1">
-                                <p className="text-sm font-medium">{notification.title}</p>
+                                <div className="flex items-center gap-2">
+                                  {!notification.read && (
+                                    <span className="h-2 w-2 bg-primary rounded-full flex-shrink-0"></span>
+                                  )}
+                                  <p className={`text-sm ${!notification.read ? 'font-semibold' : 'font-medium'}`}>
+                                    {notification.title}
+                                  </p>
+                                </div>
                                 <p className="text-xs text-muted-foreground">{notification.message}</p>
                                 <p className="text-xs text-muted-foreground">{notification.timestamp}</p>
                               </div>

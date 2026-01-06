@@ -63,6 +63,7 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
         request.requestId.toLowerCase().includes(searchLower) ||
         request.project.toLowerCase().includes(searchLower) ||
         request.department.toLowerCase().includes(searchLower) ||
+        request.reason.toLowerCase().includes(searchLower) ||
         request.warehouseName.toLowerCase().includes(searchLower) ||
         request.items.some(item => 
           item.name.toLowerCase().includes(searchLower)

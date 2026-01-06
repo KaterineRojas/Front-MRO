@@ -36,7 +36,7 @@ export interface PurchaseRequest {
   project: string;
   notes: string;
   status: 'pending' | 'approved' | 'rejected' | 'completed';
-  priority: 'low' | 'medium' | 'urgent';
+  reason: 'low-stock' | 'urgent' | 'new-project';
   selfPurchase: boolean;
   items: RequestItem[];
   totalCost: number;
@@ -295,19 +295,19 @@ export const deletePurchaseRequest = async (requestId: string): Promise<{ succes
 };
 
 /**
- * PUT - Actualiza la prioridad de una solicitud de compra
+ * PUT - Actualiza la razón de una solicitud de compra
  */
-export const updatePurchaseRequestPriority = async (
+export const updatePurchaseRequestReason = async (
   requestId: string,
-  priority: PurchaseRequest['priority']
+  reason: PurchaseRequest['reason']
 ): Promise<PurchaseRequest | null> => {
   return apiCall(async () => {
-    const response = await fetch(`${API_URL}/purchase-requests/${requestId}/priority`, {
+    const response = await fetch(`${API_URL}/purchase-requests/${requestId}/reason`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ priority }),
+      body: JSON.stringify({ reason }),
     });
 
     if (response.status === 404) {

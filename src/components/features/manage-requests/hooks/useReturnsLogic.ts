@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, Dispatch, SetStateAction, useEffect, useRef } from 'react';
 import { LoanRequest, LoanItem} from '../types';
-import { getEngineerReturns,uploadReturnPhoto, submitReturnLoan, ReturnItemPayload, ReturnLoanPayload} from '../services/requestManagementService';
+import { getEngineerReturns, getWarehouseEngineers, uploadReturnPhoto, submitReturnLoan, ReturnItemPayload, ReturnLoanPayload} from '../services/requestManagementService';
 import { formatConditionText as utilFormatConditionText } from '../utils/requestManagementUtils';
 import { toast } from 'react-hot-toast';
 import { handlePrintMissingKitItems } from '../utils/listKitRestock';
@@ -22,13 +22,9 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
   const [allReturns, setAllReturns] = useState<LoanRequest[]>([]);
   const allReturnsRef = useRef<LoanRequest[]>([]);
   
-  // Sincronizar Redux con estado local
-  useEffect(() => {
-    setAllReturns(reduxReturns);
-  }, [reduxReturns]);
-  
-  const isLoading = loadingReturns;
-  const error = errorReturns;
+  // Estado para la lista de ingenieros del warehouse
+  const [warehouseEngineers, setWarehouseEngineers] = useState<{ employeeId: string; name: string; email: string }[]>([]);
+  const [loadingEngineers, setLoadingEngineers] = useState(false);
   
   const [selectedReturnBorrower, setSelectedReturnBorrower] = useState<string>('');
   const [expandedReturns, setExpandedReturns] = useState<Set<number>>(new Set());
@@ -55,47 +51,130 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
   const [conditionCounts, setConditionCounts] = useState<ConditionCounts>({ good: 0, revision: 0, lost: 0 });
   const [missingKitItems, setMissingKitItems] = useState<Array<{id: number, name: string, category: string, missingQuantity: number, totalQuantity: number}>>([]);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  
+  // Sincronizar Redux con estado local
+  useEffect(() => {
+    console.log('🔄 [useReturnsLogic] Syncing Redux returns to local state');
+    console.log('🔄 [useReturnsLogic] reduxReturns.length:', reduxReturns.length);
+    console.log('🔄 [useReturnsLogic] selectedReturnBorrower:', selectedReturnBorrower);
+    setAllReturns(reduxReturns);
+  }, [reduxReturns, selectedReturnBorrower]);
+  
+  const isLoading = loadingReturns;
+  const error = errorReturns;
 
   // Mantener la referencia actualizada de allReturns
   useEffect(() => {
     allReturnsRef.current = allReturns;
   }, [allReturns]);
 
+  // Cargar lista de ingenieros del warehouse
   useEffect(() => {
-    dispatch(fetchReturns({ engineerId, warehouseId }));
-  }, [dispatch, engineerId, warehouseId]);
-  const uniqueReturnBorrowers = useMemo(() => {
-    const borrowers = allReturns.map(req => req.requesterName);
-    return Array.from(new Set(borrowers)).sort();
-  }, [allReturns]);
+    console.log('🚀 [useReturnsLogic] Loading warehouse engineers for warehouseId:', warehouseId);
+    const loadWarehouseEngineers = async () => {
+      setLoadingEngineers(true);
+      try {
+        console.log('📡 [useReturnsLogic] Calling getWarehouseEngineers...');
+        const engineers = await getWarehouseEngineers(warehouseId);
+        console.log('✅ [useReturnsLogic] Loaded warehouse engineers:', engineers);
+        console.log('✅ [useReturnsLogic] Engineers count:', engineers.length);
+        setWarehouseEngineers(engineers);
+      } catch (error) {
+        console.error('❌ [useReturnsLogic] Error loading warehouse engineers:', error);
+        setWarehouseEngineers([]);
+      } finally {
+        setLoadingEngineers(false);
+      }
+    };
+    
+    loadWarehouseEngineers();
+  }, [warehouseId]);
 
-  const filteredReturns = useMemo(() => {
-    if (!selectedReturnBorrower) return [];
-    return allReturns.filter(req => req.requesterName === selectedReturnBorrower);
-  }, [allReturns, selectedReturnBorrower]);
+  // Cargar returns solo cuando se selecciona un ingeniero
+  useEffect(() => {
+    console.log('🔍 [useReturnsLogic] Effect triggered - selectedReturnBorrower:', selectedReturnBorrower);
+    console.log('🔍 [useReturnsLogic] warehouseEngineers:', warehouseEngineers);
+    
+    if (selectedReturnBorrower) {
+      // Buscar el employeeId del ingeniero seleccionado
+      const selectedEngineer = warehouseEngineers.find(e => e.name === selectedReturnBorrower);
+      console.log('🔍 [useReturnsLogic] selectedEngineer found:', selectedEngineer);
+      
+      if (selectedEngineer) {
+        console.log('🔄 [useReturnsLogic] Dispatching fetchReturns for:', selectedEngineer.employeeId, 'warehouse:', warehouseId);
+        dispatch(fetchReturns({ engineerId: selectedEngineer.employeeId, warehouseId }));
+      } else {
+        console.warn('⚠️ [useReturnsLogic] Engineer not found in warehouseEngineers list');
+      }
+    }
+  }, [dispatch, selectedReturnBorrower, warehouseId, warehouseEngineers]);
+  
+  // Lista de ingenieros desde el API del warehouse (en lugar de extraerlos de returns)
+  const uniqueReturnBorrowers = useMemo(() => {
+    console.log('📝 [uniqueReturnBorrowers] Computing from warehouseEngineers:', warehouseEngineers);
+    const borrowers = warehouseEngineers.map(e => e.name).sort();
+    console.log('📝 [uniqueReturnBorrowers] Result:', borrowers);
+    return borrowers;
+  }, [warehouseEngineers]);
 
-  const filteredBorrowersForSelect = useMemo(() => {
-    if (!borrowerSelectSearchTerm.trim()) return uniqueReturnBorrowers;
-    return uniqueReturnBorrowers.filter(b => b.toLowerCase().includes(borrowerSelectSearchTerm.toLowerCase()));
-  }, [uniqueReturnBorrowers, borrowerSelectSearchTerm]);
-  
-  // Getters 
-  const getReturnQuantity = useCallback((requestId: number, itemId: number) => {
-    const itemKey = `${requestId}-${itemId}`;
-    
-    if (returnQuantities[itemKey] !== undefined) {
-        return returnQuantities[itemKey];
-    }
+  const filteredReturns = useMemo(() => {
+    console.log('🔍 [filteredReturns] Computing...');
+    console.log('🔍 [filteredReturns] selectedReturnBorrower:', selectedReturnBorrower);
+    console.log('🔍 [filteredReturns] allReturns.length:', allReturns.length);
+    
+    if (!selectedReturnBorrower) {
+      console.log('⚠️ [filteredReturns] No borrower selected, returning empty array');
+      return [];
+    }
+    
+    const filtered = allReturns.filter(req => {
+      const matches = req.requesterName === selectedReturnBorrower;
+      console.log(`🔍 [filteredReturns] Request ${req.requestNumber}: requesterName="${req.requesterName}" matches="${matches}"`);
+      return matches;
+    });
+    
+    console.log('✅ [filteredReturns] Filtered results:', filtered.length);
+    return filtered;
+  }, [allReturns, selectedReturnBorrower]);
+  const filteredBorrowersForSelect = useMemo(() => {
+    console.log('🔎 [filteredBorrowersForSelect] Computing...');
+    console.log('🔎 [filteredBorrowersForSelect] uniqueReturnBorrowers:', uniqueReturnBorrowers);
+    console.log('🔎 [filteredBorrowersForSelect] borrowerSelectSearchTerm:', borrowerSelectSearchTerm);
+    
+    if (!borrowerSelectSearchTerm.trim()) {
+      console.log('🔎 [filteredBorrowersForSelect] No search term, returning all:', uniqueReturnBorrowers);
+      return uniqueReturnBorrowers;
+    }
+    
+    const filtered = uniqueReturnBorrowers.filter(b => b.toLowerCase().includes(borrowerSelectSearchTerm.toLowerCase()));
+    console.log('🔎 [filteredBorrowersForSelect] Filtered result:', filtered);
+    return filtered;
+  }, [uniqueReturnBorrowers, borrowerSelectSearchTerm]);
+  
+  // Getters 
+  const getReturnQuantity = useCallback((requestId: number, itemId: number) => {
+    const itemKey = `${requestId}-${itemId}`;
+    
+    console.log('🔍 [getReturnQuantity] requestId:', requestId, 'itemId:', itemId);
+    console.log('🔍 [getReturnQuantity] returnQuantities[itemKey]:', returnQuantities[itemKey]);
+    console.log('🔍 [getReturnQuantity] allReturns.length:', allReturns.length);
+    
+    if (returnQuantities[itemKey] !== undefined) {
+        console.log('✅ [getReturnQuantity] Returning from returnQuantities:', returnQuantities[itemKey]);
+        return returnQuantities[itemKey];
+    }
 
-    const request = allReturns.find(r => r.id === requestId);
-    const item = request?.items.find(i => i.id === itemId);
-    
-    return item?.quantityRequested ?? 1;
-  }, [returnQuantities, allReturns]); 
+    const request = allReturns.find(r => r.id === requestId);
+    const item = request?.items.find(i => i.id === itemId);
+    
+    const result = item?.quantityRequested ?? 1;
+    console.log('⚠️ [getReturnQuantity] Returning from allReturns:', result, 'item found:', !!item);
+    
+    return result;
+  }, [returnQuantities, allReturns]); 
 
-  const getKitItemQuantity = useCallback((requestId: number, itemId: number, kitItemId: number) => {
-    const itemKey = `${requestId}-${itemId}-${kitItemId}`;
-    
+  const getKitItemQuantity = useCallback((requestId: number, itemId: number, kitItemId: number) => {
+    const itemKey = `${requestId}-${itemId}-${kitItemId}`;
     if (kitItemQuantities[itemKey] !== undefined) {
         return kitItemQuantities[itemKey];
     }
@@ -115,7 +194,20 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
   }, []);
 
   // Handlers
-  const handleBorrowerSelect = useCallback((value: string) => { setSelectedReturnBorrower(value); setBorrowerSelectSearchTerm(''); }, []);
+  const handleBorrowerSelect = useCallback(async (value: string) => { 
+    console.log('🎯 [handleBorrowerSelect] Selected borrower:', value);
+    setSelectedReturnBorrower(value); 
+    setBorrowerSelectSearchTerm(''); 
+    
+    // Recargar datos desde el API para el ingeniero seleccionado
+    console.log('🔄 [handleBorrowerSelect] Reloading returns for engineer:', value);
+    try {
+      await dispatch(refreshReturns({ engineerId: value, warehouseId })).unwrap();
+      console.log('✅ [handleBorrowerSelect] Returns refreshed successfully for engineer:', value);
+    } catch (error) {
+      console.error('❌ [handleBorrowerSelect] Error refreshing returns:', error);
+    }
+  }, [dispatch, warehouseId]);
   const handleToggleExpandReturns = useCallback((id: number) => { setExpandedReturns(prev => { const newExpanded = new Set(prev); if (newExpanded.has(id)) newExpanded.delete(id); else newExpanded.add(id); return newExpanded; }); }, []);
   const handleToggleExpandKitItem = useCallback((requestId: number, itemId: number) => { const kitKey = `${requestId}-${itemId}`; setExpandedKitItems(prev => { const newExpanded = new Set(prev); if (newExpanded.has(kitKey)) newExpanded.delete(kitKey); else newExpanded.add(kitKey); return newExpanded; }); }, []);
 
@@ -232,6 +324,10 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
     const itemKey = isKit && kitItemId ? `${requestId}-${itemId}-${kitItemId}` : `${requestId}-${itemId}`;
     const total = conditionCounts.good + conditionCounts.revision + conditionCounts.lost;
 
+    console.log('🔍 [handleSaveCondition] currentConditionItem:', currentConditionItem);
+    console.log('🔍 [handleSaveCondition] conditionCounts:', conditionCounts);
+    console.log('🔍 [handleSaveCondition] total:', total);
+
     if (total === 0) { 
       toast.error('Please specify at least one item condition.'); 
       return; 
@@ -241,14 +337,20 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
     let returnQty: number;
     if (occurrences && occurrences.length > 0) {
       returnQty = occurrences.reduce((sum, occ) => sum + getReturnQuantity(occ.requestId, occ.itemId), 0);
+      console.log('🔍 [handleSaveCondition] returnQty from occurrences:', returnQty);
     } else if (isKit && kitItemId) {
       returnQty = getKitItemQuantity(requestId, itemId, kitItemId);
+      console.log('🔍 [handleSaveCondition] returnQty from kit:', returnQty);
     } else {
       returnQty = getReturnQuantity(requestId, itemId);
+      console.log('🔍 [handleSaveCondition] returnQty from regular item:', returnQty);
     }
+
+    console.log('🔍 [handleSaveCondition] Final returnQty:', returnQty, 'total:', total);
 
     // Validación EXACTA: la suma debe ser igual a Quantity to Return
     if (total !== returnQty) {
+      console.error('❌ [handleSaveCondition] Validation failed - total:', total, 'returnQty:', returnQty);
       toast.error(`Total condition count (${total}) must equal the Quantity to Return (${returnQty}).`);
       return;
     }
@@ -485,19 +587,37 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
         
         try {
             // Recargar los holdings actualizados desde el backend usando Redux
-            await dispatch(refreshReturns({ engineerId, warehouseId })).unwrap();
-            console.log('✅ Returns reloaded from server');
+            // Usar el engineerId del ingeniero seleccionado, no el global
+            const selectedEngineerId = validatedRequest.requesterId || engineerId;
+            console.log('🔄 Reloading returns for selected engineer:', selectedEngineerId);
+            console.log('🔄 Before refresh - allReturns.length:', allReturns.length);
+            console.log('🔄 Before refresh - selectedReturnBorrower:', selectedReturnBorrower);
+            
+            const result = await dispatch(refreshReturns({ engineerId: selectedEngineerId, warehouseId })).unwrap();
+            
+            console.log('✅ Returns reloaded from server - received:', result.length, 'returns');
+            console.log('✅ After refresh - reduxReturns should update now');
+            
+            if (result.length > 0) {
+                console.log('✅ First return:', result[0]);
+                console.log('✅ First return requesterName:', result[0].requesterName);
+            }
         } catch (err) {
-            console.error('Error reloading returns after successful submission:', err);
+            console.error('❌ Error reloading returns after successful submission:', err);
             // Aunque falle la recarga, el return fue exitoso, así que no mostramos error crítico
         }
 
-        // Limpiar TODOS los estados locales después de un retorno exitoso
+        // Limpiar SOLO los estados de selección, NO el ingeniero seleccionado
+        console.log('🧹 Cleaning selection states...');
+        console.log('🧹 Keeping selectedReturnBorrower:', selectedReturnBorrower);
         setSelectedReturnItems(new Set());
         setReturnQuantities({});
         setItemConditions({});
         // ¡LIMPIAR LA URL DE LA FOTO DESPUÉS DE USARLA!
         setItemsPhotoUrl(null); 
+        
+        // NO resetear selectedReturnBorrower para mantener la selección del ingeniero
+        console.log('✅ Return complete - selectedReturnBorrower still set to:', selectedReturnBorrower);
         
         toast.success('Items successfully returned!'); // Toast de confirmación final
     })();
@@ -565,21 +685,6 @@ const handleConfirmReturnItems = useCallback((request: LoanRequest): Promise<voi
       });
       setMissingKitItems(missing);
     }
-
-    // Persist removal of the kit item from the return on the server
-   /* try {
-      // compute new items for that request (remove the kit item)
-      const request = filteredReturns.find(r => r.id === requestId);
-      if (request) {
-        const remainingItems = request.items.filter(i => i.id !== itemId);
-        const ok = await updateReturnItems(requestId, remainingItems);
-        if (!ok) console.warn('Failed to persist kit checklist changes to server');
-        // update local state as well
-        setAllReturns(prev => prev.map(req => req.id === requestId ? { ...req, items: remainingItems } : req).filter(r => r.items.length > 0));
-      }
-    } catch (err) {
-      console.error('Error persisting kit checklist changes:', err);
-    }*/
 
     setPendingKitReturn({ requestId, itemId });
     setKitReturnOption('');
@@ -697,7 +802,8 @@ const handleSelectAllKitItems = useCallback((requestId: number, kitItem: LoanIte
     // Estado y Datos Derivados
     allReturns, isLoading, error, setAllReturns: setAllReturns as Dispatch<SetStateAction<LoanRequest[]>>, 
     filteredReturns, selectedReturnBorrower, borrowerSelectSearchTerm, filteredBorrowersForSelect,
-    expandedReturns, expandedKitItems, selectedReturnItems, selectedKitItems,
+    warehouseEngineers, loadingEngineers,
+    expandedReturns, expandedKitItems, selectedReturnItems, selectedKitItems,
     itemsPhotoDialogOpen, kitPhotoDialogOpen, itemsPhotoUrl, kitPhotos, capturedPhoto,
     kitReturnDialogOpen, kitReturnOption, pendingKitReturn, missingKitItems,
     kitConfirmationDialogOpen, pendingKitConfirmation,

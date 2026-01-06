@@ -1,20 +1,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Button } from '../../../ui/button';
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '../../../ui/table';
-import { Clock, PlayCircle, Printer } from 'lucide-react';
+import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from '../../../ui/table';
+import { Clock, PlayCircle, Printer, Loader2 } from 'lucide-react';
 import { useCycleCountHistory, CycleCountRecord } from '../hooks/useCycleCountHistory';
 import { generatePrintReport, generateExcelReport, generatePrintAllHistory } from '../utils/reportGenerator';
 import { HistoryTableRow } from '../components/HistoryTableRow';
+import { StartCycleCountModal } from '../modals/StartCycleCountModal';
+import { useState } from 'react';
 
 interface CycleCountProps {
-  onStartCycleCount: () => void;
+  onStartCycleCount: (data: { countName: string; zone: string; countType: 'Annual' | 'Biannual' | 'Spot Check'; auditor: string }) => void;
   onViewCycleCount: (record: CycleCountRecord) => void;
   onContinueCycleCount?: (record: CycleCountRecord) => void;
   onCompleteCycleCount?: (completedData: any) => void;
+  keeperName: string;
 }
 
-export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycleCount }: CycleCountProps) {
-  const { history } = useCycleCountHistory();
+export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycleCount, keeperName }: CycleCountProps) {
+  const { history, isLoading } = useCycleCountHistory();
+  const [showStartModal, setShowStartModal] = useState(false);
 
   const handleStartCycleCount = () => {
     // Check if there's already an in-progress count
@@ -30,23 +34,61 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
       }
     }
     
-    onStartCycleCount();
+    setShowStartModal(true);
+  };
+
+  const handleConfirmStart = (data: { countName: string; zone: string; countType: 'Annual' | 'Biannual' | 'Spot Check'; auditor: string }) => {
+    onStartCycleCount(data);
   };
 
   const handleViewReport = (record: CycleCountRecord) => {
     onViewCycleCount(record);
   };
 
-  const handlePrintReport = (record: CycleCountRecord) => {
-    generatePrintReport(record);
+  const handlePrintReport = async (record: CycleCountRecord) => {
+    // Load full record with keeperName as auditor
+    const { getCycleCountWithArticles } = await import('../services/cycleCountService');
+    try {
+      const fullRecord = await getCycleCountWithArticles(record.id, keeperName);
+      generatePrintReport(fullRecord);
+    } catch (error) {
+      console.error('Error loading cycle count for printing:', error);
+      // Fallback to the record as-is
+      generatePrintReport(record);
+    }
   };
 
-  const handleDownloadReport = (record: CycleCountRecord) => {
-    generateExcelReport(record);
+  const handleDownloadReport = async (record: CycleCountRecord) => {
+    // Load full record with keeperName as auditor
+    const { getCycleCountWithArticles } = await import('../services/cycleCountService');
+    try {
+      const fullRecord = await getCycleCountWithArticles(record.id, keeperName);
+      generateExcelReport(fullRecord);
+    } catch (error) {
+      console.error('Error loading cycle count for download:', error);
+      // Fallback to the record as-is
+      generateExcelReport(record);
+    }
   };
 
-  const handlePrintAllHistory = () => {
-    generatePrintAllHistory(history);
+  const handlePrintAllHistory = async () => {
+    // Need to load full article details for each cycle count before printing
+    const { getCycleCountWithArticles } = await import('../services/cycleCountService');
+    
+    try {
+      const recordsWithArticles = await Promise.all(
+        history.map(async (record) => {
+          // Load articles from API, use keeperName as auditor
+          const fullRecord = await getCycleCountWithArticles(record.id, keeperName);
+          return fullRecord;
+        })
+      );
+      
+      generatePrintAllHistory(recordsWithArticles);
+    } catch (error) {
+      console.error('Error loading cycle count details for printing:', error);
+      alert('Failed to load cycle count details for printing. Please try again.');
+    }
   };
 
   return (
@@ -88,6 +130,7 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Zone</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Total Items</TableHead>
@@ -98,20 +141,44 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
               </TableRow>
             </TableHeader>
             <TableBody>
-              {history.map((record) => (
-                <HistoryTableRow
-                  key={record.id}
-                  record={record}
-                  onView={handleViewReport}
-                  onContinue={onContinueCycleCount}
-                  onPrint={handlePrintReport}
-                  onDownload={handleDownloadReport}
-                />
-              ))}
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="h-32 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">Loading cycle counts...</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : history.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                    No cycle counts found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                history.map((record) => (
+                  <HistoryTableRow
+                    key={record.id}
+                    record={record}
+                    onView={handleViewReport}
+                    onContinue={onContinueCycleCount}
+                    onPrint={handlePrintReport}
+                    onDownload={handleDownloadReport}
+                  />
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      <StartCycleCountModal
+        open={showStartModal}
+        onClose={() => setShowStartModal(false)}
+        onConfirm={handleConfirmStart}
+        keeperName={keeperName}
+      />
     </div>
   );
 }

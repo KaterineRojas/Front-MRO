@@ -71,6 +71,10 @@ export function Login() {
       const departmentId = response.user.departmentId ? String(response.user.departmentId) : response.user.department || '';
       const departmentName = response.user.departmentName || response.user.department || 'Engineering';
 
+      // Guardar token y usuario en localStorage
+      authService.saveToken(response.token);
+      authService.saveUser(response.user);
+
       // Actualizar Redux con el usuario y token del backend
       dispatch(
         setAuth({
@@ -92,6 +96,7 @@ export function Login() {
         })
       );
       console.log('✅ Login local exitoso:', response.user);
+      console.log('🎫 Token guardado en localStorage');
       navigate('/', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
