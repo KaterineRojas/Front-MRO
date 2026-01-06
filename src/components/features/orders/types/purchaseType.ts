@@ -46,6 +46,7 @@ export interface PurchaseRequest {
     selfPurchase: boolean;
 
     notes?: string;
+    rejectionReason?: string 
 
     // Totals
     estimatedTotalCost: number; // Matches backend (was totalAmount)
@@ -53,7 +54,8 @@ export interface PurchaseRequest {
     totalQuantity: number;
 
     // Dates & Approvals
-    approvedByName: string | null;
+    approvedByName?: string | null;
+    rejectedByName?: string | null;
     approvedAt: string | null;
     supplier: string | null;
     createdAt: string;
