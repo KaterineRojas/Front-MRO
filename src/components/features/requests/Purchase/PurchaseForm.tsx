@@ -14,6 +14,9 @@ import type { User as UserType } from '../../enginner/types';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { submitPurchaseRequest } from '../../../../store/slices/purchaseSlice';
 import { ConfirmModal, useConfirmModal } from '../../../ui/confirm-modal';
+import { CreateItemModal, type ApiPayload } from '../../inventory/modals/CreateItemModal/CreateItemModal';
+import { createArticleApi, getCategories } from '../../inventory/services/inventoryApi';
+import type { Article } from '../../inventory/types';
 import {
   getWarehouses,
   getCatalogItemsByWarehouse,
@@ -42,6 +45,7 @@ interface PurchaseItem {
   quantity: number;
   estimatedCost: number;
   link: string;
+  createdItemId?: number;
 }
 
 interface PurchaseFormData {
@@ -68,7 +72,8 @@ const createDefaultPurchaseItem = (): PurchaseItem => ({
   isExisting: true,
   quantity: 1,
   estimatedCost: 0,
-  link: ''
+  link: '',
+  createdItemId: undefined
 });
 
 const buildInitialFormData = (
@@ -81,7 +86,8 @@ const buildInitialFormData = (
         isExisting: true,
         quantity: item.quantity,
         estimatedCost: item.estimatedCost ?? 0,
-        link: item.productUrl ?? ''
+        link: item.productUrl ?? '',
+        createdItemId: Number.isFinite(Number(item.itemId)) ? Number(item.itemId) : undefined
       }))
     : [createDefaultPurchaseItem()],
   department: request?.departmentId || user.departmentId || user.department || '',
@@ -118,6 +124,15 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
   const [dropdownOpen, setDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const previousPurchaseReasonRef = useRef<string>('');
+  const [newItemModalOpen, setNewItemModalOpen] = useState(false);
+  const [pendingNewItemIndex, setPendingNewItemIndex] = useState<number | null>(null);
+  const [pendingItemSnapshot, setPendingItemSnapshot] = useState<PurchaseItem | null>(null);
+  const [pendingItemSearchSnapshot, setPendingItemSearchSnapshot] = useState<string>('');
+  const createItemModalSubmittedRef = useRef(false);
+  const inventoryCategoriesLoadedRef = useRef(false);
+  const [inventoryCategories, setInventoryCategories] = useState<{ value: string; label: string; apiValue?: string }[]>([]);
+  const [inventoryCategoriesLoading, setInventoryCategoriesLoading] = useState(false);
+  const [creatingInventoryItem, setCreatingInventoryItem] = useState(false);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -197,6 +212,175 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
 
     setFilteredItems(nextFiltered);
   }, [catalogItems, formData.items]);
+
+  const ensureInventoryCategories = React.useCallback(async () => {
+    if (inventoryCategoriesLoadedRef.current || inventoryCategoriesLoading) {
+      return;
+    }
+    setInventoryCategoriesLoading(true);
+    try {
+      const categoriesResult = await getCategories();
+      setInventoryCategories(categoriesResult);
+      inventoryCategoriesLoadedRef.current = true;
+    } catch (error) {
+      console.error('Error loading inventory categories:', error);
+      toast.error('Failed to load inventory categories');
+    } finally {
+      setInventoryCategoriesLoading(false);
+    }
+  }, [inventoryCategoriesLoading]);
+
+  const mapArticleToCatalogItem = React.useCallback((article: Article): CatalogItem | null => {
+    if (!formData.warehouseId) {
+      return null;
+    }
+    const warehouse = warehouses.find(wh => wh.id === formData.warehouseId);
+    return {
+      id: article.id.toString(),
+      name: article.name,
+      sku: article.sku,
+      description: article.description || '',
+      image: article.imageUrl || '',
+      category: article.category || 'General',
+      availableQuantity: article.quantityAvailable ?? 0,
+      totalQuantity: article.totalPhysical ?? article.quantityAvailable ?? 0,
+      warehouseId: formData.warehouseId,
+      warehouseName: warehouse?.name ?? `Warehouse ${formData.warehouseId}`,
+    };
+  }, [formData.warehouseId, warehouses]);
+
+  const restoreItemFromSnapshot = React.useCallback(() => {
+    if (pendingNewItemIndex === null || !pendingItemSnapshot) {
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.map((item, idx) =>
+        idx === pendingNewItemIndex ? { ...pendingItemSnapshot } : item
+      )
+    }));
+
+    setItemSearches(prev => ({
+      ...prev,
+      [pendingNewItemIndex]: pendingItemSearchSnapshot
+    }));
+
+    setDropdownOpen(prev => ({
+      ...prev,
+      [pendingNewItemIndex]: false
+    }));
+
+    setPendingNewItemIndex(null);
+    setPendingItemSnapshot(null);
+    setPendingItemSearchSnapshot('');
+  }, [pendingNewItemIndex, pendingItemSnapshot, pendingItemSearchSnapshot]);
+
+  const handleCreateItemModalOpenChange = React.useCallback((open: boolean) => {
+    setNewItemModalOpen(open);
+    if (!open) {
+      if (!createItemModalSubmittedRef.current) {
+        restoreItemFromSnapshot();
+      }
+      createItemModalSubmittedRef.current = false;
+    }
+  }, [restoreItemFromSnapshot]);
+
+  const processNewInventoryItem = React.useCallback(async (articleData: ApiPayload) => {
+    if (pendingNewItemIndex === null) {
+      return;
+    }
+
+    setCreatingInventoryItem(true);
+    try {
+      if (!articleData.binCode || articleData.binCode.trim() === '') {
+        throw new Error('Bin code is required to register the new item.');
+      }
+
+      const createdArticle = await createArticleApi({
+        name: articleData.name,
+        description: articleData.description,
+        category: articleData.category,
+        unit: articleData.unit,
+        minStock: articleData.minStock,
+        consumable: articleData.consumable,
+        binCode: articleData.binCode,
+        imageFile: articleData.imageFile ?? undefined,
+      });
+
+      let catalogUpdated = false;
+      if (formData.warehouseId) {
+        try {
+          const refreshedItems = await getCatalogItemsByWarehouse(formData.warehouseId);
+          setCatalogItems(refreshedItems);
+          catalogUpdated = true;
+        } catch (refreshError) {
+          console.error('Failed to refresh catalog items:', refreshError);
+        }
+      }
+
+      if (!catalogUpdated) {
+        const mappedItem = mapArticleToCatalogItem(createdArticle);
+        if (mappedItem) {
+          setCatalogItems(prev => {
+            const exists = prev.some(item => item.id === mappedItem.id);
+            if (exists) {
+              return prev.map(item => (item.id === mappedItem.id ? mappedItem : item));
+            }
+            return [...prev, mappedItem];
+          });
+        }
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        items: prev.items.map((item, idx) =>
+          idx === pendingNewItemIndex
+            ? {
+                ...item,
+                isExisting: true,
+                name: createdArticle.name,
+                createdItemId: createdArticle.id,
+              }
+            : item
+        )
+      }));
+
+      setItemSearches(prev => ({
+        ...prev,
+        [pendingNewItemIndex]: createdArticle.name
+      }));
+
+      setDropdownOpen(prev => ({
+        ...prev,
+        [pendingNewItemIndex]: false
+      }));
+
+      setFilteredItems(prev => {
+        const next = { ...prev };
+        delete next[pendingNewItemIndex];
+        return next;
+      });
+
+      toast.success('Inventory item registered successfully.');
+
+      setPendingNewItemIndex(null);
+      setPendingItemSnapshot(null);
+      setPendingItemSearchSnapshot('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to register the new item.';
+      toast.error(message);
+      restoreItemFromSnapshot();
+    } finally {
+      createItemModalSubmittedRef.current = false;
+      setCreatingInventoryItem(false);
+    }
+  }, [formData.warehouseId, mapArticleToCatalogItem, pendingNewItemIndex, restoreItemFromSnapshot]);
+
+  const handleNewInventoryItemSubmit = React.useCallback((articleData: ApiPayload) => {
+    createItemModalSubmittedRef.current = true;
+    void processNewInventoryItem(articleData);
+  }, [processNewInventoryItem]);
 
   const loadCompanies = React.useCallback(async () => {
     if (companiesLoaded || loadingCompanies) return;
@@ -568,15 +752,23 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
 
     for (const item of formData.items) {
       const catalogMatch = catalogItems.find(ci => ci.name === item.name);
-      const numericItemId = catalogMatch ? Number(catalogMatch.id) : 0;
+      const numericCatalogId = catalogMatch ? Number(catalogMatch.id) : NaN;
 
-      if (item.isExisting && (!catalogMatch || Number.isNaN(numericItemId))) {
-        toast.error(`Unable to determine catalog item for ${item.name}`);
-        return;
+      let resolvedItemId: number;
+      if (item.isExisting) {
+        if (!catalogMatch || Number.isNaN(numericCatalogId)) {
+          toast.error(`Unable to determine catalog item for ${item.name}`);
+          return;
+        }
+        resolvedItemId = numericCatalogId;
+      } else if (typeof item.createdItemId === 'number' && Number.isFinite(item.createdItemId)) {
+        resolvedItemId = item.createdItemId;
+      } else {
+        resolvedItemId = 0;
       }
 
       payloadItems.push({
-        itemId: Number.isNaN(numericItemId) ? 0 : numericItemId,
+        itemId: resolvedItemId,
         quantity: item.quantity,
         productUrl: item.link || undefined
       });
@@ -667,26 +859,33 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
     }));
   };
 
-  const handleItemTypeToggle = (index: number, isExisting: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      items: prev.items.map((item, i) =>
+  const applyItemTypeToggle = (index: number, isExisting: boolean) => {
+    let updatedItems: PurchaseItem[] = [];
+
+    setFormData(prev => {
+      updatedItems = prev.items.map((item, i) =>
         i === index
-            ? {
-                ...item,
-                isExisting,
-                name: ''
-              }
+          ? {
+              ...item,
+              isExisting,
+              name: '',
+              createdItemId: undefined
+            }
           : item
-      )
-    }));
+      );
+
+      return {
+        ...prev,
+        items: updatedItems
+      };
+    });
 
     setItemSearches(prev => ({ ...prev, [index]: '' }));
     setDropdownOpen(prev => ({ ...prev, [index]: false }));
     setFilteredItems(prev => {
       const next = { ...prev };
       if (isExisting) {
-        const selectedNames = formData.items
+        const selectedNames = updatedItems
           .map((item, idx) => (idx !== index && item.isExisting ? item.name : null))
           .filter((name): name is string => Boolean(name));
         next[index] = catalogItems.filter(item => !selectedNames.includes(item.name));
@@ -695,6 +894,46 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
       }
       return next;
     });
+  };
+
+  const handleItemTypeToggle = (index: number, isExisting: boolean) => {
+    if (creatingInventoryItem) {
+      toast.info('Finish the current item registration before continuing.');
+      return;
+    }
+
+    if (!isExisting) {
+      if (newItemModalOpen) {
+        toast.info('Finish the current new item setup first.');
+        return;
+      }
+
+      const currentItem = formData.items[index];
+      setPendingItemSnapshot({ ...currentItem });
+      setPendingItemSearchSnapshot(itemSearches[index] ?? currentItem.name ?? '');
+      showConfirm({
+        title: 'Create a new inventory item?',
+        description:
+          'Switching to New will register this purchase as a brand-new inventory item shared across all warehouses. Make sure the item is not already in the catalog before continuing.',
+        type: 'warning',
+        confirmText: 'Continue',
+        cancelText: 'Keep existing',
+        onConfirm: () => {
+          hideModal();
+          setPendingNewItemIndex(index);
+          createItemModalSubmittedRef.current = false;
+          applyItemTypeToggle(index, isExisting);
+          void ensureInventoryCategories();
+          setNewItemModalOpen(true);
+        }
+      });
+      return;
+    }
+
+    applyItemTypeToggle(index, isExisting);
+    setPendingNewItemIndex(null);
+    setPendingItemSnapshot(null);
+    setPendingItemSearchSnapshot('');
   };
 
   const handlePurchaseReasonChange = (value: string) => {
@@ -764,7 +1003,7 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
       };
     });
   };
-
+   
   const handleWorkOrderChange = (value: string) => {
     setFormData(prev => {
       if (prev.workOrder === value) return prev;
@@ -1369,6 +1608,15 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
         </div>
         </form>
       </div>
+
+      <CreateItemModal
+        open={newItemModalOpen}
+        onOpenChange={handleCreateItemModalOpenChange}
+        editingArticle={null}
+        onSubmit={handleNewInventoryItemSubmit}
+        categories={inventoryCategories}
+        categoriesLoading={inventoryCategoriesLoading}
+      />
 
       <ConfirmModal
         open={modalState.open}

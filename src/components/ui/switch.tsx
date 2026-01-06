@@ -21,7 +21,7 @@ const Switch = React.forwardRef<
     }
   };
 
-  const backgroundColor = isChecked ? '#10b981' : '#9ca3af';
+  const backgroundColor = isChecked ? '#3daab0ff' : '#9ca3af';
   const thumbPosition = isChecked ? '24px' : '2px';
 
  // console.log('🔍 Switch render - isChecked:', isChecked, 'backgroundColor:', backgroundColor);
