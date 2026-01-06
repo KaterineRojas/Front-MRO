@@ -19,6 +19,7 @@ import { useAppSelector } from '../../../../store/hooks';
 import type { PurchaseRequest } from './purchaseService';
 import type { User as EngineerUser } from '../../enginner/types';
 import { toast } from 'sonner';
+import { ConfirmModal } from '../../../ui/confirm-modal';
 
 type ActiveView = 'list' | 'request';
 
@@ -52,6 +53,11 @@ interface RequestMeta {
   clientBilled: boolean;
   purchaserLabel: string;
   billingLabel: string;
+  workOrderLabel?: string;
+  locationAddress?: string;
+  locationUrl?: string;
+  locationZip?: string;
+  hasLocation: boolean;
 }
 
 function computeRequestMeta(request: PurchaseRequest, index: number): RequestMeta {
@@ -69,6 +75,12 @@ function computeRequestMeta(request: PurchaseRequest, index: number): RequestMet
 
   const reasonValue = request.reasonId ?? (request as any).reason;
   const hasReason = reasonValue !== undefined && reasonValue !== null && reasonValue !== '';
+
+  const workOrderLabel = request.workOrderId ?? '';
+  const locationAddress = (request.address ?? '').trim() || undefined;
+  const locationUrl = (request.googleMapsUrl ?? '').trim() || undefined;
+  const locationZip = (request.zipCode ?? '').trim() || undefined;
+  const hasLocation = Boolean(locationAddress || locationUrl || locationZip);
 
   const identifierSource = request.requestNumber ?? request.requestId ?? `REQ${String(index + 1).padStart(3, '0')}`;
 
@@ -97,6 +109,11 @@ function computeRequestMeta(request: PurchaseRequest, index: number): RequestMet
     clientBilled: Boolean(request.clientBilled),
     purchaserLabel: request.selfPurchase ? 'Requester purchases' : 'Keeper purchases',
     billingLabel: request.clientBilled ? 'Billed to client' : 'Not billed to client',
+    workOrderLabel: workOrderLabel || undefined,
+    locationAddress,
+    locationUrl,
+    locationZip,
+    hasLocation,
   };
 }
 
@@ -128,6 +145,8 @@ export function PurchaseRequests() {
     canConfirmBought,
     getStatusCount,
     refreshRequests,
+    modalState,
+    setModalOpen,
   } = usePurchaseRequests();
 
   const authUser = useAppSelector((state) => state.auth.user);
@@ -414,6 +433,31 @@ export function PurchaseRequests() {
                       {meta.customerLabel && <p>{meta.customerLabel}</p>}
                     </div>
                     <div>
+                      <p className="text-muted-foreground uppercase tracking-wide">Work order</p>
+                      <p>{meta.workOrderLabel || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground uppercase tracking-wide">Location</p>
+                      {meta.hasLocation ? (
+                        <div className="space-y-1">
+                          {meta.locationAddress && <p className="text-foreground">{meta.locationAddress}</p>}
+                          {meta.locationZip && <p className="text-muted-foreground">ZIP: {meta.locationZip}</p>}
+                          {meta.locationUrl && (
+                            <a
+                              href={meta.locationUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              Open map
+                            </a>
+                          )}
+                        </div>
+                      ) : (
+                        <p>—</p>
+                      )}
+                    </div>
+                    <div>
                       <p className="text-muted-foreground uppercase tracking-wide">Estimated delivery</p>
                       <p>{meta.expectedDelivery}</p>
                     </div>
@@ -566,6 +610,9 @@ export function PurchaseRequests() {
                                 {meta.companyLabel && <span>{meta.companyLabel}</span>}
                                 {meta.customerLabel && <span>{meta.customerLabel}</span>}
                               </div>
+                              {meta.workOrderLabel && (
+                                <p className="text-xs text-muted-foreground">Work order: {meta.workOrderLabel}</p>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell className="align-top">
@@ -634,7 +681,7 @@ export function PurchaseRequests() {
                           <TableRow>
                             <TableCell colSpan={8} className="bg-muted/20 p-0">
                               <div className="p-4 space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                                   <div>
                                     <p className="text-xs uppercase tracking-wide text-muted-foreground">Notes</p>
                                     <p className="mt-1 text-foreground">{meta.notesText || 'No additional notes'}</p>
@@ -645,6 +692,29 @@ export function PurchaseRequests() {
                                     <p className="text-xs text-muted-foreground">
                                       {meta.clientBilled ? 'Billed to client' : 'Not billed to client'}
                                     </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Location</p>
+                                    {meta.hasLocation ? (
+                                      <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                                        {meta.locationAddress && <li className="text-foreground">Address: {meta.locationAddress}</li>}
+                                        {meta.locationZip && <li>ZIP: {meta.locationZip}</li>}
+                                        {meta.locationUrl && (
+                                          <li>
+                                            <a
+                                              href={meta.locationUrl}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="text-primary hover:underline"
+                                            >
+                                              Open map
+                                            </a>
+                                          </li>
+                                        )}
+                                      </ul>
+                                    ) : (
+                                      <p className="mt-1 text-muted-foreground">No location info</p>
+                                    )}
                                   </div>
                                   <div>
                                     <p className="text-xs uppercase tracking-wide text-muted-foreground">Dates</p>
@@ -756,6 +826,18 @@ export function PurchaseRequests() {
           )}
         </DialogContent>
       </Dialog>
+      <ConfirmModal
+        open={modalState.open}
+        onOpenChange={setModalOpen}
+        title={modalState.title}
+        description={modalState.description}
+        type={modalState.type}
+        confirmText={modalState.confirmText}
+        cancelText={modalState.cancelText}
+        onConfirm={modalState.onConfirm}
+        showCancel={modalState.showCancel}
+        retryable={modalState.retryable}
+      />
     </div>
   );
 }

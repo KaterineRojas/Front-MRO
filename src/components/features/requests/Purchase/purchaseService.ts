@@ -66,6 +66,9 @@ export interface PurchaseRequest {
   customerId?: string;
   customerName?: string;
   clientBilled?: boolean;
+  address?: string;
+  googleMapsUrl?: string;
+  zipCode?: string;
 }
 
 export interface PurchaseRequestItemPayload {
@@ -383,6 +386,9 @@ function normalizePurchaseRequest(raw: any, index: number): PurchaseRequest {
     projectName,
     workOrderId: raw?.workOrderId ?? raw?.workOrder ?? undefined,
     notes: raw?.notes ?? raw?.comment ?? raw?.comments ?? undefined,
+    address: raw?.address ?? raw?.deliveryAddress ?? undefined,
+    googleMapsUrl: raw?.googleMapsUrl ?? raw?.locationUrl ?? undefined,
+    zipCode: raw?.zipCode ?? raw?.postalCode ?? undefined,
     status: statusValue,
     statusName: raw?.statusName ?? raw?.statusDescription ?? undefined,
     reasonId: reasonValue,

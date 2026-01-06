@@ -6,7 +6,8 @@ import {
   confirmPurchaseBought,
   type PurchaseRequest
 } from './purchaseService';
- 
+import { useConfirmModal } from '../../../ui/confirm-modal';
+
 interface UsePurchaseRequestsReturn {
   purchaseRequests: PurchaseRequest[];
   filteredPurchaseRequests: PurchaseRequest[];
@@ -25,6 +26,8 @@ interface UsePurchaseRequestsReturn {
   canConfirmBought: (request: PurchaseRequest) => boolean;
   getStatusCount: (status: string) => number;
   refreshRequests: () => Promise<void>;
+  modalState: ReturnType<typeof useConfirmModal>['modalState'];
+  setModalOpen: ReturnType<typeof useConfirmModal>['setModalOpen'];
 }
 
 const STATUS_CODE_MAP: Record<number, 'pending' | 'approved' | 'rejected' | 'completed'> = {
@@ -63,6 +66,7 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [warehouseFilter, setWarehouseFilter] = useState<string>('all');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const { modalState, showConfirm, hideModal, setModalOpen } = useConfirmModal();
 
   // Load purchase requests
   const loadRequests = async () => {
@@ -144,20 +148,31 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
   // Cancel purchase request
   const handleCancel = async (requestId: string) => {
     const normalizedId = requestId.toString();
-    try {
-      const result = await deletePurchaseRequest(normalizedId);
-      if (result.success) {
-        setPurchaseRequests(prev => prev.filter(req => {
-          const reqKey = (req.requestId ?? req.requestNumber)?.toString();
-          return reqKey !== normalizedId;
-        }));
-        toast.success('Request cancelled successfully');
-      } else {
-        toast.error(result.message);
+    showConfirm({
+      title: 'Cancel purchase request',
+      description: 'Are you sure you want to cancel this purchase request? This action cannot be undone.',
+      type: 'warning',
+      confirmText: 'Yes, cancel request',
+      cancelText: 'Keep request',
+      onConfirm: async () => {
+        try {
+          const result = await deletePurchaseRequest(normalizedId);
+          if (result.success) {
+            setPurchaseRequests(prev => prev.filter(req => {
+              const reqKey = (req.requestId ?? req.requestNumber)?.toString();
+              return reqKey !== normalizedId;
+            }));
+            toast.success('Request cancelled successfully');
+          } else {
+            toast.error(result.message);
+          }
+        } catch (error: any) {
+          toast.error(error.message || 'Failed to cancel request');
+        } finally {
+          hideModal();
+        }
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to cancel request');
-    }
+    });
   };
 
   // Confirm purchase as bought
@@ -212,6 +227,8 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
     canCancelRequest,
     canConfirmBought,
     getStatusCount,
-    refreshRequests: loadRequests
+    refreshRequests: loadRequests,
+    modalState,
+    setModalOpen
   };
 }
