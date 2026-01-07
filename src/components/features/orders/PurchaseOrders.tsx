@@ -18,9 +18,6 @@ import { mockPurchaseOrders, PurchaseOrder, PurchaseItem } from './data/mockPurc
 
 
 import { useSelector } from 'react-redux';
-import { Button as ActionButton } from '../inventory/components/Button'
-import {getUrgencyBadge, getStatusBadge, getTypeBadge} from '../inventory/components/RequestBadges'
-import TabsGroup from '../requests/components/Tabs'
 
 
 const mockArticles = [
@@ -41,9 +38,12 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [creatingRequest, setCreatingRequest] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [inactiveSearchTerm, setInactiveSearchTerm] = useState<string>('');
+  const [engineerSearchTerm, setEngineerSearchTerm] = useState<string>('');
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState<Date | undefined>();
   const [expandedActiveOrders, setExpandedActiveOrders] = useState<Set<number>>(new Set());
   const [expandedInactiveOrders, setExpandedInactiveOrders] = useState<Set<number>>(new Set());
+  const [expandedEngineerOrders, setExpandedEngineerOrders] = useState<Set<number>>(new Set());
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [confirmPurchaseDialogOpen, setConfirmPurchaseDialogOpen] = useState(false);
   const [activateConfirmDialogOpen, setActivateConfirmDialogOpen] = useState(false);
@@ -53,7 +53,6 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
   const [actualCost, setActualCost] = useState<number>(0);
 
     const darkMode = useSelector((state: any) => state.ui.darkMode);
-    const [activeTab, setActiveTab] = useState('Active Orders');
 
 
   const handleToggleExpandActive = (orderId: number) => {
@@ -80,6 +79,18 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
     });
   };
 
+  const handleToggleExpandEngineer = (orderId: number) => {
+    setExpandedEngineerOrders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
   const [formData, setFormData] = useState({
     articleCode: '',
     quantity: '',
@@ -96,7 +107,10 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
     order.status === 'approved' || order.status === 'ordered'
   );
   const inactiveOrders = purchaseOrders.filter(order =>
-    order.status === 'delivered' || order.status === 'cancelled' || order.status === 'completed' || order.status === 'received'
+    (order.status === 'delivered' || order.status === 'cancelled' || order.status === 'completed' || order.status === 'received') && !order.purchasedBy
+  );
+  const engineerOrders = purchaseOrders.filter(order =>
+    (order.status === 'delivered' || order.status === 'cancelled' || order.status === 'completed' || order.status === 'received') && order.purchasedBy
   );
 
   const filteredActiveOrders = activeOrders.filter(order => {
@@ -105,8 +119,29 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
   });
 
   const filteredInactiveOrders = inactiveOrders.filter(order => {
-    if (statusFilter === 'all') return true;
-    return order.status === statusFilter;
+    if (!inactiveSearchTerm) return true;
+    const searchLower = inactiveSearchTerm.toLowerCase();
+    return (
+      order.poNumber.toLowerCase().includes(searchLower) ||
+      order.department.toLowerCase().includes(searchLower) ||
+      order.requestedBy.toLowerCase().includes(searchLower) ||
+      order.priority.toLowerCase().includes(searchLower) ||
+      (order.expectedDelivery && order.expectedDelivery.toLowerCase().includes(searchLower)) ||
+      (order.actualDelivery && order.actualDelivery.toLowerCase().includes(searchLower))
+    );
+  });
+
+  const filteredEngineerOrders = engineerOrders.filter(order => {
+    if (!engineerSearchTerm) return true;
+    const searchLower = engineerSearchTerm.toLowerCase();
+    return (
+      order.poNumber.toLowerCase().includes(searchLower) ||
+      (order.purchasedBy && order.purchasedBy.toLowerCase().includes(searchLower)) ||
+      order.department.toLowerCase().includes(searchLower) ||
+      order.priority.toLowerCase().includes(searchLower) ||
+      (order.expectedDelivery && order.expectedDelivery.toLowerCase().includes(searchLower)) ||
+      (order.actualDelivery && order.actualDelivery.toLowerCase().includes(searchLower))
+    );
   });
 
   const selectedArticle = mockArticles.find(article => article.code === formData.articleCode);
@@ -341,27 +376,17 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
         <TabsList>
           <TabsTrigger value="active" className="flex items-center space-x-2">
             <ShoppingCart className="h-4 w-4" />
-            <span>Active Orders ({filteredActiveOrders.length})</span>
+            <span>Purchase Requests ({filteredActiveOrders.length})</span>
           </TabsTrigger>
           <TabsTrigger value="inactive" className="flex items-center space-x-2">
             <CheckCircle className="h-4 w-4" />
-            <span>Inactive Orders ({filteredInactiveOrders.length})</span>
+            <span>Purchase History ({filteredInactiveOrders.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="engineer" className="flex items-center space-x-2">
+            <Package className="h-4 w-4" />
+            <span>Engineer Purchases ({filteredEngineerOrders.length})</span>
           </TabsTrigger>
         </TabsList>
-
-        <TabsGroup 
-          tabsList={[{
-              name: 'Active Orders',
-              iconType: 'shoppingCart'
-            },{
-              name: 'Orders History',
-              iconType: 'history'
-            }
-          ]}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-        />
-          
 
         <TabsContent value="active" className="space-y-6">
           {/* Active Orders Filter */}
@@ -375,7 +400,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                   <SelectContent>
                     <SelectItem value="all">All Active</SelectItem>
                     <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="activated">Activated</SelectItem>
+                    <SelectItem value="ordered">Ordered</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -612,21 +637,16 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
         </TabsContent>
 
         <TabsContent value="inactive" className="space-y-6">
-          {/* Inactive Orders Filter */}
+          {/* Inactive Orders Search */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex gap-4">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Inactive</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="received">Received</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  placeholder="Search by PO Number, Department, Solicitante, Priority, Delivery Date..."
+                  value={inactiveSearchTerm}
+                  onChange={(e) => setInactiveSearchTerm(e.target.value)}
+                  className="max-w-lg"
+                />
               </div>
             </CardContent>
           </Card>
@@ -647,7 +667,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                       <TableHead className="w-12"></TableHead>
                       <TableHead>PO Number</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Solicitante</TableHead>
+                      <TableHead>Engineer</TableHead>
                       <TableHead>Total Value</TableHead>
                       <TableHead>Department</TableHead>
                       <TableHead>Priority</TableHead>
@@ -710,6 +730,173 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
 
                         {/* Expanded Items Section */}
                         {expandedInactiveOrders.has(order.id) && (
+                          <TableRow>
+                            <TableCell colSpan={8} className="bg-muted/30 p-0">
+                              <div className="p-4">
+                                <h4 className="flex items-center mb-3">
+                                  <Package className="h-4 w-4 mr-2" />
+                                  Items in this order ({order.items.length})
+                                </h4>
+                                <div className="rounded-md border bg-card">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="w-20">Image</TableHead>
+                                        <TableHead>Article Code</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead>Quantity</TableHead>
+                                        <TableHead>Unit Cost</TableHead>
+                                        <TableHead>Total Cost</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        {order.items.some(item => item.purchaseUrl) && (
+                                          <TableHead>Link</TableHead>
+                                        )}
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {order.items.map((item) => (
+                                        <TableRow key={item.id}>
+                                          <TableCell>
+                                            <ImageWithFallback
+                                              src={item.imageUrl || ''}
+                                              alt={item.articleDescription}
+                                              className="w-12 h-12 object-cover rounded"
+                                            />
+                                          </TableCell>
+                                          <TableCell className="font-mono">{item.articleCode}</TableCell>
+                                          <TableCell>{item.articleDescription}</TableCell>
+                                          <TableCell>{item.quantity} {item.unit}</TableCell>
+                                          <TableCell>${item.unitCost.toFixed(2)}</TableCell>
+                                          <TableCell>${item.totalCost.toFixed(2)}</TableCell>
+                                          <TableCell>
+                                            <Badge variant="outline">
+                                              {item.status}
+                                            </Badge>
+                                          </TableCell>
+                                          {item.purchaseUrl && (
+                                            <TableCell>
+                                              <a
+                                                href={item.purchaseUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-600 hover:underline text-sm"
+                                              >
+                                                View
+                                              </a>
+                                            </TableCell>
+                                          )}
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="engineer" className="space-y-6">
+          {/* Engineer Orders Search */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex gap-4">
+                <Input
+                  placeholder="Search by PO Number, Ingeniero, Department, Priority, Delivery Date..."
+                  value={engineerSearchTerm}
+                  onChange={(e) => setEngineerSearchTerm(e.target.value)}
+                  className="max-w-lg"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Engineer Orders Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Package className="h-5 w-5" />
+                <span>Engineer Purchases ({filteredEngineerOrders.length})</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead>PO Number</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Engineer</TableHead>
+                      <TableHead>Total Value</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Delivery Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredEngineerOrders.map((order) => (
+                      <React.Fragment key={order.id}>
+                        <TableRow className="hover:bg-muted/50">
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleExpandEngineer(order.id)}
+                            >
+                              {expandedEngineerOrders.has(order.id) ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                          <TableCell className="font-mono">{order.poNumber}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              {getStatusIcon(order.status)}
+                              {getStatusBadge(order.status)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p>{order.purchasedBy || 'N/A'}</p>
+                              <p className="text-xs text-muted-foreground">{order.department}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <p>${order.totalOrderValue.toFixed(2)}</p>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p>{order.department}</p>
+                              <p className="text-xs text-muted-foreground">{order.project}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>{getPriorityBadge(order.priority)}</TableCell>
+                          <TableCell>
+                            <div>
+                              {order.expectedDelivery && (
+                                <p className="text-sm">{order.expectedDelivery}</p>
+                              )}
+                              {order.actualDelivery && (
+                                <p className="text-xs text-green-600">
+                                  Delivered: {order.actualDelivery}
+                                </p>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Expanded Items Section */}
+                        {expandedEngineerOrders.has(order.id) && (
                           <TableRow>
                             <TableCell colSpan={8} className="bg-muted/30 p-0">
                               <div className="p-4">
@@ -939,22 +1126,9 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                   </Table>
                 </div>
                 <div>
-                  <Label htmlFor="actualCost">Actual Cost *</Label>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm">$</span>
-                    <Input
-                      id="actualCost"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={actualCost}
-                      onChange={(e) => setActualCost(parseFloat(e.target.value) || 0)}
-                      className="w-full"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <h2 className="text-xs text-muted-foreground mt-1">
                     Total value: ${selectedOrder.totalOrderValue.toFixed(2)}
-                  </p>
+                  </h2>
                 </div>
               </>
             )}

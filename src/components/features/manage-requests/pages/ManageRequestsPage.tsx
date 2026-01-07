@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { Badge } from '../../../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
 import { useAppSelector } from '../../../../store/hooks';
+import { Package, PackageCheck } from 'lucide-react';
 
 // Importar los Custom Hooks
 import { usePackingRequestsLogic } from '../hooks/usePackingRequestsLogic'; 
@@ -66,8 +67,14 @@ export function ManageRequestsPage() {
 
       <Tabs value={activeTab} onValueChange={(v: string) => setActiveTab(v)} className="w-full">
         <TabsList>
-          <TabsTrigger value="packing-requests" className="cursor-pointer">Packing Requests</TabsTrigger>
-          <TabsTrigger value="returns" className="cursor-pointer">Returns</TabsTrigger>
+          <TabsTrigger value="packing-requests" className="cursor-pointer flex items-center space-x-2">
+            <Package className="h-4 w-4" />
+            <span>Packing Requests</span>
+          </TabsTrigger>
+          <TabsTrigger value="returns" className="cursor-pointer flex items-center space-x-2">
+            <PackageCheck className="h-4 w-4" />
+            <span>Returns</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="packing-requests">
