@@ -764,9 +764,9 @@ function AppRoutes() {
         <Route index element={<Dashboard />} />
 
         {/* Backend Rule: [Authorize(Roles = "Keeper,Engineer,Manager,Director")] */}
-        <Route element={<RoleGuard allowedRoles={[ROLES.KEEPER, ROLES.ENGINEER, ROLES.MANAGER, ROLES.DIRECTOR, ROLES.ADMIN]} />}>
-          <Route path="orders" element={<PurchaseOrdersWrapper />} />
-          <Route path="orders/detail" element={<OrderDetailWrapper />} />
+        <Route element={<RoleGuard allowedRoles={[ROLES.MANAGER, ROLES.DIRECTOR, ROLES.ADMIN]} />}>
+          {/* <Route path="orders" element={<PurchaseOrdersWrapper />} />
+          <Route path="orders/detail" element={<OrderDetailWrapper />} /> */}
           <Route path="requests" element={<RequestManagement />} />
         </Route>
 
@@ -786,6 +786,7 @@ function AppRoutes() {
           <Route path="cycle-count/active" element={<CycleCountActiveWrapper />} />
           <Route path="cycle-count/detail" element={<CycleCountDetailPage />} />
           <Route path="manage-requests" element={<ManageRequestsPage />} />
+          {/* <Route path="orders" element={<PurchaseOrdersWrapper />} /> */}
 
         </Route>
 
