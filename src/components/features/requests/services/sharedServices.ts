@@ -236,8 +236,8 @@ export async function getDepartments(companyName: string): Promise<Department[]>
   });
 }
 
-export async function getCatalogItemsByWarehouse(warehouseId: string): Promise<CatalogItem[]> {
-  const endpoint = `/inventory/by-warehouse/${warehouseId}`;
+export async function getCatalogItemsByWarehouse(warehouseId: string , available: boolean): Promise<CatalogItem[]> {
+  const endpoint = `/inventory/by-warehouse/${warehouseId}?includeOutOfStock=${available}`;
   const token = store.getState().auth.accessToken as string;
   return fetchDataWithRetry(endpoint, token, (data: any) => {
     if (!Array.isArray(data)) {

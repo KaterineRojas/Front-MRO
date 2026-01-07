@@ -293,10 +293,6 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
 
     setCreatingInventoryItem(true);
     try {
-      if (!articleData.binCode || articleData.binCode.trim() === '') {
-        throw new Error('Bin code is required to register the new item.');
-      }
-
       const createdArticle = await createArticleApi({
         name: articleData.name,
         description: articleData.description,
@@ -304,7 +300,7 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
         unit: articleData.unit,
         minStock: articleData.minStock,
         consumable: articleData.consumable,
-        binCode: articleData.binCode,
+        binCode: articleData.binCode ?? '',
         imageFile: articleData.imageFile ?? undefined,
       });
 

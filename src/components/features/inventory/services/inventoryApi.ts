@@ -187,7 +187,7 @@ export async function createArticleApi(articleData: {
   unit: string;
   minStock: number;
   consumable: boolean;
-  binCode: string;
+  binCode?: string;
   imageFile?: File | null;
 }): Promise<Article> {
   try {
@@ -200,7 +200,9 @@ export async function createArticleApi(articleData: {
     formData.append('minStock', articleData.minStock.toString());
     formData.append('isActive', 'true');
     formData.append('consumable', articleData.consumable.toString());
-    formData.append('binCode', articleData.binCode);
+    if (articleData.binCode) {
+      formData.append('binCode', articleData.binCode);
+    }
 
     if (articleData.imageFile) {
       formData.append('file', articleData.imageFile);
