@@ -21,11 +21,10 @@ export interface PurchaseOrder {
     department: string;
     project: string;
     approvedBy?: string;
-    purchasedBy?: string;
     orderDate: string;
     expectedDelivery?: string;
     actualDelivery?: string;
-    status: 'pending' | 'approved' | 'ordered' | 'delivered' | 'cancelled' | 'activated' | 'completed' | 'received';
+    status: 'pending' | 'approved' | 'ordered' | 'delivered' | 'cancelled' | 'activated' | 'completed';
     priority: 'low' | 'medium' | 'high' | 'urgent';
     notes: string;
     createdAt: string;
@@ -46,7 +45,7 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
         approvedBy: 'Sarah Johnson',
         orderDate: '2025-01-18',
         expectedDelivery: '2025-01-25',
-        status: 'ordered',
+        status: 'activated',
         priority: 'medium',
         notes: 'Regular monthly paper stock replenishment',
         createdAt: '2025-01-18T09:00:00Z',
@@ -85,11 +84,10 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
         requestedBy: 'Mike Chen',
         department: 'IT',
         project: 'Workstation Setup Project',
-        purchasedBy: 'Carlos Rodriguez',
         orderDate: '2025-01-20',
         expectedDelivery: '2025-01-27',
         actualDelivery: '2025-01-22',
-        status: 'received',
+        status: 'delivered',
         priority: 'high',
         notes: 'Urgent need for new workstation setups',
         createdAt: '2025-01-20T14:30:00Z',
@@ -117,7 +115,7 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
         requestedBy: 'David Wilson',
         department: 'Training',
         project: 'Training Room Upgrade',
-        status: 'approved',
+        status: 'pending',
         priority: 'medium',
         orderDate: '2025-01-21',
         notes: 'For new training rooms setup',
@@ -196,51 +194,6 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
                 totalCost: 196.00,
                 status: 'pending',
                 imageUrl: 'https://images.unsplash.com/photo-1625948515291-69613efd103f?w=300'
-            }
-        ]
-    },
-    {
-        id: 5,
-        poNumber: 'PO-2025-005',
-        supplier: 'Industrial Tools Co.',
-        supplierContact: 'sales@industrialtools.com',
-        requestedBy: 'Laura Stevens',
-        department: 'Engineering',
-        project: 'Field Equipment Purchase',
-        purchasedBy: 'Juan Martinez',
-        orderDate: '2025-01-23',
-        expectedDelivery: '2025-01-30',
-        actualDelivery: '2025-01-25',
-        status: 'received',
-        priority: 'medium',
-        notes: 'Field equipment purchased by engineer directly',
-        createdAt: '2025-01-23T08:30:00Z',
-        totalOrderValue: 850.00,
-        items: [
-            {
-                id: 9,
-                articleCode: 'TOOL-001',
-                articleDescription: 'Digital Multimeter Fluke 87V',
-                quantity: 2,
-                unit: 'units',
-                unitCost: 350.00,
-                totalCost: 700.00,
-                receivedQuantity: 2,
-                status: 'received',
-                purchaseUrl: 'https://example.com/multimeter',
-                imageUrl: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=300'
-            },
-            {
-                id: 10,
-                articleCode: 'TOOL-002',
-                articleDescription: 'Safety Goggles Pack of 10',
-                quantity: 1,
-                unit: 'pack',
-                unitCost: 150.00,
-                totalCost: 150.00,
-                receivedQuantity: 1,
-                status: 'received',
-                imageUrl: 'https://images.unsplash.com/photo-1605647540924-852290f6b0d5?w=300'
             }
         ]
     }

@@ -17,7 +17,7 @@ import { format } from 'date-fns';
 import { mockPurchaseOrders, PurchaseOrder, PurchaseItem } from './data/mockPurchaseOrders'
 
 
-import { useSelector } from 'react-redux';
+import { Button as ActionButton } from '../inventory/components/Button'
 
 
 const mockArticles = [
@@ -38,12 +38,9 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [creatingRequest, setCreatingRequest] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [inactiveSearchTerm, setInactiveSearchTerm] = useState<string>('');
-  const [engineerSearchTerm, setEngineerSearchTerm] = useState<string>('');
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState<Date | undefined>();
   const [expandedActiveOrders, setExpandedActiveOrders] = useState<Set<number>>(new Set());
   const [expandedInactiveOrders, setExpandedInactiveOrders] = useState<Set<number>>(new Set());
-  const [expandedEngineerOrders, setExpandedEngineerOrders] = useState<Set<number>>(new Set());
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [confirmPurchaseDialogOpen, setConfirmPurchaseDialogOpen] = useState(false);
   const [activateConfirmDialogOpen, setActivateConfirmDialogOpen] = useState(false);
@@ -51,9 +48,6 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
   const [cancelNotes, setCancelNotes] = useState('');
   const [purchasedQuantities, setPurchasedQuantities] = useState<Record<number, number>>({});
   const [actualCost, setActualCost] = useState<number>(0);
-
-    const darkMode = useSelector((state: any) => state.ui.darkMode);
-
 
   const handleToggleExpandActive = (orderId: number) => {
     setExpandedActiveOrders(prev => {
@@ -79,18 +73,6 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
     });
   };
 
-  const handleToggleExpandEngineer = (orderId: number) => {
-    setExpandedEngineerOrders(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(orderId)) {
-        newSet.delete(orderId);
-      } else {
-        newSet.add(orderId);
-      }
-      return newSet;
-    });
-  };
-
   const [formData, setFormData] = useState({
     articleCode: '',
     quantity: '',
@@ -104,13 +86,10 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
   });
 
   const activeOrders = purchaseOrders.filter(order =>
-    order.status === 'approved' || order.status === 'ordered'
+    order.status === 'pending' || order.status === 'approved' || order.status === 'activated'
   );
   const inactiveOrders = purchaseOrders.filter(order =>
-    (order.status === 'delivered' || order.status === 'cancelled' || order.status === 'completed' || order.status === 'received') && !order.purchasedBy
-  );
-  const engineerOrders = purchaseOrders.filter(order =>
-    (order.status === 'delivered' || order.status === 'cancelled' || order.status === 'completed' || order.status === 'received') && order.purchasedBy
+    order.status === 'delivered' || order.status === 'cancelled' || order.status === 'completed'
   );
 
   const filteredActiveOrders = activeOrders.filter(order => {
@@ -119,29 +98,8 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
   });
 
   const filteredInactiveOrders = inactiveOrders.filter(order => {
-    if (!inactiveSearchTerm) return true;
-    const searchLower = inactiveSearchTerm.toLowerCase();
-    return (
-      order.poNumber.toLowerCase().includes(searchLower) ||
-      order.department.toLowerCase().includes(searchLower) ||
-      order.requestedBy.toLowerCase().includes(searchLower) ||
-      order.priority.toLowerCase().includes(searchLower) ||
-      (order.expectedDelivery && order.expectedDelivery.toLowerCase().includes(searchLower)) ||
-      (order.actualDelivery && order.actualDelivery.toLowerCase().includes(searchLower))
-    );
-  });
-
-  const filteredEngineerOrders = engineerOrders.filter(order => {
-    if (!engineerSearchTerm) return true;
-    const searchLower = engineerSearchTerm.toLowerCase();
-    return (
-      order.poNumber.toLowerCase().includes(searchLower) ||
-      (order.purchasedBy && order.purchasedBy.toLowerCase().includes(searchLower)) ||
-      order.department.toLowerCase().includes(searchLower) ||
-      order.priority.toLowerCase().includes(searchLower) ||
-      (order.expectedDelivery && order.expectedDelivery.toLowerCase().includes(searchLower)) ||
-      (order.actualDelivery && order.actualDelivery.toLowerCase().includes(searchLower))
-    );
+    if (statusFilter === 'all') return true;
+    return order.status === statusFilter;
   });
 
   const selectedArticle = mockArticles.find(article => article.code === formData.articleCode);
@@ -171,7 +129,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
       project: formData.project,
       orderDate: format(new Date(), 'yyyy-MM-dd'),
       expectedDelivery: expectedDeliveryDate ? format(expectedDeliveryDate, 'yyyy-MM-dd') : undefined,
-      status: 'approved',
+      status: 'pending',
       priority: formData.priority,
       notes: formData.notes,
       createdAt: new Date().toISOString(),
@@ -246,6 +204,10 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
     setDialogOpen(false);
   };
 
+  const handleCreateNewRequest = () => {
+    setCreatingRequest(true);
+  };
+
   const handleBackFromCreate = () => {
     setCreatingRequest(false);
   };
@@ -261,7 +223,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
       project: requestData.project,
       orderDate: format(new Date(), 'yyyy-MM-dd'),
       expectedDelivery: requestData.expectedDelivery,
-      status: 'approved',
+      status: 'pending',
       priority: requestData.priority,
       notes: requestData.notes,
       createdAt: requestData.createdAt,
@@ -292,15 +254,13 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
       case 'approved':
         return <Badge variant="secondary">Approved</Badge>;
       case 'ordered':
-        return <Badge variant="outline" className="text-blue-600 border-blue-600">Ordered</Badge>;
+        return <Badge variant="default">Ordered</Badge>;
       case 'activated':
         return <Badge variant="outline" className="text-blue-600 border-blue-600">Activated</Badge>;
       case 'delivered':
         return <Badge variant="outline" className="text-green-600 border-green-600">Delivered</Badge>;
       case 'completed':
         return <Badge variant="outline" className="text-green-600 border-green-600">Completed</Badge>;
-      case 'received':
-        return <Badge variant="outline" className="text-green-600 border-green-600">Received</Badge>;
       case 'cancelled':
         return <Badge variant="destructive">Cancelled</Badge>;
     }
@@ -327,7 +287,6 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
         return <ShoppingCart className="h-4 w-4 text-blue-600" />;
       case 'delivered':
       case 'completed':
-      case 'received':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'cancelled':
         return <XCircle className="h-4 w-4 text-red-600" />;
@@ -366,6 +325,11 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
           </p>
         </div>
 
+        <ActionButton variant='success' size='md' onClick={handleCreateNewRequest} >
+          <Plus className="h-4 w-4 mr-2" />
+          Register Kit
+        </ActionButton>
+
         {/* <Button onClick={handleCreateNewRequest}>
           <Plus className="mr-2 h-4 w-4" />
           Create Purchase Request
@@ -376,15 +340,11 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
         <TabsList>
           <TabsTrigger value="active" className="flex items-center space-x-2">
             <ShoppingCart className="h-4 w-4" />
-            <span>Purchase Requests ({filteredActiveOrders.length})</span>
+            <span>Active Orders ({filteredActiveOrders.length})</span>
           </TabsTrigger>
           <TabsTrigger value="inactive" className="flex items-center space-x-2">
             <CheckCircle className="h-4 w-4" />
-            <span>Purchase History ({filteredInactiveOrders.length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="engineer" className="flex items-center space-x-2">
-            <Package className="h-4 w-4" />
-            <span>Engineer Purchases ({filteredEngineerOrders.length})</span>
+            <span>Inactive Orders ({filteredInactiveOrders.length})</span>
           </TabsTrigger>
         </TabsList>
 
@@ -399,8 +359,9 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Active</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="ordered">Ordered</SelectItem>
+                    <SelectItem value="activated">Activated</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -480,7 +441,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
-                              {order.status === 'approved' && (
+                              {order.status === 'pending' && (
                                 <>
                                   <Button
                                     variant="outline"
@@ -490,7 +451,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                                       setActivateConfirmDialogOpen(true);
                                     }}
                                   >
-                                    Order
+                                    Activate
                                   </Button>
                                   <Button
                                     variant="outline"
@@ -504,7 +465,19 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                                   </Button>
                                 </>
                               )}
-                              {order.status === 'ordered' && (
+                              {order.status === 'approved' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedOrder(order);
+                                    setCancelDialogOpen(true);
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              )}
+                              {order.status === 'activated' && (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -592,6 +565,26 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
 
                                 {/* Action Buttons */}
                                 <div className="flex justify-end space-x-2 mt-4">
+                                  {order.status === 'pending' && (
+                                    <>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleStatusUpdate(order.id, 'approved', 'Current User')}
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleStatusUpdate(order.id, 'cancelled')}
+                                      >
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                        Cancel
+                                      </Button>
+                                    </>
+                                  )}
                                   {order.status === 'approved' && (
                                     <Button
                                       variant="outline"
@@ -599,27 +592,17 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                                       onClick={() => handleStatusUpdate(order.id, 'ordered')}
                                     >
                                       <ShoppingCart className="h-4 w-4 mr-1" />
-                                      Mark as Ordered
+                                      Mark Ordered
                                     </Button>
                                   )}
                                   {order.status === 'ordered' && (
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => {
-                                        setSelectedOrder(order);
-                                        setPurchasedQuantities(
-                                          order.items.reduce((acc, item) => ({
-                                            ...acc,
-                                            [item.id]: item.quantity
-                                          }), {})
-                                        );
-                                        setActualCost(order.totalOrderValue);
-                                        setConfirmPurchaseDialogOpen(true);
-                                      }}
+                                      onClick={() => handleStatusUpdate(order.id, 'delivered')}
                                     >
                                       <Package className="h-4 w-4 mr-1" />
-                                      Confirm Receipt
+                                      Mark Delivered
                                     </Button>
                                   )}
                                 </div>
@@ -637,16 +620,21 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
         </TabsContent>
 
         <TabsContent value="inactive" className="space-y-6">
-          {/* Inactive Orders Search */}
+          {/* Inactive Orders Filter */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex gap-4">
-                <Input
-                  placeholder="Search by PO Number, Department, Solicitante, Priority, Delivery Date..."
-                  value={inactiveSearchTerm}
-                  onChange={(e) => setInactiveSearchTerm(e.target.value)}
-                  className="max-w-lg"
-                />
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Inactive</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
@@ -667,7 +655,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                       <TableHead className="w-12"></TableHead>
                       <TableHead>PO Number</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Engineer</TableHead>
+                      <TableHead>Solicitante</TableHead>
                       <TableHead>Total Value</TableHead>
                       <TableHead>Department</TableHead>
                       <TableHead>Priority</TableHead>
@@ -802,173 +790,6 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="engineer" className="space-y-6">
-          {/* Engineer Orders Search */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex gap-4">
-                <Input
-                  placeholder="Search by PO Number, Ingeniero, Department, Priority, Delivery Date..."
-                  value={engineerSearchTerm}
-                  onChange={(e) => setEngineerSearchTerm(e.target.value)}
-                  className="max-w-lg"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Engineer Orders Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Package className="h-5 w-5" />
-                <span>Engineer Purchases ({filteredEngineerOrders.length})</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12"></TableHead>
-                      <TableHead>PO Number</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Engineer</TableHead>
-                      <TableHead>Total Value</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead>Delivery Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredEngineerOrders.map((order) => (
-                      <React.Fragment key={order.id}>
-                        <TableRow className="hover:bg-muted/50">
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleToggleExpandEngineer(order.id)}
-                            >
-                              {expandedEngineerOrders.has(order.id) ? (
-                                <ChevronDown className="h-4 w-4" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </TableCell>
-                          <TableCell className="font-mono">{order.poNumber}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              {getStatusIcon(order.status)}
-                              {getStatusBadge(order.status)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p>{order.purchasedBy || 'N/A'}</p>
-                              <p className="text-xs text-muted-foreground">{order.department}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <p>${order.totalOrderValue.toFixed(2)}</p>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p>{order.department}</p>
-                              <p className="text-xs text-muted-foreground">{order.project}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>{getPriorityBadge(order.priority)}</TableCell>
-                          <TableCell>
-                            <div>
-                              {order.expectedDelivery && (
-                                <p className="text-sm">{order.expectedDelivery}</p>
-                              )}
-                              {order.actualDelivery && (
-                                <p className="text-xs text-green-600">
-                                  Delivered: {order.actualDelivery}
-                                </p>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-
-                        {/* Expanded Items Section */}
-                        {expandedEngineerOrders.has(order.id) && (
-                          <TableRow>
-                            <TableCell colSpan={8} className="bg-muted/30 p-0">
-                              <div className="p-4">
-                                <h4 className="flex items-center mb-3">
-                                  <Package className="h-4 w-4 mr-2" />
-                                  Items in this order ({order.items.length})
-                                </h4>
-                                <div className="rounded-md border bg-card">
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead className="w-20">Image</TableHead>
-                                        <TableHead>Article Code</TableHead>
-                                        <TableHead>Description</TableHead>
-                                        <TableHead>Quantity</TableHead>
-                                        <TableHead>Unit Cost</TableHead>
-                                        <TableHead>Total Cost</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        {order.items.some(item => item.purchaseUrl) && (
-                                          <TableHead>Link</TableHead>
-                                        )}
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {order.items.map((item) => (
-                                        <TableRow key={item.id}>
-                                          <TableCell>
-                                            <ImageWithFallback
-                                              src={item.imageUrl || ''}
-                                              alt={item.articleDescription}
-                                              className="w-12 h-12 object-cover rounded"
-                                            />
-                                          </TableCell>
-                                          <TableCell className="font-mono">{item.articleCode}</TableCell>
-                                          <TableCell>{item.articleDescription}</TableCell>
-                                          <TableCell>{item.quantity} {item.unit}</TableCell>
-                                          <TableCell>${item.unitCost.toFixed(2)}</TableCell>
-                                          <TableCell>${item.totalCost.toFixed(2)}</TableCell>
-                                          <TableCell>
-                                            <Badge variant="outline">
-                                              {item.status}
-                                            </Badge>
-                                          </TableCell>
-                                          {item.purchaseUrl && (
-                                            <TableCell>
-                                              <a
-                                                href={item.purchaseUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-blue-600 hover:underline text-sm"
-                                              >
-                                                View
-                                              </a>
-                                            </TableCell>
-                                          )}
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {/* Cancel Order Dialog */}
@@ -1031,9 +852,9 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
       <Dialog open={activateConfirmDialogOpen} onOpenChange={setActivateConfirmDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Order Confirmation</DialogTitle>
+            <DialogTitle>Confirm Activation</DialogTitle>
             <DialogDescription>
-              Are you sure you want to mark this purchase request as ordered?
+              Are you sure you want to activate this purchase request?
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end space-x-2 pt-4">
@@ -1049,7 +870,7 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
             <Button
               onClick={() => {
                 if (selectedOrder) {
-                  handleStatusUpdate(selectedOrder.id, 'ordered');
+                  handleStatusUpdate(selectedOrder.id, 'activated');
                 }
                 setActivateConfirmDialogOpen(false);
                 setSelectedOrder(null);
@@ -1126,9 +947,22 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                   </Table>
                 </div>
                 <div>
-                  <h2 className="text-xs text-muted-foreground mt-1">
+                  <Label htmlFor="actualCost">Actual Cost *</Label>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm">$</span>
+                    <Input
+                      id="actualCost"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={actualCost}
+                      onChange={(e) => setActualCost(parseFloat(e.target.value) || 0)}
+                      className="w-full"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
                     Total value: ${selectedOrder.totalOrderValue.toFixed(2)}
-                  </h2>
+                  </p>
                 </div>
               </>
             )}
@@ -1149,13 +983,13 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
                   if (selectedOrder) {
                     // Create loan request from purchase order
                     // This will be visible in Request Orders / Packing List
-                    // Mark as received and move to inactive orders
+                    // For now, we just mark it as completed
                     setPurchaseOrders(prev => prev.map(order =>
                       order.id === selectedOrder.id
-                        ? { ...order, status: 'received', actualDelivery: format(new Date(), 'yyyy-MM-dd') }
+                        ? { ...order, status: 'completed' }
                         : order
                     ));
-                    alert(`Purchase confirmed! Items marked as received.`);
+                    alert(`Purchase confirmed! This will now appear in Request Orders / Packing List as a loan.`);
                   }
                   setConfirmPurchaseDialogOpen(false);
                   setSelectedOrder(null);
