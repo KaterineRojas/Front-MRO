@@ -4,7 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { Badge } from '../../../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
 import { useAppSelector } from '../../../../store/hooks';
-import { Package, PackageCheck } from 'lucide-react';
+import { Package, PackageCheck, ShoppingCart, History } from 'lucide-react';
 
 // Importar los Custom Hooks
 import { usePackingRequestsLogic } from '../hooks/usePackingRequestsLogic'; 
@@ -18,6 +18,7 @@ import KitReturnOptionsDialog from '../modals/KitReturnOptionsDialog';
 import ConditionDialog from '../modals/ConditionDialog';
 import PackingRequestsTab from '../tabs/PackingRequestsTab';
 import ReturnsTab from '../tabs/ReturnsTab';
+import { PurchaseOrdersMockTab } from '../tabs/PurchaseOrdersMockTab';
 // types imported where needed in child components
 
 // Helper de UI
@@ -74,6 +75,14 @@ export function ManageRequestsPage() {
           <TabsTrigger value="returns" className="cursor-pointer flex items-center space-x-2">
             <PackageCheck className="h-4 w-4" />
             <span>Returns</span>
+          </TabsTrigger>
+          <TabsTrigger value="active-orders" className="cursor-pointer flex items-center space-x-2">
+            <ShoppingCart className="h-4 w-4" />
+            <span>Active Orders</span>
+          </TabsTrigger>
+          <TabsTrigger value="orders-history" className="cursor-pointer flex items-center space-x-2">
+            <History className="h-4 w-4" />
+            <span>Orders History</span>
           </TabsTrigger>
         </TabsList>
 
@@ -137,6 +146,18 @@ export function ManageRequestsPage() {
               kitPhotos={returnsLogic.kitPhotos}
               capturedPhoto={returnsLogic.capturedPhoto}
             />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="active-orders">
+          <div className="space-y-4">
+            <PurchaseOrdersMockTab activeTab="active orders" />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="orders-history">
+          <div className="space-y-4">
+            <PurchaseOrdersMockTab activeTab="orders history" />
           </div>
         </TabsContent>
       </Tabs>
