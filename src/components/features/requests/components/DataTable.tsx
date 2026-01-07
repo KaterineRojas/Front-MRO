@@ -71,7 +71,7 @@ export default function RequestsTable({
 
           
           <thead className="[&_tr]:border-b sticky top-0 ">
-            <tr className="border-b dark:border-b-gray-500/50 transition-colors bg-white dark:bg-[#0A0A0A] whitespace-nowrap">
+            <tr className="border-b dark:border-b-gray-500/50 transition-colors bg-white dark:bg-[#0A1016] whitespace-nowrap">
               <th className="h-12 w-12 px-4 text-left align-middle font-medium"></th>
               <th className="h-12 px-8 align-middle font-medium">Request #</th>
               <th className="h-12 px-8 align-middle font-medium">Status</th>
@@ -84,7 +84,7 @@ export default function RequestsTable({
             </tr>
           </thead>
 
-          <tbody className="[&_tr:last-child]:border-0 bg-white dark:bg-[#0A0A0A]">
+          <tbody className="[&_tr:last-child]:border-0 bg-white dark:bg-[#0A1016]">
             {loading ? (
               <tr>
                 <td colSpan={10} className="h-64 text-center align-middle">

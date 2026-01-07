@@ -11,14 +11,15 @@ import {
     Package,
     Truck,
     HelpCircle,
-    FileText
+    FileText,
+    TrendingDown, 
+    Sparkles
 } from 'lucide-react';
 
 import { Badge } from './Badge';
 
-type BadgeStyle = 'soft' | 'outline';
 
-export const getStatusBadge = (status: string, style: BadgeStyle = 'soft') => {
+export const getStatusBadge = (status: string, style: string = 'soft') => {
     const isSoft = style === 'soft';
     const normalizedStatus = status?.toLowerCase() || 'unknown';
 
@@ -81,7 +82,7 @@ export const getStatusBadge = (status: string, style: BadgeStyle = 'soft') => {
     }
 };
 
-export const getUrgencyBadge = (urgency: string, style: BadgeStyle = 'soft') => {
+export const getUrgencyBadge = (urgency: string, style: string = 'soft') => {
     const isSoft = style === 'soft';
     const normalized = urgency?.toLowerCase() || '';
 
@@ -103,7 +104,7 @@ export const getUrgencyBadge = (urgency: string, style: BadgeStyle = 'soft') => 
     }
 };
 
-export const getTypeBadge = (type: number, style: BadgeStyle = 'soft') => {
+export const getTypeBadge = (type: number, style: string = 'soft') => {
     const isSoft = style === 'soft';
 
     switch (type) {
@@ -144,6 +145,51 @@ export const getTypeBadge = (type: number, style: BadgeStyle = 'soft') => {
             return (
                 <Badge variant="outline">
                     <HelpCircle className="mr-1 h-3 w-3" /> Type {type}
+                </Badge>
+            );
+    }
+};
+
+export const getReasonBadge = (reason: string, style: string = 'soft') => {
+    const isSoft = style === 'soft';
+    const normalized = reason?.toLowerCase() || '';
+
+    switch (normalized) {
+        case 'urgent':
+            return (
+                <Badge variant="destructive" className="flex items-center gap-1.5 font-bold">
+                    <AlertTriangle className="h-3 w-3" />
+                    {reason} 
+                </Badge>
+            );
+
+        case 'low stock':
+            return (
+                <Badge 
+                    variant={isSoft ? 'warning-soft' : 'warning'} 
+                    className="flex items-center gap-1.5"
+                >
+                    <TrendingDown className="h-3 w-3" />
+                    {reason}
+
+                </Badge>
+            );
+
+        case 'new project':
+            return (
+                <Badge 
+                    variant={isSoft ? 'indigo-soft' : 'default'} 
+                    className="flex items-center gap-1.5"
+                >
+                    <Sparkles className="h-3 w-3" />
+                    {reason}
+                </Badge>
+            );
+
+        default:
+            return (
+                <Badge variant={isSoft ? 'neutral-soft' : 'neutral'}>
+                    {reason}
                 </Badge>
             );
     }

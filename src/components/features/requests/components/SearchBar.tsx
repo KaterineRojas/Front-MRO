@@ -107,7 +107,7 @@ export default function SearchBar({
             {/* Results Preview (opcional) */}
             {searchQuery && (
                 <div className="mt-4 text-sm text-gray-500 dark:text-muted-foreground">
-                    Buscando "{searchQuery}" en: {getSelectedLabel()}
+                    Searching "{searchQuery}" in: {getSelectedLabel()}
                 </div>
             )}
         </div>
