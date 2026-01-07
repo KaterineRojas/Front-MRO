@@ -442,7 +442,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
     const loadItems = async () => {
       if (formData.warehouseId) {
         try {
-          const items = await getCatalogItemsByWarehouse(formData.warehouseId);
+          const items = await getCatalogItemsByWarehouse(formData.warehouseId, false);
           setCatalogItems(items);
           // Initialize filtered items for all indexes
           const newFilteredItems: { [key: number]: CatalogItem[] } = {};

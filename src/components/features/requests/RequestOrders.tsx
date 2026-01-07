@@ -13,7 +13,18 @@ type TabValue = typeof validTabs[number];
 const getTabFromParams = (search: string): TabValue => {
   const params = new URLSearchParams(search);
   const tabParam = params.get('tab');
-  return validTabs.includes(tabParam as TabValue) ? (tabParam as TabValue) : 'borrow';
+  if (validTabs.includes(tabParam as TabValue)) {
+    const typed = tabParam as TabValue;
+    sessionStorage.setItem('engineerRequestActiveTab', typed);
+    return typed;
+  }
+
+  const storedTab = sessionStorage.getItem('engineerRequestActiveTab');
+  if (validTabs.includes(storedTab as TabValue)) {
+    return storedTab as TabValue;
+  }
+
+  return 'borrow';
 };
 
 export function RequestOrders() {
@@ -36,6 +47,7 @@ export function RequestOrders() {
     const params = new URLSearchParams(location.search);
     params.set('tab', value);
     navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+    sessionStorage.setItem('engineerRequestActiveTab', value);
     setActiveTab(value as TabValue);
   };
 

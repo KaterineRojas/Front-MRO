@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, CardContent } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
@@ -15,9 +15,11 @@ import { useIsMobile } from '../../../ui/use-mobile';
 import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
 import { formatCurrency, formatDate, getReasonColor, getReasonText, getStatusColor, getStatusText } from './purchaseUtils';
 import { getWarehouses } from '../services/sharedServices';
-import { useAppSelector } from '../../../../store/hooks';
+import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
+import { selectCartItems } from '../../enginner/store/selectors';
+import { clearCart } from '../../enginner/store/actions';
 import type { PurchaseRequest } from './purchaseService';
-import type { User as EngineerUser } from '../../enginner/types';
+import type { User as EngineerUser, CartItem } from '../../enginner/types';
 import { toast } from 'sonner';
 import { ConfirmModal } from '../../../ui/confirm-modal';
 
@@ -26,6 +28,11 @@ type ActiveView = 'list' | 'request';
 interface WarehouseOption {
   id: string;
   name: string;
+}
+
+interface CartSnapshot {
+  items: CartItem[];
+  warehouseId: string;
 }
 
 interface RequestMeta {
@@ -126,6 +133,7 @@ export function PurchaseRequests() {
   const [warehouseChoices, setWarehouseChoices] = useState<WarehouseOption[]>([]);
 
   const isMobile = useIsMobile();
+  const dispatch = useAppDispatch();
 
   const {
     purchaseRequests,
@@ -150,6 +158,8 @@ export function PurchaseRequests() {
   } = usePurchaseRequests();
 
   const authUser = useAppSelector((state) => state.auth.user);
+  const cartItems = useAppSelector(selectCartItems);
+  const [pendingCartSnapshot, setPendingCartSnapshot] = useState<CartSnapshot | null>(null);
 
   const currentUser = useMemo<EngineerUser | null>(() => {
     if (!authUser) {
@@ -199,6 +209,34 @@ export function PurchaseRequests() {
     };
   }, []);
 
+  useEffect(() => {
+    const shouldOpenPurchase = sessionStorage.getItem('openPurchaseForm');
+    if (shouldOpenPurchase === 'true') {
+      sessionStorage.removeItem('openPurchaseForm');
+      handleUseCartForRequest();
+      setRequestToEdit(null);
+      setActiveView('request');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (pendingCartSnapshot) {
+      return;
+    }
+    const storedSnapshot = sessionStorage.getItem('purchaseCartSnapshot');
+    if (!storedSnapshot) {
+      return;
+    }
+    try {
+      const parsed = JSON.parse(storedSnapshot) as CartSnapshot;
+      if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
+        setPendingCartSnapshot(parsed);
+      }
+    } catch (error) {
+      console.error('Failed to restore purchase cart snapshot', error);
+    }
+  }, [pendingCartSnapshot]);
+
   const derivedWarehouseChoices = useMemo<WarehouseOption[]>(() => {
     const seen = new Map<string, string>();
     purchaseRequests.forEach((request) => {
@@ -216,14 +254,62 @@ export function PurchaseRequests() {
 
   const warehousesForFilter = warehouseChoices.length > 0 ? warehouseChoices : derivedWarehouseChoices;
 
+  const cloneCartItems = useCallback((items: CartItem[]): CartItem[] =>
+    items.map((cartItem) => ({
+      ...cartItem,
+      item: { ...cartItem.item }
+    })),
+  []);
+
+  const handleUseCartForRequest = (): CartSnapshot | null => {
+    if (cartItems.length === 0) {
+      sessionStorage.removeItem('purchaseCartSnapshot');
+      setPendingCartSnapshot(null);
+      return null;
+    }
+
+    const snapshot: CartSnapshot = {
+      items: cloneCartItems(cartItems),
+      warehouseId: cartItems[0]?.warehouseId ?? ''
+    };
+
+    sessionStorage.setItem('purchaseCartSnapshot', JSON.stringify(snapshot));
+    setPendingCartSnapshot(snapshot);
+    return snapshot;
+  };
+
+  const cartSnapshotForForm = useMemo<CartSnapshot | null>(() => {
+    if (requestToEdit) {
+      return null;
+    }
+    if (pendingCartSnapshot) {
+      return pendingCartSnapshot;
+    }
+    if (cartItems.length === 0) {
+      return null;
+    }
+    return {
+      items: cloneCartItems(cartItems),
+      warehouseId: cartItems[0]?.warehouseId ?? ''
+    };
+  }, [requestToEdit, pendingCartSnapshot, cartItems, cloneCartItems]);
+
+  const cartItemsForForm = requestToEdit ? undefined : (cartSnapshotForForm?.items ?? cartItems);
+
   const openCreateRequest = () => {
+    handleUseCartForRequest();
     setRequestToEdit(null);
     setActiveView('request');
+  };
+
+  const handleClearCart = () => {
+    dispatch(clearCart());
   };
 
   const backToList = () => {
     setActiveView('list');
     setRequestToEdit(null);
+    handleUseCartForRequest();
     void refreshRequests();
   };
 
@@ -309,7 +395,14 @@ export function PurchaseRequests() {
 
     return (
       <div className="space-y-6">
-        <PurchaseForm currentUser={currentUser} onBack={backToList} initialRequest={requestToEdit} />
+        <PurchaseForm
+          currentUser={currentUser}
+          onBack={backToList}
+          initialRequest={requestToEdit}
+          cartItems={cartItemsForForm}
+          cartSnapshot={cartSnapshotForForm}
+          clearCart={handleClearCart}
+        />
       </div>
     );
   }

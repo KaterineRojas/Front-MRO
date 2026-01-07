@@ -265,8 +265,8 @@ export async function getCatalogItemsByWarehouse(warehouseId: string , available
   });
 }
 
-export async function searchCatalogItems(query: string, warehouseId: string): Promise<CatalogItem[]> {
-  const items = await getCatalogItemsByWarehouse(warehouseId);
+export async function searchCatalogItems(query: string, warehouseId: string, includeOutOfStock = false): Promise<CatalogItem[]> {
+  const items = await getCatalogItemsByWarehouse(warehouseId, includeOutOfStock);
   const q = query.toLowerCase();
   return items.filter(item =>
     item.name.toLowerCase().includes(q) ||

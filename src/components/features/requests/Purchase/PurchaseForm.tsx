@@ -10,13 +10,14 @@ import { ArrowLeft, Plus, X, AlertTriangle, Calendar, ClipboardList, Building, U
 import { Alert, AlertDescription } from '../../../ui/alert';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
-import type { User as UserType } from '../../enginner/types';
+import type { User as UserType, CartItem } from '../../enginner/types';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { submitPurchaseRequest } from '../../../../store/slices/purchaseSlice';
 import { ConfirmModal, useConfirmModal } from '../../../ui/confirm-modal';
 import { CreateItemModal, type ApiPayload } from '../../inventory/modals/CreateItemModal/CreateItemModal';
 import { createArticleApi, getCategories } from '../../inventory/services/inventoryApi';
 import type { Article } from '../../inventory/types';
+import { updateCartItem, removeFromCart } from '../../enginner/store/slices/cartSlice';
 import {
   getWarehouses,
   getCatalogItemsByWarehouse,
@@ -33,10 +34,18 @@ import {
 } from '../services/sharedServices';
 import { type PurchaseRequest, type CreatePurchaseRequestPayload } from './purchaseService';
 
+interface CartSnapshot {
+  items: CartItem[];
+  warehouseId?: string | number;
+}
+
 interface PurchaseFormProps {
   currentUser: UserType;
   onBack: (() => void) | null;
   initialRequest?: PurchaseRequest | null;
+  cartItems?: CartItem[];
+  cartSnapshot?: CartSnapshot | null;
+  clearCart?: () => void;
 }
 
 interface PurchaseItem {
@@ -76,50 +85,163 @@ const createDefaultPurchaseItem = (): PurchaseItem => ({
   createdItemId: undefined
 });
 
+const mapCartItemToPurchaseItem = (cartItem: CartItem): PurchaseItem => {
+  const numericId = Number(cartItem.item.id);
+  return {
+    name: cartItem.item.name,
+    isExisting: true,
+    quantity: cartItem.quantity,
+    estimatedCost: 0,
+    link: '',
+    createdItemId: Number.isFinite(numericId) ? numericId : undefined
+  };
+};
+
+// Helper to get snapshot from sessionStorage
+const getStoredSnapshot = (): CartSnapshot | null => {
+  try {
+    const raw = sessionStorage.getItem('purchaseCartSnapshot');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CartSnapshot;
+    if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
+      return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to parse stored snapshot', e);
+  }
+  return null;
+};
+
 const buildInitialFormData = (
   user: UserType,
-  request?: PurchaseRequest | null
-): PurchaseFormData => ({
-  items: request
-    ? request.items.map((item) => ({
+  request?: PurchaseRequest | null,
+  cartItems?: CartItem[],
+  cartSnapshot?: CartSnapshot | null
+): PurchaseFormData => {
+  if (request) {
+    return {
+      items: request.items.map((item) => ({
         name: item.name,
         isExisting: true,
         quantity: item.quantity,
         estimatedCost: item.estimatedCost ?? 0,
         link: item.productUrl ?? '',
         createdItemId: Number.isFinite(Number(item.itemId)) ? Number(item.itemId) : undefined
-      }))
-    : [createDefaultPurchaseItem()],
-  department: request?.departmentId || user.departmentId || user.department || '',
-  project: request?.projectName || '',
-  selfPurchase: request?.selfPurchase ?? false,
-  warehouseId: request?.warehouseId ? String(request.warehouseId) : '',
-  purchaseReason: request?.reasonId !== undefined ? String(request.reasonId) : '',
-  expectedDeliveryDate: request?.expectedDeliveryDate ?? '',
-  clientBilled: request?.clientBilled ? 'yes' : 'no',
-  company: request?.companyId ?? '',
-  customer: request?.customerId ?? '',
-  projectReference: '',
-  workOrder: request?.workOrderId ?? '',
-  justification: request?.notes || '',
-  address: '',
-  googleMapsUrl: '',
-  zipCode: ''
-});
+      })),
+      department: request.departmentId || user.departmentId || user.department || '',
+      project: request.projectName || '',
+      selfPurchase: request.selfPurchase ?? false,
+      warehouseId: request.warehouseId ? String(request.warehouseId) : '',
+      purchaseReason: request.reasonId !== undefined ? String(request.reasonId) : '',
+      expectedDeliveryDate: request.expectedDeliveryDate ?? '',
+      clientBilled: request.clientBilled ? 'yes' : 'no',
+      company: request.companyId ?? '',
+      customer: request.customerId ?? '',
+      projectReference: '',
+      workOrder: request.workOrderId ?? '',
+      justification: request.notes || '',
+      address: '',
+      googleMapsUrl: '',
+      zipCode: ''
+    };
+  }
 
-const buildInitialItemSearches = (request?: PurchaseRequest | null) => {
-  const searches: { [key: number]: string } = {};
-  if (!request) return searches;
-  request.items.forEach((item, index) => {
-    searches[index] = item.name;
+  // Try to get snapshot from props first, then from sessionStorage
+  const snapshotItems = cartSnapshot?.items;
+  const hasSnapshotItems = Array.isArray(snapshotItems) && snapshotItems.length > 0;
+  
+  // Fallback to sessionStorage if props are empty
+  let effectiveSnapshot = hasSnapshotItems ? cartSnapshot : null;
+  if (!effectiveSnapshot) {
+    effectiveSnapshot = getStoredSnapshot();
+  }
+  
+  const effectiveCartItems = effectiveSnapshot?.items ?? cartItems;
+  const hasCartItems = (effectiveCartItems?.length ?? 0) > 0;
+  
+  console.log('buildInitialFormData:', {
+    hasSnapshotItems,
+    hasStoredSnapshot: !!effectiveSnapshot,
+    effectiveCartItemsCount: effectiveCartItems?.length,
+    hasCartItems
   });
+  
+  const items = hasCartItems
+    ? effectiveCartItems!.map(mapCartItemToPurchaseItem)
+    : [createDefaultPurchaseItem()];
+
+  return {
+    items,
+    department: user.departmentId || user.department || '',
+    project: '',
+    selfPurchase: false,
+    warehouseId: hasCartItems
+      ? String(effectiveSnapshot?.warehouseId ?? effectiveCartItems![0].warehouseId ?? '')
+      : '',
+    purchaseReason: '',
+    expectedDeliveryDate: '',
+    clientBilled: 'no',
+    company: '',
+    customer: '',
+    projectReference: '',
+    workOrder: '',
+    justification: '',
+    address: '',
+    googleMapsUrl: '',
+    zipCode: ''
+  };
+};
+
+const buildInitialItemSearches = (
+  request?: PurchaseRequest | null,
+  cartItems?: CartItem[],
+  cartSnapshot?: CartSnapshot | null
+) => {
+  const searches: { [key: number]: string } = {};
+  if (request) {
+    request.items.forEach((item, index) => {
+      searches[index] = item.name;
+    });
+    return searches;
+  }
+
+  // Try to get snapshot from props first, then from sessionStorage
+  const snapshotItems = cartSnapshot?.items;
+  const hasSnapshotItems = Array.isArray(snapshotItems) && snapshotItems.length > 0;
+  let effectiveSnapshot = hasSnapshotItems ? cartSnapshot : null;
+  if (!effectiveSnapshot) {
+    effectiveSnapshot = getStoredSnapshot();
+  }
+
+  const sourceItems = effectiveSnapshot?.items ?? cartItems;
+
+  sourceItems?.forEach((cartItem, index) => {
+    searches[index] = cartItem.item.name;
+  });
+
   return searches;
 };
 
-export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFormProps) {
-  const [formData, setFormData] = useState<PurchaseFormData>(() => buildInitialFormData(currentUser, initialRequest));
+export function PurchaseForm({ currentUser, onBack, initialRequest, cartItems, cartSnapshot, clearCart }: PurchaseFormProps) {
+  const [formData, setFormData] = useState<PurchaseFormData>(() => {
+    const initialData = buildInitialFormData(currentUser, initialRequest, cartItems, cartSnapshot);
+    console.log('PurchaseForm initializing formData:', initialData);
+    return initialData;
+  });
 
-  const [itemSearches, setItemSearches] = useState<{ [key: number]: string }>(() => buildInitialItemSearches(initialRequest));
+  const [itemSearches, setItemSearches] = useState<{ [key: number]: string }>(() => {
+    const initialSearches = buildInitialItemSearches(initialRequest, cartItems, cartSnapshot);
+    console.log('PurchaseForm initializing itemSearches:', initialSearches);
+    return initialSearches;
+  });
+  useEffect(() => {
+    console.log('PurchaseForm received cart props', {
+      cartItems,
+      cartSnapshot,
+    });
+    console.log('Current formData.items:', formData.items);
+    console.log('Current formData.warehouseId:', formData.warehouseId);
+  }, [cartItems, cartSnapshot, formData.items, formData.warehouseId]);
   const [filteredItems, setFilteredItems] = useState<{ [key: number]: CatalogItem[] }>({});
   const [dropdownOpen, setDropdownOpen] = useState<{ [key: number]: boolean }>({});
   const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
@@ -149,6 +271,78 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
   const submitting = useAppSelector(state => state.purchase.submitting);
   const authUser = useAppSelector(state => state.auth.user);
   const { modalState, showConfirm, hideModal, setModalOpen } = useConfirmModal();
+  const cartItemsCount = cartItems?.length ?? 0;
+  const snapshotAppliedRef = useRef(false);
+
+  // Apply cart data when it becomes available (handles async props)
+  useEffect(() => {
+    if (initialRequest) {
+      return;
+    }
+
+    // Skip if already applied successfully
+    if (snapshotAppliedRef.current) {
+      return;
+    }
+
+    const applySnapshot = (snapshot: CartSnapshot): boolean => {
+      if (!snapshot || !Array.isArray(snapshot.items) || snapshot.items.length === 0) {
+        return false;
+      }
+
+      console.log('Applying cart snapshot with', snapshot.items.length, 'items');
+
+      setFormData(prev => ({
+        ...prev,
+        items: snapshot.items.map(mapCartItemToPurchaseItem),
+        warehouseId: snapshot.warehouseId ? String(snapshot.warehouseId) : prev.warehouseId
+      }));
+
+      setItemSearches(() => {
+        const searches: { [key: number]: string } = {};
+        snapshot.items.forEach((ci, index) => {
+          searches[index] = ci.item.name;
+        });
+        return searches;
+      });
+
+      snapshotAppliedRef.current = true;
+      return true;
+    };
+
+    // Try cartSnapshot prop first
+    if (cartSnapshot && applySnapshot(cartSnapshot)) {
+      sessionStorage.removeItem('purchaseCartSnapshot');
+      return;
+    }
+
+    // Try cartItems prop if no snapshot
+    if (cartItems && cartItems.length > 0) {
+      const snapshotFromItems: CartSnapshot = {
+        items: cartItems,
+        warehouseId: cartItems[0]?.warehouseId ?? ''
+      };
+      if (applySnapshot(snapshotFromItems)) {
+        sessionStorage.removeItem('purchaseCartSnapshot');
+        return;
+      }
+    }
+
+    // Try sessionStorage as fallback
+    const snapshotRaw = sessionStorage.getItem('purchaseCartSnapshot');
+    if (!snapshotRaw) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(snapshotRaw) as CartSnapshot;
+      applySnapshot(parsed);
+    } catch (error) {
+      console.error('Failed to parse purchaseCartSnapshot', error);
+    } finally {
+      sessionStorage.removeItem('purchaseCartSnapshot');
+    }
+  }, [initialRequest, cartSnapshot, cartItems]);
   const submitLabel = isEditing
     ? (submitting ? 'Saving changes...' : 'Save Changes')
     : (submitting ? 'Submitting...' : 'Submit Purchase Request');
@@ -184,7 +378,7 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
 
     const loadCatalogItems = async () => {
       try {
-        const items = await getCatalogItemsByWarehouse(formData.warehouseId);
+        const items = await getCatalogItemsByWarehouse(formData.warehouseId, true);
         setCatalogItems(items);
       } catch (error) {
         toast.error('Failed to load items for the selected warehouse');
@@ -307,7 +501,7 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
       let catalogUpdated = false;
       if (formData.warehouseId) {
         try {
-          const refreshedItems = await getCatalogItemsByWarehouse(formData.warehouseId);
+          const refreshedItems = await getCatalogItemsByWarehouse(formData.warehouseId, true);
           setCatalogItems(refreshedItems);
           catalogUpdated = true;
         } catch (refreshError) {
@@ -503,7 +697,13 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
     };
   }, [formData.company, formData.customer, formData.project]);
 
+  // Only reset form when editing an existing request (initialRequest changes to a non-null value)
   useEffect(() => {
+    // Skip reset if we're creating a new request - cart data should be preserved
+    if (!initialRequest) {
+      return;
+    }
+
     setFormData(buildInitialFormData(currentUser, initialRequest));
     setItemSearches(buildInitialItemSearches(initialRequest));
     const initialReason = initialRequest?.reasonId ?? (initialRequest as any)?.reason;
@@ -603,6 +803,12 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
 
   const removeItem = (index: number) => {
     if (formData.items.length > 1) {
+      if (index < cartItemsCount) {
+        const cartItemId = cartItems?.[index]?.item.id;
+        if (cartItemId) {
+          dispatch(removeFromCart(cartItemId));
+        }
+      }
       setFormData(prev => ({
         ...prev,
         items: prev.items.filter((_, i) => i !== index)
@@ -627,6 +833,13 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
         i === index ? { ...item, [field]: value } : item
       )
     }));
+
+    if (index < cartItemsCount && field === 'quantity') {
+      const cartItemId = cartItems?.[index]?.item.id;
+      if (cartItemId) {
+        dispatch(updateCartItem({ itemId: cartItemId, quantity: value }));
+      }
+    }
   };
 
   const validateUrl = (url: string) => {
@@ -647,6 +860,9 @@ export function PurchaseForm({ currentUser, onBack, initialRequest }: PurchaseFo
     try {
       await dispatch(submitPurchaseRequest(payload)).unwrap();
       toast.success(isEditing ? 'Purchase request updated successfully' : 'Purchase request submitted successfully');
+      if (!isEditing && clearCart) {
+        clearCart();
+      }
       if (onBack) onBack();
     } catch (error) {
       const message = typeof error === 'string'

@@ -222,6 +222,8 @@ badgeOutOfStock: {
     }
 };
 
+type RequestType = 'borrow' | 'purchase';
+
 export function Catalog() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -234,10 +236,16 @@ export function Catalog() {
   const [filteredItems, setFilteredItems] = useState<CatalogItem[]>([]);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [requestType, setRequestType] = useState<RequestType>('borrow');
   const { modalState, showConfirm, hideModal, setModalOpen } = useConfirmModal();
 
   // Load warehouses on mount
   useEffect(() => {
+    const savedRequestType = sessionStorage.getItem('catalogRequestType') as RequestType | null;
+    if (savedRequestType === 'borrow' || savedRequestType === 'purchase') {
+      setRequestType(savedRequestType);
+    }
+
     const loadWarehouses = async () => {
       try {
         const data = await getWarehouses();
@@ -269,7 +277,8 @@ export function Catalog() {
     const loadItems = async () => {
       if (selectedWarehouse) {
         try {
-          const rawData: SharedCatalogItem[] = await getCatalogItemsByWarehouse(selectedWarehouse);
+          const includeOutOfStock = requestType === 'purchase';
+          const rawData: SharedCatalogItem[] = await getCatalogItemsByWarehouse(selectedWarehouse, includeOutOfStock);
           // Convert from sharedServices format to catalogService format
           const data: CatalogItem[] = rawData.map(item => ({
             itemId: parseInt(item.id),
@@ -305,7 +314,7 @@ export function Catalog() {
       }
     };
     loadItems();
-  }, [selectedWarehouse]);
+  }, [selectedWarehouse, requestType]);
 
   // Filter items by search term
   useEffect(() => {
@@ -419,8 +428,25 @@ export function Catalog() {
 
   const onNavigateToRequest = () => {
     setCartOpen(false);
+
+    if (requestType === 'purchase') {
+      sessionStorage.setItem('catalogRequestType', 'purchase');
+      sessionStorage.setItem('engineerRequestActiveTab', 'purchase');
+      sessionStorage.setItem('openPurchaseForm', 'true');
+      sessionStorage.removeItem('openBorrowForm');
+      sessionStorage.setItem('purchaseCartSnapshot', JSON.stringify({
+        items: cartItems,
+        warehouseId: selectedWarehouse,
+      }));
+      navigate('/engineer/requests?tab=purchase');
+      return;
+    }
+
+    sessionStorage.setItem('catalogRequestType', 'borrow');
+    sessionStorage.setItem('engineerRequestActiveTab', 'borrow');
     sessionStorage.setItem('openBorrowForm', 'true');
-    navigate('/engineer/requests');
+    sessionStorage.removeItem('openPurchaseForm');
+    navigate('/engineer/requests?tab=borrow');
   };
 
   const handleAICameraError = (error: AppError) => {
@@ -472,21 +498,42 @@ export function Catalog() {
         </div>
 
         {/* Warehouse Selector */}
-        <div style={styles.warehouseSelector}>
-          <Package className="h-4 w-4" style={{ color: '#6b7280' }} />
-          <span style={{ fontSize: '0.875rem' }}>Warehouse:</span>
-          <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
-            <SelectTrigger style={{ width: '200px' }}>
-              <SelectValue placeholder="Select warehouse" />
-            </SelectTrigger>
-            <SelectContent>
-              {warehouses.map((wh) => (
-                <SelectItem key={wh.id} value={wh.id}>
-                  {wh.name} ({wh.code})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div style={{ ...styles.warehouseSelector, flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Package className="h-4 w-4" style={{ color: '#6b7280' }} />
+            <span style={{ fontSize: '0.875rem' }}>Warehouse:</span>
+            <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
+              <SelectTrigger style={{ width: '200px' }}>
+                <SelectValue placeholder="Select warehouse" />
+              </SelectTrigger>
+              <SelectContent>
+                {warehouses.map((wh) => (
+                  <SelectItem key={wh.id} value={wh.id}>
+                    {wh.name} ({wh.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.875rem' }}>Request type:</span>
+            <Select
+              value={requestType}
+              onValueChange={(value) => {
+                const next = value as RequestType;
+                setRequestType(next);
+                sessionStorage.setItem('catalogRequestType', next);
+              }}
+            >
+              <SelectTrigger style={{ width: '160px' }}>
+                <SelectValue placeholder="Choose" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="borrow">Borrow</SelectItem>
+                <SelectItem value="purchase">Purchase</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -522,6 +569,7 @@ export function Catalog() {
           onUpdateQuantity={handleUpdateCartItem}
           onClearCart={handleClearCart}
           onProceed={onNavigateToRequest}
+          requestType={requestType}
         />
 
         {/* Items Grid - APLICANDO ESTILOS EN LÍNEA */}
