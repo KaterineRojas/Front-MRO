@@ -143,11 +143,11 @@ export function Layout() {
   const navigation = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/', disabled: false, roles: ['Engineer', 'Keeper', 'Manager', 'Director'] },
     { id: 'articles', label: 'Inventory Management', icon: Package, path: '/inventory', disabled: false, roles: ['Keeper'] },
-    { id: 'orders', label: 'Purchase Request', icon: ShoppingCart, path: '/orders', disabled: false, roles: ['Engineer','Manager','Director'] },
+    // { id: 'orders', label: 'Purchase Request', icon: ShoppingCart, path: '/orders', disabled: false, roles: ['Keeper','Director'] },
     { id: 'cyclecount', label: 'Cycle Count', icon: Calculator, path: '/cycle-count', disabled: false, roles: ['Keeper'] },
     { id: 'quickfind', label: 'Quick Find', icon: Search, path: '/quick-find', disabled: true, roles: ['Keeper'] },
     { id: 'managerequests', label: 'Manage Requests', icon: Package, path: '/manage-requests', disabled: false, roles: ['Keeper'] },
-    { id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests', disabled: false, roles: ['Keeper','Engineer','Manager','Director'] },
+    { id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests', disabled: false, roles: ['Manager','Director'] },
     { id: 'reports', label: 'Reports', icon: FileText, path: '/reports', disabled: false, roles: ['Director', 'Manager'] },
     { id: 'users', label: 'User Management', icon: Users, path: '/users', disabled: false, roles: ['Director', 'Manager'] },
     // Engineer Modules
