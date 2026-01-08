@@ -1,3 +1,6 @@
+import {UnifiedRequest} from '../../requests/types/loanTypes'
+
+
 /**
  * interface defined for purqchase request sent by backend
  */
@@ -44,6 +47,7 @@ export interface PurchaseRequest {
     status: number;          // 0=Pending, 1=Approved, etc.
     reason: number;          // 0=Standard, etc. (Previously 'priority')
     selfPurchase: boolean;
+    typeRequestName: string;
 
     notes?: string;
     rejectionReason?: string 
@@ -74,6 +78,8 @@ export interface PaginatedResponse<T> {
     hasPreviousPage: boolean;
     hasNextPage: boolean;
 }
+
+
 
 /**
  * The Main component prop
@@ -119,11 +125,11 @@ export interface ArticleSelectorProps {
 // order table interface
 
 export interface ActivePurchaseTableProps {
-    orders: PurchaseRequest[];
     statusFilter: string;
     setStatusFilter: (val: string) => void;
     activeTab: string;
     onReview: (order: PurchaseRequest, action: 'approve' | 'reject') => void;
+    requests: UnifiedRequest[];
 }
 
 // request form data interface

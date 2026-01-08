@@ -1,12 +1,20 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import CardRequest from './components/Card'
 import TabsGroup from './components/Tabs'
 import SearchBar from './components/SearchBar'
 import RequestsTable from './components/DataTable';
 import RequestModal from './components/ApproveRequestDialog';
-import { LoanRequest } from './types/loanTypes'
+import { LoanRequest, UnifiedRequest} from './types/loanTypes'
 import { approveLoanRequest, rejectLoanRequest, getLoanRequests } from './services/requestService'
-import {authService} from '../../../services/authService'
+import { Main } from '../orders/Main'
+import { Loader2 } from 'lucide-react'
+import { TableErrorBoundary } from '../orders/components/TableErrorBoundary'
+import { TableErrorState } from '../orders/components/TableErrorState'
+import { OrderTable } from '../orders/components/OrderTable'
+import { getAllPurchaseRequests } from '../orders/services/purchaseService'
+import { PurchaseRequest } from '../orders/types/purchaseType'
+import { ReviewRequestModal } from '../orders/modals/ApproveRequestModal'
+import { approvePurchaseRequest, rejectPurchaseRequest } from '../orders/services/purchaseService'
 
 
 
@@ -32,29 +40,54 @@ export function RequestManagement() {
     { value: '4', label: 'Transfer On Site' },
   ];
 
+  useEffect(() => {
+    console.log(filteredRequests);
+  }, [])
+
+
+
+  const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseRequest[]>([]);
+  const [reviewState, setReviewState] = useState<{
+    isOpen: boolean;
+    order: PurchaseRequest | null;
+    action: 'approve' | 'reject';
+  }>({
+    isOpen: false,
+    order: null,
+    action: 'approve'
+  });
+  const [isReviewProcessing, setIsReviewProcessing] = useState(false);
+  const [allRequests, setAllRequests] = useState<UnifiedRequest[]>([]);
+
+
+
+
+
   const [pagination, setPagination] = useState({
     pageNumber: 1,
     pageSize: 20,
     totalCount: 0,
     totalPages: 0,
-    hasPreviousPage: false, 
-    hasNextPage: false      
+    hasPreviousPage: false,
+    hasNextPage: false
   });
 
   useEffect(() => {
     console.log(loading);
   }, [])
-  
+
 
 
   useEffect(() => {
     const controller = new AbortController();
-    
+
     const loadRequests = async () => {
       setLoading(true);
       try {
         const result = await getLoanRequests(
-          1,               
+          1,
           100,
           controller.signal
         );
@@ -74,16 +107,15 @@ export function RequestManagement() {
         if (error instanceof Error && error.name !== 'AbortError') {
           console.error("Fetch error:", error);
         }
-      } 
+      }
       setLoading(false);
     };
-    
+
     loadRequests();
 
     return () => controller.abort();
 
   }, []);
-
 
 
   const handlePageChange = (newPage: number) => {
@@ -95,8 +127,6 @@ export function RequestManagement() {
       pageNumber: newPage
     }));
   };
-
-
 
 
   const handleToggleExpand = (reqNumber: string) => {
@@ -181,13 +211,11 @@ export function RequestManagement() {
 
     } catch (error) {
       console.error("Error approving request:", error);
-      alert("No se pudo aprobar la solicitud. Revisa la consola.");
+      alert("Couldn't approved the request, check the console");
     } finally {
       setLoadingModal(false)
     }
   };
-
-
 
 
   const handleCancelApprove = () => {
@@ -236,6 +264,192 @@ export function RequestManagement() {
   const pendingCount = requests.filter(r => r.status === 'Pending').length;
   const approvedCount = requests.filter(r => r.status === 'Approved').length;
   const rejectedCount = requests.filter(r => r.status === 'Rejected').length;
+
+
+
+
+
+
+
+
+
+
+
+  const fetchOrders = useCallback(async (signal?: AbortSignal) => {
+    const validSignal = (signal instanceof AbortSignal) ? signal : undefined;
+
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getAllPurchaseRequests(validSignal);
+      console.log(data);
+
+      setPurchaseOrders(data);
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
+      console.error("Failed to load orders:", err);
+      setError(err.message || "An unexpected error occurred.");
+    } finally {
+      if (!validSignal?.aborted) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchOrders(controller.signal);
+    return () => {
+      controller.abort();
+    };
+  }, [fetchOrders]);
+
+
+  const filteredOrders = useMemo(() => {
+    let data = purchaseOrders;
+
+    if (activeTab === 'pending') {
+      data = data.filter(order => order.status === 0);
+    } else {
+      data = data.filter(order => order.status === 1 || order.status === 2);
+    }
+
+    // 2. APPLY DROPDOWN FILTER (If you still use the dropdown inside the tab)
+    if (statusFilter !== 'all') {
+      data = data.filter(order => order.status.toString() === statusFilter);
+    }
+
+    return data;
+  }, [purchaseOrders, activeTab, statusFilter]);
+
+  const handleOpenReview = (order: PurchaseRequest, action: 'approve' | 'reject') => {
+    setReviewState({
+      isOpen: true,
+      order,
+      action
+    });
+  };
+
+  const handleCloseReview = () => {
+    setReviewState(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const handleConfirmReview = async (action: 'approve' | 'reject', notes: string) => {
+    if (!reviewState.order) return;
+
+    try {
+      setIsReviewProcessing(true);
+
+      if (action === 'approve') {
+        await approvePurchaseRequest(reviewState.order.id);
+      } else {
+        await rejectPurchaseRequest(reviewState.order.id, notes);
+      }
+
+      handleCloseReview();
+      fetchOrders(); // Refresh list after action
+
+    } catch (error: any) {
+      console.error(`Failed to ${action} request:`, error);
+      alert(error.message || "Something went wrong while processing the request.");
+    } finally {
+      setIsReviewProcessing(false);
+    }
+  };
+
+
+
+  const getPurchaseStatusLabel = (status: number): string => {
+    const map: Record<number, string> = {
+      0: 'Pending',
+      1: 'Approved',
+      2: 'Rejected',
+      // ... add your specific mappings
+    };
+    return map[status] || 'Unknown';
+  };
+
+
+  // fetch all data at once
+  const fetchUnifiedRequests = useCallback(async (signal?: AbortSignal) => {
+    const validSignal = (signal instanceof AbortSignal) ? signal : undefined;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [purchaseData, loanRes] = await Promise.all([
+        getAllPurchaseRequests(validSignal),
+        getLoanRequests(1, 100, validSignal)
+      ]);
+
+      const formattedPurchases: UnifiedRequest[] = purchaseData.map((p: PurchaseRequest) => ({
+        id: p.id,
+        requestNumber: p.requestNumber,
+        type: p.typeRequestName || 'Purchase',
+        warehouse: p.warehouseName,
+        requester: p.requesterId,
+        date: p.createdAt,
+        totalQty: p.totalQuantity,
+        statusLabel: getPurchaseStatusLabel(p.status), 
+        originalData: { ...p, kind: 'Purchase' as const }
+      }));
+
+      const formattedLoans: UnifiedRequest[] = loanRes.data.map((l: LoanRequest) => ({
+        id: l.id,
+        requestNumber: l.requestNumber,
+        type: l.typeRequestName || 'Loan',
+        warehouse: l.warehouseName,
+        requester: l.requesterName,
+        date: l.createdAt,
+        totalQty: l.totalQuantity,
+        statusLabel: l.status, // Already a string
+        originalData: { ...l, kind: 'Loan' as const }
+      }));
+
+      const combined = [...formattedPurchases, ...formattedLoans];
+      combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      setAllRequests(combined);
+      
+
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        return;
+      }
+
+      console.error("Failed to load requests:", err);
+      setError(err.message || "An unexpected error occurred while fetching data.");
+
+      // Optional: Reset data on error
+      // setAllRequests([]); 
+
+    } finally {
+      if (!validSignal?.aborted) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    console.log(allRequests);
+  }, [allRequests])
+  
+
+
+
+
+
+  // Single Effect to trigger the unified fetch
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchUnifiedRequests(controller.signal);
+
+    return () => {
+      controller.abort();
+    };
+  }, [fetchUnifiedRequests]);
 
 
   return (
@@ -334,7 +548,50 @@ export function RequestManagement() {
 
               loading={loading}
             />
+
+
+
+
+
           </div>
+
+
+
+
+
+
+
+
+
+          {loading ? (
+            <div className="flex justify-center items-center h-64 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex flex-col items-center text-gray-400">
+                <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                <p>Loading requests...</p>
+              </div>
+            </div>
+          ) : (
+            error ? (
+              <TableErrorState message={error} onRetry={fetchOrders} />
+            ) : (
+              <TableErrorBoundary>
+                <OrderTable
+                  requests={allRequests}
+                  statusFilter={statusFilter}
+                  setStatusFilter={setStatusFilter}
+                  activeTab={activeTab}
+                  onReview={handleOpenReview}
+                />
+              </TableErrorBoundary>
+            )
+          )}
+
+
+
+
+
+
+
 
         </div>
       </div>
@@ -347,6 +604,15 @@ export function RequestManagement() {
         onCancel={handleCancelApprove}
         variant={modalType === 'approve' ? 'approve' : 'reject'}
         loading={loadingModal}
+      />
+
+      <ReviewRequestModal
+        isOpen={reviewState.isOpen}
+        order={reviewState.order}
+        initialAction={reviewState.action}
+        onClose={handleCloseReview}
+        onConfirm={handleConfirmReview}
+        isProcessing={isReviewProcessing}
       />
 
     </div>

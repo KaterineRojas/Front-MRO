@@ -1,3 +1,5 @@
+import {PurchaseRequest} from '../../orders/types/purchaseType'
+
 export interface LoanRequestItem {
     id: number;
     itemId: number;
@@ -11,6 +13,7 @@ export interface LoanRequestItem {
 
 // 2. The Loan Request Object
 export interface LoanRequest {
+    id: number;
     requestNumber: string; // e.g., "BT-2025000001"
     requesterId: string;
     requesterName: string; // Old: requestedBy
@@ -40,4 +43,23 @@ export interface PaginatedLoanRequestResponse {
     totalPages: number;
     hasPreviousPage: boolean;
     hasNextPage: boolean;
+}
+
+// unified interface for both purchase and loan requests
+export interface UnifiedRequest {
+    id: string | number;        
+    requestNumber: string;      
+    type: string;               
+    warehouse: string;          
+    requester: string;          
+    date: string;               
+    totalQty: number;           
+
+    // --- The Normalized Status ---
+    statusLabel: string;
+
+    // We use a Discriminated Union here so TypeScript is smart later
+    originalData:
+    | (PurchaseRequest & { kind: 'Purchase' })
+    | (LoanRequest & { kind: 'Loan' });
 }
