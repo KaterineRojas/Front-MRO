@@ -82,6 +82,7 @@ export const markAsOrdered = async (id: number): Promise<void> => {
             headers: {
                 'Content-Type': 'application/json',
             },
+            body: JSON.stringify({}),
         });
 
         if (!response.ok) {
@@ -106,6 +107,7 @@ export const markAsBought = async (id: number): Promise<void> => {
             headers: {
                 'Content-Type': 'application/json',
             },
+            body: JSON.stringify({}),
         });
 
         if (!response.ok) {

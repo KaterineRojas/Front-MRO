@@ -177,32 +177,90 @@ const OrderRow: React.FC<OrderRowProps> = ({ order, onOrderClick, onBoughtClick 
                             <div className="flex items-center gap-2 mb-4 pl-1">
                                 <Package className="h-4 w-4 text-gray-400" />
                                 <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500">
-                                    Request Details
+                                    Request Items
                                 </h4>
                             </div>
 
-                            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <span className="text-gray-500">Total Items:</span>
-                                        <span className="ml-2 font-semibold text-gray-900 dark:text-white">{order.totalItems || 0}</span>
+                            {/* Items Table */}
+                            <div className="mb-6 overflow-x-auto">
+                                {order.items && order.items.length > 0 ? (
+                                    <table className="w-full border-collapse text-sm">
+                                        <thead>
+                                            <tr className="bg-gray-100 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+                                                <th className="p-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Image</th>
+                                                <th className="p-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">SKU</th>
+                                                <th className="p-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Name</th>
+                                                <th className="p-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Description</th>
+                                                <th className="p-3 text-center text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Quantity</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                            {order.items.map((item: any, index: number) => (
+                                                <tr key={item.id || index} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                                    {/* Image */}
+                                                    <td className="p-3">
+                                                        {item.imageUrl ? (
+                                                            <img 
+                                                                src={item.imageUrl} 
+                                                                alt={item.name || item.articleDescription}
+                                                                className="w-12 h-12 object-cover rounded-lg bg-gray-200 dark:bg-gray-700"
+                                                                onError={(e) => {
+                                                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/48?text=No+Image';
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <div className="w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                                                <Package className="w-6 h-6 text-gray-300 dark:text-gray-600" />
+                                                            </div>
+                                                        )}
+                                                    </td>
+
+                                                    {/* SKU */}
+                                                    <td className="p-3">
+                                                        <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                                            {item.sku || item.articleCode || 'N/A'}
+                                                        </span>
+                                                    </td>
+
+                                                    {/* Name */}
+                                                    <td className="p-3">
+                                                        <p className="font-semibold text-gray-900 dark:text-white">
+                                                            {item.name || item.articleDescription || 'N/A'}
+                                                        </p>
+                                                    </td>
+
+                                                    {/* Description */}
+                                                    <td className="p-3">
+                                                        <p className="text-xs text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                                                            {item.description || item.articleDescription || '—'}
+                                                        </p>
+                                                    </td>
+
+                                                    {/* Quantity */}
+                                                    <td className="p-3 text-center">
+                                                        <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                                                            {item.quantity} {item.unit || 'units'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                ) : (
+                                    <div className="p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 text-center">
+                                        <Package className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">No items available</p>
                                     </div>
-                                    <div>
-                                        <span className="text-gray-500">Total Quantity:</span>
-                                        <span className="ml-2 font-semibold text-gray-900 dark:text-white">{order.totalQuantity || 0}</span>
-                                    </div>
-                                    <div>
-                                        <span className="text-gray-500">Self Purchase:</span>
-                                        <span className="ml-2 font-semibold text-gray-900 dark:text-white">
-                                            {order.selfPurchase ? 'Yes' : 'No'}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className="text-gray-500">Ordered At:</span>
-                                        <span className="ml-2 font-semibold text-gray-900 dark:text-white">
-                                            {order.orderedAt ? formatDate(order.orderedAt) : 'Not yet'}
-                                        </span>
-                                    </div>
+                                )}
+                            </div>
+
+                            {/* Ordered At Section */}
+                            <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-50/50 dark:from-blue-900/20 dark:to-blue-900/10 rounded-xl border border-blue-200 dark:border-blue-800/50">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Ordered At</span>
+                                    <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                                        {order.orderedAt ? formatDate(order.orderedAt) : 'Not yet'}
+                                    </span>
                                 </div>
                             </div>
                         </div>

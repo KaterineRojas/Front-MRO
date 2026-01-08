@@ -40,10 +40,10 @@ export function handlePrintSinglePacking(request: LoanRequest, packingItemQuanti
           <div class="request-card">
             <div class="request-header">
               <h2>${request.requestNumber}</h2>
-              <p><strong>Borrower:</strong> ${request.requesterName} (${request.requesterEmail})</p>
+              <p><strong>Borrower:</strong> ${request.requesterName}</p>
               <p><strong>Department:</strong> ${request.departmentId} | <strong>Project:</strong> ${request.projectId}</p>
               <p><strong>Priority:</strong> <span class="priority-${request.priority ?? 'low'}">${(request.priority ?? 'low').toUpperCase()}</span></p>
-              <p><strong>Loan Date:</strong> ${request.createdAt} | <strong>Expected Return:</strong> ${request.expectedReturnDate}</p>
+              <p><strong>Loan Date:</strong> ${new Date(request.createdAt).toLocaleDateString()} | <strong>Expected Return:</strong> ${new Date(request.expectedReturnDate).toLocaleDateString()}</p>
             </div>
             <h3>Items Checklist:</h3>
             <table class="items-table">

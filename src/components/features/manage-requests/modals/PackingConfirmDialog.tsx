@@ -1,17 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../../ui/dialog';
 import { Button } from '../../../ui/button';
-import { Package, CheckCircle } from 'lucide-react';
+import { Package, CheckCircle, Loader2 } from 'lucide-react';
 import { LoanRequest, LoanItem} from '../types';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentPackingRequest: LoanRequest | null;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void> | void;
 }
 
 export const PackingConfirmDialog: React.FC<Props> = ({ open, onOpenChange, currentPackingRequest, onConfirm }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleConfirm = async () => {
+    setIsLoading(true);
+    try {
+      await onConfirm();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -29,11 +40,30 @@ export const PackingConfirmDialog: React.FC<Props> = ({ open, onOpenChange, curr
               <p className="text-sm"><span className="font-semibold">Items:</span> {currentPackingRequest.items.length} item(s)</p>
             </div>
             <p className="text-sm text-muted-foreground">This request will be moved to Returns and marked as ready for delivery.</p>
+            
+            {isLoading && (
+              <div className="flex flex-col items-center justify-center py-4 gap-2">
+                <Loader2 className="h-6 w-6 animate-spin text-[#568FCB]" />
+                <p className="text-sm text-gray-600 dark:text-gray-400">Processing packing request...</p>
+              </div>
+            )}
           </div>
         )}
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="text-black cursor-pointer">Cancel</Button>
-          <Button variant="outline" onClick={onConfirm} className="text-black cursor-pointer"><CheckCircle className="h-4 w-4 mr-2" />Accept</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="text-black cursor-pointer" disabled={isLoading}>Cancel</Button>
+          <Button variant="outline" onClick={handleConfirm} className="text-black cursor-pointer" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Accept
+              </>
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
