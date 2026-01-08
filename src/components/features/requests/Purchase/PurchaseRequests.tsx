@@ -511,15 +511,6 @@ export function PurchaseRequests() {
                       <p className="font-medium text-foreground">{meta.projectLabel}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground uppercase tracking-wide">Client</p>
-                      <p>{meta.companyLabel || '—'}</p>
-                      {meta.customerLabel && <p>{meta.customerLabel}</p>}
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground uppercase tracking-wide">Work order</p>
-                      <p>{meta.workOrderLabel || '—'}</p>
-                    </div>
-                    <div>
                       <p className="text-muted-foreground uppercase tracking-wide">Location</p>
                       {meta.hasLocation ? (
                         <div className="space-y-1">
@@ -588,6 +579,32 @@ export function PurchaseRequests() {
 
                   {isExpanded && (
                     <div className="space-y-3 border-t pt-3">
+                      {/* Project Details Chain */}
+                      <div className="bg-sky-50 dark:bg-sky-950/40 rounded-lg p-3 border border-sky-200 dark:border-sky-800">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <h4 className="text-[10px] sm:text-xs font-semibold text-sky-700 dark:text-sky-300">Project Details</h4>
+                          <div className="flex flex-col items-center">
+                            <span className="text-[8px] sm:text-[10px] text-muted-foreground">Company</span>
+                            <span className="text-[9px] sm:text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-1.5 py-0.5 rounded">{meta.companyLabel || '—'}</span>
+                          </div>
+                          <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
+                          <div className="flex flex-col items-center">
+                            <span className="text-[8px] sm:text-[10px] text-muted-foreground">Customer</span>
+                            <span className="text-[9px] sm:text-xs font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/50 px-1.5 py-0.5 rounded">{meta.customerLabel || '—'}</span>
+                          </div>
+                          <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
+                          <div className="flex flex-col items-center">
+                            <span className="text-[8px] sm:text-[10px] text-muted-foreground">Project</span>
+                            <span className="text-[9px] sm:text-xs font-medium text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900/50 px-1.5 py-0.5 rounded">{meta.projectLabel || '—'}</span>
+                          </div>
+                          <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
+                          <div className="flex flex-col items-center">
+                            <span className="text-[8px] sm:text-[10px] text-muted-foreground">Work Order</span>
+                            <span className="text-[9px] sm:text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 px-1.5 py-0.5 rounded">{meta.workOrderLabel || '—'}</span>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground">
                         <p>Created: {meta.createdDate}</p>
                         <p>Ordered: {meta.orderedDate}</p>
@@ -648,7 +665,7 @@ export function PurchaseRequests() {
                   <TableRow>
                     <TableHead className="w-[40px]" />
                     <TableHead>Request</TableHead>
-                    <TableHead>Project &amp; client</TableHead>
+                    <TableHead>Project</TableHead>
                     <TableHead>Reason</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Purchaser</TableHead>
@@ -686,13 +703,6 @@ export function PurchaseRequests() {
                           <TableCell className="align-top">
                             <div className="space-y-1">
                               <p className="text-sm font-medium text-foreground">{meta.projectLabel}</p>
-                              <div className="text-xs text-muted-foreground flex flex-wrap gap-2">
-                                {meta.companyLabel && <span>{meta.companyLabel}</span>}
-                                {meta.customerLabel && <span>{meta.customerLabel}</span>}
-                              </div>
-                              {meta.workOrderLabel && (
-                                <p className="text-xs text-muted-foreground">Work order: {meta.workOrderLabel}</p>
-                              )}
                             </div>
                           </TableCell>
                           <TableCell className="align-top">
@@ -758,49 +768,128 @@ export function PurchaseRequests() {
                           <TableRow>
                             <TableCell colSpan={8} className="bg-muted/20 p-0">
                               <div className="p-4 space-y-4">
+                                {/* Project Details Chain */}
+                                <div className="bg-sky-50 dark:bg-sky-950/40 rounded-lg p-3 border border-sky-200 dark:border-sky-800">
+                                  <div className="flex items-center gap-3 flex-wrap">
+                                    <h4 className="text-[10px] sm:text-xs font-semibold text-sky-700 dark:text-sky-300">Project Details</h4>
+                                    <div className="flex flex-col items-center">
+                                      <span className="text-[8px] sm:text-[10px] text-muted-foreground">Company</span>
+                                      <span className="text-[9px] sm:text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-1.5 py-0.5 rounded">{meta.companyLabel || '—'}</span>
+                                    </div>
+                                    <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
+                                    <div className="flex flex-col items-center">
+                                      <span className="text-[8px] sm:text-[10px] text-muted-foreground">Customer</span>
+                                      <span className="text-[9px] sm:text-xs font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/50 px-1.5 py-0.5 rounded">{meta.customerLabel || '—'}</span>
+                                    </div>
+                                    <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
+                                    <div className="flex flex-col items-center">
+                                      <span className="text-[8px] sm:text-[10px] text-muted-foreground">Project</span>
+                                      <span className="text-[9px] sm:text-xs font-medium text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900/50 px-1.5 py-0.5 rounded">{meta.projectLabel || '—'}</span>
+                                    </div>
+                                    <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
+                                    <div className="flex flex-col items-center">
+                                      <span className="text-[8px] sm:text-[10px] text-muted-foreground">Work Order</span>
+                                      <span className="text-[9px] sm:text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 px-1.5 py-0.5 rounded">{meta.workOrderLabel || '—'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                                  <div>
-                                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Notes</p>
-                                    <p className="mt-1 text-foreground">{meta.notesText || 'No additional notes'}</p>
+                                  {/* Notes */}
+                                  <div className="bg-sky-50 dark:bg-sky-950/40 rounded-lg p-3 border border-sky-200 dark:border-sky-800 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="w-6 h-6 rounded-full bg-sky-100 dark:bg-sky-900 flex items-center justify-center">
+                                        <svg className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                      </div>
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">Notes</p>
+                                    </div>
+                                    <p className="text-sm text-foreground leading-relaxed">{meta.notesText || 'No additional notes'}</p>
                                   </div>
-                                  <div>
-                                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Owner</p>
-                                    <p className="mt-1">{meta.selfPurchase ? 'Requester purchases' : 'Keeper purchases'}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {meta.clientBilled ? 'Billed to client' : 'Not billed to client'}
-                                    </p>
+
+                                  {/* Owner */}
+                                  <div className="bg-sky-50 dark:bg-sky-950/40 rounded-lg p-3 border border-sky-200 dark:border-sky-800 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="w-6 h-6 rounded-full bg-sky-100 dark:bg-sky-900 flex items-center justify-center">
+                                        <svg className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                      </div>
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">Owner</p>
+                                    </div>
+                                    <p className="text-sm font-medium text-foreground">{meta.selfPurchase ? 'Requester purchases' : 'Keeper purchases'}</p>
+                                    <span className={`inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${meta.clientBilled ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300' : 'bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-300'}`}>
+                                      {meta.clientBilled ? '✓ Billed to client' : 'Not billed to client'}
+                                    </span>
                                   </div>
-                                  <div>
-                                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Location</p>
+
+                                  {/* Location */}
+                                  <div className="bg-sky-50 dark:bg-sky-950/40 rounded-lg p-3 border border-sky-200 dark:border-sky-800 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="w-6 h-6 rounded-full bg-sky-100 dark:bg-sky-900 flex items-center justify-center">
+                                        <svg className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                      </div>
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">Location</p>
+                                    </div>
                                     {meta.hasLocation ? (
-                                      <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
-                                        {meta.locationAddress && <li className="text-foreground">Address: {meta.locationAddress}</li>}
-                                        {meta.locationZip && <li>ZIP: {meta.locationZip}</li>}
-                                        {meta.locationUrl && (
-                                          <li>
-                                            <a
-                                              href={meta.locationUrl}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                              className="text-primary hover:underline"
-                                            >
-                                              Open map
-                                            </a>
-                                          </li>
+                                      <div className="space-y-1.5">
+                                        {meta.locationAddress && (
+                                          <p className="text-sm text-foreground">{meta.locationAddress}</p>
                                         )}
-                                      </ul>
+                                        {meta.locationZip && (
+                                          <span className="inline-block px-2 py-0.5 bg-sky-100 dark:bg-sky-900/50 rounded text-xs text-sky-700 dark:text-sky-300">ZIP: {meta.locationZip}</span>
+                                        )}
+                                        {meta.locationUrl && (
+                                          <a
+                                            href={meta.locationUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+                                          >
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                            </svg>
+                                            Open map
+                                          </a>
+                                        )}
+                                      </div>
                                     ) : (
-                                      <p className="mt-1 text-muted-foreground">No location info</p>
+                                      <p className="text-sm text-muted-foreground italic">No location info</p>
                                     )}
                                   </div>
-                                  <div>
-                                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Dates</p>
-                                    <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
-                                      <li>Created: {meta.createdDate}</li>
-                                      <li>Ordered: {meta.orderedDate}</li>
-                                      <li>Expected delivery: {meta.expectedDelivery}</li>
-                                      <li>Received: {meta.receivedDate}</li>
-                                    </ul>
+
+                                  {/* Dates */}
+                                  <div className="bg-sky-50 dark:bg-sky-950/40 rounded-lg p-3 border border-sky-200 dark:border-sky-800 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="w-6 h-6 rounded-full bg-sky-100 dark:bg-sky-900 flex items-center justify-center">
+                                        <svg className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                      </div>
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">Dates</p>
+                                    </div>
+                                    <div className="space-y-1.5 text-xs">
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Created</span>
+                                        <span className="text-foreground font-medium">{meta.createdDate}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Ordered</span>
+                                        <span className="text-foreground font-medium">{meta.orderedDate}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Expected</span>
+                                        <span className="text-foreground font-medium">{meta.expectedDelivery}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Received</span>
+                                        <span className="text-foreground font-medium">{meta.receivedDate}</span>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
 
