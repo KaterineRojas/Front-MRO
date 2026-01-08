@@ -37,6 +37,10 @@ const STATUS_CODE_MAP: Record<number, 'pending' | 'approved' | 'rejected' | 'com
   3: 'completed'
 };
 
+// Estados visibles en la vista (excluye rejected = 2)
+const VISIBLE_STATUS_CODES = new Set([0, 1, 3]);
+const VISIBLE_STATUS_KEYS = new Set(['pending', 'approved', 'completed']);
+
 function resolveStatusKey(request: PurchaseRequest): string {
   if (request.statusName) {
     const normalized = request.statusName.toLowerCase();
@@ -88,7 +92,15 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
 
   // Filter purchase requests
   const filteredPurchaseRequests = useMemo(() => {
-    let filtered = purchaseRequests;
+    // Primero filtramos por estados visibles (0, 1, 3)
+    let filtered = purchaseRequests.filter(request => {
+      const statusValue = request.status;
+      if (typeof statusValue === 'number') {
+        return VISIBLE_STATUS_CODES.has(statusValue);
+      }
+      const statusKey = resolveStatusKey(request);
+      return VISIBLE_STATUS_KEYS.has(statusKey);
+    });
 
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
@@ -196,18 +208,36 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
 
   // Check if request can be cancelled
   const canCancelRequest = (request: PurchaseRequest): boolean => {
-    return resolveStatusKey(request) === 'pending';
+    const statusKey = resolveStatusKey(request);
+    return statusKey === 'pending';
   };
 
   // Check if purchase can be confirmed as bought
   const canConfirmBought = (request: PurchaseRequest): boolean => {
-    return resolveStatusKey(request) === 'approved' && request.selfPurchase;
+    const statusKey = resolveStatusKey(request);
+    const isApproved = statusKey === 'approved';
+    // selfPurchase puede venir como boolean o string
+    const isSelfPurchase = request.selfPurchase === true || 
+                           request.selfPurchase === 'true' || 
+                           (request as any).isSelfPurchase === true ||
+                           (request as any).isSelfPurchase === 'true';
+    return isApproved && isSelfPurchase;
   };
 
-  // Get status count
+  // Get status count (solo cuenta estados visibles)
   const getStatusCount = (status: string): number => {
-    if (status === 'all') return purchaseRequests.length;
-    return purchaseRequests.filter(req => resolveStatusKey(req) === status).length;
+    // Filtramos primero por estados visibles
+    const visibleRequests = purchaseRequests.filter(req => {
+      const statusValue = req.status;
+      if (typeof statusValue === 'number') {
+        return VISIBLE_STATUS_CODES.has(statusValue);
+      }
+      const statusKey = resolveStatusKey(req);
+      return VISIBLE_STATUS_KEYS.has(statusKey);
+    });
+
+    if (status === 'all') return visibleRequests.length;
+    return visibleRequests.filter(req => resolveStatusKey(req) === status).length;
   };
 
   return {

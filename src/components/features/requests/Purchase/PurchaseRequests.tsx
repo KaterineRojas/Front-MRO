@@ -4,12 +4,11 @@ import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
 import { Input } from '../../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
-import { Label } from '../../../ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle, Pencil } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { PurchaseForm } from './PurchaseForm';
+import { ModalConfirmPurchase } from './ModalConfirmPurchase';
 import { usePurchaseRequests } from './usePurchaseRequests';
 import { useIsMobile } from '../../../ui/use-mobile';
 import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
@@ -22,6 +21,16 @@ import type { PurchaseRequest } from './purchaseService';
 import type { User as EngineerUser, CartItem } from '../../enginner/types';
 import { toast } from 'sonner';
 import { ConfirmModal } from '../../../ui/confirm-modal';
+
+// Configuración de estados visibles (0=pending, 1=approved, 3=completed)
+// Excluimos 2=rejected de la vista
+const STATUS_CONFIG = {
+  pending: { value: 'pending', label: 'Pending', statusCode: 0 },
+  approved: { value: 'approved', label: 'Approved', statusCode: 1 },
+  completed: { value: 'completed', label: 'Completed', statusCode: 3 },
+} as const;
+
+const VISIBLE_STATUSES = Object.values(STATUS_CONFIG);
 
 type ActiveView = 'list' | 'request';
 
@@ -128,8 +137,7 @@ export function PurchaseRequests() {
   const [activeView, setActiveView] = useState<ActiveView>('list');
   const [requestToEdit, setRequestToEdit] = useState<PurchaseRequest | null>(null);
   const [confirmPurchaseOpen, setConfirmPurchaseOpen] = useState(false);
-  const [purchaseToConfirm, setPurchaseToConfirm] = useState<{ request: PurchaseRequest; actionKey: string } | null>(null);
-  const [purchaseEditedQuantities, setPurchaseEditedQuantities] = useState<Record<string, number>>({});
+  const [purchaseToConfirm, setPurchaseToConfirm] = useState<PurchaseRequest | null>(null);
   const [warehouseChoices, setWarehouseChoices] = useState<WarehouseOption[]>([]);
 
   const isMobile = useIsMobile();
@@ -333,14 +341,7 @@ export function PurchaseRequests() {
       toast.error('Unable to identify the request to confirm');
       return;
     }
-
-    const initialQuantities: Record<string, number> = {};
-    request.items.forEach((item, index) => {
-      initialQuantities[index.toString()] = item.quantity;
-    });
-
-    setPurchaseToConfirm({ request, actionKey });
-    setPurchaseEditedQuantities(initialQuantities);
+    setPurchaseToConfirm(request);
     setConfirmPurchaseOpen(true);
   };
 
@@ -348,33 +349,21 @@ export function PurchaseRequests() {
     setConfirmPurchaseOpen(open);
     if (!open) {
       setPurchaseToConfirm(null);
-      setPurchaseEditedQuantities({});
     }
   };
 
-  const updatePurchaseQuantity = (key: string, nextValue: number, maxQuantity: number) => {
-    const sanitized = Number.isNaN(nextValue) ? 1 : Math.max(1, Math.min(nextValue, maxQuantity));
-    setPurchaseEditedQuantities((prev) => ({
-      ...prev,
-      [key]: sanitized,
-    }));
-  };
-
-  const confirmAlreadyBought = async () => {
+  const handleConfirmPurchase = async (quantities: Record<string, number>) => {
     if (!purchaseToConfirm) {
       return;
     }
 
-    const payload: Record<string, number> = {};
-    purchaseToConfirm.request.items.forEach((item, index) => {
-      const key = index.toString();
-      const maxQuantity = item.quantity ?? 1;
-      const desiredQuantity = purchaseEditedQuantities[key] ?? maxQuantity;
-      payload[key] = Math.max(1, Math.min(desiredQuantity, maxQuantity));
-    });
+    const actionKey = (purchaseToConfirm.requestId ?? purchaseToConfirm.requestNumber)?.toString();
+    if (!actionKey) {
+      toast.error('Unable to identify the request to confirm');
+      return;
+    }
 
-    await handleConfirmBought(purchaseToConfirm.actionKey, payload);
-    handleConfirmDialogChange(false);
+    await handleConfirmBought(actionKey, quantities);
   };
 
   if (activeView === 'request') {
@@ -450,10 +439,11 @@ export function PurchaseRequests() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status ({getStatusCount('all')})</SelectItem>
-                <SelectItem value="pending">Pending ({getStatusCount('pending')})</SelectItem>
-                <SelectItem value="approved">Approved ({getStatusCount('approved')})</SelectItem>
-                <SelectItem value="rejected">Rejected ({getStatusCount('rejected')})</SelectItem>
-                <SelectItem value="completed">Completed ({getStatusCount('completed')})</SelectItem>
+                {VISIBLE_STATUSES.map((status) => (
+                  <SelectItem key={status.value} value={status.value}>
+                    {status.label} ({getStatusCount(status.value)})
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -571,32 +561,29 @@ export function PurchaseRequests() {
                       }}
                     >
                       <Pencil className="h-4 w-4" />
-                      Edit
+                     {/* Edit */}
                     </Button>
-                    {canConfirmBought(request) && (
-                      <Button
-                        className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          e.stopPropagation();
-                          handleAlreadyBought(request);
-                        }}
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                        Confirm
-                      </Button>
-                    )}
-                    {canCancelRequest(request) && (
-                      <Button
-                        className="action-btn-enhance btn-cancel p-2 h-auto"
-                        disabled={!meta.actionKey}
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          e.stopPropagation();
-                          void handleCancelPurchaseRequest(meta.actionKey || meta.rowKey);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+                    <Button
+                      className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
+                      disabled={!canConfirmBought(request)}
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        e.stopPropagation();
+                        handleAlreadyBought(request);
+                      }}
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Confirm
+                    </Button>
+                    <Button
+                      className="action-btn-enhance btn-cancel p-2 h-auto"
+                      disabled={!canCancelRequest(request)}
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        e.stopPropagation();
+                        void handleCancelPurchaseRequest(meta.actionKey || meta.rowKey);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
 
                   {isExpanded && (
@@ -691,7 +678,7 @@ export function PurchaseRequests() {
                               <p className="font-mono text-sm font-semibold">#{meta.identifier}</p>
                               <p className="text-xs text-muted-foreground">{meta.warehouseName}</p>
                               <div className="flex gap-1 flex-wrap">
-                                {meta.clientBilled && <Badge variant="outline">Client billed</Badge>}
+                                {/*<Badge variant="outline">{meta.selfPurchase ? 'Me' : 'Keeper'}</Badge>*/}
                                 {meta.hasNotes && <Badge variant="outline">Notes</Badge>}
                               </div>
                             </div>
@@ -741,32 +728,29 @@ export function PurchaseRequests() {
                                 }}
                               >
                                 <Pencil className="h-4 w-4" />
-                                Edit
+                               {/* Edit */}
                               </Button>
-                              {canConfirmBought(request) && (
-                                <Button
-                                  className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
-                                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                    e.stopPropagation();
-                                    handleAlreadyBought(request);
-                                  }}
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                  Confirm
-                                </Button>
-                              )}
-                              {canCancelRequest(request) && (
-                                <Button
-                                  className="action-btn-enhance btn-cancel p-2 h-auto"
-                                  disabled={!meta.actionKey}
-                                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                    e.stopPropagation();
-                                    void handleCancelPurchaseRequest(meta.actionKey || meta.rowKey);
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
+                              <Button
+                                className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
+                                disabled={!canConfirmBought(request)}
+                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                  e.stopPropagation();
+                                  handleAlreadyBought(request);
+                                }}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                Confirm
+                              </Button>
+                              <Button
+                                className="action-btn-enhance btn-cancel p-2 h-auto"
+                                disabled={!canCancelRequest(request)}
+                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                  e.stopPropagation();
+                                  void handleCancelPurchaseRequest(meta.actionKey || meta.rowKey);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -874,51 +858,13 @@ export function PurchaseRequests() {
         </Card>
       )}
 
-      <Dialog open={confirmPurchaseOpen} onOpenChange={handleConfirmDialogChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Purchase</DialogTitle>
-            <DialogDescription>Confirm quantities purchased and mark as ready for return</DialogDescription>
-          </DialogHeader>
-          {purchaseToConfirm && (
-            <div className="space-y-4">
-              {purchaseToConfirm.request.items.map((item, index) => {
-                const key = index.toString();
-                return (
-                  <div key={key} className="flex items-center gap-4 p-3 border rounded">
-                    {item.imageUrl && (
-                      <ImageWithFallback src={item.imageUrl} alt={item.name} className="w-12 h-12 object-cover rounded" />
-                    )}
-                    <div className="flex-1">
-                      <p className="text-sm">{item.name}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Label>Qty:</Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={item.quantity}
-                        value={purchaseEditedQuantities[key] ?? item.quantity}
-                        onChange={(e) => {
-                          const parsed = parseInt(e.target.value, 10);
-                          updatePurchaseQuantity(key, Number.isNaN(parsed) ? 1 : parsed, item.quantity);
-                        }}
-                        className="w-20"
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => handleConfirmDialogChange(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={confirmAlreadyBought}>Confirm</Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ModalConfirmPurchase
+        open={confirmPurchaseOpen}
+        onOpenChange={handleConfirmDialogChange}
+        request={purchaseToConfirm}
+        onConfirm={handleConfirmPurchase}
+      />
+
       <ConfirmModal
         open={modalState.open}
         onOpenChange={setModalOpen}
