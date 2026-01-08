@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Package, Plus, ChevronDown, ChevronRight, Trash2, Calendar } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
-import { LoanForm } from './LoanForm';
+import { LoanForm } from './borrowForm/LoanForm';
 import { ConfirmModal } from '../../../ui/confirm-modal';
 import type { User } from '../../enginner/types';
 import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';

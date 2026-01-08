@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/table';
 import { Package, Plus, ChevronDown, ChevronRight, Trash2, CheckCircle, Pencil } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
-import { PurchaseForm } from './PurchaseForm';
+import { PurchaseForm } from './purchase form/PurchaseFormRefactored';
 import { ModalConfirmPurchase } from './ModalConfirmPurchase';
 import { usePurchaseRequests } from './usePurchaseRequests';
 import { useIsMobile } from '../../../ui/use-mobile';

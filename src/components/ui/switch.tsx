@@ -14,7 +14,7 @@ const Switch = React.forwardRef<
   }, [checked]);
 
   const handleChange = (newChecked: boolean) => {
-    console.log('🔘 Switch clicked! New state:', newChecked ? 'ON ✅' : 'OFF ❌');
+    //console.log('🔘 Switch clicked! New state:', newChecked ? 'ON ✅' : 'OFF ❌');
     setIsChecked(newChecked);
     if (onCheckedChange) {
       onCheckedChange(newChecked);
