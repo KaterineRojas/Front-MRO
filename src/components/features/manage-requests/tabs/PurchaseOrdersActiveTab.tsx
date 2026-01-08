@@ -1,0 +1,454 @@
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { ShoppingCart, SearchX, Inbox, History, ChevronRight, Package, Building2, Layers, FolderKanban, UserCheck, Loader2 } from 'lucide-react';
+import { FilterSelect } from '../../inventory/components/FilterSelect';
+import { getStatusBadge, getReasonBadge } from '../../inventory/components/RequestBadges';
+import { useSelector } from 'react-redux';
+import { getPurchaseRequestsByStatus, markAsOrdered, markAsBought } from '../services/purchaseRequestsService';
+import toast from 'react-hot-toast';
+import { ConfirmModal } from '../modals/ConfirmModal';
+
+// Status mapping for display - handles both string and numeric status
+const STATUS_MAP: Record<string | number, string> = {
+    // String status (from API)
+    'Approved': 'approved',
+    'Ordered': 'ordered',
+    'Received': 'received',
+    // Numeric status (from API response)
+    0: 'pending',
+    1: 'approved',      // Approved
+    2: 'in-progress',
+    3: 'ordered',       // Ordered
+    4: 'received',      // Received
+};
+
+const REASON_MAP: Record<number, string> = {
+    0: 'Low Stock',
+    1: 'Urgent',
+    2: 'New project',
+};
+
+const formatDate = (dateString: string) => {
+    if (!dateString) return '---';
+    return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+};
+
+const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+    }).format(amount);
+};
+
+interface OrderRowProps {
+    order: any;
+    onOrderClick: (orderId: number) => void;
+    onBoughtClick: (orderId: number) => void;
+}
+
+const OrderRow: React.FC<OrderRowProps> = ({ order, onOrderClick, onBoughtClick }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    
+    // Handle both numeric and string status values
+    const statusString = STATUS_MAP[order.status] || (typeof order.status === 'string' ? order.status.toLowerCase() : 'unknown');
+    const reasonString = REASON_MAP[order.reason] || 'Standard';
+    const darkMode = useSelector((state: any) => state.ui.darkMode);
+    
+    // Determine buttons based on status (handle both string and number)
+    const isApproved = order.status === 'Approved' || order.status === 1;
+    const isOrdered = order.status === 'Ordered' || order.status === 3;
+
+    return (
+        <>
+            <tr className={`group transition-colors border-b border-gray-100 hover:bg-[#F5F5F7] dark:hover:bg-[#191F26] dark:border-gray-800 ${isExpanded ? 'hover:bg-white dark:hover:bg-[#1F2937] dark:bg-[#1F2937]' : ' dark:hover:bg-white/[0.02]'}`}>
+                <td className="p-4">
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded transition-colors text-gray-400 dark:text-white"
+                    >
+                        <ChevronRight className={`w-4 h-4 transition duration-200 ease-out ${isExpanded ? 'rotate-90' : ''}`} />
+                    </button>
+                </td>
+                <td className="p-4 font-mono text-sm font-bold text-blue-600 dark:text-blue-400">
+                    {order.requestNumber || `#${order.id}`}
+                </td>
+                <td className="p-4">
+                    {getStatusBadge(statusString, `${darkMode ? '' : 'soft'}`)}
+                </td>
+                <td className="p-4">
+                    <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{order.requesterId || 'N/A'}</span>
+                        <span className="text-[10px] text-gray-500 uppercase">{order.warehouseName || 'Warehouse'}</span>
+                    </div>
+                </td>
+                <td className="p-4 text-sm font-bold text-right text-emerald-600 dark:text-emerald-400 font-mono">
+                    {formatCurrency(order.totalAmount || order.estimatedTotalCost || 0)}
+                </td>
+                <td className="p-4 text-center">
+                    {getReasonBadge(reasonString, `${darkMode ? '' : 'soft'}`)}
+                </td>
+                <td className="p-4 text-sm text-gray-500">
+                    {formatDate(order.createdAt)}
+                </td>
+                <td className="p-4 text-right">
+                    <div className="flex justify-end gap-2">
+                        {isApproved && (
+                            <button
+                                className="inline-flex items-center gap-1 px-3 h-8 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Mark as Ordered"
+                                onClick={() => onOrderClick(order.id)}
+                            >
+                                Order
+                            </button>
+                        )}
+                        {isOrdered && (
+                            <button
+                                className="inline-flex items-center gap-1 px-3 h-8 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Mark as Bought"
+                                onClick={() => onBoughtClick(order.id)}
+                            >
+                                Bought
+                            </button>
+                        )}
+                    </div>
+                </td>
+            </tr>
+
+            {isExpanded && (
+                <tr className="bg-[#F2F2F4] dark:bg-black/20 shadow-inner">
+                    <td colSpan={8} className="p-0 border-b border-gray-100 dark:border-gray-800">
+                        <div className="p-6 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                                <div className="p-4 rounded-xl border border-blue-500 shadow-sm bg-blue-500/5 dark:border-blue-500/20 dark:shadow-none">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <FolderKanban className="w-4 h-4 text-blue-400" />
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-blue-300">Project</p>
+                                    </div>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-blue-100 pl-6">
+                                        {order.projectId || 'N/A'}
+                                    </p>
+                                </div>
+                                <div className="p-4 rounded-xl border shadow-sm bg-purple-500/5 border-purple-500/20 dark:shadow-none">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Layers className="w-4 h-4 text-purple-400" />
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-purple-300">Items</p>
+                                    </div>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-purple-100 pl-6">
+                                        {order.totalItems || 0} items <span className="font-normal text-purple-700 dark:text-purple-400/60">({order.totalQuantity || 0} units)</span>
+                                    </p>
+                                </div>
+                                <div className="p-4 rounded-xl border shadow-sm bg-amber-500/5 border-amber-500/20 dark:shadow-none">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Building2 className="w-4 h-4 text-amber-400" />
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-amber-300">Company</p>
+                                    </div>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-amber-100 pl-6">
+                                        {order.companyId || 'N/A'}
+                                    </p>
+                                </div>
+                                <div className="p-4 rounded-xl border shadow-sm bg-emerald-500/5 border-emerald-500/20 dark:shadow-none">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <UserCheck className="w-4 h-4 text-gray-400 dark:text-emerald-400" />
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-emerald-300">Approved By</p>
+                                    </div>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-emerald-100 pl-6">
+                                        {order.approvedByName || 'Pending'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {order.notes && (
+                                <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-800">
+                                    <p className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-2">Notes</p>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300">{order.notes}</p>
+                                </div>
+                            )}
+
+                            {order.rejectionReason && (
+                                <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-100 dark:border-red-800">
+                                    <p className="text-xs font-bold uppercase tracking-wider text-red-600 dark:text-red-400 mb-2">Rejection Reason</p>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300">{order.rejectionReason}</p>
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-2 mb-4 pl-1">
+                                <Package className="h-4 w-4 text-gray-400" />
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                                    Request Details
+                                </h4>
+                            </div>
+
+                            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span className="text-gray-500">Total Items:</span>
+                                        <span className="ml-2 font-semibold text-gray-900 dark:text-white">{order.totalItems || 0}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-500">Total Quantity:</span>
+                                        <span className="ml-2 font-semibold text-gray-900 dark:text-white">{order.totalQuantity || 0}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-500">Self Purchase:</span>
+                                        <span className="ml-2 font-semibold text-gray-900 dark:text-white">
+                                            {order.selfPurchase ? 'Yes' : 'No'}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-500">Ordered At:</span>
+                                        <span className="ml-2 font-semibold text-gray-900 dark:text-white">
+                                            {order.orderedAt ? formatDate(order.orderedAt) : 'Not yet'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            )}
+        </>
+    );
+};
+
+interface Props {
+    activeTab: 'active orders' | 'orders history';
+    warehouseId: number;
+}
+
+export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) => {
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [orders, setOrders] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+    const [isBoughtModalOpen, setIsBoughtModalOpen] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+
+    const fetchOrders = useCallback(async (signal?: AbortSignal) => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            
+            // For Active Orders tab, fetch Approved and Ordered
+            // For Orders History tab, fetch Received
+            const statuses = activeTab === 'active orders' 
+                ? ['Approved', 'Ordered']
+                : ['Received'];
+            
+            const data = await getPurchaseRequestsByStatus(warehouseId, statuses, signal);
+            console.log('📦 Fetched purchase requests:', data);
+            setOrders(data);
+        } catch (err: any) {
+            if (err.name === 'AbortError') return;
+            console.error("Failed to load purchase requests:", err);
+            setError(err.message || "An unexpected error occurred.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [activeTab, warehouseId]);
+
+    const handleOrderClick = (orderId: number) => {
+        setSelectedOrderId(orderId);
+        setIsOrderModalOpen(true);
+    };
+
+    const handleBoughtClick = (orderId: number) => {
+        setSelectedOrderId(orderId);
+        setIsBoughtModalOpen(true);
+    };
+
+    const handleConfirmOrder = async () => {
+        if (!selectedOrderId) return;
+        
+        try {
+            await markAsOrdered(selectedOrderId);
+            toast.success('Order marked successfully!');
+            setIsOrderModalOpen(false);
+            setSelectedOrderId(null);
+            fetchOrders();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to mark as ordered');
+        }
+    };
+
+    const handleConfirmBought = async () => {
+        if (!selectedOrderId) return;
+        
+        try {
+            await markAsBought(selectedOrderId);
+            toast.success('Order marked as bought/received!');
+            setIsBoughtModalOpen(false);
+            setSelectedOrderId(null);
+            fetchOrders();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to mark as bought');
+        }
+    };
+
+    useEffect(() => {
+        const controller = new AbortController();
+        fetchOrders(controller.signal);
+        return () => {
+            controller.abort();
+        };
+    }, [fetchOrders]);
+
+    const filteredOrders = useMemo(() => {
+        let data = orders;
+
+        if (statusFilter !== 'all') {
+            data = data.filter(order => order.status === statusFilter);
+        }
+
+        return data;
+    }, [orders, statusFilter]);
+
+    const filterOptions = useMemo(() => {
+        if (activeTab === 'active orders') {
+            return [
+                { value: 'all', label: 'All Active' },
+                { value: 'Approved', label: 'Approved' },
+                { value: 'Ordered', label: 'Ordered' }
+            ];
+        } else {
+            return [
+                { value: 'all', label: 'All History' },
+                { value: 'Received', label: 'Received' }
+            ];
+        }
+    }, [activeTab]);
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-64 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col items-center text-gray-400">
+                    <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                    <p>Loading requests...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-red-100 dark:border-red-900/30 rounded-xl bg-red-50/50 dark:bg-red-900/10">
+                <div className="p-3 bg-red-100 dark:bg-red-900/50 rounded-full mb-4">
+                    <Package className="w-8 h-8 text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                    Something went wrong
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-6">
+                    {error}
+                </p>
+                <button
+                    onClick={() => fetchOrders()}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors shadow-sm"
+                >
+                    Try Again
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="w-full bg-white dark:bg-[#0A1016] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between p-4 gap-4 border-b border-gray-100 dark:border-gray-800">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/10 rounded-lg">
+                        {activeTab === 'active orders' ? (
+                            <ShoppingCart className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        ) : (
+                            <History className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        )}
+                    </div>
+                    <h2 className="text-base font-bold text-gray-900 dark:text-white capitalize">
+                        {activeTab}
+                        <span className="ml-2 text-sm font-medium text-gray-400">({filteredOrders.length})</span>
+                    </h2>
+                </div>
+
+                <FilterSelect 
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                    options={filterOptions} 
+                    className='pr-[60px]'
+                />
+            </div>
+
+            <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full border-collapse text-left min-w-[900px]">
+                    <thead>
+                        <tr className="bg-gray-50/50 dark:bg-gray-900/30 border-b border-gray-100 dark:border-gray-800">
+                            <th className="p-4 w-12"></th>
+                            <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Request #</th>
+                            <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</th>
+                            <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Requester</th>
+                            <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-right">Total Value</th>
+                            <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center">Reason</th>
+                            <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Created At</th>
+                            <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {filteredOrders.length > 0 ? (
+                            filteredOrders.map((order) => (
+                                <OrderRow 
+                                    key={order.id} 
+                                    order={order}
+                                    onOrderClick={handleOrderClick}
+                                    onBoughtClick={handleBoughtClick}
+                                />
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={8} className="py-16 text-center">
+                                    <div className="flex flex-col items-center justify-center">
+                                        <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-full mb-3">
+                                            {statusFilter !== 'all' ? (
+                                                <SearchX className="w-8 h-8 text-gray-400" />
+                                            ) : (
+                                                <Inbox className="w-8 h-8 text-gray-400" />
+                                            )}
+                                        </div>
+                                        <h3 className="text-sm font-bold text-gray-900 dark:text-white">No requests found</h3>
+                                        <p className="text-xs text-gray-500 mt-1 max-w-[200px]">
+                                            {statusFilter !== 'all' 
+                                                ? "No orders match the selected filter." 
+                                                : "There are no orders in this category right now."}
+                                        </p>
+                                    </div>
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            <ConfirmModal
+                isOpen={isOrderModalOpen}
+                title="Confirm Order"
+                message="Are you sure you want to mark this request as Ordered?"
+                onConfirm={handleConfirmOrder}
+                onCancel={() => {
+                    setIsOrderModalOpen(false);
+                    setSelectedOrderId(null);
+                }}
+            />
+
+            <ConfirmModal
+                isOpen={isBoughtModalOpen}
+                title="Confirm Bought"
+                message="Are you sure you want to mark this order as Bought/Received?"
+                onConfirm={handleConfirmBought}
+                onCancel={() => {
+                    setIsBoughtModalOpen(false);
+                    setSelectedOrderId(null);
+                }}
+            />
+        </div>
+    );
+};

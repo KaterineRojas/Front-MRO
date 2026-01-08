@@ -18,7 +18,7 @@ import KitReturnOptionsDialog from '../modals/KitReturnOptionsDialog';
 import ConditionDialog from '../modals/ConditionDialog';
 import PackingRequestsTab from '../tabs/PackingRequestsTab';
 import ReturnsTab from '../tabs/ReturnsTab';
-import { PurchaseOrdersMockTab } from '../tabs/PurchaseOrdersMockTab';
+import { PurchaseOrdersTab } from '../tabs/PurchaseOrdersActiveTab';
 // types imported where needed in child components
 
 // Helper de UI
@@ -151,13 +151,13 @@ export function ManageRequestsPage() {
 
         <TabsContent value="active-orders">
           <div className="space-y-4">
-            <PurchaseOrdersMockTab activeTab="active orders" />
+            <PurchaseOrdersTab activeTab="active orders" warehouseId={warehouseId} />
           </div>
         </TabsContent>
 
         <TabsContent value="orders-history">
           <div className="space-y-4">
-            <PurchaseOrdersMockTab activeTab="orders history" />
+            <PurchaseOrdersTab activeTab="orders history" warehouseId={warehouseId} />
           </div>
         </TabsContent>
       </Tabs>

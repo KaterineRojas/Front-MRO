@@ -4,6 +4,7 @@ import { FilterSelect } from '../../inventory/components/FilterSelect';
 import { getStatusBadge, getReasonBadge } from '../../inventory/components/RequestBadges';
 import { useSelector } from 'react-redux';
 import { ActionButton } from '../../inventory/components/ActionButton';
+import { ConfirmModal } from '../../manage-requests/modals/ConfirmModal';
 
 // Mock data
 const MOCK_ORDERS = [
@@ -12,7 +13,7 @@ const MOCK_ORDERS = [
         requestNumber: 'PR-2025-001',
         requesterId: 'amx0142',
         warehouseName: 'Main Warehouse',
-        status: 0, // Pending
+        status: 3, // Ordered
         reason: 1, // Urgent
         estimatedTotalCost: 15420.50,
         totalItems: 5,
@@ -53,7 +54,7 @@ const MOCK_ORDERS = [
         requestNumber: 'PR-2025-003',
         requesterId: 'msmith',
         warehouseName: 'Main Warehouse',
-        status: 2, // Rejected
+        status: 1, // Rejected
         reason: 2, // New project
         estimatedTotalCost: 23500.00,
         totalItems: 8,
@@ -70,9 +71,9 @@ const MOCK_ORDERS = [
 ];
 
 const STATUS_MAP: Record<number, string> = {
-    0: 'pending',
     1: 'approved',
-    2: 'rejected',
+    3: 'ordered',
+    4: 'received',
 };
 
 const REASON_MAP: Record<number, string> = {
@@ -80,6 +81,17 @@ const REASON_MAP: Record<number, string> = {
     1: 'Urgent',
     2: 'New project',
 };
+
+const handleOrder = (orderId: number) => {
+    console.log('Ordering items for order:', orderId);
+    // Aquí puedes llamar al backend para cambiar el status a Ordered
+};
+
+const handleReceived = (orderId: number) => {
+    console.log('Marking order as received:', orderId);
+    // Aquí puedes llamar al backend para cambiar el status a Received
+};
+
 
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -102,6 +114,11 @@ interface OrderRowProps {
 
 const OrderRow: React.FC<OrderRowProps> = ({ order }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const confirmOrder = () => {
+        order.status = 3; // mock
+        setIsModalOpen(false);
+    };
     const statusString = STATUS_MAP[order.status] || 'unknown';
     const reasonString = REASON_MAP[order.reason] || 'Standard';
     const darkMode = useSelector((state: any) => state.ui.darkMode);
@@ -140,36 +157,49 @@ const OrderRow: React.FC<OrderRowProps> = ({ order }) => {
                     {formatDate(order.createdAt)}
                 </td>
                 <td className="p-4 text-right">
-                    {order.status === 0 ? (
-                        <div className="flex justify-end gap-2">
-                            <ActionButton
-                                icon="approve"
-                                variant="success"
-                                className="w-8 h-8 p-0 rounded-md"
-                                title="Approve Request"
-                                onClick={() => alert('Approve functionality coming soon')}
-                            />
-                            <ActionButton
-                                icon="reject"
-                                variant="danger"
-                                className="w-8 h-8 p-0 rounded-md"
-                                title="Reject Request"
-                                onClick={() => alert('Reject functionality coming soon')}
-                            />
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-end justify-center h-full">
-                            <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold ${order.status === 1 ? 'text-emerald-400' : 'text-red-500'}`}>
-                                {order.status === 1 ? 'Approved' : 'Rejected'}
-                                {order.status === 1 ? <CheckCheck className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                            </span>
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                by {actionedBy}
-                            </span>
-                        </div>
-                    )}
-                </td>
+    {/* Approved → mostrar botón Order */}
+    {order.status === 1 && (
+        <div className="flex justify-end">
+            <button
+                className="px-3 h-8 rounded-md bg-blue-500 text-white hover:bg-blue-600"
+                onClick={() => setIsModalOpen(true)}
+            >
+                Order
+            </button>
+        </div>
+    )}
+
+    {/* Ordered → mostrar botón Bought */}
+    {order.status === 3 && (
+        <div className="flex justify-end">
+            <button
+                className="px-3 h-8 rounded-md bg-green-500 text-white hover:bg-green-600"
+                onClick={() => handleReceived(order.id)}
+            >
+                Bought
+            </button>
+        </div>
+    )}
+
+    {/* Received → solo texto */}
+    {order.status === 4 && (
+        <div className="flex flex-col items-end justify-center h-full">
+            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold text-emerald-500">
+                Received
+            </span>
+        </div>
+    )}
+</td>
+
             </tr>
+            <ConfirmModal
+                isOpen={isModalOpen}
+                title="Confirm Order"
+                message="Are you sure you want to mark this request as Ordered?"
+                onConfirm={confirmOrder}
+                onCancel={() => setIsModalOpen(false)}
+            />
+
 
             {isExpanded && (
                 <tr className="bg-[#F2F2F4] dark:bg-black/20 shadow-inner">
@@ -273,20 +303,23 @@ export const PurchaseOrdersMockTab: React.FC<Props> = ({ activeTab }) => {
     const [statusFilter, setStatusFilter] = useState<string>('all');
 
     const filteredOrders = useMemo(() => {
-        let data = MOCK_ORDERS;
+    let data = MOCK_ORDERS;
 
-        if (activeTab === 'active orders') {
-            data = data.filter(order => order.status === 0);
-        } else {
-            data = data.filter(order => order.status === 1 || order.status === 2);
-        }
+    if (activeTab === 'active orders') {
+        // Mostrar Approved y Ordered como “pendientes de acción”
+        data = data.filter(order => order.status === 1 || order.status === 3);
+    } else {
+        // Historial → Received
+        data = data.filter(order => order.status === 4);
+    }
 
-        if (statusFilter !== 'all') {
-            data = data.filter(order => order.status.toString() === statusFilter);
-        }
+    if (statusFilter !== 'all') {
+        data = data.filter(order => order.status.toString() === statusFilter);
+    }
 
-        return data;
-    }, [activeTab, statusFilter]);
+    return data;
+}, [activeTab, statusFilter]);
+
 
     const filterOptions = useMemo(() => {
         if (activeTab === 'active orders') {
