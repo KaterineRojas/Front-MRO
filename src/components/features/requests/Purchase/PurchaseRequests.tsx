@@ -21,6 +21,7 @@ import type { PurchaseRequest } from './purchaseService';
 import type { User as EngineerUser, CartItem } from '../../enginner/types';
 import { toast } from 'sonner';
 import { ConfirmModal } from '../../../ui/confirm-modal';
+import { ProjectDetails } from '../shared/ProjectDetails';
 
 // Configuración de estados visibles (0=pending, 1=approved, 3=completed)
 // Excluimos 2=rejected de la vista
@@ -580,30 +581,12 @@ export function PurchaseRequests() {
                   {isExpanded && (
                     <div className="space-y-3 border-t pt-3">
                       {/* Project Details Chain */}
-                      <div className="bg-sky-50 dark:bg-sky-950/40 rounded-lg p-3 border border-sky-200 dark:border-sky-800">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <h4 className="text-[10px] sm:text-xs font-semibold text-sky-700 dark:text-sky-300">Project Details</h4>
-                          <div className="flex flex-col items-center">
-                            <span className="text-[8px] sm:text-[10px] text-muted-foreground">Company</span>
-                            <span className="text-[9px] sm:text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-1.5 py-0.5 rounded">{meta.companyLabel || '—'}</span>
-                          </div>
-                          <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
-                          <div className="flex flex-col items-center">
-                            <span className="text-[8px] sm:text-[10px] text-muted-foreground">Customer</span>
-                            <span className="text-[9px] sm:text-xs font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/50 px-1.5 py-0.5 rounded">{meta.customerLabel || '—'}</span>
-                          </div>
-                          <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
-                          <div className="flex flex-col items-center">
-                            <span className="text-[8px] sm:text-[10px] text-muted-foreground">Project</span>
-                            <span className="text-[9px] sm:text-xs font-medium text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900/50 px-1.5 py-0.5 rounded">{meta.projectLabel || '—'}</span>
-                          </div>
-                          <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
-                          <div className="flex flex-col items-center">
-                            <span className="text-[8px] sm:text-[10px] text-muted-foreground">Work Order</span>
-                            <span className="text-[9px] sm:text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 px-1.5 py-0.5 rounded">{meta.workOrderLabel || '—'}</span>
-                          </div>
-                        </div>
-                      </div>
+                      <ProjectDetails
+                        companyLabel={meta.companyLabel}
+                        customerLabel={meta.customerLabel}
+                        projectLabel={meta.projectLabel}
+                        workOrderLabel={meta.workOrderLabel}
+                      />
 
                       <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground">
                         <p>Created: {meta.createdDate}</p>
@@ -769,30 +752,12 @@ export function PurchaseRequests() {
                             <TableCell colSpan={8} className="bg-muted/20 p-0">
                               <div className="p-4 space-y-4">
                                 {/* Project Details Chain */}
-                                <div className="bg-sky-50 dark:bg-sky-950/40 rounded-lg p-3 border border-sky-200 dark:border-sky-800">
-                                  <div className="flex items-center gap-3 flex-wrap">
-                                    <h4 className="text-[10px] sm:text-xs font-semibold text-sky-700 dark:text-sky-300">Project Details</h4>
-                                    <div className="flex flex-col items-center">
-                                      <span className="text-[8px] sm:text-[10px] text-muted-foreground">Company</span>
-                                      <span className="text-[9px] sm:text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-1.5 py-0.5 rounded">{meta.companyLabel || '—'}</span>
-                                    </div>
-                                    <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
-                                    <div className="flex flex-col items-center">
-                                      <span className="text-[8px] sm:text-[10px] text-muted-foreground">Customer</span>
-                                      <span className="text-[9px] sm:text-xs font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/50 px-1.5 py-0.5 rounded">{meta.customerLabel || '—'}</span>
-                                    </div>
-                                    <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
-                                    <div className="flex flex-col items-center">
-                                      <span className="text-[8px] sm:text-[10px] text-muted-foreground">Project</span>
-                                      <span className="text-[9px] sm:text-xs font-medium text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900/50 px-1.5 py-0.5 rounded">{meta.projectLabel || '—'}</span>
-                                    </div>
-                                    <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
-                                    <div className="flex flex-col items-center">
-                                      <span className="text-[8px] sm:text-[10px] text-muted-foreground">Work Order</span>
-                                      <span className="text-[9px] sm:text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 px-1.5 py-0.5 rounded">{meta.workOrderLabel || '—'}</span>
-                                    </div>
-                                  </div>
-                                </div>
+                                <ProjectDetails
+                                  companyLabel={meta.companyLabel}
+                                  customerLabel={meta.customerLabel}
+                                  projectLabel={meta.projectLabel}
+                                  workOrderLabel={meta.workOrderLabel}
+                                />
 
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                                   {/* Notes */}

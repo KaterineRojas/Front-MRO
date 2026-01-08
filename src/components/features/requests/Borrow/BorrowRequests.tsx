@@ -11,6 +11,7 @@ import { Package, Plus, ChevronDown, ChevronRight, Trash2, Calendar } from 'luci
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { LoanForm } from './borrowForm/LoanForm';
 import { ConfirmModal } from '../../../ui/confirm-modal';
+import { ProjectDetails } from '../shared/ProjectDetails';
 import type { User } from '../../enginner/types';
 import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
 
@@ -243,30 +244,13 @@ export function BorrowRequests() {
                   {expandedBorrowRows.has(request.requestNumber) && (
                     <div>
                       {/* Cadena de relaciones en móvil */}
-                      <div className="bg-white rounded-lg p-3 border border-muted mb-4">
-                        <h4 className="text-[10px] sm:text-xs font-semibold mb-2 text-muted-foreground">Details project</h4>
-                        <div className="flex items-center gap-1 flex-wrap">
-                          <div className="flex flex-col items-center">
-                            <span className="text-[8px] sm:text-[10px] opacity-50">Company</span>
-                            <span className="text-[9px] sm:text-xs font-medium text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">{request.companyId}</span>
-                          </div>
-                          <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
-                          <div className="flex flex-col items-center">
-                            <span className="text-[8px] sm:text-[10px] opacity-50">Customer</span>
-                            <span className="text-[9px] sm:text-xs font-medium text-green-700 bg-green-50 px-1.5 py-0.5 rounded">{request.customerId}</span>
-                          </div>
-                          <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
-                          <div className="flex flex-col items-center">
-                            <span className="text-[8px] sm:text-[10px] opacity-50">Project</span>
-                            <span className="text-[9px] sm:text-xs font-medium text-yellow-700 bg-yellow-50 px-1.5 py-0.5 rounded">{request.projectId}</span>
-                          </div>
-                          <span className="text-muted-foreground text-[8px] sm:text-xs">→</span>
-                          <div className="flex flex-col items-center">
-                            <span className="text-[8px] sm:text-[10px] opacity-50">Work Order</span>
-                            <span className="text-[9px] sm:text-xs font-medium text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">{request.workOrderId}</span>
-                          </div>
-                        </div>
-                      </div>
+                      <ProjectDetails
+                        companyLabel={request.companyId}
+                        customerLabel={request.customerId}
+                        projectLabel={request.projectId}
+                        workOrderLabel={request.workOrderId}
+                        className="mb-4"
+                      />
                       
                       <h4 className="text-sm mb-2">Items:</h4>
                       <div className="space-y-2">
@@ -395,38 +379,12 @@ export function BorrowRequests() {
                           <TableCell colSpan={9} className="bg-muted/20 p-0">
                             <div className="p-4 space-y-4">
                               {/* Cadena de relaciones */}
-                              <div className="bg-white rounded-lg p-4 border border-muted flex items-center justify-between">
-                                <h4 className="text-sm font-semibold text-muted-foreground">Details project</h4>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <div className="flex flex-col items-center">
-                                    <span className="text-xs opacity-50 mb-1">Company</span>
-                                    <div className="bg-blue-50 border border-blue-200 rounded px-3 py-2 text-sm font-medium">
-                                      {request.companyId}
-                                    </div>
-                                  </div>
-                                  <span className="text-muted-foreground">→</span>
-                                  <div className="flex flex-col items-center">
-                                    <span className="text-xs opacity-50 mb-1">Customer</span>
-                                    <div className="bg-green-50 border border-green-200 rounded px-3 py-2 text-sm font-medium">
-                                      {request.customerId}
-                                    </div>
-                                  </div>
-                                  <span className="text-muted-foreground">→</span>
-                                  <div className="flex flex-col items-center">
-                                    <span className="text-xs opacity-50 mb-1">Project</span>
-                                    <div className="bg-yellow-50 border border-yellow-200 rounded px-3 py-2 text-sm font-medium">
-                                      {request.projectId}
-                                    </div>
-                                  </div>
-                                  <span className="text-muted-foreground">→</span>
-                                  <div className="flex flex-col items-center">
-                                    <span className="text-xs opacity-50 mb-1">Work Order</span>
-                                    <div className="bg-purple-50 border border-purple-200 rounded px-3 py-2 text-sm font-medium">
-                                      {request.workOrderId}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
+                              <ProjectDetails
+                                companyLabel={request.companyId}
+                                customerLabel={request.customerId}
+                                projectLabel={request.projectId}
+                                workOrderLabel={request.workOrderId}
+                              />
 
                               {/* Tabla de items */}
                               <Table>
