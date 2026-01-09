@@ -69,8 +69,16 @@ export function getStatusText(status: string): string {
 /**
  * Formatea una fecha en formato legible
  */
-export function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
+export function formatDate(dateString: string | null | undefined): string {
+  if (!dateString || dateString.trim() === '') {
+    return '—';
+  }
+  const date = new Date(dateString);
+  // Check if date is valid (not NaN) and not epoch time (Dec 31 1969 / Jan 1 1970)
+  if (isNaN(date.getTime()) || date.getFullYear() < 1980) {
+    return '—';
+  }
+  return date.toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'short',
     year: 'numeric'
