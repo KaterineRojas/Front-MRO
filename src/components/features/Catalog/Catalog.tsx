@@ -364,7 +364,8 @@ export function Catalog() {
             },
             quantity,
             warehouseId: selectedWarehouse,
-            warehouseName: selectedWarehouseObj?.name || ''
+            warehouseName: selectedWarehouseObj?.name || '',
+            skipStockValidation: requestType === 'purchase'
           };
           dispatch(addToCart(cartItem));
           toast.success(`${item.itemName} added to cart`);
@@ -374,7 +375,7 @@ export function Catalog() {
     }
 
     if (existingItem) {
-      dispatch(updateCartItem({ itemId: item.itemId.toString(), quantity: existingItem.quantity + quantity }));
+      dispatch(updateCartItem({ itemId: item.itemId.toString(), quantity: existingItem.quantity + quantity, skipStockValidation: requestType === 'purchase' }));
     } else {
       const cartItem = {
         item: {
@@ -389,7 +390,8 @@ export function Catalog() {
         },
         quantity,
         warehouseId: selectedWarehouse,
-        warehouseName: selectedWarehouseObj?.name || ''
+        warehouseName: selectedWarehouseObj?.name || '',
+        skipStockValidation: requestType === 'purchase'
       };
       dispatch(addToCart(cartItem));
     }
@@ -403,7 +405,8 @@ export function Catalog() {
 
   const handleIncreaseQuantity = (item: CatalogItem) => {
     const currentQty = getItemCartQuantity(item.itemId);
-    if (currentQty < (item.totalQuantity || 0)) {
+    // Allow unlimited quantity for purchase requests
+    if (requestType === 'purchase' || currentQty < (item.totalQuantity || 0)) {
       handleAddToCart(item, 1);
     }
   };
@@ -519,7 +522,7 @@ export function Catalog() {
             <span style={{ fontSize: '0.875rem' }}>Request type:</span>
             <Select
               value={requestType}
-              onValueChange={(value) => {
+              onValueChange={(value: string) => {
                 const next = value as RequestType;
                 setRequestType(next);
                 sessionStorage.setItem('catalogRequestType', next);
@@ -641,10 +644,10 @@ export function Catalog() {
                     {cartQty === 0 ? (
                       <Button
                         onClick={() => handleAddToCart(item, 1)}
-                        disabled={!isAvailable}
+                        disabled={!isAvailable && requestType !== 'purchase'}
                         style={{ width: '100%', height: '32px', fontSize: '0.875rem' }}
                       >
-                        {!isAvailable ? 'Not Available' : 'Add to Cart'}
+                        {!isAvailable && requestType !== 'purchase' ? 'Not Available' : 'Add to Cart'}
                       </Button>
                     ) : (
                       <div style={styles.cartControls}>
@@ -662,7 +665,7 @@ export function Catalog() {
                           variant="ghost"
                           size="sm"
                           style={{ height: '28px', width: '28px', padding: '0' }}
-                          disabled={cartQty >= totalQty}
+                          disabled={requestType !== 'purchase' && cartQty >= totalQty}
                         >
                           <Plus style={{ height: '16px', width: '16px' }} />
                         </Button>
