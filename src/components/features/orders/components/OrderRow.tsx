@@ -51,15 +51,18 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
     if (data.kind === 'Purchase') {
         if (data.approvedByName) approverDisplay = data.approvedByName;
     } else {
-        const nameFromNotes = data.notes?.match(/by\s+(\w+)\s+at/)?.[1];
-
-        if (nameFromNotes) {
-            approverDisplay = nameFromNotes;
-        }
-        else if (data.status === 'Approved') {
-            approverDisplay = 'Authorized';
+        if(data.notes){
+            const nameFromNotes = data.notes?.match(/by\s+(\w+)\s+at/)?.[1];
+    
+            if (nameFromNotes) {
+                approverDisplay = nameFromNotes;
+            }
+            else if (data.status === 'Approved') {
+                approverDisplay = 'Approved';
+            }
         }
     }
+
 
     //total cost
     const totalCostDisplay = (data.kind === 'Purchase')
@@ -108,6 +111,7 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
     } else {
         requesterDisplay = data.requesterName
     }
+
 
     return (
         <>
@@ -166,10 +170,10 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
                         </div>
                     ) : (
                         <div className="flex flex-col items-end justify-center h-full">
-                            <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold ${data.status === 1 ? 'text-emerald-400' : 'text-red-500'
+                            <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold ${statusString.toLowerCase() === 'approved' ? 'text-emerald-400' : 'text-red-500'
                                 }`}>
-                                {data.status === 1 ? 'Approved' : 'Rejected'}
-                                {data.status === 1 ? <CheckCheck className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                                {statusString.toLowerCase() === 'approved' ? 'Approved' : 'Rejected'}
+                                {statusString.toLowerCase() === 'approved' ? <CheckCheck className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
                             </span>
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                 by {actionedBy}

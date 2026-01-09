@@ -11,7 +11,6 @@ import { TableErrorState } from '../orders/components/TableErrorState';
 import { OrderTable } from '../orders/components/OrderTable';
 import { getAllPurchaseRequests } from '../orders/services/purchaseService';
 import { PurchaseRequest } from '../orders/types/purchaseType';
-import { ReviewRequestModal } from '../orders/modals/ApproveRequestModal';
 import { approvePurchaseRequest, rejectPurchaseRequest } from '../orders/services/purchaseService';
 
 export function RequestManagement() {
@@ -126,53 +125,70 @@ export function RequestManagement() {
   }, [fetchUnifiedRequests]);
 
 
-  // ===========================================================================
   // COMPUTED DATA (FILTERS & COUNTS)
-  // ===========================================================================
 
   const filteredRequests = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();
     const currentTab = activeTab.toLowerCase();
 
     return allRequests.filter((request) => {
-      const data = request.originalData || request;
+      const data = request.originalData;
+      const kind = data.kind;
 
-      // Extract Status
-      const rawStatus = (data.kind === 'Purchase' ? data.statusName : data.status) || '';
-      const status = rawStatus.toLowerCase().trim();
+      //  STATUS FILTER
+      const rawStatus = (kind === 'Purchase' ? data.statusName : data.status) || '';
 
-      // Status Filter
       if (currentTab !== 'all') {
-        // Strict match because tabs match status names (pending/approved/rejected)
-        if (status !== currentTab) return false;
+        if (rawStatus.toLowerCase() !== currentTab) return false;
       }
 
-      // Search Filter
-      if (term) {
-        const idToCheck = data.kind === 'Purchase' ? data.id?.toString() : data.requestNumber;
-        const requesterToCheck = data.kind === 'Purchase' ? data.requesterId : data.requesterName;
+      //  SEARCH FILTER
+      if (!term) return true;
 
-        const matchesTopLevel =
-          (idToCheck && idToCheck.toLowerCase().includes(term)) ||
-          (requesterToCheck && requesterToCheck.toLowerCase().includes(term));
+      const searchableFields: string[] = [
+        request.requestNumber || '',
+        data.requestNumber?.toString() || '',
+        request.requester || '',
+        // request.warehouse || '',
+        data.departmentId || '',
+      ];
 
-        if (matchesTopLevel) return true;
-
-        const matchesItems = (data.items || []).some((item: any) => {
-          const name = item.name || item.productName || '';
-          const sku = item.sku || '';
-          return (
-            name.toLowerCase().includes(term) ||
-            sku.toLowerCase().includes(term)
-          );
-        });
-
-        if (!matchesItems) return false;
+      if (kind === 'Loan') {
+        const loan = data as LoanRequest;
+        searchableFields.push(loan.requesterName || '');
+        searchableFields.push(loan.departmentId || '');
+        // searchableFields.push(loan.projectId || '');
+      }
+      else if (kind === 'Purchase') {
+        const purchase = data as PurchaseRequest;
+        searchableFields.push(purchase.requesterId || '');
+        // searchableFields.push(purchase.warehouseName || '');
+        searchableFields.push(purchase.departmentId || '');
       }
 
-      return true;
+      const matchesTopLevel = searchableFields.some(val =>
+        val.toLowerCase().includes(term)
+      );
+
+      if (matchesTopLevel) return true;
+
+      // ITEMS FILTER
+      const matchesItems = (data.items || []).some((item: any) => {
+        const name = item.name || item.productName || '';
+        const sku = item.sku || '';
+
+        return (
+          name.toLowerCase().includes(term) ||
+          sku.toLowerCase().includes(term)
+        );
+      });
+
+      return matchesItems;
     });
   }, [allRequests, activeTab, searchTerm]);
+
+
+
 
   // COUNTS (Calculated from allRequests, not filteredRequests)
   const pendingCount = useMemo(() => allRequests.filter(r => {
@@ -197,30 +213,70 @@ export function RequestManagement() {
 
   // --- LOAN ACTIONS ---
   const handleApprove = async () => {
-    if (!selectedRequest) return;
-    setLoadingModal(true);
-    try {
-      await approveLoanRequest(selectedRequest.requestNumber, currentEmployeeId);
+    // 1. Guard Clause
+    if (!reviewState.order) return;
 
-      // Update local state to reflect change immediately
+    const request = reviewState.order;
+    const data = request.originalData;
+    const kind = data.kind;
+
+    try {
+      setIsReviewProcessing(true);
+
+      // --- API CALLS ---
+      if (kind === 'Loan') {
+        // Loan Approval Service
+        await approveLoanRequest(request.requestNumber, currentEmployeeId);
+      }
+      else if (kind === 'Purchase') {
+        // Purchase Approval Service (using numeric ID)
+        const purchaseId = (data as any).id;
+        await approvePurchaseRequest(purchaseId);
+      }
+
+      // --- STATE UPDATE (Optimistic) ---
       setAllRequests(prev => prev.map(req => {
-        if (req.originalData.kind === 'Loan' && req.requestNumber === selectedRequest.requestNumber) {
+        // Only modify the matching request
+        if (req.id === request.id) {
+
+          // We must rebuild 'originalData' carefully to satisfy the Union Type
+          let newOriginalData;
+
+          if (req.originalData.kind === 'Loan') {
+            // 1. Handle LOAN (Status is String)
+            newOriginalData = {
+              ...req.originalData,
+              status: 'Approved'
+            };
+          } else {
+            // 2. Handle PURCHASE (Status is Number)
+            newOriginalData = {
+              ...req.originalData,
+              statusName: 'Approved',
+              status: 1 // strict number for Purchase
+            };
+          }
+
+          // Now return the full UnifiedRequest
           return {
             ...req,
             statusLabel: 'Approved',
-            originalData: { ...req.originalData, status: 'Approved' }
+            originalData: newOriginalData
           };
         }
+
         return req;
       }));
 
-      setSelectedRequest(null);
-      setShowModal(false);
-    } catch (error) {
-      console.error("Error approving request:", error);
-      alert("Couldn't approve the request.");
+      // Close Modal
+      reviewState.isOpen = false
+      reviewState.order = null;
+
+    } catch (error: any) {
+      console.error(`Error approving ${kind}:`, error);
+      alert(error.message || "Could not approve request.");
     } finally {
-      setLoadingModal(false);
+      setIsReviewProcessing(false);
     }
   };
 
@@ -253,11 +309,6 @@ export function RequestManagement() {
     } finally {
       setLoadingModal(false);
     }
-  };
-
-  const handleCancelApprove = () => {
-    setSelectedRequest(null);
-    setShowModal(false);
   };
 
 
@@ -397,7 +448,7 @@ export function RequestManagement() {
       <RequestModal
         show={reviewState.isOpen}
         request={reviewState.order}
-        onConfirm={reviewState.action === 'approve' ? handleApprove : () => handleReject('')} 
+        onConfirm={reviewState.action === 'approve' ? handleApprove : () => handleReject('')}
         onCancel={handleCloseReview}
         variant={reviewState.action === 'approve' ? 'approve' : 'reject'}
         loading={loadingModal}
