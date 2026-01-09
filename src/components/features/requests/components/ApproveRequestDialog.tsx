@@ -11,14 +11,18 @@ import {
     Package,
     AlertCircle
 } from 'lucide-react';
-import { getTypeBadge } from '../../inventory/components/RequestBadges.tsx';
+import { getTypeBadge, getReasonBadge } from '../../inventory/components/RequestBadges.tsx';
+import { REASON_MAP} from '../../orders/utils/purchase-utils';
+
 import { useSelector } from 'react-redux';
-import { LoanRequest } from '../types/loanTypes.ts';
+// CHANGED: Import UnifiedRequest instead of LoanRequest
+import { UnifiedRequest } from '../types/loanTypes.ts';
 
 interface RequestActionDialogProps {
     show: boolean;
     variant: 'approve' | 'reject';
-    request: LoanRequest | null;
+    // CHANGED: Updated type to UnifiedRequest
+    request: UnifiedRequest | null;
     loading: boolean;
     onCancel: () => void;
     onConfirm: (reason: string) => void;
@@ -59,17 +63,45 @@ export default function RequestModal({
         </label>
     );
 
-
     useEffect(() => {
         if (!show) {
             setReason("");
         }
     }, [show]);
 
-
     if (!show || !request) {
         return null;
     }
+
+    // =========================================================================
+    // NEW: DATA NORMALIZATION LAYER
+    // We extract data safely because 'request' is now UnifiedRequest
+    // =========================================================================
+    const data = request.originalData || {};
+
+    // Top level info
+    const reqNumber = request.requestNumber;
+    const reqType = data.kind === 'Purchase'
+        ? getReasonBadge(REASON_MAP[data.reason], `${darkMode ? '' : 'soft'}`)
+        : getTypeBadge(data.typeRequest, `${darkMode ? '' : 'soft'}`)
+
+    const reqName = request.requester;
+    const reqId = data.kind === 'Purchase' ? data.requesterId : data.requesterName;
+    const deptId = data.departmentId || data.warehouseName || 'N/A'; // Fallback for purchase
+    const projId = data.projectId; // Loans only
+    const reqNotes = data.notes; 
+
+    // Items Normalization
+    const rawItems = data.items || [];
+    const normalizedItems = rawItems.map((item: any) => ({
+        id: item.id || Math.random(),
+        // Handle different naming conventions (Loan vs Purchase)
+        name: item.name || item.productName || 'Unknown Item',
+        sku: item.sku || 'N/A',
+        imageUrl: item.imageUrl,
+        quantity: item.quantityRequested || item.quantity || 0
+    }));
+    // =========================================================================
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -102,41 +134,42 @@ export default function RequestModal({
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <LabelWithIcon icon={Hash}>Request Number</LabelWithIcon>
-                                <p className="text-sm text-gray-700 dark:text-gray-300 font-mono">{request.requestNumber}</p>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 font-mono">{reqNumber}</p>
                             </div>
                             <div>
                                 <LabelWithIcon icon={FileText}>Type</LabelWithIcon>
-                                {getTypeBadge(request.typeRequest, darkMode ? 'outline' : 'soft')}
+                                {reqType}
                             </div>
                             <div className='overflow-x-auto'>
                                 <LabelWithIcon icon={User}>Requested By</LabelWithIcon>
-                                <p className="text-sm text-gray-900 dark:text-gray-100">{request.requesterName}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{request.requesterId}</p>
+                                <p className="text-sm text-gray-900 dark:text-gray-100">{reqName}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{reqId}</p>
                             </div>
                             <div>
                                 <LabelWithIcon icon={Building}>Department</LabelWithIcon>
-                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.departmentId}</p>
+                                <p className="text-sm text-gray-700 dark:text-gray-300">{deptId}</p>
                             </div>
                         </div>
 
-                        {request.projectId && !isReject && (
+                        {/* Only show Project if it exists (Loans) */}
+                        {projId && !isReject && (
                             <div>
                                 <LabelWithIcon icon={Briefcase}>Project</LabelWithIcon>
-                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.projectId}</p>
+                                <p className="text-sm text-gray-700 dark:text-gray-300">{projId}</p>
                             </div>
                         )}
 
-                        {!isReject && request.notes && (
+                        {!isReject && reqNotes && (
                             <div className='max-h-[150px] overflow-auto'>
                                 <LabelWithIcon icon={StickyNote}>Notes / Reason</LabelWithIcon>
-                                <p className="text-sm text-gray-700 dark:text-gray-300">{request.notes}</p>
+                                <p className="text-sm text-gray-700 dark:text-gray-300">{reqNotes}</p>
                             </div>
                         )}
 
                         <div>
-                            <LabelWithIcon icon={Package}>Items ({request.items.length})</LabelWithIcon>
+                            <LabelWithIcon icon={Package}>Items ({normalizedItems.length})</LabelWithIcon>
                             <div className="mt-2 grid gap-4 grid-cols-1 md:grid-cols-2 max-h-[200px] overflow-auto">
-                                {request.items.map((item) => (
+                                {normalizedItems.map((item) => (
                                     <div key={item.id} className="flex items-start space-x-3 p-2 border border-gray-200 dark:border-gray-700 rounded">
                                         <img
                                             src={item.imageUrl || 'https://via.placeholder.com/150'}
@@ -148,7 +181,7 @@ export default function RequestModal({
                                             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{item.name}</p>
                                             <div className="flex flex-wrap items-center gap-2 mt-1">
                                                 <span className="text-xs font-medium bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-200">
-                                                    {item.quantityRequested} units
+                                                    {item.quantity} units
                                                 </span>
                                             </div>
                                         </div>
@@ -174,7 +207,6 @@ export default function RequestModal({
                                     focus:border-red-500 focus:ring-red-600 focus:ring-1 focus:outline-none
                                     ${loading ? 'opacity-50 cursor-not-allowed' : ''}
                                 `}
-
                                 placeholder="Explain why this request is being rejected..."
                                 value={reason}
                                 onChange={(e) => setReason(e.target.value)}

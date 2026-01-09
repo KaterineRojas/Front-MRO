@@ -128,7 +128,7 @@ export interface ArticleSelectorProps {
 export interface ActivePurchaseTableProps {
     statusFilter: string;
     activeTab: string;
-    onReview: (order: PurchaseRequest, action: 'approve' | 'reject') => void;
+    onReview: (order: UnifiedRequest, action: 'approve' | 'reject') => void;
     requests: UnifiedRequest[];
 }
 

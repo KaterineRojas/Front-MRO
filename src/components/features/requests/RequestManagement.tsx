@@ -33,7 +33,7 @@ export function RequestManagement() {
 
   const [reviewState, setReviewState] = useState<{
     isOpen: boolean;
-    order: PurchaseRequest | null;
+    order: UnifiedRequest | null;
     action: 'approve' | 'reject';
   }>({
     isOpen: false,
@@ -130,7 +130,6 @@ export function RequestManagement() {
   // COMPUTED DATA (FILTERS & COUNTS)
   // ===========================================================================
 
-  // 1. FILTER LOGIC
   const filteredRequests = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();
     const currentTab = activeTab.toLowerCase();
@@ -175,7 +174,7 @@ export function RequestManagement() {
     });
   }, [allRequests, activeTab, searchTerm]);
 
-  // 2. COUNTS (Calculated from allRequests, not filteredRequests)
+  // COUNTS (Calculated from allRequests, not filteredRequests)
   const pendingCount = useMemo(() => allRequests.filter(r => {
     const s = r.originalData.kind === 'Purchase' ? r.originalData.statusName : r.originalData.status;
     return (s || '').toLowerCase() === 'pending';
@@ -263,7 +262,7 @@ export function RequestManagement() {
 
 
   // --- PURCHASE ACTIONS ---
-  const handleOpenReview = (order: PurchaseRequest, action: 'approve' | 'reject') => {
+  const handleOpenReview = (order: UnifiedRequest, action: 'approve' | 'reject') => {
     setReviewState({ isOpen: true, order, action });
   };
 
@@ -396,23 +395,23 @@ export function RequestManagement() {
 
       {/* Loan Modal */}
       <RequestModal
-        show={showModal}
-        request={selectedRequest}
-        onConfirm={modalType === 'approve' ? handleApprove : () => handleReject('')} // Passing empty string wrapper if needed
-        onCancel={handleCancelApprove}
-        variant={modalType === 'approve' ? 'approve' : 'reject'}
+        show={reviewState.isOpen}
+        request={reviewState.order}
+        onConfirm={reviewState.action === 'approve' ? handleApprove : () => handleReject('')} 
+        onCancel={handleCloseReview}
+        variant={reviewState.action === 'approve' ? 'approve' : 'reject'}
         loading={loadingModal}
       />
 
       {/* Purchase Modal */}
-      <ReviewRequestModal
+      {/* <ReviewRequestModal
         isOpen={reviewState.isOpen}
         order={reviewState.order}
         initialAction={reviewState.action}
         onClose={handleCloseReview}
         onConfirm={handleConfirmReview}
         isProcessing={isReviewProcessing}
-      />
+      /> */}
     </div>
   );
 }

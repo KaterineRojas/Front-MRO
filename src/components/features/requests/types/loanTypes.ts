@@ -47,7 +47,7 @@ export interface PaginatedLoanRequestResponse {
 
 // unified interface for both purchase and loan requests
 export interface UnifiedRequest {
-    id: string | number;        
+    id: number;        
     requestNumber: string;      
     type: string;               
     warehouse: string;          

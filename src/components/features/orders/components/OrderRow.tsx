@@ -10,16 +10,15 @@ import {
     XCircle,
     CheckCheck
 } from 'lucide-react';
-import { getStatusBadge, getReasonBadge } from '../../inventory/components/RequestBadges';
+import { getStatusBadge, getReasonBadge, getTypeBadge } from '../../inventory/components/RequestBadges';
 import { STATUS_MAP, REASON_MAP, formatDate, formatCurrency } from '../utils/purchase-utils';
-import { PurchaseRequest } from '../types/purchaseType';
 import { useSelector } from 'react-redux';
 import { ActionButton } from '../../inventory/components/ActionButton';
 import { UnifiedRequest } from '../../requests/types/loanTypes';
 
 interface Props {
     row: UnifiedRequest;
-    handleReview: (order: PurchaseRequest, action: 'approve' | 'reject') => void;
+    handleReview: (order: UnifiedRequest, action: 'approve' | 'reject') => void;
 }
 
 export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) => {
@@ -29,13 +28,21 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
     const data = row.originalData;
 
     //reason: low stock, urgent, new project
-    const reasonString = (data.kind === 'Purchase')
-        ? (REASON_MAP[data.reason] || 'Standard')
-        : data.typeRequestName;
+    // const reasonString = (data.kind === 'Purchase')
+    //     ? (REASON_MAP[data.reason] || 'Standard')
+    //     : data.typeRequestName;
+
+    const typeBadge = data.kind === 'Purchase'
+        ? getReasonBadge(REASON_MAP[data.reason], `${darkMode ? '' : 'soft'}`)
+        : getTypeBadge(data.typeRequest, `${darkMode ? '' : 'soft'}`)
 
     // status: pending, approved an rejected
     const statusString = (data.kind === 'Purchase')
         ? (STATUS_MAP[data.status] || 'unknown')
+        : data.status;
+
+    const actionStatus = (data.kind === 'Purchase')
+        ? data.statusName
         : data.status;
 
     // Approved/rejected by
@@ -96,9 +103,9 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
     // 1. Get the Name/ID
     // Check if 'requester' exists (Loan), otherwise use 'requesterId' (Purchase)
     let requesterDisplay = '';
-    if(data.kind === 'Purchase'){
+    if (data.kind === 'Purchase') {
         requesterDisplay = data.requesterId;
-    }else{
+    } else {
         requesterDisplay = data.requesterName
     }
 
@@ -106,8 +113,8 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
         <>
             {/* MAIN DATA ROW */}
             <tr className={`
-                group transition-colors border-b border-gray-100 hover:bg-[#F5F5F7] dark:hover:bg-[#191F26] dark:border-gray-800
-                ${isExpanded ? 'hover:bg-white dark:hover:bg-[#1F2937] dark:bg-[#1F2937]' : ' dark:hover:bg-white/[0.02]'}
+                group transition-colors border-b border-gray-100 hover:bg-gray-900/10 dark:hover:bg-[#191F26] dark:border-gray-800
+                ${isExpanded ? 'hover:!bg-white dark:hover:!bg-[#1F2937] dark:bg-[#1F2937]' : ' dark:hover:bg-white/[0.02]'}
             `}>
                 <td className="p-4">
                     <button
@@ -129,17 +136,17 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
                         <span className="text-[10px] text-gray-500 uppercase">{data.warehouseName}</span>
                     </div>
                 </td>
-                <td className="p-4 text-sm font-bold text-right text-emerald-600 dark:text-emerald-400 font-mono">
-                    {totalCostDisplay}
+                <td className="p-4 text-sm font-medium text-left text-gray-700 dark:text-gray-300">
+                    {data.departmentId}
                 </td>
                 <td className="p-4 text-center">
-                    {getReasonBadge(reasonString, `${darkMode ? '' : 'soft'}`)}
+                    {typeBadge}
                 </td>
                 <td className="p-4 text-sm text-gray-500">
                     {formatDate(data.createdAt)}
                 </td>
                 <td className="p-4 text-right">
-                    {data.status === 0 ? (
+                    {actionStatus.toLowerCase() === 'pending' ? (
                         /* --- PENDING STATE: ACTION BUTTONS --- */
                         <div className="flex justify-end gap-2">
                             <ActionButton
@@ -147,14 +154,14 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
                                 variant="success"
                                 className="w-8 h-8 p-0 rounded-md"
                                 title="Approve Request"
-                                onClick={() => handleReview(order, 'approve')}
+                                onClick={() => handleReview(row, 'approve')}
                             />
                             <ActionButton
                                 icon="reject"
                                 variant="danger"
                                 className="w-8 h-8 p-0 rounded-md"
                                 title="Reject Request"
-                                onClick={() => handleReview(order, 'reject')}
+                                onClick={() => handleReview(row, 'reject')}
                             />
                         </div>
                     ) : (
@@ -214,18 +221,19 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
                                 </div>
 
                                 {/* 4. Approval */}
-                                <div className="p-4 rounded-xl border shadow-sm bg-emerald-500/5 border-emerald-500/20 dark:shadow-none">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <UserCheck className="w-4 h-4 text-gray-400 dark:text-emerald-400" />
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-emerald-300">
-                                            Approval
+                                {data.kind === 'Purchase' && (
+                                    <div className="p-4 rounded-xl border shadow-sm bg-emerald-500/5 border-emerald-500/20 dark:shadow-none">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <UserCheck className="w-4 h-4 text-gray-400 dark:text-emerald-400" />
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-emerald-300">
+                                                Total value
+                                            </p>
+                                        </div>
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-emerald-100 pl-6">
+                                            {totalCostDisplay}
                                         </p>
                                     </div>
-                                    <p className="text-sm font-semibold text-gray-900 dark:text-emerald-100 pl-6">
-                                        {/* Use the logic variable here */}
-                                        {approverDisplay}
-                                    </p>
-                                </div>
+                                )}
                             </div>
 
                             {/* NOTES SECTION (Only if notes exist) */}
