@@ -8,6 +8,7 @@ import { ItemsTab } from './tabs/Items/ItemsTab';
 import { KitsTab } from './tabs/Kits/KitsTab';
 import { BinManagerTab } from './tabs/BinManager/BinManagerTab';
 import { TransactionsTab } from './tabs/transactions/TransactionsTab';
+import { TrackingTab } from './tabs/Tracking/TrackingTab';
 import { LoadingOverlay } from '../../ui/loading-overlay';
 import type { Kit, MovementData as ApiMovementData } from './types';
 import type { MovementData, MovementType } from './modals/RecordMovement/types';
@@ -30,7 +31,7 @@ export function InventoryManager() {
   const dispatch = useAppDispatch();
   const { articles, kits, error } = useAppSelector((state) => state.inventory);
   const warehouseId = useAppSelector(state => state.auth.user?.warehouseId ?? state.auth.user?.warehouse ?? undefined);
-  const [viewMode, setViewMode] = useState<'items' | 'kits' | 'create-kit' | 'bin-manager' | 'transactions'>('items');
+  const [viewMode, setViewMode] = useState<'items' | 'kits' | 'create-kit' | 'bin-manager' | 'transactions' | 'tracking'>('items');
   const [recordMovementOpen, setRecordMovementOpen] = useState(false);
   const [editingKit, setEditingKit] = useState<Kit | null>(null);
   const [isCreatingItem, setIsCreatingItem] = useState(false);
@@ -384,14 +385,15 @@ export function InventoryManager() {
         {/* tabs */}
         <Tabs
           value={viewMode}
-          onValueChange={(value: 'items' | 'kits' | 'create-kit' | 'bin-manager' | 'transactions') => setViewMode(value)}
+          onValueChange={(value: 'items' | 'kits' | 'create-kit' | 'bin-manager' | 'transactions' | 'tracking') => setViewMode(value)}
           className="w-full"
         >
-          <TabsList className="w-full !grid !grid-cols-4 gap-1">
+          <TabsList className="w-full !grid !grid-cols-5 gap-1">
             <TabsTrigger value="items">Items</TabsTrigger>
             <TabsTrigger value="kits">Kits</TabsTrigger>
             <TabsTrigger value="bin-manager">Bin Manager</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="tracking">Tracking</TabsTrigger>
           </TabsList>
 
           <TabsContent value="items" className="space-y-4">
@@ -430,6 +432,10 @@ export function InventoryManager() {
 
           <TabsContent value="transactions" className="space-y-4">
             <TransactionsTab />
+          </TabsContent>
+
+          <TabsContent value="tracking" className="space-y-4">
+            <TrackingTab />
           </TabsContent>
         </Tabs>
 
