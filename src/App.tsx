@@ -27,7 +27,7 @@ import { ThemeProvider } from "next-themes";
 import { ReturnItemsPage } from './components/features/loans/ReturnItemsPage';
 import { ManageRequestsPage } from './components/features/manage-requests/pages/ManageRequestsPage';
 import { Toaster } from 'react-hot-toast';
-import { Login, Register, ProtectedRoute } from './components/features/auth';
+import { Login, Register, ProtectedRoute, LoadingScreen } from './components/features/auth';
 import { RoleGuard } from './auth/RoleGuard'
 import { Unauthorized } from './pages/Unauthorized'
 import { NotFound } from './pages/NotFound'
@@ -64,8 +64,10 @@ function AuthHandler() {
         return;
       }
 
-      // 2. Don't run logic on Login/Register pages
-      if (location.pathname === '/login' || location.pathname === '/register') {
+      // 2. Don't run logic on Login/Register pages UNLESS user is authenticated with Azure
+      // (user just came back from Microsoft login redirect)
+      const isAuthenticatedWithAzure = isAuthenticated && accounts.length > 0;
+      if ((location.pathname === '/login' || location.pathname === '/register') && !isAuthenticatedWithAzure) {
         dispatch(setLoading(false));
         return;
       }
@@ -97,6 +99,7 @@ function AuthHandler() {
                 department: backendUser.departmentId ? String(backendUser.departmentId) : 'Engineering',
                 employeeId: backendUser.employeeId,
                 warehouseId: backendUser.warehouseId,
+                backendAuthType: backendUser.authType, // 0=Local, 1=Azure, 2=Both
                 // photoUrl: backendUser.photoUrl,
               },
               accessToken: localToken,
@@ -105,6 +108,7 @@ function AuthHandler() {
           );
 
           console.log('✅ User session restored:', backendUser.email);
+          // Note: Layout component will call setLoading(false) when it's fully mounted
           return; // Stop here if local token worked (don't check Azure)
 
         } catch (error) {
@@ -115,19 +119,23 @@ function AuthHandler() {
 
       // 4. CASE B: Check for Azure Login (New login or SSO)
       if (isAuthenticated && accounts.length > 0) {
+        console.log('🔵 [AuthHandler] Starting Azure authentication process...');
         try {
           // A. Get Access Token for Backend
+          console.log('🔵 [AuthHandler] Getting API token...');
           const apiTokenRequest = {
             ...loginRequest,
             account: accounts[0],
           };
           const apiTokenResponse = await instance.acquireTokenSilent(apiTokenRequest);
+          console.log('✅ [AuthHandler] API token acquired');
 
           // B. (Optional) Get Graph Data (Photo, Job Title)
           let graphProfile = null;
           let graphPhotoUrl = null;
 
           try {
+            console.log('🔵 [AuthHandler] Fetching Graph API data...');
             const graphTokenRequest = {
               scopes: ['User.Read'],
               account: accounts[0],
@@ -136,13 +144,15 @@ function AuthHandler() {
             const { profile, photoUrl } = await getUserProfileWithPhoto(graphTokenResponse.accessToken);
             graphProfile = profile;
             graphPhotoUrl = photoUrl;
+            console.log('✅ [AuthHandler] Graph API data fetched');
           } catch (graphError) {
-            console.warn('⚠️ Could not fetch Graph API data, continuing with basic info...');
+            console.warn('⚠️ Could not fetch Graph API data, continuing with basic info...', graphError);
           }
 
           const account = apiTokenResponse.account;
 
           // C. Call Backend Login
+          console.log('🔵 [AuthHandler] Calling backend login API...');
           const backendResponse = await authService.loginWithAzure({
             azureToken: apiTokenResponse.accessToken,
             userInfo: {
@@ -151,10 +161,12 @@ function AuthHandler() {
               name: graphProfile?.displayName || account?.name || 'Unknown User',
             },
           });
+          console.log('✅ [AuthHandler] Backend login successful');
 
           // D. Save Persistence
           authService.saveToken(backendResponse.token);
           authService.saveUser(backendResponse.user);
+          console.log('✅ [AuthHandler] Token and user saved to localStorage');
 
           // E. Update Redux
           const userForRedux = {
@@ -175,6 +187,7 @@ function AuthHandler() {
             officeLocation: graphProfile?.officeLocation,
             photoUrl: graphPhotoUrl || undefined,
             warehouseId: backendResponse.user.warehouseId,
+            backendAuthType: backendResponse.user.authType, // 0=Local, 1=Azure, 2=Both
           };
 
           dispatch(
@@ -185,13 +198,21 @@ function AuthHandler() {
             })
           );
 
-          console.log('✅ User authenticated with Azure:', userForRedux.email);
+          console.log('✅ [AuthHandler] User authenticated with Azure and synced to Redux:', userForRedux.email);
+          console.log('✅ [AuthHandler] Redux state updated, now hiding loading screen...');
+
+          // Wait a moment for React to process the state update, then hide loading screen
+          requestAnimationFrame(() => {
+            dispatch(setLoading(false));
+            console.log('✅ [AuthHandler] Loading screen hidden, Layout should mount now');
+          });
 
         } catch (error) {
-          console.error('Error acquiring token or logging in:', error);
+          console.error('❌ [AuthHandler] Error acquiring token or logging in:', error);
           dispatch(setLoading(false));
         }
       } else {
+        console.log('🔵 [AuthHandler] User not authenticated, hiding loading screen');
         // User not authenticated (and no local token)
         dispatch(setLoading(false));
       }
@@ -741,6 +762,16 @@ function EngineerRequestOrdersWrapper() {
 }
 
 function AppRoutes() {
+  const isLoading = useAppSelector((state) => state.auth.isLoading);
+  const location = useLocation();
+
+  // Show loading screen during authentication, but not on login/register pages
+  const shouldShowLoading = isLoading && location.pathname !== '/login' && location.pathname !== '/register';
+
+  if (shouldShowLoading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <Routes>
       {/* 1. PUBLIC ROUTES                                          */}

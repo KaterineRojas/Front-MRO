@@ -177,6 +177,32 @@ export const authService = {
   isAuthenticated(): boolean {
     return !!this.getToken();
   },
+
+  /**
+   * Establecer contraseña local para usuario autenticado
+   */
+  async setPassword(password: string, confirmPassword: string): Promise<{ message: string; user: BackendUser }> {
+    const token = this.getToken();
+    if (!token) {
+      throw new Error('No autenticado');
+    }
+
+    const response = await fetch(`${API_URL}/auth/set-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ password, confirmPassword }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al establecer contraseña');
+    }
+
+    return response.json();
+  },
 };
 
 /**

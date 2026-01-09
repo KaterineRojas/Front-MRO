@@ -3,14 +3,16 @@ import { useMsal, useIsAuthenticated } from '@azure/msal-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginRequest } from '../../../authConfig';
 import { authService } from '../../../services/authService';
-import { useAppDispatch } from '../../../store';
-import { setAuth } from '../../../store/slices/authSlice';
+import { useAppDispatch, useAppSelector } from '../../../store';
+import { setAuth, setLoading } from '../../../store/slices/authSlice';
 
 export function Login() {
   const { instance, accounts, inProgress } = useMsal();
   const isAuthenticated = useIsAuthenticated();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const reduxUser = useAppSelector((state) => state.auth.user);
+  const isAppLoading = useAppSelector((state) => state.auth.isLoading);
 
   // Estado para login local
   const [email, setEmail] = useState('');
@@ -18,31 +20,71 @@ export function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [azureLoading, setAzureLoading] = useState(false);
+  const [waitingForSync, setWaitingForSync] = useState(false);
 
   // Redirect to dashboard if already authenticated with Azure
   useEffect(() => {
+    console.log('🟡 [Login] useEffect triggered:', {
+      isAuthenticated,
+      inProgress,
+      accountsLength: accounts?.length,
+      hasReduxUser: !!reduxUser,
+      reduxUserEmail: reduxUser?.email
+    });
+
     // Solo redirigir si está autenticado Y no está en proceso de login Y tiene cuentas
     const justLoggedOut = (() => { try { return localStorage.getItem('mro_just_logged_out') === 'true'; } catch { return false; } })();
+
+    if (justLoggedOut) {
+      console.log('🟡 [Login] User just logged out, clearing flag');
+      try { localStorage.removeItem('mro_just_logged_out'); } catch {}
+      setWaitingForSync(false);
+      return;
+    }
+
     if (isAuthenticated && inProgress === 'none' && accounts && accounts.length > 0 && !justLoggedOut) {
+      console.log('🟡 [Login] User authenticated with Azure');
+
       // Establecer la cuenta activa para que el logout no pida selección
       try {
         if (!instance.getActiveAccount()) {
           instance.setActiveAccount(accounts[0]);
+          console.log('🟡 [Login] Active account set');
         }
       } catch (err) {
-        console.warn('Error setting active account:', err);
+        console.warn('⚠️ [Login] Error setting active account:', err);
       }
-      console.log('✅ User is authenticated with Azure, redirecting to dashboard...');
-      navigate('/', { replace: true });
+
+      // WAIT for AuthHandler to finish processing and populate Redux user
+      // Only redirect when we have a user in Redux
+      if (reduxUser) {
+        console.log('✅ [Login] User is in Redux, redirecting to dashboard...');
+        console.log('✅ [Login] Redux user:', reduxUser);
+        navigate('/', { replace: true });
+      } else {
+        console.log('⏳ [Login] User authenticated with Azure, waiting for Redux to sync...');
+        setWaitingForSync(true);
+
+        // Timeout: If Redux doesn't sync within 10 seconds, force navigation
+        const syncTimeout = setTimeout(() => {
+          console.warn('⚠️ [Login] Redux sync timeout after 10 seconds, forcing navigation...');
+          navigate('/', { replace: true });
+        }, 10000);
+
+        return () => clearTimeout(syncTimeout);
+      }
+    } else {
+      console.log('🟡 [Login] Not authenticated or in progress, hiding waiting screen');
+      setWaitingForSync(false);
     }
-    // Limpiar bandera si existe
-    if (justLoggedOut) {
-      try { localStorage.removeItem('mro_just_logged_out'); } catch {}
-    }
-  }, [isAuthenticated, inProgress, accounts, navigate, instance]);
+  }, [isAuthenticated, inProgress, accounts, navigate, instance, reduxUser]);
 
   const handleAzureLogin = () => {
     setAzureLoading(true);
+    // Note: We don't need to dispatch(setLoading(true)) here because
+    // loginRedirect will reload the page completely. When the user comes back
+    // from Microsoft, Redux will initialize with isLoading: true by default
+    // and AuthHandler will manage the loading state
     instance.loginRedirect(loginRequest).catch((e) => {
       console.error('Login error:', e);
       setAzureLoading(false);
@@ -55,6 +97,9 @@ export function Login() {
     setLoading(true);
 
     try {
+      // Set global loading state for the app
+      dispatch(setLoading(true));
+
       const response = await authService.loginLocal({ email, password });
       authService.saveToken(response.token);
 
@@ -90,6 +135,7 @@ export function Login() {
             warehouse: response.user.warehouseId ?? undefined,
             warehouseId: response.user.warehouseId, // ej: 1
             roleName: response.user.roleName, // ej: "Keeper"
+            backendAuthType: response.user.authType, // 0=Local, 1=Azure, 2=Both
           },
           accessToken: response.token,
           authType: 'local',
@@ -97,14 +143,82 @@ export function Login() {
       );
       console.log('✅ Login local exitoso:', response.user);
       console.log('🎫 Token guardado en localStorage');
+
+      // Navigate to dashboard - Layout will handle setLoading(false) when mounted
       navigate('/', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
       console.error('❌ Login error:', err);
+      dispatch(setLoading(false));
     } finally {
       setLoading(false);
     }
   };
+
+  // Show loading screen while waiting for Azure auth to sync with Redux
+  if (waitingForSync) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 relative overflow-hidden">
+        <div className="absolute top-20 right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 left-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+
+        <div className="relative z-10 flex flex-col items-center gap-8 px-4">
+          <div className="flex items-center justify-center mb-4">
+            <img
+              src="https://images.squarespace-cdn.com/content/v1/6449f0be1aea3b0d974f5af0/d6e90988-9b25-45db-967a-f110ffa9cfd3/amaxst+logo+side-07.png?format=750w"
+              alt="AMAXST Logo"
+              className="h-20 w-auto object-contain"
+            />
+          </div>
+
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative">
+              <div className="w-20 h-20 border-4 border-blue-200/30 border-t-blue-400 rounded-full animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-semibold text-white">
+                Completing Microsoft Login
+              </h2>
+              <p className="text-blue-100/70 text-sm">
+                Syncing your account information...
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            </div>
+          </div>
+
+          <div className="w-64 h-1 bg-blue-900/50 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-400 rounded-full animate-progress"></div>
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes progress {
+            0% {
+              width: 0%;
+            }
+            50% {
+              width: 70%;
+            }
+            100% {
+              width: 100%;
+            }
+          }
+          .animate-progress {
+            animation: progress 2s ease-in-out infinite;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
