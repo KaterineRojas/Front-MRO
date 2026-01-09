@@ -78,11 +78,11 @@ export function ManageRequestsPage() {
           </TabsTrigger>
           <TabsTrigger value="active-orders" className="cursor-pointer flex items-center space-x-2">
             <ShoppingCart className="h-4 w-4" />
-            <span>Active Orders</span>
+            <span>Purchase Orders</span>
           </TabsTrigger>
           <TabsTrigger value="orders-history" className="cursor-pointer flex items-center space-x-2">
             <History className="h-4 w-4" />
-            <span>Orders History</span>
+            <span>Purchase History</span>
           </TabsTrigger>
         </TabsList>
 

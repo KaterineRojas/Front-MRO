@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { ShoppingCart, SearchX, Inbox, History, ChevronRight, Package, Building2, Layers, FolderKanban, UserCheck, Loader2 } from 'lucide-react';
-import { FilterSelect } from '../../inventory/components/FilterSelect';
 import { getStatusBadge, getReasonBadge } from '../../inventory/components/RequestBadges';
 import { useSelector } from 'react-redux';
 import { getPurchaseRequestsByStatus, markAsOrdered, markAsBought } from '../services/purchaseRequestsService';
@@ -182,15 +181,15 @@ const OrderRow: React.FC<OrderRowProps> = ({ order, onOrderClick, onBoughtClick,
                             <div className="flex items-center justify-between gap-2 mb-4 pl-1">
                                 <div className="flex items-center gap-2">
                                     <Package className="h-4 w-4 text-gray-400" />
-                                    <h4 className="text-xs font-bold uppercase tracking-widest text-gray-900">
+                                    <h4 className="text-xs text-[16px] font-bold uppercase tracking-widest text-gray-900">
                                         Request Items
                                     </h4>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                    <span className="text-xs text-[14px] font-semibold text-gray-900 dark:text-gray-400">
                                         {activeTab === 'active orders' ? 'Ordered At:' : 'Received At:'}
                                     </span>
-                                    <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                                    <span className="text-xs text-[14px] font-semibold text-blue-900 dark:text-blue-400">
                                         {activeTab === 'active orders' 
                                             ? (order.orderedAt ? formatDate(order.orderedAt) : 'Not yet')
                                             : (order.receivedAt ? formatDate(order.receivedAt) : '---')
@@ -285,7 +284,7 @@ interface Props {
 }
 
 export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) => {
-    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [searchTerm, setSearchTerm] = useState<string>('');
     const [orders, setOrders] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -366,38 +365,36 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) =
 
     useEffect(() => {
         const controller = new AbortController();
-        // Reset filter to 'all' when switching tabs
-        setStatusFilter('all');
         fetchOrders(controller.signal);
-        return () => {
-            controller.abort();
-        };
+        return () => controller.abort();
     }, [fetchOrders]);
 
     const filteredOrders = useMemo(() => {
         let data = orders;
 
-        if (statusFilter !== 'all') {
-            data = data.filter(order => order.status === statusFilter);
+        const term = (searchTerm || '').trim().toLowerCase();
+        if (term.length > 0) {
+            data = data.filter(order => {
+                const requestNum = (order.requestNumber || (`#${order.id}`) || '').toString().toLowerCase();
+                const requester = (order.requesterName || '').toString().toLowerCase();
+                const reason = (REASON_MAP[order.reason] || '').toString().toLowerCase();
+                const statusStr = (STATUS_MAP[order.status] || (typeof order.status === 'string' ? order.status : '')).toString().toLowerCase();
+                const created = (order.createdAt ? formatDate(order.createdAt) : '').toString().toLowerCase();
+
+                return (
+                    requestNum.includes(term) ||
+                    requester.includes(term) ||
+                    reason.includes(term) ||
+                    statusStr.includes(term) ||
+                    created.includes(term)
+                );
+            });
         }
 
         return data;
-    }, [orders, statusFilter]);
+    }, [orders, searchTerm]);
 
-    const filterOptions = useMemo(() => {
-        if (activeTab === 'active orders') {
-            return [
-                { value: 'all', label: 'All Active' },
-                { value: 'Approved', label: 'Approved' },
-                { value: 'Ordered', label: 'Ordered' }
-            ];
-        } else {
-            return [
-                { value: 'all', label: 'All History' },
-                { value: 'Received', label: 'Received' }
-            ];
-        }
-    }, [activeTab]);
+    // No client-side status selector; server query determines active vs history.
 
     if (isLoading) {
         return (
@@ -447,14 +444,22 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) =
                         {activeTab}
                         <span className="ml-2 text-sm font-medium text-gray-400">({filteredOrders.length})</span>
                     </h2>
+                    <div className="w-full md:w-auto">
+                        <div className="mt-3">
+                            <div className="relative">
+                                <SearchX className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="search"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder="Search request, status, requester, reason, date"
+                                    className="pl-10 pr-3 py-2 rounded-md border border-gray-200 bg-white text-sm w-full md:w-64 dark:bg-[#041426] dark:border-gray-800 dark:text-white"
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                <FilterSelect 
-                    value={statusFilter}
-                    onChange={setStatusFilter}
-                    options={filterOptions} 
-                    className='pr-[60px]'
-                />
+                
             </div>
 
             <div className="overflow-x-auto custom-scrollbar">
@@ -490,7 +495,7 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) =
                                 <td colSpan={8} className="py-16 text-center">
                                     <div className="flex flex-col items-center justify-left">
                                         <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-full mb-3">
-                                            {statusFilter !== 'all' ? (
+                                            {(searchTerm || '').trim().length > 0 ? (
                                                 <SearchX className="w-8 h-8 text-gray-400" />
                                             ) : (
                                                 <Inbox className="w-8 h-8 text-gray-400" />
@@ -498,8 +503,8 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) =
                                         </div>
                                         <h3 className="text-sm font-bold text-gray-900 dark:text-white">No requests found</h3>
                                         <p className="text-xs text-gray-500 mt-1 max-w-[200px]">
-                                            {statusFilter !== 'all' 
-                                                ? "No orders match the selected filter." 
+                                            {(searchTerm || '').trim().length > 0
+                                                ? "No orders match your search." 
                                                 : "There are no orders in this category right now."}
                                         </p>
                                     </div>
