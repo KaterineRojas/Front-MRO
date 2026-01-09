@@ -1,6 +1,5 @@
-import React, { useMemo } from 'react';
-import { ShoppingCart, SearchX, Inbox, History, CheckCheck, XCircle, Rows } from 'lucide-react';
-import { FilterSelect } from '../../inventory/components/FilterSelect';
+import React from 'react';
+import { ShoppingCart, SearchX, Inbox, CheckCheck, XCircle } from 'lucide-react';
 import { UnifiedOrderRow } from './OrderRow';
 import { ActivePurchaseTableProps } from '../types/purchaseType';
 
@@ -8,28 +7,10 @@ import { ActivePurchaseTableProps } from '../types/purchaseType';
 
 export const OrderTable: React.FC<ActivePurchaseTableProps> = ({
     statusFilter,
-    setStatusFilter,
     activeTab,
     onReview,
     requests,
 }) => {
-
-    const filterOptions = useMemo(() => {
-        if (activeTab === 'active orders') {
-            return [
-                { value: 'all', label: 'All Active' },
-                { value: '0', label: 'Pending' },
-                { value: '1', label: 'Approved' }
-            ];
-        } else {
-            return [
-                { value: 'all', label: 'All History' },
-                { value: '2', label: 'Rejected' },
-                { value: '3', label: 'Completed' },
-                { value: '4', label: 'Cancelled' }
-            ];
-        }
-    }, [activeTab]);
 
     const getActiveTabIcon = () => {
         switch (activeTab) {
@@ -72,13 +53,6 @@ export const OrderTable: React.FC<ActivePurchaseTableProps> = ({
                         <span className="ml-2 text-sm font-medium text-gray-400">({requests.length})</span>
                     </h2>
                 </div>
-
-                <FilterSelect
-                    value={statusFilter}
-                    onChange={setStatusFilter}
-                    options={filterOptions}
-                    className='pr-[60px]'
-                />
             </div>
 
             {/* RESPONSIVE TABLE CONTAINER */}
@@ -91,7 +65,7 @@ export const OrderTable: React.FC<ActivePurchaseTableProps> = ({
                             <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</th>
                             <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Requester</th>
                             <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-right">Total Value</th>
-                            <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center">Reason</th>
+                            <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center">Reason / Type</th>
                             <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Created At</th>
                             <th className="p-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-right">Actions</th>
                         </tr>

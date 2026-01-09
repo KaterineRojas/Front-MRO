@@ -31,12 +31,12 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
     //reason: low stock, urgent, new project
     const reasonString = (data.kind === 'Purchase')
         ? (REASON_MAP[data.reason] || 'Standard')
-        : 'Standard';
+        : data.typeRequestName;
 
     // status: pending, approved an rejected
     const statusString = (data.kind === 'Purchase')
         ? (STATUS_MAP[data.status] || 'unknown')
-        : 'unknown';
+        : data.status;
 
     // Approved/rejected by
     let approverDisplay = 'Pending Review';
@@ -93,6 +93,14 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
         actionedBy = match ? match[1] : '';
     }
 
+    // 1. Get the Name/ID
+    // Check if 'requester' exists (Loan), otherwise use 'requesterId' (Purchase)
+    let requesterDisplay = '';
+    if(data.kind === 'Purchase'){
+        requesterDisplay = data.requesterId;
+    }else{
+        requesterDisplay = data.requesterName
+    }
 
     return (
         <>
@@ -117,7 +125,7 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
                 </td>
                 <td className="p-4">
                     <div className="flex flex-col">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{data.requesterId}</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{requesterDisplay}</span>
                         <span className="text-[10px] text-gray-500 uppercase">{data.warehouseName}</span>
                     </div>
                 </td>

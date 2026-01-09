@@ -48,6 +48,7 @@ export interface PurchaseRequest {
     reason: number;          // 0=Standard, etc. (Previously 'priority')
     selfPurchase: boolean;
     typeRequestName: string;
+    statusName: string;
 
     notes?: string;
     rejectionReason?: string 
@@ -126,7 +127,6 @@ export interface ArticleSelectorProps {
 
 export interface ActivePurchaseTableProps {
     statusFilter: string;
-    setStatusFilter: (val: string) => void;
     activeTab: string;
     onReview: (order: PurchaseRequest, action: 'approve' | 'reject') => void;
     requests: UnifiedRequest[];

@@ -7,8 +7,13 @@ import { ReviewRequestModal } from './modals/ApproveRequestModal'
 import { TableErrorBoundary } from './components/TableErrorBoundary'
 import { TableErrorState } from './components/TableErrorState'
 import { approvePurchaseRequest, rejectPurchaseRequest } from './services/purchaseService'
+import {LoanRequest} from '../requests/types/loanTypes'
 
-export function Main() {
+interface PurchaseRequestProp {
+    loanRequests: LoanRequest[],
+}
+
+export function Main({loanRequests} : PurchaseRequestProp) {
     // Make sure your Tab names here match exactly what is in TabsGroup below
     const [activeTab, setActiveTab] = useState('active orders'); 
     const [statusFilter, setStatusFilter] = useState<string>('all');
