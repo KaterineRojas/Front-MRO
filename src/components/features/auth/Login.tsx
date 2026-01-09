@@ -18,7 +18,7 @@ export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false);
   const [azureLoading, setAzureLoading] = useState(false);
   const [waitingForSync, setWaitingForSync] = useState(false);
 
@@ -94,7 +94,7 @@ export function Login() {
   const handleLocalLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    setLocalLoading(true);
 
     try {
       // Set global loading state for the app
@@ -151,69 +151,88 @@ export function Login() {
       console.error('❌ Login error:', err);
       dispatch(setLoading(false));
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
 
   // Show loading screen while waiting for Azure auth to sync with Redux
   if (waitingForSync) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 relative overflow-hidden">
-        <div className="absolute top-20 right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 left-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100vh',
+          margin: 0,
+          padding: 0,
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999999,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Logo */}
+        <img
+          src="https://images.squarespace-cdn.com/content/v1/6449f0be1aea3b0d974f5af0/d6e90988-9b25-45db-967a-f110ffa9cfd3/amaxst+logo+side-07.png?format=750w"
+          alt="AMAXST Logo"
+          style={{
+            height: '80px',
+            width: 'auto',
+            objectFit: 'contain',
+            marginBottom: '40px',
+          }}
+        />
 
-        <div className="relative z-10 flex flex-col items-center gap-8 px-4">
-          <div className="flex items-center justify-center mb-4">
-            <img
-              src="https://images.squarespace-cdn.com/content/v1/6449f0be1aea3b0d974f5af0/d6e90988-9b25-45db-967a-f110ffa9cfd3/amaxst+logo+side-07.png?format=750w"
-              alt="AMAXST Logo"
-              className="h-20 w-auto object-contain"
-            />
-          </div>
+        {/* Spinner */}
+        <div
+          style={{
+            width: '60px',
+            height: '60px',
+            border: '4px solid rgba(96, 165, 250, 0.2)',
+            borderTop: '4px solid rgb(96, 165, 250)',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+          }}
+        />
 
-          <div className="flex flex-col items-center gap-6">
-            <div className="relative">
-              <div className="w-20 h-20 border-4 border-blue-200/30 border-t-blue-400 rounded-full animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
-              </div>
-            </div>
+        {/* Text */}
+        <h2
+          style={{
+            color: 'white',
+            fontSize: '24px',
+            fontWeight: '600',
+            marginTop: '30px',
+            marginBottom: '10px',
+          }}
+        >
+          Completing Microsoft Login
+        </h2>
 
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-semibold text-white">
-                Completing Microsoft Login
-              </h2>
-              <p className="text-blue-100/70 text-sm">
-                Syncing your account information...
-              </p>
-            </div>
+        <p
+          style={{
+            color: 'rgba(255, 255, 255, 0.7)',
+            fontSize: '14px',
+          }}
+        >
+          Syncing your account information...
+        </p>
 
-            <div className="flex gap-2">
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-            </div>
-          </div>
-
-          <div className="w-64 h-1 bg-blue-900/50 rounded-full overflow-hidden">
-            <div className="h-full bg-blue-400 rounded-full animate-progress"></div>
-          </div>
-        </div>
-
+        {/* Animation styles */}
         <style>{`
-          @keyframes progress {
-            0% {
-              width: 0%;
+          @keyframes spin {
+            from {
+              transform: rotate(0deg);
             }
-            50% {
-              width: 70%;
+            to {
+              transform: rotate(360deg);
             }
-            100% {
-              width: 100%;
-            }
-          }
-          .animate-progress {
-            animation: progress 2s ease-in-out infinite;
           }
         `}</style>
       </div>
@@ -346,10 +365,10 @@ export function Login() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={localLoading}
                 className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? (
+                {localLoading ? (
                   <>
                     <svg
                       className="animate-spin h-5 w-5"
@@ -392,7 +411,7 @@ export function Login() {
               <button
                 type="button"
                 onClick={handleAzureLogin}
-                disabled={azureLoading || loading}
+                disabled={azureLoading || localLoading}
                 className="w-full flex items-center justify-center gap-3 px-6 py-3.5 border-2 border-gray-300 dark:border-input rounded-xl font-medium text-gray-700 dark:text-foreground bg-white dark:bg-background hover:bg-gray-50 dark:hover:bg-accent hover:border-gray-400 dark:hover:border-border focus:outline-none focus:ring-4 focus:ring-gray-500/10 dark:focus:ring-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {azureLoading ? (

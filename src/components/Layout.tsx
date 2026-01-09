@@ -82,32 +82,25 @@ export function Layout() {
 
     // Only run once when Layout first mounts with a user
     if (currentUser && isLoading && !hasMarkedLoaded.current) {
-      console.log('🟢 [Layout] User detected, preparing to hide loading screen...');
+      console.log('🟢 [Layout] User detected, hiding loading screen...');
       hasMarkedLoaded.current = true;
-
-      // Use requestAnimationFrame to wait for the browser to finish painting
-      requestAnimationFrame(() => {
-        // Then wait one more frame to ensure everything is visible
-        requestAnimationFrame(() => {
-          console.log('✅ [Layout] Layout fully rendered, hiding loading screen');
-          dispatch(setLoading(false));
-        });
-      });
+      dispatch(setLoading(false));
+      console.log('✅ [Layout] Loading screen hidden');
     }
   }, [currentUser, isLoading, dispatch]);
 
-  // Fallback: If loading screen is still showing after 5 seconds, force hide it
+  // Fallback: If loading screen is still showing after 8 seconds, force hide it
   useEffect(() => {
     if (!isLoading) {
       console.log('🟢 [Layout] Loading is already false, no timeout needed');
       return;
     }
 
-    console.log('🟢 [Layout] Setting 5 second timeout fallback...');
+    console.log('🟢 [Layout] Setting 8 second timeout fallback...');
     const timeoutId = setTimeout(() => {
-      console.warn('⚠️ [Layout] Loading screen timeout - forcing hide after 5 seconds');
+      console.warn('⚠️ [Layout] Loading screen timeout - forcing hide after 8 seconds');
       dispatch(setLoading(false));
-    }, 5000);
+    }, 8000);
 
     return () => {
       console.log('🟢 [Layout] Clearing timeout');
@@ -174,17 +167,30 @@ export function Layout() {
 
   const handleLogout = async () => {
     try {
-      console.log("Logging out user with authType:", authType);
+      console.log("🔴 [Logout] Starting logout for authType:", authType);
 
+      // FIRST: Set the flag BEFORE clearing anything
+      try {
+        localStorage.setItem('mro_just_logged_out', 'true');
+        console.log("🔴 [Logout] Flag set: mro_just_logged_out = true");
+      } catch (e) {
+        console.error("Failed to set logout flag:", e);
+      }
+
+      // SECOND: Clear Redux state
       dispatch(logout());
       dispatch(clearPackingRequests());
       dispatch(clearReturns());
-      authService.removeToken(); // Esto ya elimina 'mro_token'
+      console.log("🔴 [Logout] Redux state cleared");
 
-      // Only redirect to Azure logout if user authenticated with Azure
+      // THIRD: Clear localStorage (both token and user data)
+      authService.removeToken();
+      authService.removeUser();
+      console.log("🔴 [Logout] localStorage cleared");
+
+      // FOURTH: Handle redirect based on auth type
       if (authType === 'azure') {
-        try { localStorage.setItem('mro_just_logged_out', 'true'); } catch {}
-
+        console.log("🔴 [Logout] Redirecting to Azure logout...");
         // Use MSAL's logoutRedirect to properly clear the cache
         await instance.logoutRedirect({
           postLogoutRedirectUri: `${window.location.origin}/login`,
@@ -193,10 +199,14 @@ export function Layout() {
       }
 
       // For local auth, just navigate to login
+      console.log("🔴 [Logout] Navigating to /login");
       navigate("/login", { replace: true });
     } catch (error) {
-      console.error("Error during logout:", error);
+      console.error("❌ [Logout] Error during logout:", error);
+      // Ensure cleanup even on error
+      try { localStorage.setItem('mro_just_logged_out', 'true'); } catch {}
       authService.removeToken();
+      authService.removeUser();
       dispatch(logout());
       navigate("/login", { replace: true });
     }

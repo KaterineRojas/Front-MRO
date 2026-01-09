@@ -14,13 +14,59 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // Show loading state while checking authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100vh',
+          margin: 0,
+          padding: 0,
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999999,
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              border: '3px solid rgba(96, 165, 250, 0.3)',
+              borderTop: '3px solid rgb(96, 165, 250)',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto',
+            }}
+          />
+          <p style={{ marginTop: '16px', color: 'rgba(255, 255, 255, 0.7)' }}>Loading...</p>
         </div>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
+  }
+
+  // Check if user just logged out
+  const justLoggedOut = (() => {
+    try {
+      return localStorage.getItem('mro_just_logged_out') === 'true';
+    } catch {
+      return false;
+    }
+  })();
+
+  // If user just logged out, always redirect to login (even if Azure session exists)
+  if (justLoggedOut) {
+    return <Navigate to="/login" replace />;
   }
 
   // Redirect to login if not authenticated (check both Azure and Redux)
