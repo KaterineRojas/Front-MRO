@@ -14,52 +14,35 @@ export const getPurchaseRequestsByStatus = async (
     signal?: AbortSignal
 ): Promise<any[]> => {
     try {
-        // Fetch all purchase requests for the warehouse first
-        const url = `${API_URL}/purchase-requests?warehouseId=${warehouseId}`;
+        // Fetch requests for each status separately and combine results
+        const allResults: any[] = [];
         
-        const response = await fetchWithAuth(url, {
-            method: 'GET',
-            signal,
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        const allData = result.data || [];
-
-        console.log('🔍 All purchase requests from API:', allData);
-        console.log('🔍 Requested statuses:', statuses);
-
-        // Filter by status in frontend if statuses are provided
-        if (statuses && statuses.length > 0) {
-            const filtered = allData.filter((request: any) => {
-                console.log('🔍 Checking request:', request.id, 'Status:', request.status, 'Type:', typeof request.status);
-                
-                // Handle both string and numeric status
-                if (typeof request.status === 'string') {
-                    return statuses.includes(request.status);
-                } else if (typeof request.status === 'number') {
-                    // Map numeric status to string: 1=Approved, 3=Ordered, 4=Received
-                    const statusMap: Record<number, string> = {
-                        1: 'Approved',
-                        3: 'Ordered', 
-                        4: 'Received',
-                    };
-                    const statusString = statusMap[request.status];
-                    console.log('🔍 Mapped status:', request.status, '->', statusString);
-                    return statuses.includes(statusString);
-                }
-                return false;
-            });
+        for (const status of statuses) {
+            const url = `${API_URL}/purchase-requests?warehouseId=${warehouseId}&status=${encodeURIComponent(status)}`;
             
-            console.log('🔍 Filtered results:', filtered);
-            return filtered;
-        }
+            console.log('📦 Fetching purchase requests from:', url);
+            
+            const response = await fetchWithAuth(url, {
+                method: 'GET',
+                signal,
+            });
 
-        // API returns paginated response with { data: [], pageNumber, pageSize, totalCount, totalPages }
-        return allData;
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            const statusData = result.data || result || [];
+            
+            console.log(`🔍 Purchase requests with status "${status}":`, statusData);
+            
+            // Add results to combined array, avoiding duplicates
+            allResults.push(...statusData);
+        }
+        
+        console.log('🔍 Combined purchase requests from all statuses:', allResults);
+
+        return allResults;
     } catch (error: any) {
         if (error.name === 'AbortError') {
             throw error;
@@ -97,24 +80,55 @@ export const markAsOrdered = async (id: number): Promise<void> => {
 /**
  * Marks a purchase request as Bought/Received
  * @param id - The purchase request ID
+ * @param receivedQuantities - Object with item IDs as keys and received quantities as values
  */
-export const markAsBought = async (id: number): Promise<void> => {
+export const markAsBought = async (id: number, receivedQuantities?: Record<number, number>): Promise<void> => {
     try {
         const url = `${API_URL}/purchase-requests/${id}/receive`;
+        
+        console.log('📦 Raw receivedQuantities:', receivedQuantities);
+        
+        // Construir el payload con la estructura correcta del endpoint
+        const receivedItems = Object.entries(receivedQuantities || {})
+            .filter(([_, quantity]) => quantity > 0)
+            .map(([itemId, quantityReceived]) => ({
+                itemId: parseInt(itemId, 10),
+                quantityReceived: quantityReceived
+            }));
+        
+        console.log('📦 Received items to send:', receivedItems);
+        
+        // Validar que hay al menos un item
+        if (receivedItems.length === 0) {
+            throw new Error('At least one item with quantity > 0 must be received');
+        }
+        
+        // Crear payload con la estructura correcta
+        const payload = {
+            receivedItems: receivedItems
+        };
+        
+        console.log('📦 Final payload:', JSON.stringify(payload, null, 2));
+        console.log('📦 Marking as bought/received:', { id, url });
         
         const response = await fetchWithAuth(url, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({}),
+            body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error('❌ API Error Response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
+        
+        const result = await response.json();
+        console.log('✅ Successfully marked as bought/received:', result);
     } catch (error: any) {
-        console.error('Error marking as bought:', error);
+        console.error('❌ Error marking as bought:', error);
         throw new Error(error.message || 'Failed to mark as bought');
     }
 };
