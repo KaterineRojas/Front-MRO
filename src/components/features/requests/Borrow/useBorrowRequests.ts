@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'; // 👈 Importar useMemo y useCallback
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useAppSelector, useAppDispatch } from '../../enginner/store/hooks';
 import { clearCart } from '../../enginner/store/slices/cartSlice';
@@ -6,11 +6,15 @@ import { selectCartItems } from '../../enginner/store/selectors';
 import { useConfirmModal } from '../../../ui/confirm-modal';
 import { handleError, setupConnectionListener } from '../../enginner/services/errorHandler';
 import { selectCurrentUser } from '../../../../store/selectors';
+import { 
+  fetchBorrowRequests, 
+  refreshBorrowRequests, 
+  removeBorrowRequest 
+} from '../../../../store/slices/requestsSlice';
+import type { RootState } from '../../../../store/store';
 
 import {
-  getBorrowRequests,
   deleteBorrow,
-  type LoanRequest
 } from './borrowService';
 
 import {
@@ -32,13 +36,13 @@ export function useBorrowRequests() {
   const dispatch = useAppDispatch();
   const cartItems = useAppSelector(selectCartItems);
   const currentUser = useAppSelector(selectCurrentUser);
-
-  // Estados del componente
-  const [showBorrowForm, setShowBorrowForm] = useState(false);
-  const [borrowRequests, setBorrowRequests] = useState<LoanRequest[]>([]);
   
-  // ⚠️ Ya no inicializaremos filteredBorrowRequests aquí, lo hará useMemo
-  // const [filteredBorrowRequests, setFilteredBorrowRequests] = useState<BorrowRequest[]>([]);
+  // Obtener borrow requests desde Redux
+  const borrowRequests = useAppSelector((state: RootState) => state.requests.borrowRequests);
+  const isLoadingBorrow = useAppSelector((state: RootState) => state.requests.loadingBorrow);
+
+  // Estados del componente (solo UI local)
+  const [showBorrowForm, setShowBorrowForm] = useState(false);
   const [borrowSearchTerm, setBorrowSearchTerm] = useState('');
   const [borrowStatusFilter, setBorrowStatusFilter] = useState<string>('all');
   const [warehouseFilter, setWarehouseFilter] = useState<string>('all');
@@ -77,28 +81,27 @@ export function useBorrowRequests() {
   // Load initial data
   // Get currentUser from authSlice with employeeId
   useEffect(() => {
-    let isMounted = true; // Flag para evitar actualizar estado si el componente fue desmontado
+    let isMounted = true;
 
     const loadData = async () => {
       if (!currentUser?.employeeId) {
         return;
       }
       try {
-        const [whData, statusData, requestsData] = await Promise.all([
+        // Cargar warehouses y statuses (estos no están en Redux)
+        const [whData, statusData] = await Promise.all([
           getWarehouses(),
           getStatuses(),
-          getBorrowRequests(currentUser.employeeId) 
         ]);
         
-        // Solo actualizar estado si el componente sigue montado
         if (isMounted) {
           setWarehouses(whData);
           setStatuses(statusData);
-          setBorrowRequests(requestsData.items || []);
-          console.log('Departamentos de los préstamos:', requestsData.items?.map(req => ({ requestNumber: req.requestNumber, departmentId: req.departmentId })));
         }
+        
+        // Cargar borrow requests desde Redux (con caché)
+        dispatch(fetchBorrowRequests(currentUser.employeeId));
       } catch (error: any) {
-        // Solo mostrar error si el componente sigue montado
         if (isMounted) {
           const appError = handleError(error);
           showConfirm({
@@ -119,11 +122,10 @@ export function useBorrowRequests() {
     
     loadData();
 
-    // Cleanup: Marcar componente como desmontado
     return () => {
       isMounted = false;
     };
-  }, [currentUser?.employeeId]); // Re-run when employeeId changes
+  }, [dispatch, currentUser?.employeeId]);
 
   // Check mobile
   useEffect(() => {
@@ -268,7 +270,8 @@ export function useBorrowRequests() {
         try {
           const result = await deleteBorrow(requestId);
           if (result.success) {
-            setBorrowRequests(prev => prev.filter(req => req.requestNumber !== requestId));
+            // Remover del store de Redux
+            dispatch(removeBorrowRequest(requestId));
             toast.success('Request cancelled successfully');
             hideModal();
           } else {
@@ -309,7 +312,7 @@ export function useBorrowRequests() {
   const confirmReturnAll = () => {
     const request = borrowRequests.find(r => r.requestNumber === requestToReturn);
     if (request) {
-      setBorrowRequests(prev => prev.filter(r => r.requestNumber !== requestToReturn));
+      dispatch(removeBorrowRequest(requestToReturn));
       toast.success('All items returned successfully');
     }
     setReturnDialogOpen(false);
@@ -330,19 +333,8 @@ export function useBorrowRequests() {
 
   const reloadBorrowRequests = async () => {
     if (!currentUser?.employeeId) return;
-    try {
-      const requestsData = await getBorrowRequests(currentUser.employeeId);
-      setBorrowRequests(requestsData.items || []);
-    } catch (error: any) {
-      const appError = handleError(error);
-      showConfirm({
-        title: 'Error Reloading Requests',
-        description: appError.message,
-        type: 'error',
-        confirmText: 'OK',
-        showCancel: false
-      });
-    }
+    // Usar refreshBorrowRequests para forzar recarga (bypass cache)
+    dispatch(refreshBorrowRequests(currentUser.employeeId));
   };
 
   // ⚠️ La función ya no está definida aquí, sino arriba con useCallback
@@ -354,7 +346,7 @@ export function useBorrowRequests() {
     // State
     showBorrowForm,
     borrowRequests,
-    filteredBorrowRequests, // 👈 Ahora es el resultado de useMemo
+    filteredBorrowRequests,
     borrowSearchTerm,
     borrowStatusFilter,
     warehouseFilter,
@@ -369,6 +361,7 @@ export function useBorrowRequests() {
     modalState,
     cartItems,
     currentUser,
+    isLoadingBorrow,
 
     // Setters
     setShowBorrowForm,
@@ -384,7 +377,7 @@ export function useBorrowRequests() {
     handleReturnAll,
     confirmReturnAll,
     toggleBorrowRow,
-    getBorrowStatusCount, // 👈 Ahora es la función de useCallback
+    getBorrowStatusCount,
     reloadBorrowRequests,
     hideModal,
 

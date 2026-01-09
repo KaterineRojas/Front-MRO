@@ -117,7 +117,7 @@ export function ModalConfirmPurchase({
                               const value = parseInt(e.target.value) || 0;
                               handleQuantityChange(key, value, item.quantity);
                             }}
-                            className="w-20"
+                            className="w-20 text-foreground bg-background"
                           />
                         </div>
                       </TableCell>

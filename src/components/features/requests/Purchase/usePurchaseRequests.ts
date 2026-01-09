@@ -30,16 +30,16 @@ interface UsePurchaseRequestsReturn {
   setModalOpen: ReturnType<typeof useConfirmModal>['setModalOpen'];
 }
 
-const STATUS_CODE_MAP: Record<number, 'pending' | 'approved' | 'rejected' | 'completed'> = {
+const STATUS_CODE_MAP: Record<number, 'pending' | 'approved' | 'rejected' | 'ordered' | 'completed'> = {
   0: 'pending',
   1: 'approved',
   2: 'rejected',
-  3: 'completed'
+  3: 'ordered'
 };
 
 // Estados visibles en la vista (excluye rejected = 2)
 const VISIBLE_STATUS_CODES = new Set([0, 1, 3]);
-const VISIBLE_STATUS_KEYS = new Set(['pending', 'approved', 'completed']);
+const VISIBLE_STATUS_KEYS = new Set(['pending', 'approved', 'ordered', 'completed']);
 
 function resolveStatusKey(request: PurchaseRequest): string {
   if (request.statusName) {
@@ -47,6 +47,7 @@ function resolveStatusKey(request: PurchaseRequest): string {
     if (normalized.includes('pend')) return 'pending';
     if (normalized.includes('aprob') || normalized.includes('approv')) return 'approved';
     if (normalized.includes('rech') || normalized.includes('reject')) return 'rejected';
+    if (normalized.includes('order')) return 'ordered';
     if (normalized.includes('complet') || normalized.includes('entreg')) return 'completed';
     return normalized;
   }
@@ -215,13 +216,14 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
   // Check if purchase can be confirmed as bought
   const canConfirmBought = (request: PurchaseRequest): boolean => {
     const statusKey = resolveStatusKey(request);
-    const isApproved = statusKey === 'approved';
+    // Cambiar de 'approved' (1) a 'ordered' (3)
+    const isOrdered = statusKey === 'ordered' || statusKey === 'completed';
     // selfPurchase puede venir como boolean o string
     const isSelfPurchase = request.selfPurchase === true || 
                            request.selfPurchase === 'true' || 
                            (request as any).isSelfPurchase === true ||
                            (request as any).isSelfPurchase === 'true';
-    return isApproved && isSelfPurchase;
+    return isOrdered && isSelfPurchase;
   };
 
   // Get status count (solo cuenta estados visibles)

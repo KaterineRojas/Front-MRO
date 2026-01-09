@@ -81,9 +81,24 @@ function normalizeBorrowRequest(req: LoanRequest): UnifiedRequest {
 }
 
 function normalizePurchaseRequest(req: PurchaseRequest): UnifiedRequest {
-  const statusName = typeof req.status === 'number' 
-    ? ['pending', 'approved', 'rejected', 'completed'][req.status] || 'unknown'
-    : req.statusName || String(req.status) || 'unknown';
+  // Mapeo de status numérico a texto
+  const statusCodeMap: Record<number, string> = {
+    0: 'pending',
+    1: 'approved',
+    2: 'rejected',
+    3: 'ordered',
+    4: 'received',
+    5: 'archived'
+  };
+  
+  let statusName: string;
+  if (req.statusName) {
+    statusName = req.statusName.toLowerCase();
+  } else if (typeof req.status === 'number') {
+    statusName = statusCodeMap[req.status] || 'unknown';
+  } else {
+    statusName = String(req.status || 'unknown').toLowerCase();
+  }
   
   const items: UnifiedItem[] = (req.items || []).map(item => ({
     id: item.id || item.itemId || 0,
