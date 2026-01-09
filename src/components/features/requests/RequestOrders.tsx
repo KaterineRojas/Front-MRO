@@ -6,8 +6,9 @@ import { ScrollArea } from '../../ui/scroll-area';
 import { BorrowRequests } from './Borrow/BorrowRequests';
 import { PurchaseRequests } from './Purchase/PurchaseRequests';
 import { TransferRequests }  from './Transfer/TransferRequests';
+import { CompleteHistory } from './HistoryRequest/CompleteHistory';
 
-const validTabs = ['borrow', 'purchase', 'transfer'] as const;
+const validTabs = ['borrow', 'purchase', 'transfer', 'history'] as const;
 type TabValue = typeof validTabs[number];
 
 const getTabFromParams = (search: string): TabValue => {
@@ -62,10 +63,11 @@ export function RequestOrders() {
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <ScrollArea className="w-full">
-          <TabsList className="w-full inline-flex md:grid md:grid-cols-3 min-w-max md:min-w-0">
+          <TabsList className="w-full inline-flex md:grid md:grid-cols-4 min-w-max md:min-w-0">
             <TabsTrigger value="borrow" className="flex-1 md:flex-auto">Borrow</TabsTrigger>
             <TabsTrigger value="purchase" className="flex-1 md:flex-auto">Purchase</TabsTrigger>
             <TabsTrigger value="transfer" className="flex-1 md:flex-auto">Transfer</TabsTrigger>
+            <TabsTrigger value="history" className="flex-1 md:flex-auto">Complete History</TabsTrigger>
           </TabsList>
         </ScrollArea>
 
@@ -79,6 +81,10 @@ export function RequestOrders() {
         
         <TabsContent value="transfer" className="mt-4">
           <TransferRequests />
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-4">
+          <CompleteHistory />
         </TabsContent>
       </Tabs>
     </div>

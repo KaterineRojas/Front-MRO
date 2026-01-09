@@ -138,10 +138,8 @@ export function BorrowRequests() {
               <SelectContent>
                 <SelectItem value="all">All Status ({getBorrowStatusCount('all')})</SelectItem>
                 <SelectItem value="Pending">Pending ({getBorrowStatusCount('Pending')})</SelectItem>
-                <SelectItem value="Packing">Packing ({getBorrowStatusCount('Packing')})</SelectItem>
-                <SelectItem value="Sent">Sent ({getBorrowStatusCount('Sent')})</SelectItem>
                 <SelectItem value="Approved">Approved ({getBorrowStatusCount('Approved')})</SelectItem>
-                <SelectItem value="Rejected">Rejected ({getBorrowStatusCount('Rejected')})</SelectItem>
+                <SelectItem value="Packing">Packing ({getBorrowStatusCount('Packing')})</SelectItem>
               </SelectContent>
             </Select>
           </div>

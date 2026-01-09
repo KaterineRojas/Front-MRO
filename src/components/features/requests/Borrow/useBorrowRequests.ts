@@ -5,7 +5,7 @@ import { clearCart } from '../../enginner/store/slices/cartSlice';
 import { selectCartItems } from '../../enginner/store/selectors';
 import { useConfirmModal } from '../../../ui/confirm-modal';
 import { handleError, setupConnectionListener } from '../../enginner/services/errorHandler';
-import { store } from '../../../../store/store';
+import { selectCurrentUser } from '../../../../store/selectors';
 
 import {
   getBorrowRequests,
@@ -31,6 +31,7 @@ import {
 export function useBorrowRequests() {
   const dispatch = useAppDispatch();
   const cartItems = useAppSelector(selectCartItems);
+  const currentUser = useAppSelector(selectCurrentUser);
 
   // Estados del componente
   const [showBorrowForm, setShowBorrowForm] = useState(false);
@@ -79,7 +80,6 @@ export function useBorrowRequests() {
     let isMounted = true; // Flag para evitar actualizar estado si el componente fue desmontado
 
     const loadData = async () => {
-      const currentUser = (store.getState() as any).auth?.user;
       if (!currentUser?.employeeId) {
         return;
       }
@@ -123,7 +123,7 @@ export function useBorrowRequests() {
     return () => {
       isMounted = false;
     };
-  }, []); // Load once on mount
+  }, [currentUser?.employeeId]); // Re-run when employeeId changes
 
   // Check mobile
   useEffect(() => {
@@ -166,8 +166,9 @@ export function useBorrowRequests() {
         if (!matchesSearch) return false;
       }
 
-      // 1.5. Excluir requests con status "Sent" (no se muestran en pantalla)
-      if (request.status === 'Sent') {
+      // 1.5. Solo mostrar estados Pending, Approved y Packing
+      const allowedStatuses = ['pending', 'approved', 'packing'];
+      if (!allowedStatuses.includes(request.status?.toLowerCase())) {
         return false;
       }
 
@@ -219,10 +220,16 @@ export function useBorrowRequests() {
   const getBorrowStatusCount = useCallback((status: string) => {
     if (!borrowRequests || !Array.isArray(borrowRequests)) return 0;
     
-    if (status === 'all') return borrowRequests.length;
+    // Solo contar los estados permitidos (Pending, Approved, Packing)
+    const allowedStatuses = ['pending', 'approved', 'packing'];
+    const visibleRequests = borrowRequests.filter(req => 
+      allowedStatuses.includes(req.status?.toLowerCase())
+    );
+    
+    if (status === 'all') return visibleRequests.length;
     
     // Normalizar para la comparación
-    return borrowRequests.filter(req => {
+    return visibleRequests.filter(req => {
       const normalizedRequestStatus = req.status?.toLowerCase();
       const normalizedFilterStatus = status.toLowerCase();
       
@@ -322,7 +329,6 @@ export function useBorrowRequests() {
   };
 
   const reloadBorrowRequests = async () => {
-    const currentUser = (store.getState() as any).auth?.user;
     if (!currentUser?.employeeId) return;
     try {
       const requestsData = await getBorrowRequests(currentUser.employeeId);
@@ -362,7 +368,7 @@ export function useBorrowRequests() {
     requestToDelete,
     modalState,
     cartItems,
-    currentUser: (store.getState() as any).auth?.user, // Get currentUser from authSlice
+    currentUser,
 
     // Setters
     setShowBorrowForm,

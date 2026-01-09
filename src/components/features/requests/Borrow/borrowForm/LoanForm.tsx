@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { ConfirmModal, useConfirmModal, type ModalType } from '../../../../ui/confirm-modal';
 import { ErrorType, type AppError } from '../../../enginner/services/errorHandler';
-import { store } from '../../../../../store/store';
 import { createBorrowRequest } from '../borrowService';
 import type { WorkOrder } from '../../services/sharedServices';
 
@@ -12,7 +11,6 @@ import type { LoanFormProps, LoanFormData } from './types';
 // Utils
 import {
   buildInitialFormData,
-  buildInitialItemSearches,
   validateLoanForm,
   createDefaultLoanItem,
 } from './utils';
@@ -330,9 +328,8 @@ export function LoanForm({
         onConfirm: async () => {
           hideModal();
 
-          // Get employeeId from authSlice store
-          const authUser = (store.getState() as any).auth?.user;
-          const requesterId = authUser?.employeeId || '';
+          // Get employeeId from currentUser prop (already from Redux)
+          const requesterId = currentUser?.employeeId || '';
 
           const payload = {
             requesterId,
