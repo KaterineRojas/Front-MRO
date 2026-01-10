@@ -346,32 +346,45 @@ const handleConfirmPackingDialog = useCallback((
       if (!currentPackingRequest) return;
       
       // 1. Preparar los ítems para el DTO de envío
-      const itemsToMove = currentPackingRequest.items.filter(item => {
+      const mappedItems = currentPackingRequest.items.map(item => {
         const itemKey = `${currentPackingRequest.id}-${item.id}`;
-        if (item.id <= 0) {
-            console.warn(`Skipping item with invalid ID: ${item.id}`);
-            return false;
-        }
-        // Filtra solo si es un Kit (se asume que se empaca todo) o si el ítem fue seleccionado
-        return isKitOrder(currentPackingRequest) || selectedPackingItems.has(itemKey);
-      }).map(item => {
-        const itemKey = `${currentPackingRequest.id}-${item.id}`;
-        const qty = packingItemQuantities[itemKey] !== undefined ? packingItemQuantities[itemKey] : item.quantityRequested;
-        // Mapear al formato temporal para 'itemsToMove'
-        return { ...item, quantity: qty, status: 'active' as const }; 
+        const qty = packingItemQuantities[itemKey] !== undefined ? packingItemQuantities[itemKey] : 0;
+        console.log(`🔍 DEBUG mappedItems - itemKey=${itemKey}, packingItemQuantities[itemKey]=${packingItemQuantities[itemKey]}, qty=${qty}`);
+        return { original: item, itemKey, qty, mapped: { ...item, quantity: qty, status: 'active' as const } };
       });
 
-      const sendItemsForApi = itemsToMove.map(item => ({
-            // Usamos 'loanRequestItemId' (minúscula)
-            loanRequestItemId: item.id, 
-            // 🚨 CORRECCIÓN CLAVE: Usamos 'quantityFulfilled' que espera el API
-            quantityFulfilled: item.quantity, 
-        })) as unknown as SendLoanRequestDto['items']; // Uso de la interfaz definida localmente
+      // Filtrar items que serán enviados:
+      // - Excluir items con ID inválido
+      // - Excluir items no seleccionados (en requests no-kit)
+      // - Incluir TODOS los items (incluso con cantidad 0)
+      const itemsToMove = mappedItems.filter(({ original, itemKey, qty }) => {
+        if (original.id <= 0) {
+          console.warn(`Skipping item with invalid ID: ${original.id}`);
+          return false;
+        }
+        if (!isKitOrder(currentPackingRequest) && !selectedPackingItems.has(itemKey)) {
+          // No seleccionado por el keeper en un request no-kit
+          return false;
+        }
+        // Incluir items con cualquier cantidad (incluyendo 0)
+        return true;
+      }).map(({ mapped }) => mapped as any);
+
+      // Construir el DTO final para enviar al API
+      // Solo incluir items que pasaron el filtro (cantidad > 0, seleccionados, etc)
+      const sendItemsForApi = itemsToMove.map(item => {
+        console.log(`📦 Item para enviar: id=${item.id}, qty=${item.quantity}, item.quantity property:`, item.quantity);
+        console.log(`📦 Full item object:`, JSON.stringify(item, null, 2));
+        return {
+          loanRequestItemId: item.id, 
+          quantityFulfilled: item.quantity,
+        };
+      }) as unknown as SendLoanRequestDto['items'];
       
       try {
-
         const sendDto = { items: sendItemsForApi };
-        console.log('DTO being sent to /send:', sendDto);
+        console.log('📤 FINAL DTO BEING SENT TO /send:', JSON.stringify(sendDto, null, 2));
+        console.log(`📤 Total items in DTO: ${sendItemsForApi.length}`);
         
         // 1.5. Asegurar que el keeper actual sea el "owner" del packing
         // Solo llamar a startPacking si el request está en estado "Approved"
