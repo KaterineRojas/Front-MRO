@@ -1,7 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../../ui/card';
 import { Button } from '../../../../ui/button';
-import { Input } from '../../../../ui/input';
 import { Label } from '../../../../ui/label';
 import { Badge } from '../../../../ui/badge';
 import { Search, Package, User, MapPin, Calendar, Box, Loader2 } from 'lucide-react';
@@ -19,6 +18,7 @@ import {
   PopoverTrigger,
 } from '../../../../ui/popover';
 import { trackingService, ItemTrackingDto, EngineerTrackingDto } from '../../../../../services/trackingService';
+import { amaxService, EngineerDto } from '../../../../../services/amaxService';
 
 type TrackingMode = 'item' | 'engineer';
 
@@ -31,12 +31,28 @@ export function TrackingTab() {
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [selectedEngineerId, setSelectedEngineerId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [engineerSearchQuery, setEngineerSearchQuery] = useState('');
   const [itemSearchOpen, setItemSearchOpen] = useState(false);
+  const [engineerSearchOpen, setEngineerSearchOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [engineers, setEngineers] = useState<EngineerDto[]>([]);
 
   // Real data from API
   const [itemTrackingData, setItemTrackingData] = useState<ItemTrackingDto | null>(null);
   const [engineerTrackingData, setEngineerTrackingData] = useState<EngineerTrackingDto | null>(null);
+
+  // Load engineers on component mount
+  useEffect(() => {
+    const loadEngineers = async () => {
+      try {
+        const data = await amaxService.getEngineers();
+        setEngineers(data);
+      } catch (error) {
+        console.error('Failed to load engineers:', error);
+      }
+    };
+    loadEngineers();
+  }, []);
 
   // Filter items for autocomplete
   const filteredItems = useMemo(() => {
@@ -53,6 +69,23 @@ export function TrackingTab() {
   const selectedItem = useMemo(
     () => articles.find((item) => item.id === selectedItemId),
     [articles, selectedItemId]
+  );
+
+  // Filter engineers for autocomplete
+  const filteredEngineers = useMemo(() => {
+    if (!engineerSearchQuery) return engineers;
+    const query = engineerSearchQuery.toLowerCase();
+    return engineers.filter(
+      (engineer) =>
+        engineer.name.toLowerCase().includes(query) ||
+        engineer.employeeId.toLowerCase().includes(query) ||
+        engineer.email.toLowerCase().includes(query)
+    );
+  }, [engineers, engineerSearchQuery]);
+
+  const selectedEngineer = useMemo(
+    () => engineers.find((engineer) => engineer.employeeId === selectedEngineerId),
+    [engineers, selectedEngineerId]
   );
 
   const handleItemSearch = async () => {
@@ -227,19 +260,64 @@ export function TrackingTab() {
           <CardHeader>
             <CardTitle>Search Engineer Holdings</CardTitle>
             <CardDescription>
-              Enter an engineer ID to see all items they are currently holding
+              Select an engineer to see all items they are currently holding
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Engineer ID (e.g., amx0142)</Label>
-              <Input
-                type="text"
-                placeholder="amx0142"
-                value={selectedEngineerId}
-                onChange={(e) => setSelectedEngineerId(e.target.value)}
-                disabled={loading}
-              />
+              <Label>Select Engineer</Label>
+              <Popover open={engineerSearchOpen} onOpenChange={setEngineerSearchOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between"
+                    disabled={loading}
+                  >
+                    {selectedEngineer ? (
+                      <span className="flex items-center gap-2">
+                        <Badge variant="secondary">{selectedEngineer.employeeId}</Badge>
+                        {selectedEngineer.name}
+                      </span>
+                    ) : (
+                      'Select an engineer...'
+                    )}
+                    <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput
+                      placeholder="Search by name, ID, or email..."
+                      value={engineerSearchQuery}
+                      onValueChange={setEngineerSearchQuery}
+                    />
+                    <CommandEmpty>No engineers found.</CommandEmpty>
+                    <CommandGroup className="max-h-64 overflow-auto">
+                      {filteredEngineers.map((engineer) => (
+                        <CommandItem
+                          key={engineer.id}
+                          value={`${engineer.employeeId}-${engineer.name}`}
+                          onSelect={() => {
+                            setSelectedEngineerId(engineer.employeeId);
+                            setEngineerSearchOpen(false);
+                          }}
+                        >
+                          <div className="flex items-center gap-2 w-full">
+                            <Badge variant="secondary" className="text-xs">
+                              {engineer.employeeId}
+                            </Badge>
+                            <span className="flex-1">{engineer.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {engineer.departmentName}
+                            </span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <Button onClick={handleEngineerSearch} className="w-full" disabled={loading || !selectedEngineerId}>
