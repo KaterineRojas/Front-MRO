@@ -69,6 +69,7 @@ export interface PurchaseRequest {
   address?: string;
   googleMapsUrl?: string;
   zipCode?: string;
+  rejectionReason?: string;
 }
 
 export interface PurchaseRequestItemPayload {

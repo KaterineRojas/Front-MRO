@@ -33,6 +33,8 @@ export interface UnifiedRequest {
   // Transfer-specific fields
   fromUser?: string;
   toUser?: string;
+  // Rejection field
+  rejectionReason?: string;
 }
 
 interface HistoryState {
@@ -62,6 +64,16 @@ function normalizeBorrowRequest(req: LoanRequest): UnifiedRequest {
     imageUrl: item.imageUrl,
     quantity: item.quantityRequested || 0,
   }));
+
+  // Log para debugging de rejection reason
+  if (req.status?.toLowerCase() === 'rejected') {
+    console.log('Normalizing rejected borrow request:', {
+      requestNumber: req.requestNumber,
+      status: req.status,
+      rejectionReason: req.rejectionReason,
+      hasRejectionReason: !!req.rejectionReason
+    });
+  }
 
   return {
     id: `borrow-${req.requestNumber}`,
@@ -125,6 +137,7 @@ function normalizePurchaseRequest(req: PurchaseRequest): UnifiedRequest {
     totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
     notes: req.notes || '',
     items,
+    rejectionReason: req.rejectionReason,
   };
 }
 
@@ -154,6 +167,7 @@ function normalizeTransfer(transfer: Transfer): UnifiedRequest {
     items,
     fromUser: transfer.fromUser || '',
     toUser: transfer.toUser || '',
+    rejectionReason: transfer.rejectionReason,
   };
 }
 
