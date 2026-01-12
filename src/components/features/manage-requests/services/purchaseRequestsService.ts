@@ -18,7 +18,7 @@ export const getPurchaseRequestsByStatus = async (
         const allResults: any[] = [];
         
         for (const status of statuses) {
-            const url = `${API_URL}/purchase-requests?warehouseId=${warehouseId}&status=${encodeURIComponent(status)}`;
+            const url = `${API_URL}/purchase-requests?warehouseId=${warehouseId}&status=${encodeURIComponent(status)}&typeRequest=2`;
             
             console.log('📦 Fetching purchase requests from:', url);
             
@@ -63,7 +63,7 @@ export const getPurchaseOnSiteRequests = async (
     signal?: AbortSignal
 ): Promise<any[]> => {
     try {
-        const url = `${API_URL}/purchase-requests?warehouse=${warehouseId}&type=3`;
+        const url = `${API_URL}/purchase-requests?warehouse=${warehouseId}&typeRequest=3`;
         
         console.log('📦 Fetching on-site purchase requests from:', url);
         
@@ -169,5 +169,44 @@ export const markAsBought = async (id: number, receivedQuantities?: Record<numbe
     } catch (error: any) {
         console.error('❌ Error marking as bought:', error);
         throw new Error(error.message || 'Failed to mark as bought');
+    }
+};
+
+/**
+ * Fetches engineer holdings for a specific warehouse
+ * @param warehouseId - The warehouse ID to filter by
+ * @param signal - Optional AbortSignal for request cancellation
+ * @returns Engineer holdings data
+ */
+export const getEngineerHoldings = async (
+    warehouseId: number,
+    signal?: AbortSignal
+): Promise<any> => {
+    try {
+        const url = `${API_URL}/engineer-holdings/warehouse/${warehouseId}`;
+        
+        console.log('📦 Fetching engineer holdings from:', url);
+        
+        const response = await fetchWithAuth(url, {
+            method: 'GET',
+            signal,
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        const data = result.data || result || [];
+        
+        console.log('🔍 Engineer holdings:', data);
+
+        return data;
+    } catch (error: any) {
+        if (error.name === 'AbortError') {
+            throw error;
+        }
+        console.error('Error fetching engineer holdings:', error);
+        throw new Error(error.message || 'Failed to fetch engineer holdings');
     }
 };

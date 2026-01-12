@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 // 🚨 CORRECCIÓN: Definición local de la interfaz del DTO de Envío para evitar errores de importación.
 import { LoanRequest, LoanItem, CreateLoanRequestDto } from '../types'; 
 import { getPackingRequests, updateLoanRequestStatus, startPacking, sendLoanRequest, getEngineerReturns } from '../services/requestManagementService';
+import { getEngineerHoldings } from '../services/purchaseRequestsService';
 import { handlePrintSinglePacking as utilPrintSingle } from '../utils/requestManagementUtils';
 import { toast } from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
@@ -433,6 +434,10 @@ const handleConfirmPackingDialog = useCallback((
             const freshData = await getEngineerReturns(targetEngineerId, warehouseId || 1);
             setAllReturns(freshData || []);
             console.log(`✅ Reloaded ${freshData?.length || 0} returns for engineer ${targetEngineerId}`);
+            
+            // Recargar engineer holdings desde el endpoint
+            const engineerHoldingsData = await getEngineerHoldings(warehouseId || 1);
+            console.log(`✅ Reloaded engineer holdings for warehouse ${warehouseId || 1}:`, engineerHoldingsData);
             
             // Actualizar Redux para que la UI de Returns se actualice automáticamente
             console.log(`🔄 Refreshing Redux returns for engineerId: ${targetEngineerId}, warehouseId: ${warehouseId || 1}`);
