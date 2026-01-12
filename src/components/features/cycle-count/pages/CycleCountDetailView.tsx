@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { ArrowLeft, Printer, Download, CheckCircle, AlertTriangle, Save, Loader2 } from 'lucide-react';
 import { CycleCountDetailViewProps } from '../types';
 import { downloadCycleCountReport } from '../utils/excelUtils';
+import { calculatePeriod } from '../utils/periodUtils';
 import { StatusBadge } from '../components/StatusBadge';
 import { AuditHeader } from '../components/AuditHeader';
 import { ExecutiveSummary } from '../components/ExecutiveSummary';
@@ -76,9 +77,11 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
             imageUrl: article.imageUrl
           }));
           
-          // Determine countType from countName
-          let countType: 'Annual' | 'Biannual' | 'Spot Check' = 'Annual';
-          if (cycleCountDetail.countName) {
+          // Determine countType from countData param or countName from API
+          let countType: 'Annual' | 'Biannual' | 'Spot Check' = currentCountData?.countType || 'Annual';
+          
+          // If we don't have countType from param, try to determine from countName
+          if (!currentCountData?.countType && cycleCountDetail.countName) {
             const countNameLower = cycleCountDetail.countName.toLowerCase();
             if (countNameLower.includes('biannual') || countNameLower.includes('semiannual')) {
               countType = 'Biannual';
@@ -98,6 +101,7 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
             status: mapStatusNameToUIStatus(cycleCountDetail.statusName),
             countType,
             auditor: keeperName || cycleCountDetail.completedByName || cycleCountDetail.createdByName,
+            periodo: calculatePeriod(countType, new Date(cycleCountDetail.createdAt).toISOString().split('T')[0]),
             articles: countedArticles,
             totalItems: stats.totalEntries,
             counted: stats.countedEntries,
@@ -200,6 +204,7 @@ export function CycleCountDetailView({ countData, onBack, onAdjustmentsApplied, 
         countType={currentCountData.countType}
         auditor={currentCountData.auditor}
         zone={currentCountData.zone}
+        periodo={currentCountData.periodo}
       />
 
       {/* Executive Summary (KPIs) */}

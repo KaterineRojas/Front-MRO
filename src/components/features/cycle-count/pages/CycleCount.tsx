@@ -49,7 +49,7 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
     // Load full record with keeperName as auditor
     const { getCycleCountWithArticles } = await import('../services/cycleCountService');
     try {
-      const fullRecord = await getCycleCountWithArticles(record.id, keeperName);
+      const fullRecord = await getCycleCountWithArticles(record.id, keeperName, record.countType);
       generatePrintReport(fullRecord);
     } catch (error) {
       console.error('Error loading cycle count for printing:', error);
@@ -62,7 +62,7 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
     // Load full record with keeperName as auditor
     const { getCycleCountWithArticles } = await import('../services/cycleCountService');
     try {
-      const fullRecord = await getCycleCountWithArticles(record.id, keeperName);
+      const fullRecord = await getCycleCountWithArticles(record.id, keeperName, record.countType);
       generateExcelReport(fullRecord);
     } catch (error) {
       console.error('Error loading cycle count for download:', error);
@@ -78,8 +78,8 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
     try {
       const recordsWithArticles = await Promise.all(
         history.map(async (record) => {
-          // Load articles from API, use keeperName as auditor
-          const fullRecord = await getCycleCountWithArticles(record.id, keeperName);
+          // Load articles from API, use keeperName as auditor and record's countType
+          const fullRecord = await getCycleCountWithArticles(record.id, keeperName, record.countType);
           return fullRecord;
         })
       );
@@ -132,6 +132,7 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
                 <TableHead>Date</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Zone</TableHead>
+                <TableHead>Period</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Total Items</TableHead>
                 <TableHead>Counted</TableHead>
@@ -143,7 +144,7 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center">
+                  <TableCell colSpan={10} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-2" />
                       <p className="text-sm text-muted-foreground">Loading cycle counts...</p>
@@ -152,7 +153,7 @@ export function CycleCount({ onStartCycleCount, onViewCycleCount, onContinueCycl
                 </TableRow>
               ) : history.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
                     No cycle counts found
                   </TableCell>
                 </TableRow>

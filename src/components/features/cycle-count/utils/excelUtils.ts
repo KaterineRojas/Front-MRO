@@ -15,6 +15,7 @@ export function downloadCycleCountReport(countData: CycleCountDetailData): void 
     ['AUDIT HEADER'],
     ['Date and Time:', countData.completedDate || countData.date],
     ['Count Type:', countData.countType],
+    ['Period:', countData.periodo || '-'],
     ['Auditor Responsible:', countData.auditor],
     ['Zone:', countData.zone],
     [''],

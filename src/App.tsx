@@ -333,13 +333,16 @@ function CycleCountWrapper() {
         countName: data.countName, 
         warehouseId, 
         zone: data.zone,
+        countType: data.countType,
         zoneId: mapZoneToZoneId(data.zone), 
         userId 
       });
       
       // Create cycle count via API
+      // Include countType in the countName so it's preserved when retrieved from API
+      const countNameWithType = `${data.countName} (${data.countType})`;
       const cycleCountResponse = await createCycleCount({
-        countName: data.countName,
+        countName: countNameWithType,
         warehouseId: warehouseId,
         zoneId: mapZoneToZoneId(data.zone),
         createdByUserId: userId,
@@ -470,8 +473,8 @@ function CycleCountWrapper() {
     <CycleCount
       onStartCycleCount={handleStartCycleCount}
       onViewCycleCount={(record) => {
-        // Pass the record with ID so CycleCountDetailView can load from API
-        handleNavigate('/cycle-count/detail', { countData: { id: record.id } });
+        // Pass the record with ID and countType so CycleCountDetailView can load from API
+        handleNavigate('/cycle-count/detail', { countData: { id: record.id, countType: record.countType } });
       }}
       onCompleteCycleCount={handleCompleteCycleCount}
       onContinueCycleCount={handleContinueCycleCount}

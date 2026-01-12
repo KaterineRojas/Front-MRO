@@ -6,9 +6,10 @@ interface AuditHeaderProps {
   countType: string;
   auditor: string;
   zone: string;
+  periodo?: string;
 }
 
-export function AuditHeader({ completedDate, date, countType, auditor, zone }: AuditHeaderProps) {
+export function AuditHeader({ completedDate, date, countType, auditor, zone, periodo }: AuditHeaderProps) {
   return (
     <Card>
       <CardHeader>
@@ -32,6 +33,12 @@ export function AuditHeader({ completedDate, date, countType, auditor, zone }: A
             <p className="text-sm text-muted-foreground mb-1">Zone</p>
             <p className="text-lg">{zone}</p>
           </div>
+          {periodo && (
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Period</p>
+              <p className="text-lg">{periodo}</p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

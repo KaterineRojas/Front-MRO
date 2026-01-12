@@ -28,6 +28,7 @@ export function HistoryTableRow({
       <TableCell>{record.date}</TableCell>
       <TableCell>{record.countName || '-'}</TableCell>
       <TableCell>{record.zone === 'all' ? 'All Zones' : record.zone}</TableCell>
+      <TableCell>{record.periodo || '-'}</TableCell>
       <TableCell>
         {record.status === 'completed' ? (
           <Badge variant="default" className="bg-green-600">

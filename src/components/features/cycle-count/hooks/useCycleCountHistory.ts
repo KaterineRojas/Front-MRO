@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppSelector } from '../../../../store/hooks';
 import { getCycleCounts, MappedCycleCountRecord, getCycleCountStatistics } from '../services/cycleCountService';
+import { calculatePeriod } from '../utils/periodUtils';
 
 interface CountedArticle {
   code: string;
@@ -23,6 +24,7 @@ export interface CycleCountRecord {
   status: 'in-progress' | 'completed';
   countType: 'Annual' | 'Biannual' | 'Spot Check';
   auditor: string;
+  periodo?: string;
   totalItems: number;
   counted: number;
   discrepancies: number;
@@ -35,6 +37,8 @@ export interface CycleCountRecord {
  * Converts MappedCycleCountRecord from API to CycleCountRecord for UI
  */
 function mapApiRecordToUI(mappedRecord: MappedCycleCountRecord): CycleCountRecord {
+  const periodo = calculatePeriod(mappedRecord.countType, mappedRecord.date);
+  
   return {
     id: mappedRecord.id,
     date: mappedRecord.date,
@@ -43,6 +47,7 @@ function mapApiRecordToUI(mappedRecord: MappedCycleCountRecord): CycleCountRecor
     status: mappedRecord.status,
     countType: mappedRecord.countType,
     auditor: mappedRecord.auditor,
+    periodo: periodo || undefined,
     totalItems: mappedRecord.totalItems,
     counted: mappedRecord.counted,
     discrepancies: mappedRecord.discrepancies,

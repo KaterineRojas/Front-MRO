@@ -26,6 +26,7 @@ export interface CycleCountDetailData {
   status: 'pending' | 'in-progress' | 'completed';
   countType: 'Annual' | 'Biannual' | 'Spot Check';
   auditor: string;
+  periodo?: string;
   articles: CountedArticle[];
   totalItems: number;
   counted: number;

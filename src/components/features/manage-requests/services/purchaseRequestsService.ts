@@ -53,6 +53,45 @@ export const getPurchaseRequestsByStatus = async (
 };
 
 /**
+ * Fetches on-site purchase requests (type=3) by warehouse
+ * @param warehouseId - The warehouse ID to filter by
+ * @param signal - Optional AbortSignal for request cancellation
+ * @returns Array of on-site purchase requests
+ */
+export const getPurchaseOnSiteRequests = async (
+    warehouseId: number,
+    signal?: AbortSignal
+): Promise<any[]> => {
+    try {
+        const url = `${API_URL}/purchase-requests?warehouse=${warehouseId}&type=3`;
+        
+        console.log('📦 Fetching on-site purchase requests from:', url);
+        
+        const response = await fetchWithAuth(url, {
+            method: 'GET',
+            signal,
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        const data = result.data || result || [];
+        
+        console.log('🔍 On-site purchase requests (type=3):', data);
+
+        return data;
+    } catch (error: any) {
+        if (error.name === 'AbortError') {
+            throw error;
+        }
+        console.error('Error fetching on-site purchase requests:', error);
+        throw new Error(error.message || 'Failed to fetch on-site purchase requests');
+    }
+};
+
+/**
  * Marks a purchase request as Ordered
  * @param id - The purchase request ID
  */
