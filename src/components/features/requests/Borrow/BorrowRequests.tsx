@@ -256,7 +256,6 @@ export function BorrowRequests() {
                     <div className="space-y-1">
                       <p className="font-mono text-sm font-semibold">Request {meta.identifier}</p>
                       <p className="text-xs text-muted-foreground">{meta.warehouseName}</p>
-                      <p className="text-xs text-muted-foreground">By: {meta.requesterName}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <Badge 
@@ -436,7 +435,6 @@ export function BorrowRequests() {
                             <div className="space-y-1">
                               <p className="font-mono text-sm font-semibold">#{meta.identifier}</p>
                               <p className="text-xs text-muted-foreground">{meta.warehouseName}</p>
-                              <p className="text-xs text-muted-foreground">By: {meta.requesterName}</p>
                               {meta.hasNotes && <Badge variant="outline" className="text-xs">Notes</Badge>}
                             </div>
                           </TableCell>

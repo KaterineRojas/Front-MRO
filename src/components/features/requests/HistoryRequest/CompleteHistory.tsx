@@ -124,7 +124,7 @@ export function CompleteHistory() {
               </div>
             )}
             <h4 className="text-sm font-semibold">Items ({request.items.length})</h4>
-            <div className="grid gap-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {request.items.map((item, idx) => (
                 <div key={item.id || idx} className="flex items-start gap-3 rounded-lg border bg-background p-3">
                   {item.imageUrl ? (

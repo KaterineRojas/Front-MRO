@@ -527,27 +527,34 @@ export function TransferRequests() {
                         <p className="text-sm text-muted-foreground">Loading items...</p>
                       ) : (
                         <>
-                          <h4 className="text-sm mb-2">Items:</h4>
-                          <div className="space-y-2">
+                          <h4 className="text-sm font-semibold mb-3">Items ({(expandedTransferDetails[transfer.id]?.items || transfer.items).length})</h4>
+                          <div className="grid gap-3 sm:grid-cols-2">
                             {(expandedTransferDetails[transfer.id]?.items || transfer.items).map((item, index) => (
-                              <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
-                                {item.image && (
+                              <div key={index} className="flex gap-3 rounded-lg border bg-background p-3">
+                                {item.image ? (
                                   <ImageWithFallback
                                     src={item.image}
                                     alt={item.itemName}
-                                    className="w-10 h-10 object-cover rounded"
+                                    className="w-16 h-16 object-cover rounded"
                                   />
+                                ) : (
+                                  <div className="w-16 h-16 flex items-center justify-center rounded bg-muted">
+                                    <Package className="h-6 w-6 text-muted-foreground" />
+                                  </div>
                                 )}
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm truncate">{item.itemName}</p>
+                                <div className="flex-1 min-w-0 space-y-1">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <p className="text-sm font-medium truncate">{item.itemName}</p>
+                                    <Badge variant="secondary">x{item.quantity}</Badge>
+                                  </div>
+                                  {item.code && <p className="text-xs text-muted-foreground">SKU: {item.code}</p>}
                                   {item.description && (
                                     <p className="text-xs text-muted-foreground truncate">{item.description}</p>
                                   )}
                                   {item.warehouseCode && (
-                                    <Badge className="text-xs mt-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">{item.warehouseCode}</Badge>
+                                    <Badge className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">{item.warehouseCode}</Badge>
                                   )}
                                 </div>
-                                <Badge variant="secondary">x{item.quantity}</Badge>
                               </div>
                             ))}
                           </div>
@@ -674,31 +681,33 @@ export function TransferRequests() {
                             ) : (
                               <div className="space-y-3">
                                 <div>
-                                  <h4 className="text-sm mb-2">Items:</h4>
-                                  <div className="space-y-2">
+                                  <h4 className="text-sm font-semibold mb-3">Items ({(expandedTransferDetails[transfer.id]?.items || transfer.items).length})</h4>
+                                  <div className="grid gap-3 sm:grid-cols-2">
                                     {(expandedTransferDetails[transfer.id]?.items || transfer.items).map((item, index) => (
-                                      <div key={index} className="flex items-center gap-3 p-2 bg-background rounded border">
-                                        {item.image && (
+                                      <div key={index} className="flex gap-3 rounded-lg border bg-background p-3">
+                                        {item.image ? (
                                           <ImageWithFallback
                                             src={item.image}
                                             alt={item.itemName}
-                                            className="w-12 h-12 object-cover rounded"
+                                            className="w-16 h-16 object-cover rounded"
                                           />
+                                        ) : (
+                                          <div className="w-16 h-16 flex items-center justify-center rounded bg-muted">
+                                            <Package className="h-6 w-6 text-muted-foreground" />
+                                          </div>
                                         )}
-                                        <div className="flex-1">
-                                          <p>{item.itemName}</p>
-                                          {item.code && (
-                                            <p className="text-sm text-muted-foreground">{item.code}</p>
-                                          )}
+                                        <div className="flex-1 space-y-1">
+                                          <div className="flex items-start justify-between gap-2">
+                                            <p className="text-sm font-medium">{item.itemName}</p>
+                                            <Badge variant="secondary">x{item.quantity}</Badge>
+                                          </div>
+                                          {item.code && <p className="text-xs text-muted-foreground">SKU: {item.code}</p>}
                                           {item.description && (
                                             <p className="text-xs text-muted-foreground">{item.description}</p>
                                           )}
-                                        </div>
-                                        <div className="flex items-center gap-2">
                                           {item.warehouseCode && (
                                             <Badge variant="outline" className="text-xs">{item.warehouseCode}</Badge>
                                           )}
-                                          <Badge variant="secondary">Qty: {item.quantity}</Badge>
                                         </div>
                                       </div>
                                     ))}
@@ -764,27 +773,31 @@ export function TransferRequests() {
                   )}
 
                   <div>
-                    <h4 className="text-sm mb-2">Items:</h4>
-                    <div className="space-y-2">
+                    <h4 className="text-sm font-semibold mb-3">Items ({transferToAccept.items.length})</h4>
+                    <div className="grid gap-3 sm:grid-cols-2">
                       {transferToAccept.items.map((item, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
-                          {item.image && (
+                        <div key={index} className="flex gap-3 rounded-lg border bg-background p-3">
+                          {item.image ? (
                             <ImageWithFallback
                               src={item.image}
                               alt={item.itemName}
-                              className="w-10 h-10 object-cover rounded"
+                              className="w-16 h-16 object-cover rounded"
                             />
-                          )}
-                          <div className="flex-1">
-                            <p className="text-sm">{item.itemName}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <p className="text-xs text-muted-foreground">{item.code}</p>
-                              {item.warehouseCode && (
-                                <Badge className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">{item.warehouseCode}</Badge>
-                              )}
+                          ) : (
+                            <div className="w-16 h-16 flex items-center justify-center rounded bg-muted">
+                              <Package className="h-6 w-6 text-muted-foreground" />
                             </div>
+                          )}
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-sm font-medium">{item.itemName}</p>
+                              <Badge variant="secondary">x{item.quantity}</Badge>
+                            </div>
+                            {item.code && <p className="text-xs text-muted-foreground">SKU: {item.code}</p>}
+                            {item.warehouseCode && (
+                              <Badge className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">{item.warehouseCode}</Badge>
+                            )}
                           </div>
-                          <Badge variant="secondary">x{item.quantity}</Badge>
                         </div>
                       ))}
                     </div>
