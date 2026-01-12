@@ -45,7 +45,7 @@ export interface PurchaseRequest {
 
     // Status & Logic
     status: number;          // 0=Pending, 1=Approved, etc.
-    reason: number;          // 0=Standard, etc. (Previously 'priority')
+    reason: number;          
     selfPurchase: boolean;
     typeRequestName: string;
     statusName: string;

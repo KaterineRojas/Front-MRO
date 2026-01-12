@@ -18,7 +18,7 @@ export function RequestManagement() {
 
   // 2. UI STATES
   const [activeTab, setActiveTab] = useState<string>('pending');
-  const [typeFilter, setTypeFilter] = useState<string>('all'); 
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +44,9 @@ export function RequestManagement() {
     { value: '2', label: 'Purchase' },
     { value: '3', label: 'Purchase On Site' },
     { value: '4', label: 'Transfer On Site' },
+    { value: '5', label: 'Low Stock' },
+    { value: '6', label: 'Urgent' },
+    { value: '7', label: 'New Project' },
   ];
 
   // ===========================================================================
@@ -128,23 +131,57 @@ export function RequestManagement() {
 
     return allRequests.filter((request) => {
       const data = request.originalData;
-      const kind = data.kind;
+      const kind = data.kind; 
 
-      //  STATUS FILTER
+      // ----------------------------------------------------
+      // STATUS FILTER (Tabs)
+      // ----------------------------------------------------
       const rawStatus = (kind === 'Purchase' ? data.statusName : data.status) || '';
 
       if (currentTab !== 'all') {
         if (rawStatus.toLowerCase() !== currentTab) return false;
       }
 
-      //  SEARCH FILTER
+      // ----------------------------------------------------
+      //  TYPE FILTER (Dropdown)
+      // ----------------------------------------------------
+      if (typeFilter !== 'all') {
+
+        // GROUP A: LOAN REQUESTS (Dropdown Values 1, 2, 3, 4)
+        if (['1', '2', '3', '4'].includes(typeFilter)) {
+          if (kind !== 'Loan') return false;
+
+          if (data.typeRequest !== Number(typeFilter)) return false;
+        }
+
+        // GROUP B: PURCHASES (Dropdown Values 5, 6, 7)
+        else if (['5', '6', '7'].includes(typeFilter)) {
+          if (kind !== 'Purchase') return false;
+
+          // Value '5' (Low Stock)   -> Reason 0
+          // Value '6' (Urgent)      -> Reason 1
+          // Value '7' (New Project) -> Reason 2
+          const dropdownToReasonMap: Record<string, number> = {
+            '5': 0,
+            '6': 1,
+            '7': 2
+          };
+
+          const targetReasonId = dropdownToReasonMap[typeFilter];
+
+          if (data.reason !== targetReasonId) return false;
+        }
+      }
+
+      // ----------------------------------------------------
+      //  SEARCH FILTER (Top Level)
+      // ----------------------------------------------------
       if (!term) return true;
 
       const searchableFields: string[] = [
         request.requestNumber || '',
         data.requestNumber?.toString() || '',
         request.requester || '',
-        // request.warehouse || '',
         data.departmentId || '',
       ];
 
@@ -152,12 +189,10 @@ export function RequestManagement() {
         const loan = data as LoanRequest;
         searchableFields.push(loan.requesterName || '');
         searchableFields.push(loan.departmentId || '');
-        // searchableFields.push(loan.projectId || '');
       }
       else if (kind === 'Purchase') {
         const purchase = data as PurchaseRequest;
         searchableFields.push(purchase.requesterId || '');
-        // searchableFields.push(purchase.warehouseName || '');
         searchableFields.push(purchase.departmentId || '');
       }
 
@@ -167,7 +202,9 @@ export function RequestManagement() {
 
       if (matchesTopLevel) return true;
 
-      // ITEMS FILTER
+      // ----------------------------------------------------
+      //  ITEMS FILTER (Deep Search)
+      // ----------------------------------------------------
       const matchesItems = (data.items || []).some((item: any) => {
         const name = item.name || item.productName || '';
         const sku = item.sku || '';
@@ -180,8 +217,7 @@ export function RequestManagement() {
 
       return matchesItems;
     });
-  }, [allRequests, activeTab, searchTerm]);
-
+  }, [allRequests, activeTab, searchTerm, typeFilter]);
 
 
 
@@ -241,7 +277,7 @@ export function RequestManagement() {
             newOriginalData = {
               ...req.originalData,
               statusName: 'Approved',
-              status: 1 
+              status: 1
             };
           }
 
@@ -277,13 +313,11 @@ export function RequestManagement() {
       return;
     }
 
-    debugger;
-
     const request = reviewState.order;
     const kind = request.originalData.kind;
 
     try {
-      setLoadingModal(true); 
+      setLoadingModal(true);
 
       if (kind === 'Loan') {
         await rejectLoanRequest(request.requestNumber, currentEmployeeId, reason);
@@ -426,8 +460,8 @@ export function RequestManagement() {
             ) : (
               <TableErrorBoundary>
                 <OrderTable
-                  requests={filteredRequests}  
-                  statusFilter={activeTab}     
+                  requests={filteredRequests}
+                  statusFilter={activeTab}
                   activeTab={activeTab}
                   onReview={handleOpenReview}
                 />
