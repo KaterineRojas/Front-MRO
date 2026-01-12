@@ -5,16 +5,18 @@ import {
     Building2,
     Layers,
     FolderKanban,
-    UserCheck,
+    BadgeDollarSign,
     ImageOff,
     XCircle,
-    CheckCheck
+    CheckCheck,
+    Banknote
 } from 'lucide-react';
 import { getStatusBadge, getReasonBadge, getTypeBadge } from '../../inventory/components/RequestBadges';
 import { STATUS_MAP, REASON_MAP, formatDate, formatCurrency } from '../utils/purchase-utils';
 import { useSelector } from 'react-redux';
 import { ActionButton } from '../../inventory/components/ActionButton';
 import { UnifiedRequest } from '../../requests/types/loanTypes';
+import { authService } from '../../../../services/authService'
 
 interface Props {
     row: UnifiedRequest;
@@ -51,9 +53,9 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
     if (data.kind === 'Purchase') {
         if (data.approvedByName) approverDisplay = data.approvedByName;
     } else {
-        if(data.notes){
+        if (data.notes) {
             const nameFromNotes = data.notes?.match(/by\s+(\w+)\s+at/)?.[1];
-    
+
             if (nameFromNotes) {
                 approverDisplay = nameFromNotes;
             }
@@ -75,33 +77,30 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
         ? 'text-emerald-600 dark:text-emerald-400'
         : 'text-gray-400 dark:text-gray-600';
 
-    // notes
-    const rawNotes = ('notes' in data) ? data.notes : null;
+    // request notes
+    const cleanLoanNotes = (notes: string | undefined) => {
+        if (!notes) return '';
 
-    const displayNotes = (data.kind === 'Loan' && rawNotes)
-        ? rawNotes.replace(/^\[.*?\]:\s*/, '')
-        : rawNotes;
+        const rejectionMarker = '[REJECTED by';
+
+        if (notes.includes(rejectionMarker)) {
+            return notes.split(rejectionMarker)[0].trim();
+        }
+
+        return notes;
+    };
+
+    const displayNotes = data.kind === 'Loan'
+        ? cleanLoanNotes(data.notes)
+        : data.notes;
 
     // rejection reason
-    let rejectionDisplay: string | null | undefined = null;
+    let rejectionDisplay: string | null | undefined = data.rejectionReason;
 
-    if (data.kind === 'Purchase') {
-        rejectionDisplay = data.rejectionReason;
-    } else {
-        if (data.status === 'Rejected' && data.notes) {
-            rejectionDisplay = data.notes.replace(/^\[.*?\]:\s*/, '');
-        }
-    }
 
     // Define who performed the action
-    let actionedBy = '';
 
-    if (data.kind === 'Purchase') {
-        actionedBy = data.approvedByName || data.rejectedByName || '';
-    } else {
-        const match = data.notes?.match(/by\s+(\w+)\s+at/);
-        actionedBy = match ? match[1] : '';
-    }
+    let actionedBy = data.approvedByName || data.rejectedByName || '';
 
     // 1. Get the Name/ID
     // Check if 'requester' exists (Loan), otherwise use 'requesterId' (Purchase)
@@ -111,6 +110,30 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
     } else {
         requesterDisplay = data.requesterName
     }
+
+    // for approving if > 3000
+    const user = authService.getUser();
+    const userRoleName = (user?.roleName || '').trim();
+    const userRoleLevel = Number(user?.role || 0);
+
+    const cost = data.kind === 'Purchase' ? data.estimatedTotalCost : 0;
+
+    const isDirector = userRoleName === 'Director';
+    const isManagerOrAdmin = userRoleLevel >= 2;
+    const isHighValue = data.kind === 'Purchase' && cost > 3000;
+
+    let allowedToAction = false;
+
+    if (isDirector) {
+        allowedToAction = true;
+    } else if (isManagerOrAdmin) {
+        allowedToAction = !isHighValue;
+    }
+
+    const disabledReason = !isManagerOrAdmin
+        ? "Permission denied"
+        : "Director action required (> $3,000)";
+
 
 
     return (
@@ -149,38 +172,52 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
                 <td className="p-4 text-sm text-gray-500">
                     {formatDate(data.createdAt)}
                 </td>
+
+
                 <td className="p-4 text-right">
-                    {actionStatus.toLowerCase() === 'pending' ? (
-                        /* --- PENDING STATE: ACTION BUTTONS --- */
-                        <div className="flex justify-end gap-2">
+                {actionStatus.toLowerCase() === 'pending' ? (
+                    <div className="flex justify-end gap-2 items-center">
+                        
+                        {/* --- 1. APPROVE BUTTON --- */}
+                        <span title={!allowedToAction ? disabledReason : "Approve Request"}>
                             <ActionButton
                                 icon="approve"
                                 variant="success"
-                                className="w-8 h-8 p-0 rounded-md"
-                                title="Approve Request"
-                                onClick={() => handleReview(row, 'approve')}
+                                disabled={!allowedToAction}
+                                className={`w-8 h-8 p-0 rounded-md transition-all 
+                                    ${!allowedToAction ? 'opacity-40 grayscale cursor-not-allowed' : ''}
+                                `}
+                                onClick={() => allowedToAction && handleReview(row, 'approve')}
                             />
+                        </span>
+
+                        {/* --- 2. REJECT BUTTON --- */}
+                        <span title={!allowedToAction ? disabledReason : "Reject Request"}>
                             <ActionButton
                                 icon="reject"
                                 variant="danger"
-                                className="w-8 h-8 p-0 rounded-md"
-                                title="Reject Request"
-                                onClick={() => handleReview(row, 'reject')}
+                                disabled={!allowedToAction}
+                                className={`w-8 h-8 p-0 rounded-md transition-all
+                                    ${!allowedToAction ? 'opacity-40 grayscale cursor-not-allowed' : ''}
+                                `}
+                                onClick={() => allowedToAction && handleReview(row, 'reject')}
                             />
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-end justify-center h-full">
-                            <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold ${statusString.toLowerCase() === 'approved' ? 'text-emerald-400' : 'text-red-500'
-                                }`}>
-                                {statusString.toLowerCase() === 'approved' ? 'Approved' : 'Rejected'}
-                                {statusString.toLowerCase() === 'approved' ? <CheckCheck className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                            </span>
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                by {actionedBy}
-                            </span>
-                        </div>
-                    )}
-                </td>
+                        </span>
+                        
+                    </div>
+                ) : (
+                    /* --- COMPLETED STATE --- */
+                    <div className="flex flex-col items-end justify-center h-full">
+                        <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold ${statusString.toLowerCase() === 'approved' ? 'text-emerald-400' : 'text-red-500'}`}>
+                            {statusString.toLowerCase() === 'approved' ? 'Approved' : 'Rejected'}
+                            {statusString.toLowerCase() === 'approved' ? <CheckCheck className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                        </span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            by {actionedBy}
+                        </span>
+                    </div>
+                )}
+            </td>
             </tr>
 
             {/* EXPANDED DRAWER */}
@@ -228,7 +265,7 @@ export const UnifiedOrderRow: React.FC<Props> = ({ row, handleReview }: Props) =
                                 {data.kind === 'Purchase' && (
                                     <div className="p-4 rounded-xl border shadow-sm bg-emerald-500/5 border-emerald-500/20 dark:shadow-none">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <UserCheck className="w-4 h-4 text-gray-400 dark:text-emerald-400" />
+                                            <Banknote className="w-4 h-4 text-gray-400 dark:text-emerald-400" />
                                             <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-emerald-300">
                                                 Total value
                                             </p>

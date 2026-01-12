@@ -12,6 +12,7 @@ import { OrderTable } from '../orders/components/OrderTable';
 import { getAllPurchaseRequests } from '../orders/services/purchaseService';
 import { PurchaseRequest } from '../orders/types/purchaseType';
 import { approvePurchaseRequest, rejectPurchaseRequest } from '../orders/services/purchaseService';
+import { authService } from '../../../services/authService'
 
 export function RequestManagement() {
   const [allRequests, setAllRequests] = useState<UnifiedRequest[]>([]);
@@ -37,7 +38,10 @@ export function RequestManagement() {
   });
 
   // CONSTANTS
-  const currentEmployeeId = "amx0142";
+  const currentEmployeeId = authService.getUser()?.employeeId || 'Not provided';
+  const currentUserName = authService.getUser()?.name;
+  const warehouseId = authService.getUser()?.warehouseId;
+
   const requestTypeOptions = [
     { value: 'all', label: 'All Types' },
     { value: '1', label: 'Loan Request' },
@@ -131,7 +135,7 @@ export function RequestManagement() {
 
     return allRequests.filter((request) => {
       const data = request.originalData;
-      const kind = data.kind; 
+      const kind = data.kind;
 
       // ----------------------------------------------------
       // STATUS FILTER (Tabs)
@@ -268,7 +272,8 @@ export function RequestManagement() {
           if (req.originalData.kind === 'Loan') {
             newOriginalData = {
               ...req.originalData,
-              status: 'Approved'
+              status: 'Approved',
+              approvedByName: currentUserName,
             };
 
             console.log(newOriginalData);
@@ -277,7 +282,8 @@ export function RequestManagement() {
             newOriginalData = {
               ...req.originalData,
               statusName: 'Approved',
-              status: 1
+              status: 1,
+              approvedByName: currentUserName,
             };
           }
 
@@ -341,13 +347,17 @@ export function RequestManagement() {
           if (req.originalData.kind === 'Loan') {
             newOriginalData = {
               ...req.originalData,
-              status: 'Rejected'
+              status: 'Rejected',
+              rejectedByName: currentUserName,
+              rejectionReason: reason.trim(),
             };
           } else {
             newOriginalData = {
               ...req.originalData,
               statusName: 'Rejected',
-              status: 2
+              status: 2,
+              rejectedByName: currentUserName,
+              notes: reason.trim(),
             };
           }
 

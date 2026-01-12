@@ -31,6 +31,9 @@ export interface LoanRequest {
     totalItems: number;
     totalQuantity: number;
     notes: string;         // Old: reason
+    rejectionReason: string;
+    approvedByName?: string | null;
+    rejectedByName?: string | null;
     items: LoanRequestItem[];
 }
 
