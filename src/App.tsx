@@ -45,7 +45,6 @@ const ROLES = {
 import {
   Catalog as EngineerCatalog,
   MyInventoryTransfer as EngineerMyInventory,
-  CompleteHistory as EngineerCompleteHistory,
   RequestOrders as EngineerRequestOrders
 } from './components/features/enginner';
 import { EngineerModuleWrapper } from './components/features/enginner/EngineerModuleWrapper';
@@ -899,7 +898,6 @@ function AppRoutes() {
           <Route path="engineer/catalog" element={<EngineerModuleWrapper><EngineerCatalog /></EngineerModuleWrapper>} />
           <Route path="engineer/requests" element={<EngineerModuleWrapper><EngineerRequestOrdersWrapper /></EngineerModuleWrapper>} />
           <Route path="engineer/my-inventory" element={<EngineerModuleWrapper><EngineerMyInventory /></EngineerModuleWrapper>} />
-          <Route path="engineer/history" element={<EngineerModuleWrapper><EngineerCompleteHistory /></EngineerModuleWrapper>} />
         </Route>
 
         {/* 4. KEEPER SPECIFIC ROUTES                                 */}

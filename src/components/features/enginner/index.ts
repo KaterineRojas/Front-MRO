@@ -6,7 +6,6 @@ export { BorrowRequests } from '../requests/Borrow/BorrowRequests';
 export { PurchaseRequests } from '../requests/Purchase/PurchaseRequests';
 export { TransferRequests } from '../requests/Transfer/TransferRequests';
 export { MyInventoryTransfer } from '../MyEnginnerInventory/MyInventoryTransfer';
-export { CompleteHistory } from './pages/MyInventory/CompleteHistory';
 export { RequestOrders } from '../requests/RequestOrders';
 export { Dashboard as EngineerDashboard } from './pages/Dashboard';
 

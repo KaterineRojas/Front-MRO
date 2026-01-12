@@ -410,7 +410,7 @@ export function MyInventoryTransfer() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button onClick={() => navigate('/engineer/history')} variant="outline" className="w-full sm:w-auto">
+          <Button onClick={() => navigate('/engineer/requests?tab=history')} variant="outline" className="w-full sm:w-auto">
             <History className="h-4 w-4 mr-2" />
             Complete History
           </Button>

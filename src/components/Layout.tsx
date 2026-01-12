@@ -239,8 +239,7 @@ export function Layout() {
     // Engineer Modules
     { id: 'engineer-catalog', label: 'Engineer Catalog', icon: Package, path: '/engineer/catalog', disabled: false, roles: ['Engineer'] },
     { id: 'engineer-requests', label: 'Request Orders', icon: FileText, path: '/engineer/requests', disabled: false, roles: ['Engineer'] },
-    { id: 'engineer-inventory', label: 'My Engineer Inventory', icon: PackageCheck, path: '/engineer/my-inventory', disabled: false, roles: ['Engineer'] },
-    { id: 'engineer-history', label: 'Engineer Complete History', icon: ScrollText, path: '/engineer/history', disabled: false, roles: ['Engineer'] },
+    { id: 'engineer-inventory', label: 'My Inventory', icon: PackageCheck, path: '/engineer/my-inventory', disabled: false, roles: ['Engineer'] },
   ] as const;
 
   const isActivePath = (path: string) => {
