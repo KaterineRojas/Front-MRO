@@ -241,8 +241,9 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
     // Cambiar de 'approved' (1) a 'ordered' (3)
     const isOrdered = statusKey === 'ordered' || statusKey === 'completed';
     // selfPurchase puede venir como boolean o string
-    const isSelfPurchase = request.selfPurchase === true || 
-                           request.selfPurchase === 'true' || 
+    const selfPurchaseValue = request.selfPurchase;
+    const isSelfPurchase = selfPurchaseValue === true || 
+                           selfPurchaseValue === 'true' || 
                            (request as any).isSelfPurchase === true ||
                            (request as any).isSelfPurchase === 'true';
     return isOrdered && isSelfPurchase;

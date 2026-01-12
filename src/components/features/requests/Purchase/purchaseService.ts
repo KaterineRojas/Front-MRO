@@ -48,7 +48,7 @@ export interface PurchaseRequest {
   statusName?: string;
   reasonId?: number | string;
   reasonName?: string;
-  selfPurchase: boolean;
+  selfPurchase: boolean | string;
   items: PurchaseItem[];
   totalCost?: number;
   estimatedTotalCost?: number;
