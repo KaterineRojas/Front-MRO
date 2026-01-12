@@ -14,20 +14,16 @@ import { PurchaseRequest } from '../orders/types/purchaseType';
 import { approvePurchaseRequest, rejectPurchaseRequest } from '../orders/services/purchaseService';
 
 export function RequestManagement() {
-  // 1. MAIN DATA STATE (Unified)
   const [allRequests, setAllRequests] = useState<UnifiedRequest[]>([]);
 
   // 2. UI STATES
   const [activeTab, setActiveTab] = useState<string>('pending');
-  const [typeFilter, setTypeFilter] = useState<string>('all'); // Note: You might want to add this to your filter logic later
+  const [typeFilter, setTypeFilter] = useState<string>('all'); 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 3. MODAL STATES
-  const [selectedRequest, setSelectedRequest] = useState<LoanRequest | null>(null); // For Loan Modal
-  const [modalType, setModalType] = useState('approve');
-  const [showModal, setShowModal] = useState(false);
   const [loadingModal, setLoadingModal] = useState(false);
 
   const [reviewState, setReviewState] = useState<{
@@ -39,7 +35,6 @@ export function RequestManagement() {
     order: null,
     action: 'approve'
   });
-  const [isReviewProcessing, setIsReviewProcessing] = useState(false);
 
   // CONSTANTS
   const currentEmployeeId = "amx0142";
@@ -211,9 +206,7 @@ export function RequestManagement() {
   // HANDLERS (ACTIONS)
   // ===========================================================================
 
-  // --- LOAN ACTIONS ---
   const handleApprove = async () => {
-    // 1. Guard Clause
     if (!reviewState.order) return;
 
     const request = reviewState.order;
@@ -221,43 +214,37 @@ export function RequestManagement() {
     const kind = data.kind;
 
     try {
-      setIsReviewProcessing(true);
+      setLoadingModal(true);
 
-      // --- API CALLS ---
       if (kind === 'Loan') {
-        // Loan Approval Service
         await approveLoanRequest(request.requestNumber, currentEmployeeId);
       }
       else if (kind === 'Purchase') {
-        // Purchase Approval Service (using numeric ID)
         const purchaseId = (data as any).id;
         await approvePurchaseRequest(purchaseId);
       }
 
-      // --- STATE UPDATE (Optimistic) ---
       setAllRequests(prev => prev.map(req => {
-        // Only modify the matching request
-        if (req.id === request.id) {
+        if (req.id === request.id && req.requestNumber === request.requestNumber) {
 
-          // We must rebuild 'originalData' carefully to satisfy the Union Type
           let newOriginalData;
 
           if (req.originalData.kind === 'Loan') {
-            // 1. Handle LOAN (Status is String)
             newOriginalData = {
               ...req.originalData,
               status: 'Approved'
             };
+
+            console.log(newOriginalData);
+
           } else {
-            // 2. Handle PURCHASE (Status is Number)
             newOriginalData = {
               ...req.originalData,
               statusName: 'Approved',
-              status: 1 // strict number for Purchase
+              status: 1 
             };
           }
 
-          // Now return the full UnifiedRequest
           return {
             ...req,
             statusLabel: 'Approved',
@@ -268,7 +255,6 @@ export function RequestManagement() {
         return req;
       }));
 
-      // Close Modal
       reviewState.isOpen = false
       reviewState.order = null;
 
@@ -276,36 +262,77 @@ export function RequestManagement() {
       console.error(`Error approving ${kind}:`, error);
       alert(error.message || "Could not approve request.");
     } finally {
-      setIsReviewProcessing(false);
+      setLoadingModal(false);
     }
   };
 
+
+
+
   const handleReject = async (reason: string) => {
-    if (!selectedRequest) return;
+    if (!reviewState.order) return;
+
     if (!reason.trim()) {
       alert("Please provide a rejection reason.");
       return;
     }
-    setLoadingModal(true);
-    try {
-      await rejectLoanRequest(selectedRequest.requestNumber, currentEmployeeId, reason);
 
+    debugger;
+
+    const request = reviewState.order;
+    const kind = request.originalData.kind;
+
+    try {
+      setLoadingModal(true); 
+
+      if (kind === 'Loan') {
+        await rejectLoanRequest(request.requestNumber, currentEmployeeId, reason);
+      }
+      else if (kind === 'Purchase') {
+        const purchaseId = (request.originalData as any).id;
+        await rejectPurchaseRequest(purchaseId, reason);
+      }
+
+      // for updating stae in filteredRequests
       setAllRequests(prev => prev.map(req => {
-        if (req.originalData.kind === 'Loan' && req.requestNumber === selectedRequest.requestNumber) {
+        // STRICT CHECK: *AND* Kind to prevent collisions
+        // backend doesn't send id so we can compare for that value
+        const isMatchingKind = req.originalData.kind === kind;
+        const isMatchingRequestId = req.originalData.requestNumber === request.requestNumber;
+
+        if (isMatchingKind && isMatchingRequestId) {
+
+          let newOriginalData;
+
+          if (req.originalData.kind === 'Loan') {
+            newOriginalData = {
+              ...req.originalData,
+              status: 'Rejected'
+            };
+          } else {
+            newOriginalData = {
+              ...req.originalData,
+              statusName: 'Rejected',
+              status: 2
+            };
+          }
+
           return {
             ...req,
             statusLabel: 'Rejected',
-            originalData: { ...req.originalData, status: 'Rejected' }
+            originalData: newOriginalData
           };
         }
+
         return req;
       }));
 
-      setSelectedRequest(null);
-      setShowModal(false);
-    } catch (error) {
-      console.error("Error rejecting request:", error);
-      alert("Failed to reject request.");
+      reviewState.isOpen = false;
+      reviewState.order = null;
+
+    } catch (error: any) {
+      console.error(`Error rejecting ${kind}:`, error);
+      alert(error.message || "Could not reject request.");
     } finally {
       setLoadingModal(false);
     }
@@ -320,40 +347,6 @@ export function RequestManagement() {
   const handleCloseReview = () => {
     setReviewState(prev => ({ ...prev, isOpen: false }));
   };
-
-  const handleConfirmReview = async (action: 'approve' | 'reject', notes: string) => {
-    if (!reviewState.order) return;
-
-    try {
-      setIsReviewProcessing(true);
-      if (action === 'approve') {
-        await approvePurchaseRequest(reviewState.order.id);
-      } else {
-        await rejectPurchaseRequest(reviewState.order.id, notes);
-      }
-
-      // Update local state
-      setAllRequests(prev => prev.map(req => {
-        if (req.originalData.kind === 'Purchase' && req.id === reviewState.order!.id) {
-          const newStatus = action === 'approve' ? 'Approved' : 'Rejected';
-          return {
-            ...req,
-            statusLabel: newStatus,
-            originalData: { ...req.originalData, statusName: newStatus, status: action === 'approve' ? 1 : 2 }
-          };
-        }
-        return req;
-      }));
-
-      handleCloseReview();
-    } catch (error: any) {
-      console.error(`Failed to ${action} request:`, error);
-      alert(error.message || "Something went wrong.");
-    } finally {
-      setIsReviewProcessing(false);
-    }
-  };
-
 
   // ===========================================================================
   // RENDER
@@ -433,8 +426,8 @@ export function RequestManagement() {
             ) : (
               <TableErrorBoundary>
                 <OrderTable
-                  requests={filteredRequests}  // <--- IMPORTANT: Using filtered data now
-                  statusFilter={activeTab}     // Syncing status filter with active tab
+                  requests={filteredRequests}  
+                  statusFilter={activeTab}     
                   activeTab={activeTab}
                   onReview={handleOpenReview}
                 />
@@ -448,21 +441,11 @@ export function RequestManagement() {
       <RequestModal
         show={reviewState.isOpen}
         request={reviewState.order}
-        onConfirm={reviewState.action === 'approve' ? handleApprove : () => handleReject('')}
+        onConfirm={reviewState.action === 'approve' ? handleApprove : handleReject}
         onCancel={handleCloseReview}
         variant={reviewState.action === 'approve' ? 'approve' : 'reject'}
         loading={loadingModal}
       />
-
-      {/* Purchase Modal */}
-      {/* <ReviewRequestModal
-        isOpen={reviewState.isOpen}
-        order={reviewState.order}
-        initialAction={reviewState.action}
-        onClose={handleCloseReview}
-        onConfirm={handleConfirmReview}
-        isProcessing={isReviewProcessing}
-      /> */}
     </div>
   );
 }
