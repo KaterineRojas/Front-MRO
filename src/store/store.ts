@@ -8,6 +8,8 @@ import purchaseReducer from './slices/purchaseSlice';
 // Engineer Module Slices
 import engineerCartReducer from '../components/features/enginner/store/slices/cartSlice';
 import engineerUserReducer from '../components/features/enginner/store/slices/userSlice';
+// History Module
+import historyReducer from '../components/features/requests/HistoryRequest/historySlice';
 
 // Middleware para persistir carrito de engineer en localStorage
 const engineerCartMiddleware = (store: any) => (next: any) => (action: any) => {
@@ -50,6 +52,8 @@ export const store = configureStore({
     // Engineer Module State
     engineerCart: engineerCartReducer,
     engineerUser: engineerUserReducer,
+    // History Module
+    history: historyReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

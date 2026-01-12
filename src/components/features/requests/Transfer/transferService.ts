@@ -13,7 +13,7 @@ export interface Transfer {
   items: TransferItem[];
   notes: string;
   requestDate: string;
-  status: 'pending' | 'completed' | 'rejected';
+  status: 'pending' | 'completed' | 'rejected' | 'transferred';
   transferPhoto?: string;
   imageUrl?: string;
   warehouseName?: string;
@@ -55,65 +55,60 @@ export interface User {
 
 // Transfer API Functions
 
-export async function getTransfersIncoming(): Promise<Transfer[]> {
+export async function getTransfersIncoming(statuses: string[] = ['Pending']): Promise<Transfer[]> {
   try {
     const token = store.getState().auth.accessToken as string;
     const recipientId = getCurrentUserId();
     
-    const url = `${API_URL}/transfer-requests?recipientId=${recipientId}&status=Pending&pageNumber=1&pageSize=20`;
-    
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error fetching incoming transfers:', errorText);
-      throw new Error(`Error al obtener transferencias: ${response.statusText}`);
+    // Fetch transfers for all requested statuses in parallel
+    const responses = await Promise.all(
+      statuses.map(status => 
+        fetch(`${API_URL}/transfer-requests?recipientId=${recipientId}&status=${status}&pageNumber=1&pageSize=50`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+        })
+      )
+    );
+
+    const allTransfers: Transfer[] = [];
+
+    for (const response of responses) {
+      if (response.ok) {
+        const responseData = await response.json();
+        if (responseData.data && Array.isArray(responseData.data)) {
+          responseData.data.forEach((item: any) => {
+            allTransfers.push({
+              id: item.requestNumber,
+              type: 'incoming',
+              fromUser: item.senderName,
+              toUser: item.recipientName,
+              fromUserId: item.senderId,
+              toUserId: item.recipientId,
+              items: Array(item.totalItems).fill(null).map((_, idx) => ({
+                itemId: `item-${idx}`,
+                itemName: `Item ${idx + 1}`,
+                code: '',
+                quantity: 1,
+                image: '',
+                description: '',
+                warehouse: item.warehouseName,
+                warehouseCode: ''
+              })),
+              notes: '',
+              requestDate: item.createdAt,
+              status: mapBackendStatusToLocal(item.status),
+              transferPhoto: undefined,
+              warehouseName: item.warehouseName,
+            });
+          });
+        }
+      }
     }
 
-    const responseData = await response.json();
-    
-    if (!responseData.data) {
-      return [];
-    }
-
-    if (!Array.isArray(responseData.data)) {
-      return [];
-    }
-
-    const transfers: Transfer[] = responseData.data.map((item: any) => {
-      const type = 'incoming';
-      return {
-        id: item.requestNumber,
-        type: type,
-        fromUser: item.senderName,
-        toUser: item.recipientName,
-        fromUserId: item.senderId,
-        toUserId: item.recipientId,
-        items: Array(item.totalItems).fill(null).map((_, idx) => ({
-          itemId: `item-${idx}`,
-          itemName: `Item ${idx + 1}`,
-          code: '',
-          quantity: 1,
-          image: '',
-          description: '',
-          warehouse: item.warehouseName,
-          warehouseCode: ''
-        })),
-        notes: '',
-        requestDate: item.createdAt,
-        status: mapBackendStatusToLocal(item.status),
-        transferPhoto: undefined,
-        warehouseName: item.warehouseName,
-      };
-    });
-
-    return transfers;
+    return allTransfers;
   } catch (error) {
     console.error('Error in getTransfersIncoming:', error);
     throw error;
@@ -123,65 +118,60 @@ export async function getTransfersIncoming(): Promise<Transfer[]> {
 /**
  * Get outgoing transfers (sent by current user)
  */
-export async function getTransfersOutgoing(): Promise<Transfer[]> {
+export async function getTransfersOutgoing(statuses: string[] = ['Pending']): Promise<Transfer[]> {
   try {
     const token = store.getState().auth.accessToken as string;
     const senderId = getCurrentUserId();
     
-    const url = `${API_URL}/transfer-requests?senderId=${senderId}&status=PENDING&pageNumber=1&pageSize=20`;
-    
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-    });
+    // Fetch transfers for all requested statuses in parallel
+    const responses = await Promise.all(
+      statuses.map(status => 
+        fetch(`${API_URL}/transfer-requests?senderId=${senderId}&status=${status}&pageNumber=1&pageSize=50`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+        })
+      )
+    );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error fetching outgoing transfers:', errorText);
-      throw new Error(`Error al obtener transferencias: ${response.statusText}`);
+    const allTransfers: Transfer[] = [];
+
+    for (const response of responses) {
+      if (response.ok) {
+        const responseData = await response.json();
+        if (responseData.data && Array.isArray(responseData.data)) {
+          responseData.data.forEach((item: any) => {
+            allTransfers.push({
+              id: item.requestNumber,
+              type: 'outgoing',
+              fromUser: item.senderName,
+              toUser: item.recipientName,
+              fromUserId: item.senderId,
+              toUserId: item.recipientId,
+              items: Array(item.totalItems).fill(null).map((_, idx) => ({
+                itemId: `item-${idx}`,
+                itemName: `Item ${idx + 1}`,
+                code: '',
+                quantity: 1,
+                image: '',
+                description: '',
+                warehouse: item.warehouseName,
+                warehouseCode: ''
+              })),
+              notes: '',
+              requestDate: item.createdAt,
+              status: mapBackendStatusToLocal(item.status),
+              transferPhoto: undefined,
+              warehouseName: item.warehouseName,
+            });
+          });
+        }
+      }
     }
 
-    const responseData = await response.json();
-    
-    if (!responseData.data) {
-      return [];
-    }
-
-    if (!Array.isArray(responseData.data)) {
-      return [];
-    }
-
-    const transfers: Transfer[] = responseData.data.map((item: any) => {
-      const type = 'outgoing';
-      return {
-        id: item.requestNumber,
-        type: type,
-        fromUser: item.senderName,
-        toUser: item.recipientName,
-        fromUserId: item.senderId,
-        toUserId: item.recipientId,
-        items: Array(item.totalItems).fill(null).map((_, idx) => ({
-          itemId: `item-${idx}`,
-          itemName: `Item ${idx + 1}`,
-          code: '',
-          quantity: 1,
-          image: '',
-          description: '',
-          warehouse: item.warehouseName,
-          warehouseCode: ''
-        })),
-        notes: '',
-        requestDate: item.createdAt,
-        status: mapBackendStatusToLocal(item.status),
-        transferPhoto: undefined,
-        warehouseName: item.warehouseName,
-      };
-    });
-
-    return transfers;
+    return allTransfers;
   } catch (error) {
     console.error('Error in getTransfersOutgoing:', error);
     throw error;
@@ -248,11 +238,12 @@ export async function getTransferId(transferId: string): Promise<Transfer> {
 /**
  * Mapear estado del backend al estado local
  */
-function mapBackendStatusToLocal(backendStatus: string): 'pending' | 'completed' | 'rejected' {
-  const statusMap: Record<string, 'pending' | 'completed' | 'rejected'> = {
+function mapBackendStatusToLocal(backendStatus: string): 'pending' | 'completed' | 'rejected' | 'transferred' {
+  const statusMap: Record<string, 'pending' | 'completed' | 'rejected' | 'transferred'> = {
     'Pending': 'pending',
     'Completed': 'completed',
     'Rejected': 'rejected',
+    'Transferred': 'transferred',
   };
   return statusMap[backendStatus] || 'pending';
 }
@@ -513,18 +504,21 @@ export async function acceptTransfer(
  * Reject an incoming transfer using the API
  */
 export async function rejectTransfer(
-  transferId: string
+  requestNumber: string,
+  rejectionReason?: string
 ): Promise<{ success: boolean }> {
   try {
     const token = store.getState().auth.accessToken as string;
-    const url = `${API_URL}/transfer-requests/${transferId}`;
+    const recipientId = getCurrentUserId();
+    const url = `${API_URL}/transfer-requests/${requestNumber}/reject?recipientId=${recipientId}`;
     const response = await fetch(url, {
-      method: 'DELETE',
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': `Bearer ${token}`
       },
+      body: JSON.stringify({ RejectionReason: rejectionReason || '' }),
     });
 
     if (!response.ok) {

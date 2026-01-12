@@ -14,14 +14,14 @@ const Switch = React.forwardRef<
   }, [checked]);
 
   const handleChange = (newChecked: boolean) => {
-    console.log('🔘 Switch clicked! New state:', newChecked ? 'ON ✅' : 'OFF ❌');
+    //console.log('🔘 Switch clicked! New state:', newChecked ? 'ON ✅' : 'OFF ❌');
     setIsChecked(newChecked);
     if (onCheckedChange) {
       onCheckedChange(newChecked);
     }
   };
 
-  const backgroundColor = isChecked ? '#10b981' : '#9ca3af';
+  const backgroundColor = isChecked ? '#3daab0ff' : '#9ca3af';
   const thumbPosition = isChecked ? '24px' : '2px';
 
  // console.log('🔍 Switch render - isChecked:', isChecked, 'backgroundColor:', backgroundColor);

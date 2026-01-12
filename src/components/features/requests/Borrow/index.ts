@@ -18,7 +18,7 @@ export { BorrowRequests as default } from './BorrowRequests';
 // ============================================
 // Forms
 // ============================================
-export { LoanForm } from './LoanForm';
+export { LoanForm } from './borrowForm/LoanForm';
 
 // ============================================
 // Hooks (Custom Logic)

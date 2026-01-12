@@ -19,30 +19,56 @@ export interface Department {
 
 export interface PurchaseItem {
   id: number;
-  imageUrl: string;
-  sku: string;
+  itemId?: number;
+  imageUrl?: string;
+  sku?: string;
   name: string;
-  description: string;
+  description?: string;
   quantity: number;
   estimatedCost?: number;
+  cost?: number;
   productUrl?: string;
-  warehouseId?: string;
+  warehouseId?: string | number;
+  warehouseCode?: string;
   warehouseName?: string;
 }
 
 export interface PurchaseRequest {
-  requestId: string;
-  department: string;
-  project: string;
-  notes: string;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
-  reason: 'low-stock' | 'urgent' | 'new-project';
+  requestId?: string;
+  requestNumber?: string;
+  requesterId?: string;
+  requesterName?: string;
+  departmentId?: string;
+  departmentName?: string;
+  projectId?: string;
+  projectName?: string;
+  workOrderId?: string;
+  notes?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed' | number | string;
+  statusName?: string;
+  reasonId?: number | string;
+  reasonName?: string;
   selfPurchase: boolean;
   items: PurchaseItem[];
-  totalCost: number;
+  totalCost?: number;
+  estimatedTotalCost?: number;
+  totalItems?: number;
+  totalQuantity?: number;
   createdAt?: string;
-  warehouseId: string;
-  warehouseName: string;
+  orderedAt?: string | null;
+  receivedAt?: string | null;
+  expectedDeliveryDate?: string;
+  warehouseId?: string | number;
+  warehouseCode?: string;
+  warehouseName?: string;
+  companyId?: string;
+  companyName?: string;
+  customerId?: string;
+  customerName?: string;
+  clientBilled?: boolean;
+  address?: string;
+  googleMapsUrl?: string;
+  zipCode?: string;
 }
 
 export interface PurchaseRequestItemPayload {
@@ -103,11 +129,14 @@ const mockDepartments: Department[] = [
 const mockPurchaseRequests: PurchaseRequest[] = [
   {
     requestId: 'PUR001',
-    department: 'Engineering',
-    project: 'Proyecto Amazonas',
+    departmentId: 'eng',
+    departmentName: 'Engineering',
+    projectId: 'PRJ-AMAZONAS',
+    projectName: 'Proyecto Amazonas',
     notes: 'Urgente para desarrollo',
     status: 'pending',
-    reason: 'urgent',
+    reasonId: 'urgent',
+    reasonName: 'Urgent',
     selfPurchase: false,
     items: [
       {
@@ -136,15 +165,23 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     totalCost: 650,
     createdAt: '2024-01-15',
     warehouseId: 'wh-1',
-    warehouseName: 'Amax'
+    warehouseCode: 'AMX',
+    warehouseName: 'Amax',
+    companyId: 'COMP-001',
+    companyName: 'Amax Holdings',
+    customerId: 'CUS-100',
+    customerName: 'Amazonas Corp'
   },
   {
     requestId: 'PUR002',
-    department: 'Design',
-    project: 'Proyecto Web',
+    departmentId: 'des',
+    departmentName: 'Design',
+    projectId: 'PRJ-WEB',
+    projectName: 'Proyecto Web',
     notes: 'Para nueva estación de trabajo',
     status: 'approved',
-    reason: 'new-project',
+    reasonId: 'new-project',
+    reasonName: 'New project',
     selfPurchase: true,
     items: [
       {
@@ -162,15 +199,23 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     totalCost: 800,
     createdAt: '2024-01-14',
     warehouseId: 'wh-2',
-    warehouseName: 'Best'
+    warehouseCode: 'BST',
+    warehouseName: 'Best',
+    companyId: 'COMP-002',
+    companyName: 'Best Supplies',
+    customerId: 'CUS-200',
+    customerName: 'Web Designs Co'
   },
   {
     requestId: 'PUR003',
-    department: 'Development',
-    project: 'Proyecto Innova',
+    departmentId: 'dev',
+    departmentName: 'Development',
+    projectId: 'PRJ-INNOVA',
+    projectName: 'Proyecto Innova',
     notes: 'Cables y accesorios varios',
     status: 'rejected',
-    reason: 'low-stock',
+    reasonId: 'low-stock',
+    reasonName: 'Low stock',
     selfPurchase: false,
     items: [
       {
@@ -188,15 +233,23 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     totalCost: 75,
     createdAt: '2024-01-12',
     warehouseId: 'wh-3',
-    warehouseName: 'Central'
+    warehouseCode: 'CTR',
+    warehouseName: 'Central',
+    companyId: 'COMP-003',
+    companyName: 'Central Supplies',
+    customerId: 'CUS-300',
+    customerName: 'Innovate LLC'
   },
   {
     requestId: 'PUR004',
-    department: 'Engineering',
-    project: 'Proyecto Construcción',
+    departmentId: 'eng',
+    departmentName: 'Engineering',
+    projectId: 'PRJ-CONSTRUCT',
+    projectName: 'Proyecto Construcción',
     notes: 'Herramientas para taller',
     status: 'approved',
-    reason: 'urgent',
+    reasonId: 'urgent',
+    reasonName: 'Urgent',
     selfPurchase: true,
     items: [
       {
@@ -225,18 +278,215 @@ const mockPurchaseRequests: PurchaseRequest[] = [
     totalCost: 315,
     createdAt: '2024-01-10',
     warehouseId: 'wh-2',
-    warehouseName: 'Best'
+    warehouseCode: 'BST',
+    warehouseName: 'Best',
+    companyId: 'COMP-002',
+    companyName: 'Best Supplies',
+    customerId: 'CUS-210',
+    customerName: 'Constructora MX'
   }
 ];
 
 // API Simulation Functions
 
+function getStoredUserId(): string {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  try {
+    return window.localStorage?.getItem('userId') ?? '';
+  } catch (error) {
+    console.warn('Unable to access localStorage for userId', error);
+    return '';
+  }
+}
+
+function resolveRequesterId(): string {
+  try {
+    const state = store.getState() as any;
+    const employeeId: string | undefined = state?.auth?.user?.employeeId;
+    const userId: string | undefined = state?.auth?.user?.id;
+
+    return employeeId || userId || getStoredUserId();
+  } catch (error) {
+    console.error('Failed to resolve requesterId from store', error);
+    return getStoredUserId();
+  }
+}
+
+function normalizePurchaseRequest(raw: any, index: number): PurchaseRequest {
+  const itemsSource = Array.isArray(raw?.items)
+    ? raw.items
+    : Array.isArray(raw?.requestItems)
+      ? raw.requestItems
+      : Array.isArray(raw?.details)
+        ? raw.details
+        : [];
+
+  const items: PurchaseItem[] = itemsSource.map((item: any, itemIndex: number) => {
+    const fallbackId = item?.id ?? item?.itemId ?? itemIndex + 1;
+    const numericId = Number(fallbackId);
+    const resolvedId = Number.isFinite(numericId) ? numericId : itemIndex + 1;
+
+    const rawItemId = Number(item?.itemId ?? fallbackId);
+    const itemId = Number.isFinite(rawItemId) ? rawItemId : resolvedId;
+
+    const quantity = Number(item?.quantity ?? item?.qty ?? 0);
+    const estimatedCost = Number(item?.estimatedCost ?? item?.cost ?? item?.price);
+    const cost = Number(item?.cost);
+
+    return {
+      id: resolvedId,
+      itemId,
+      imageUrl: item?.imageUrl ?? item?.itemImageUrl ?? '',
+      sku: item?.sku ?? item?.skuCode ?? '',
+      name: item?.name ?? item?.itemName ?? 'Unnamed item',
+      description: item?.description ?? item?.itemDescription ?? '',
+      quantity: Number.isFinite(quantity) ? quantity : 0,
+      estimatedCost: Number.isFinite(estimatedCost) ? estimatedCost : undefined,
+      cost: Number.isFinite(cost) ? cost : undefined,
+      productUrl: item?.productUrl ?? item?.url ?? undefined,
+      warehouseId: item?.warehouseId ?? item?.warehouse?.id ?? raw?.warehouseId,
+      warehouseCode: item?.warehouseCode ?? item?.warehouse?.code ?? raw?.warehouseCode,
+      warehouseName: item?.warehouseName ?? item?.warehouse?.name ?? raw?.warehouseName,
+    };
+  });
+
+  const totalItemsValue = Number(raw?.totalItems);
+  const totalQuantityValue = Number(raw?.totalQuantity);
+  const statusRaw = raw?.status ?? raw?.statusId ?? raw?.statusCode;
+  const reasonRaw = raw?.reason ?? raw?.reasonId ?? raw?.reasonCode;
+  const statusValue = typeof statusRaw === 'string' && statusRaw.trim() !== '' && !Number.isNaN(Number(statusRaw))
+    ? Number(statusRaw)
+    : statusRaw ?? 'pending';
+  const reasonValue = typeof reasonRaw === 'string' && reasonRaw.trim() !== '' && !Number.isNaN(Number(reasonRaw))
+    ? Number(reasonRaw)
+    : reasonRaw;
+  const totalCostValue = Number(raw?.totalCost);
+  const estimatedTotalCostValue = Number(raw?.estimatedTotalCost ?? raw?.totalEstimatedCost ?? raw?.estimatedCost);
+  const departmentName = raw?.departmentName ?? raw?.department ?? undefined;
+  const departmentId = raw?.departmentId ?? raw?.departmentCode ?? undefined;
+  const projectName = raw?.projectName ?? raw?.project ?? raw?.projectTitle ?? undefined;
+  const projectId = raw?.projectId ?? raw?.projectCode ?? undefined;
+  const companyName = raw?.companyName ?? raw?.company ?? undefined;
+  const customerName = raw?.customerName ?? raw?.customer ?? raw?.clientName ?? undefined;
+  const requesterId = raw?.requesterId ?? raw?.requestedBy ?? raw?.employeeId ?? undefined;
+  const requesterName = raw?.requesterName ?? raw?.requestedByName ?? raw?.employeeName ?? undefined;
+  const warehouseCode = raw?.warehouseCode ?? raw?.warehouse?.code ?? undefined;
+
+  return {
+    requestId: raw?.requestId ?? raw?.id ?? undefined,
+    requestNumber: raw?.requestNumber ?? raw?.requestNo ?? raw?.number ?? undefined,
+    requesterId,
+    requesterName,
+    departmentId,
+    departmentName,
+    projectId,
+    projectName,
+    workOrderId: raw?.workOrderId ?? raw?.workOrder ?? undefined,
+    notes: raw?.notes ?? raw?.comment ?? raw?.comments ?? undefined,
+    address: raw?.address ?? raw?.deliveryAddress ?? undefined,
+    googleMapsUrl: raw?.googleMapsUrl ?? raw?.locationUrl ?? undefined,
+    zipCode: raw?.zipCode ?? raw?.postalCode ?? undefined,
+    status: statusValue,
+    statusName: raw?.statusName ?? raw?.statusDescription ?? undefined,
+    reasonId: reasonValue,
+    reasonName: raw?.reasonName ?? raw?.reasonDescription ?? undefined,
+    selfPurchase: Boolean(raw?.selfPurchase ?? raw?.isSelfPurchase ?? false),
+    items,
+    totalCost: Number.isFinite(totalCostValue) ? totalCostValue : undefined,
+    estimatedTotalCost: Number.isFinite(estimatedTotalCostValue) ? estimatedTotalCostValue : undefined,
+    totalItems: Number.isFinite(totalItemsValue) ? totalItemsValue : items.length,
+    totalQuantity: Number.isFinite(totalQuantityValue)
+      ? totalQuantityValue
+      : items.reduce((sum, item) => sum + (item.quantity ?? 0), 0),
+    createdAt: raw?.createdAt ?? raw?.createdDate ?? raw?.createdOn ?? undefined,
+    orderedAt: raw?.orderedAt ?? raw?.orderedDate ?? raw?.orderedOn ?? null,
+    receivedAt: raw?.receivedAt ?? raw?.receivedDate ?? raw?.receivedOn ?? null,
+    expectedDeliveryDate: raw?.expectedDeliveryDate ?? raw?.expectedDelivery ?? raw?.deliveryDate ?? undefined,
+    warehouseId: raw?.warehouseId ?? raw?.warehouse?.id ?? undefined,
+    warehouseCode,
+    warehouseName: raw?.warehouseName ?? raw?.warehouse?.name ?? items[0]?.warehouseName ?? undefined,
+    companyId: raw?.companyId ?? raw?.company ?? undefined,
+    companyName,
+    customerId: raw?.customerId ?? raw?.customer ?? raw?.clientId ?? undefined,
+    customerName,
+    clientBilled: Boolean(raw?.clientBilled ?? raw?.isClientBilled ?? false),
+  };
+}
+
 /**
  * Get all purchase requests
  */
 export async function getPurchaseRequests(): Promise<PurchaseRequest[]> {
-  await delay(300);
-  return [...mockPurchaseRequests];
+  const state = store.getState();
+  const token = state.auth?.accessToken ?? null;
+  const requesterId = resolveRequesterId();
+
+  if (!token) {
+    throw new Error('Authentication token not found');
+  }
+
+  if (!requesterId) {
+    throw new Error('Requester ID not found');
+  }
+
+  const url = `${API_URL}/purchase-requests?requesterId=${encodeURIComponent(requesterId)}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const responseText = await response.text();
+    if (!responseText) {
+      if (!response.ok) {
+        throw new Error(`Failed to fetch purchase requests: ${response.status}`);
+      }
+
+      return [];
+    }
+
+    let responseData: any;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (error) {
+      console.error('purchaseService: Failed to parse purchase request response', responseText);
+      throw new Error('Unexpected response while fetching purchase requests');
+    }
+
+    if (!response.ok) {
+      const message = responseData?.message ?? responseData?.error ?? `Failed to fetch purchase requests: ${response.status}`;
+      throw new Error(message);
+    }
+
+    const payload = Array.isArray(responseData?.data)
+      ? responseData.data
+      : Array.isArray(responseData?.purchaseRequests)
+        ? responseData.purchaseRequests
+        : Array.isArray(responseData?.items)
+          ? responseData.items
+          : Array.isArray(responseData?.results)
+            ? responseData.results
+            : Array.isArray(responseData)
+              ? responseData
+              : [];
+
+    if (!Array.isArray(payload)) {
+      console.warn('purchaseService: Unexpected purchase requests payload shape', responseData);
+      return [];
+    }
+
+    return payload.map((item, index) => normalizePurchaseRequest(item, index));
+  } catch (error) {
+    console.error('purchaseService: Failed to retrieve purchase requests', error);
+    throw error;
+  }
 }
 
 /**
@@ -343,34 +593,56 @@ export async function updatePurchaseRequestStatus(
  * Delete purchase request
  */
 export async function deletePurchaseRequest(requestId: string): Promise<{ success: boolean; message: string }> {
-  await delay(300);
-  
-  const request = mockPurchaseRequests.find(r => r.requestId === requestId);
-  
-  if (!request) {
-    return {
-      success: false,
-      message: 'Purchase request not found'
-    };
+  const state = store.getState();
+  const token = state.auth?.accessToken ?? null;
+
+  if (!token) {
+    throw new Error('Authentication token not found');
   }
-  
-  // Only pending requests can be deleted
-  if (request.status !== 'pending') {
-    return {
-      success: false,
-      message: 'Only pending requests can be cancelled'
-    };
+
+  if (!requestId) {
+    throw new Error('Purchase request identifier is required');
   }
+
+  const url = `${API_URL}/purchase-requests/${encodeURIComponent(requestId)}`;
+
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  const responseText = await response.text();
+  let responseData: any = null;
+
+  if (responseText) {
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (error) {
+      console.error('purchaseService: non-JSON response body when deleting request', responseText);
+      throw new Error(`Server error ${response.status}: ${responseText}`);
+    }
+  }
+
+  if (!response.ok) {
+    const message = responseData?.message || responseData?.error || `Failed to delete purchase request: ${response.status}`;
+    throw new Error(message);
+  }
+
+  const message = responseData?.message || 'Request cancelled successfully';
 
   return {
     success: true,
-    message: 'Request cancelled successfully'
+    message
   };
 }
 
 /**
  * Update purchase request reason
  */
+/*
 export async function updatePurchaseRequestReason(
   requestId: string,
   reason: PurchaseRequest['reason']
@@ -388,6 +660,7 @@ export async function updatePurchaseRequestReason(
     reason
   };
 }
+ */
 
 /**
  * Confirm purchase as bought (for self-purchase requests)

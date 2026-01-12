@@ -15,15 +15,17 @@ const cartSlice = createSlice({
   name: 'engineerCart',
   initialState,
   reducers: {
-    addToCart: (state, action: PayloadAction<{ item: InventoryItem; quantity: number; warehouseId?: string; warehouseName?: string }>) => {
-      const { item, quantity, warehouseId, warehouseName } = action.payload;
+    addToCart: (state, action: PayloadAction<{ item: InventoryItem; quantity: number; warehouseId?: string; warehouseName?: string; skipStockValidation?: boolean }>) => {
+      const { item, quantity, warehouseId, warehouseName, skipStockValidation } = action.payload;
       const existingItem = state.items.find(cartItem => cartItem.item.id === item.id);
       
-      // Validar que la cantidad no exceda el stock disponible
-      const totalQuantity = existingItem ? existingItem.quantity + quantity : quantity;
-      if (totalQuantity > item.availableQuantity) {
-        console.warn('Cannot add more items than available in stock');
-        return;
+      // Validar que la cantidad no exceda el stock disponible (skip for purchase requests)
+      if (!skipStockValidation) {
+        const totalQuantity = existingItem ? existingItem.quantity + quantity : quantity;
+        if (totalQuantity > item.availableQuantity) {
+          console.warn('Cannot add more items than available in stock');
+          return;
+        }
       }
       
       if (existingItem) {
@@ -33,8 +35,8 @@ const cartSlice = createSlice({
       }
       state.lastAction = 'added';
     },
-    updateCartItem: (state, action: PayloadAction<{ itemId: string; quantity: number }>) => {
-      const { itemId, quantity } = action.payload;
+    updateCartItem: (state, action: PayloadAction<{ itemId: string; quantity: number; skipStockValidation?: boolean }>) => {
+      const { itemId, quantity, skipStockValidation } = action.payload;
       
       if (quantity <= 0) {
         state.items = state.items.filter(item => item.item.id !== itemId);
@@ -42,8 +44,8 @@ const cartSlice = createSlice({
       } else {
         const cartItem = state.items.find(item => item.item.id === itemId);
         if (cartItem) {
-          // Validar stock disponible
-          if (quantity <= cartItem.item.availableQuantity) {
+          // Validar stock disponible (skip for purchase requests)
+          if (skipStockValidation || quantity <= cartItem.item.availableQuantity) {
             cartItem.quantity = quantity;
             state.lastAction = 'updated';
           } else {

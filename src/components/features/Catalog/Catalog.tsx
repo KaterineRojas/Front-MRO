@@ -4,7 +4,6 @@ import { Search, Camera, ShoppingCart, Package, Plus, Minus } from 'lucide-react
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import { toast } from 'sonner';
@@ -22,205 +21,12 @@ import { handleError } from '../enginner/services/errorHandler';
 import type { AppError } from '../enginner/services/errorHandler';
 import { useAppDispatch } from '../../../store';
 import { AICameraModal } from './AICameraModal';
+import { CatalogSkeleton, CatalogHeaderSkeleton } from './CatalogSkeleton';
+import { cn } from '../../ui/utils';
 
 const FALLBACK_IMAGE_SRC = `${import.meta.env.BASE_URL}images/items.png`;
 
-const styles: { [key: string]: React.CSSProperties } = {
-container: {
-        padding: '24px',
-        maxWidth: '1200px',
-        margin: '0 auto'
-    },
-
-   header: {
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        marginBottom: '24px'
-    },
-    title: {
-        fontSize: '1.5rem',
-        fontWeight: 'bold',
-        marginBottom: '4px'
-    },
-
-   subtitle: {
-        fontSize: '0.875rem',
-        color: '#6b7280' // muted-foreground
-    },
-    warehouseSelector: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        marginBottom: '24px'
-    },
-   searchBar: {
-        display: 'flex',
-        gap: '8px',
-        marginBottom: '24px'
-    },
-    searchInputContainer: {
-        position: 'relative',
-        flexGrow: 1
-    },
-
-    searchIcon: {
-        position: 'absolute',
-        left: '12px',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        height: '16px',
-        width: '16px',
-        color: '#6b7280'
-    },
-
-   inputStyle: {
-        paddingLeft: '40px'
-    },
-    // Grid para las tarjetas - USANDO CSS GRID PURO
-    itemsGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', // Responsivo: mínimo 180px por columna
-        gap: '16px'
-    },
-
-    // Estilos para cada tarjeta de producto
-
-    cardWrapper: {
-        height: '100%'
-    },
-    card: {
-        // Tipificación para corregir el error de TypeScript
-        overflow: 'hidden',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        border: '1px solid #e5e7eb', // border
-        borderRadius: '8px', // rounded-md
-    } as React.CSSProperties, // <--- Tipo agregado aquí para resolver el error TS
-
-imageContainer: {
-        position: 'relative',
-        width: '100%',
-        // AJUSTE CLAVE: Hacer el contenedor CUADRADO (1:1)
-        aspectRatio: '1 / 1', 
-        // Reducir el padding general para darle más espacio al contenido
-        padding: '8px', 
-        boxSizing: 'border-box',
-        // Reducir padding inferior para acercar al título
-        paddingBottom: '0px' // Ensure no extra space below the image
-    },
-    image: {
-        width: '100%',
-        height: '100%',
-        objectFit: 'contain'
-    },
-badgeAvailable: {
-        position: 'absolute',
-        top: '8px',
-        right: '8px',
-        padding: '4px 8px',
-        borderRadius: '9999px',
-        fontSize: '0.75rem',
-        fontWeight: '600',
-        backgroundColor: '#d1fae5', // green-100
-        color: '#065f46' // green-800
-    },
-badgeOutOfStock: {
-        position: 'absolute',
-        top: '8px',
-        right: '8px',
-        padding: '4px 8px', // Aumento de padding
-        borderRadius: '9999px',
-        fontSize: '0.75rem',
-        fontWeight: '600',
-        backgroundColor: '#fee2e2', // red-100
-        color: '#991b1b' // red-800
-    },
-
-    cardHeader: {
-        padding: '12px',
-        // Ajustado para acercar al contenedor de imagen (padding: 4px)
-        paddingTop: '0px', // Remove space above itemName
-        paddingBottom: '0px' // Remove space below itemName
-    },
-    cardTitle: {
-        fontSize: '0.875rem',
-        fontWeight: '600',
-        lineHeight: '1.25',
-        marginBottom: '4px',
-        overflow: 'hidden',
-        display: '-webkit-box',
-        WebkitLineClamp: 2,
-        WebkitBoxOrient: 'vertical',
-        minHeight: '32px' // Para evitar saltos si el título es de una o dos líneas
-    },
-
-    cardDescription: {
-        fontSize: '0.75rem',
-        color: '#6b7280', // muted-foreground
-        overflow: 'hidden',
-        display: '-webkit-box',
-        WebkitLineClamp: 2,
-        WebkitBoxOrient: 'vertical',
-        // Reducir margen inferior para acercar a la Categoría/Unidad
-        marginBottom: '0px' // Remove space below description
-    },
-    cardContent: {
-        padding: '12px',
-        paddingTop: '0'
-    },
-
-    priceUnitContainer: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        fontSize: '0.75rem',
-        // Reducido de 12px a 8px para compactar antes del botón
-        marginBottom: '8px',
-        marginTop: '0px' // Ensure no extra space above category/unit
-    },
-    categoryText: {
-        color: '#6b7280', // muted-foreground
-        fontWeight: 'bold',
-        overflow: 'hidden',
-        whiteSpace: 'nowrap',
-        textOverflow: 'ellipsis'
-    },
-    unitText: {
-        fontWeight: 'bold',
-        fontSize: '0.875rem',
-        color: '#16a34a' // primary color similar
-    },cartControls: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '4px',
-        border: '1px solid #e5e7eb',
-        borderRadius: '6px'
-    },
-    quantityDisplay: {
-        fontSize: '0.875rem',
-        fontWeight: '500',
-        width: '32px',
-        textAlign: 'center'
-    },
-    fallbackLabel: {
-      position: 'absolute',
-      bottom: '8px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      padding: '4px 8px',
-      borderRadius: '6px',
-      fontSize: '0.75rem',
-      fontWeight: '600',
-      backgroundColor: 'rgba(17, 24, 39, 0.75)',
-      color: '#fff',
-      textTransform: 'uppercase',
-      letterSpacing: '0.02em'
-    }
-};
+type RequestType = 'borrow' | 'purchase';
 
 export function Catalog() {
   const dispatch = useAppDispatch();
@@ -234,11 +40,20 @@ export function Catalog() {
   const [filteredItems, setFilteredItems] = useState<CatalogItem[]>([]);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [requestType, setRequestType] = useState<RequestType>('borrow');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingWarehouses, setIsLoadingWarehouses] = useState(true);
   const { modalState, showConfirm, hideModal, setModalOpen } = useConfirmModal();
 
   // Load warehouses on mount
   useEffect(() => {
+    const savedRequestType = sessionStorage.getItem('catalogRequestType') as RequestType | null;
+    if (savedRequestType === 'borrow' || savedRequestType === 'purchase') {
+      setRequestType(savedRequestType);
+    }
+
     const loadWarehouses = async () => {
+      setIsLoadingWarehouses(true);
       try {
         const data = await getWarehouses();
         setWarehouses(data as Warehouse[]);
@@ -259,6 +74,8 @@ export function Catalog() {
             loadWarehouses();
           }
         });
+      } finally {
+        setIsLoadingWarehouses(false);
       }
     };
     loadWarehouses();
@@ -268,8 +85,10 @@ export function Catalog() {
   useEffect(() => {
     const loadItems = async () => {
       if (selectedWarehouse) {
+        setIsLoading(true);
         try {
-          const rawData: SharedCatalogItem[] = await getCatalogItemsByWarehouse(selectedWarehouse);
+          const includeOutOfStock = requestType === 'purchase';
+          const rawData: SharedCatalogItem[] = await getCatalogItemsByWarehouse(selectedWarehouse, includeOutOfStock);
           // Convert from sharedServices format to catalogService format
           const data: CatalogItem[] = rawData.map(item => ({
             itemId: parseInt(item.id),
@@ -301,11 +120,13 @@ export function Catalog() {
               loadItems();
             }
           });
+        } finally {
+          setIsLoading(false);
         }
       }
     };
     loadItems();
-  }, [selectedWarehouse]);
+  }, [selectedWarehouse, requestType]);
 
   // Filter items by search term
   useEffect(() => {
@@ -355,7 +176,8 @@ export function Catalog() {
             },
             quantity,
             warehouseId: selectedWarehouse,
-            warehouseName: selectedWarehouseObj?.name || ''
+            warehouseName: selectedWarehouseObj?.name || '',
+            skipStockValidation: requestType === 'purchase'
           };
           dispatch(addToCart(cartItem));
           toast.success(`${item.itemName} added to cart`);
@@ -365,7 +187,7 @@ export function Catalog() {
     }
 
     if (existingItem) {
-      dispatch(updateCartItem({ itemId: item.itemId.toString(), quantity: existingItem.quantity + quantity }));
+      dispatch(updateCartItem({ itemId: item.itemId.toString(), quantity: existingItem.quantity + quantity, skipStockValidation: requestType === 'purchase' }));
     } else {
       const cartItem = {
         item: {
@@ -380,7 +202,8 @@ export function Catalog() {
         },
         quantity,
         warehouseId: selectedWarehouse,
-        warehouseName: selectedWarehouseObj?.name || ''
+        warehouseName: selectedWarehouseObj?.name || '',
+        skipStockValidation: requestType === 'purchase'
       };
       dispatch(addToCart(cartItem));
     }
@@ -394,7 +217,8 @@ export function Catalog() {
 
   const handleIncreaseQuantity = (item: CatalogItem) => {
     const currentQty = getItemCartQuantity(item.itemId);
-    if (currentQty < (item.totalQuantity || 0)) {
+    // Allow unlimited quantity for purchase requests
+    if (requestType === 'purchase' || currentQty < (item.totalQuantity || 0)) {
       handleAddToCart(item, 1);
     }
   };
@@ -419,8 +243,25 @@ export function Catalog() {
 
   const onNavigateToRequest = () => {
     setCartOpen(false);
+
+    if (requestType === 'purchase') {
+      sessionStorage.setItem('catalogRequestType', 'purchase');
+      sessionStorage.setItem('engineerRequestActiveTab', 'purchase');
+      sessionStorage.setItem('openPurchaseForm', 'true');
+      sessionStorage.removeItem('openBorrowForm');
+      sessionStorage.setItem('purchaseCartSnapshot', JSON.stringify({
+        items: cartItems,
+        warehouseId: selectedWarehouse,
+      }));
+      navigate('/engineer/requests?tab=purchase');
+      return;
+    }
+
+    sessionStorage.setItem('catalogRequestType', 'borrow');
+    sessionStorage.setItem('engineerRequestActiveTab', 'borrow');
     sessionStorage.setItem('openBorrowForm', 'true');
-    navigate('/engineer/requests');
+    sessionStorage.removeItem('openPurchaseForm');
+    navigate('/engineer/requests?tab=borrow');
   };
 
   const handleAICameraError = (error: AppError) => {
@@ -453,56 +294,92 @@ export function Catalog() {
         showCancel={modalState.showCancel}
         retryable={modalState.retryable}
       />
-      <div className="space-y-6">
-        <div style={{...styles.header, position: 'sticky', top: 0, zIndex: 10, paddingBottom: '16px'}}>
+      
+      <div className="space-y-6 p-4 md:p-6">
+        {/* Header */}
+        <div className="sticky top-0 z-10 -mx-4 flex items-start justify-between bg-background/95 px-4 pb-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:-mx-6 md:px-6">
           <div>
-            <h1 style={styles.title}>Inventory Catalog</h1>
-            <p style={styles.subtitle}>
-              Search and select items to borrow
+            <h1 className="text-2xl font-bold tracking-tight">Inventory Catalog</h1>
+            <p className="text-sm text-muted-foreground">
+              Search and select items to {requestType === 'purchase' ? 'purchase' : 'borrow'}
             </p>
           </div>
           <Button
             onClick={() => setCartOpen(true)}
             variant="outline"
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            className="relative flex items-center gap-2"
           >
             <ShoppingCart className="h-4 w-4" />
-            Cart {totalCartItems > 0 && `(${totalCartItems})`}
+            <span className="hidden sm:inline">Cart</span>
+            {totalCartItems > 0 && (
+              <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                {totalCartItems}
+              </span>
+            )}
           </Button>
         </div>
 
         {/* Warehouse Selector */}
-        <div style={styles.warehouseSelector}>
-          <Package className="h-4 w-4" style={{ color: '#6b7280' }} />
-          <span style={{ fontSize: '0.875rem' }}>Warehouse:</span>
-          <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
-            <SelectTrigger style={{ width: '200px' }}>
-              <SelectValue placeholder="Select warehouse" />
-            </SelectTrigger>
-            <SelectContent>
-              {warehouses.map((wh) => (
-                <SelectItem key={wh.id} value={wh.id}>
-                  {wh.name} ({wh.code})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {isLoadingWarehouses ? (
+          <CatalogHeaderSkeleton />
+        ) : (
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Warehouse:</span>
+              <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select warehouse" />
+                </SelectTrigger>
+                <SelectContent>
+                  {warehouses.map((wh) => (
+                    <SelectItem key={wh.id} value={wh.id}>
+                      {wh.name} ({wh.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Request type:</span>
+              <Select
+                value={requestType}
+                onValueChange={(value: string) => {
+                  const next = value as RequestType;
+                  setRequestType(next);
+                  sessionStorage.setItem('catalogRequestType', next);
+                }}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Choose" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="borrow">Borrow</SelectItem>
+                  <SelectItem value="purchase">Purchase</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
 
         {/* Search Bar */}
-        <div style={styles.searchBar}>
-          <div style={styles.searchInputContainer}>
-            <Search style={styles.searchIcon} />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search by code or name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={styles.inputStyle}
+              className="pl-10"
             />
           </div>
-          <Button onClick={() => setCameraOpen(true)} variant="outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.5, cursor: 'not-allowed' }}>
+          <Button 
+            onClick={() => setCameraOpen(true)} 
+            variant="outline" 
+            className="flex items-center gap-2 opacity-50 cursor-not-allowed"
+          >
             <Camera className="h-4 w-4" />
-            AI Camera
+            <span className="hidden sm:inline">AI Camera</span>
           </Button>
         </div>
 
@@ -522,120 +399,136 @@ export function Catalog() {
           onUpdateQuantity={handleUpdateCartItem}
           onClearCart={handleClearCart}
           onProceed={onNavigateToRequest}
+          requestType={requestType}
         />
 
-        {/* Items Grid - APLICANDO ESTILOS EN LÍNEA */}
-        <div style={styles.itemsGrid}>
-          {filteredItems.map((item) => {
-            const cartQty = getItemCartQuantity(item.itemId);
-            const totalQty = item.totalQuantity || 0;
-            const isAvailable = totalQty > 0;
-            const badgeStyle = isAvailable ? styles.badgeAvailable : styles.badgeOutOfStock;
-            const hasImage = Boolean(item.imageUrl);
-            const imageSrc = hasImage ? item.imageUrl : FALLBACK_IMAGE_SRC;
+        {/* Items Grid */}
+        {isLoading ? (
+          <CatalogSkeleton count={12} />
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {filteredItems.map((item) => {
+              const cartQty = getItemCartQuantity(item.itemId);
+              const totalQty = item.totalQuantity || 0;
+              const isAvailable = totalQty > 0;
+              const hasImage = Boolean(item.imageUrl);
+              const imageSrc = hasImage ? item.imageUrl : FALLBACK_IMAGE_SRC;
 
-            return (
-              <div key={item.itemId} style={styles.cardWrapper}>
-                <Card style={styles.card}>
-
-                  {/* Imagen y Badge de Disponibilidad */}
-                  <div style={styles.imageContainer}>
+              return (
+                <Card 
+                  key={item.itemId} 
+                  className={cn(
+                    "group h-full overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-primary/50",
+                    cartQty > 0 && "ring-1 ring-gray-300 ring-offset-1"
+                  )}
+                >
+                  {/* Image Container */}
+                  <div className="relative aspect-square w-full overflow-hidden bg-gray-50 p-2">
                     <ImageWithFallback
                       src={imageSrc}
                       alt={item.itemName}
-                      style={styles.image}
+                      loading="lazy"
+                      className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                     />
                     {!hasImage && (
-                      <span style={styles.fallbackLabel}>Image for reference only </span>
+                      <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-md bg-black/75 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
+                        Image for reference only
+                      </span>
                     )}
-                    {/* CÓDIGO MODIFICADO AQUÍ ⬇️ */}
-                    <div style={badgeStyle}>
-                      {isAvailable ? `Available: ${totalQty}` : 'Out of Stock'}
+                    {/* Availability Badge */}
+                    <div
+                      className={cn(
+                        "absolute right-2 top-2 rounded-full px-2 py-1 text-xs font-semibold",
+                        isAvailable 
+                          ? "bg-green-100 text-green-800" 
+                          : "bg-red-100 text-red-800"
+                      )}
+                    >
+                      {isAvailable ? `Avail: ${totalQty}` : 'Out of Stock'}
                     </div>
-                    {/* CÓDIGO MODIFICADO AQUÍ ⬆️ */}
+                    {/* Cart indicator */}
+                    {cartQty > 0 && (
+                      <div className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow-md">
+                        {cartQty}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Contenido de la Tarjeta - Nombres y Nuevos Mapeos */}
-                  <CardHeader style={{ ...styles.cardHeader, paddingTop: '0', marginTop: '0' }}>
-                    <div>
-                      <CardTitle style={styles.cardTitle}>
-                        {item.itemName}
-                      </CardTitle>
-                      {/* DESCRIPCIÓN */}
-                      <p style={styles.cardDescription}>
-                        {item.itemDescription || item.itemSku}
-                      </p>
-                    </div>
+                  {/* Card Header */}
+                  <CardHeader className="px-3 py-1 pb-0">
+                    <CardTitle className="line-clamp-2 min-h-[2rem] text-sm font-semibold leading-snug">
+                      {item.itemName}
+                    </CardTitle>
+                    <p className="line-clamp-1 text-xs text-muted-foreground mt-0.5">
+                      {item.itemDescription || item.itemSku}
+                    </p>
                   </CardHeader>
 
-                  {/* Mapeos de Categoria/Unidad y Controles de Carrito */}
-                  <CardContent style={styles.cardContent}>
-                    {/* Categoria y Unidad (como Precio Original y Final) */}
-                    <div style={styles.priceUnitContainer}>
-                      <span style={styles.categoryText} title={item.itemCategory}>
-                        **{item.itemCategory}**
+                  {/* Card Content */}
+                  <CardContent className="px-3 py-2 pt-1">
+                    {/* Category and Unit */}
+                    <div className="mb-1.5 flex items-center justify-between text-xs">
+                      <span className="truncate font-medium text-muted-foreground" title={item.itemCategory}>
+                        {item.itemCategory}
                       </span>
-                      <span style={styles.unitText} title={item.itemUnit}>
+                      <span className="font-bold text-green-600" title={item.itemUnit}>
                         {item.itemUnit}
                       </span>
                     </div>
 
-                    {/* CANTIDAD DISPONIBLE: ELIMINADA AQUÍ */}
-                    {/* Antes estaba:
-                                        <div style={styles.availableText}>
-                                            <span>
-                                                Available: <span style={styles.availableQuantity}>{item.totalQuantity || 0}</span>
-                                            </span>
-                                        </div>
-                                        */}
-
-                    {/* Controles de Carrito */}
+                    {/* Cart Controls */}
                     {cartQty === 0 ? (
                       <Button
                         onClick={() => handleAddToCart(item, 1)}
-                        disabled={!isAvailable}
-                        style={{ width: '100%', height: '32px', fontSize: '0.875rem' }}
+                        disabled={!isAvailable && requestType !== 'purchase'}
+                        className="h-9 w-full text-sm transition-all hover:scale-[1.02]"
+                        size="sm"
                       >
-                        {!isAvailable ? 'Not Available' : 'Add to Cart'}
+                        {!isAvailable && requestType !== 'purchase' ? 'Not Available' : 'Add to Cart'}
                       </Button>
                     ) : (
-                      <div style={styles.cartControls}>
+                      <div className="flex h-9 items-center justify-center gap-1 rounded-md border border-input bg-background">
                         <Button
                           onClick={() => handleDecreaseQuantity(item)}
                           variant="ghost"
                           size="sm"
-                          style={{ height: '28px', width: '28px', padding: '0' }}
+                          className="h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive"
                         >
-                          <Minus style={{ height: '16px', width: '16px' }} />
+                          <Minus className="h-4 w-4" />
                         </Button>
-                        <span style={styles.quantityDisplay}>{cartQty}</span>
+                        <span className="w-8 text-center text-sm font-medium">
+                          {cartQty}
+                        </span>
                         <Button
                           onClick={() => handleIncreaseQuantity(item)}
                           variant="ghost"
                           size="sm"
-                          style={{ height: '28px', width: '28px', padding: '0' }}
-                          disabled={cartQty >= totalQty}
+                          className="h-7 w-7 p-0 hover:bg-primary/10 hover:text-primary"
+                          disabled={requestType !== 'purchase' && cartQty >= totalQty}
                         >
-                          <Plus style={{ height: '16px', width: '16px' }} />
+                          <Plus className="h-4 w-4" />
                         </Button>
                       </div>
                     )}
                   </CardContent>
                 </Card>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
-        {
-          filteredItems.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '48px 0' }}>
-              <p style={styles.subtitle}>
-                No items found in this warehouse
-              </p>
-            </div>
-          )
-        }
+        {/* Empty State */}
+        {!isLoading && filteredItems.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Package className="mb-4 h-12 w-12 text-muted-foreground/50" />
+            <h3 className="text-lg font-semibold">No items found</h3>
+            <p className="text-sm text-muted-foreground">
+              {searchTerm 
+                ? `No items match "${searchTerm}" in this warehouse` 
+                : 'No items available in this warehouse'}
+            </p>
+          </div>
+        )}
       </div>
     </>
   );
