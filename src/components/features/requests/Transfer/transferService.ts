@@ -504,18 +504,21 @@ export async function acceptTransfer(
  * Reject an incoming transfer using the API
  */
 export async function rejectTransfer(
-  transferId: string
+  requestNumber: string,
+  rejectionReason?: string
 ): Promise<{ success: boolean }> {
   try {
     const token = store.getState().auth.accessToken as string;
-    const url = `${API_URL}/transfer-requests/${transferId}`;
+    const recipientId = getCurrentUserId();
+    const url = `${API_URL}/transfer-requests/${requestNumber}/reject?recipientId=${recipientId}`;
     const response = await fetch(url, {
-      method: 'DELETE',
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': `Bearer ${token}`
       },
+      body: JSON.stringify({ RejectionReason: rejectionReason || '' }),
     });
 
     if (!response.ok) {

@@ -60,6 +60,7 @@ export function TransferRequests() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [transferToRejectId, setTransferToRejectId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>('');
   const [transferToCancelId, setTransferToCancelId] = useState<string | null>(null);
   const [expandedTransferDetails, setExpandedTransferDetails] = useState<Record<string, Transfer>>({});
   const [loadingTransferIds, setLoadingTransferIds] = useState<Set<string>>(new Set());
@@ -298,11 +299,16 @@ export function TransferRequests() {
   const closeRejectDialog = () => {
     setRejectDialogOpen(false);
     setTransferToRejectId(null);
+    setRejectReason('');
   };
 
   const confirmRejectTransfer = async () => {
     if (!transferToRejectId) return;
-    await handleReject(transferToRejectId);
+    if (!rejectReason.trim()) {
+      toast.error('Please provide a reason for rejection');
+      return;
+    }
+    await handleReject(transferToRejectId, rejectReason.trim());
     closeRejectDialog();
   };
 
@@ -970,6 +976,18 @@ export function TransferRequests() {
               Are you sure you want to reject this transfer request?
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label htmlFor="reject-reason">Reason for rejection *</Label>
+              <textarea
+                id="reject-reason"
+                className="mt-2 w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Please explain why you are rejecting this transfer..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+              />
+            </div>
+          </div>
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={closeRejectDialog}>
               Cancel
@@ -977,6 +995,7 @@ export function TransferRequests() {
             <Button
               className="action-btn-enhance btn-reject gap-2 h-auto py-2 px-4"
               onClick={confirmRejectTransfer}
+              disabled={!rejectReason.trim()}
             >
               Confirm Reject
             </Button>
