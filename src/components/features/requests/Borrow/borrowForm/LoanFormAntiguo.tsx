@@ -1,24 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
-import { Button } from '../../../ui/button';
-import { Input } from '../../../ui/input';
-import { Label } from '../../../ui/label';
-import { Textarea } from '../../../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '../../../ui/hover-card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
-import { Badge } from '../../../ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../../ui/card';
+import { Button } from '../../../../ui/button';
+import { Input } from '../../../../ui/input';
+import { Label } from '../../../../ui/label';
+import { Textarea } from '../../../../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../ui/select';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '../../../../ui/hover-card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../../ui/dialog';
+import { Badge } from '../../../../ui/badge';
 import { ArrowLeft, Plus, Minus, X, Calendar, Package, Building, User, FolderOpen, Hash, WifiOff } from 'lucide-react';
-import { ImageWithFallback } from '../../../figma/ImageWithFallback';
+import { ImageWithFallback } from '../../../../figma/ImageWithFallback';
 import { toast } from 'sonner';
-import type { CartItem } from '../../enginner/types';
-import type { User as UserType } from '../../enginner/types';
-import { ConfirmModal, useConfirmModal, type ModalType } from '../../../ui/confirm-modal';
-import { ErrorType, type AppError } from '../../../features/enginner/services/errorHandler';
-import { store } from '../../../../store/store';
-import { createBorrowRequest } from './borrowService';
-import { updateCartItem, removeFromCart } from '../../enginner/store/slices/cartSlice';
+import type { CartItem } from '../../../enginner/types';
+import type { User as UserType } from '../../../enginner/types';
+import { ConfirmModal, useConfirmModal, type ModalType } from '../../../../ui/confirm-modal';
+import { ErrorType, type AppError } from '../../../enginner/services/errorHandler';
+import { store } from '../../../../../store/store';
+import { createBorrowRequest } from '../borrowService';
+import { updateCartItem, removeFromCart } from '../../../enginner/store/slices/cartSlice';
 import {
   getWarehouses,
   getCatalogItemsByWarehouse,
@@ -32,7 +32,7 @@ import {
   type Company,
   type Customer,
   type WorkOrder
-} from '../services/sharedServices';
+} from '../../services/sharedServices';
 
 interface LoanFormProps {
   cartItems: CartItem[];
@@ -442,7 +442,7 @@ export function LoanForm({ cartItems, clearCart, currentUser, onBack, onBorrowCr
     const loadItems = async () => {
       if (formData.warehouseId) {
         try {
-          const items = await getCatalogItemsByWarehouse(formData.warehouseId);
+          const items = await getCatalogItemsByWarehouse(formData.warehouseId, false);
           setCatalogItems(items);
           // Initialize filtered items for all indexes
           const newFilteredItems: { [key: number]: CatalogItem[] } = {};

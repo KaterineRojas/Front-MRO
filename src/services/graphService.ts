@@ -44,19 +44,31 @@ export async function getUserProfile(accessToken: string): Promise<GraphUserProf
 /**
  * Fetches the current user's photo from Microsoft Graph
  * Returns a blob URL that can be used as an image src
+ * Includes 5 second timeout to prevent hanging
  */
 export async function getUserPhoto(accessToken: string): Promise<string | null> {
   try {
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.warn('⚠️ User photo fetch timeout after 5 seconds');
+      controller.abort();
+    }, 5000); // 5 second timeout
+
     const response = await fetch(`${GRAPH_ENDPOINT}/me/photo/$value`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
+      signal: controller.signal,
     });
+
+    // Clear timeout on success
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       // 404 means no photo is set
       if (response.status === 404) {
-        console.log('User has no profile photo');
+        console.log('ℹ️ User has no profile photo');
         return null;
       }
       console.error('Failed to fetch user photo:', response.statusText);
@@ -65,9 +77,14 @@ export async function getUserPhoto(accessToken: string): Promise<string | null> 
 
     const blob = await response.blob();
     const photoUrl = URL.createObjectURL(blob);
+    console.log('✅ User photo loaded successfully');
     return photoUrl;
   } catch (error) {
-    console.error('Error fetching user photo:', error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('⚠️ User photo fetch aborted (timeout)');
+      return null;
+    }
+    console.error('❌ Error fetching user photo:', error);
     return null;
   }
 }

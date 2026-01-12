@@ -6,7 +6,7 @@ import { InteractionStatus } from '@azure/msal-browser';
 import { store, useAppDispatch, useAppSelector } from './store';
 import { setAuth, setLoading, setUserPhoto } from './store/slices/authSlice';
 import { loginRequest } from './authConfig';
-import { getUserProfileWithPhoto } from './services/graphService';
+import { getUserProfile, getUserPhoto } from './services/graphService';
 import { authService } from './services/authService';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/features/dashboard/Dashboard';
@@ -27,7 +27,7 @@ import { ThemeProvider } from "next-themes";
 import { ReturnItemsPage } from './components/features/loans/ReturnItemsPage';
 import { ManageRequestsPage } from './components/features/manage-requests/pages/ManageRequestsPage';
 import { Toaster } from 'react-hot-toast';
-import { Login, Register, ProtectedRoute } from './components/features/auth';
+import { Login, Register, ProtectedRoute, LoadingScreen } from './components/features/auth';
 import { RoleGuard } from './auth/RoleGuard'
 import { Unauthorized } from './pages/Unauthorized'
 import { NotFound } from './pages/NotFound'
@@ -56,6 +56,7 @@ function AuthHandler() {
   const isAuthenticated = useIsAuthenticated();
   const dispatch = useAppDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const initAuth = async () => {
@@ -64,8 +65,10 @@ function AuthHandler() {
         return;
       }
 
-      // 2. Don't run logic on Login/Register pages
-      if (location.pathname === '/login' || location.pathname === '/register') {
+      // 2. Don't run logic on Login/Register pages UNLESS user is authenticated with Azure
+      // (user just came back from Microsoft login redirect)
+      const isAuthenticatedWithAzure = isAuthenticated && accounts.length > 0;
+      if ((location.pathname === '/login' || location.pathname === '/register') && !isAuthenticatedWithAzure) {
         dispatch(setLoading(false));
         return;
       }
@@ -79,6 +82,9 @@ function AuthHandler() {
 
           // Save fresh data to localStorage
           authService.saveUser(backendUser);
+
+          // Determine if user originally authenticated with Azure
+          const isAzureUser = backendUser.authType === 1 || backendUser.authType === 2; // 1=Azure, 2=Both
 
           // Update Redux
           dispatch(
@@ -97,52 +103,127 @@ function AuthHandler() {
                 department: backendUser.departmentId ? String(backendUser.departmentId) : 'Engineering',
                 employeeId: backendUser.employeeId,
                 warehouseId: backendUser.warehouseId,
-                // photoUrl: backendUser.photoUrl,
+                backendAuthType: backendUser.authType, // 0=Local, 1=Azure, 2=Both
+                photoUrl: undefined, // Will be loaded below if Azure user
               },
               accessToken: localToken,
-              authType: 'local',
+              authType: isAzureUser ? 'azure' : 'local',
             })
           );
 
           console.log('✅ User session restored:', backendUser.email);
+
+          // If user authenticated with Azure, try to load photo in background
+          if (isAzureUser && isAuthenticated && accounts.length > 0) {
+            console.log('🔵 [AuthHandler] Restoring Azure user, loading photo in background...');
+            try {
+              const graphTokenRequest = {
+                scopes: ['User.Read'],
+                account: accounts[0],
+              };
+              const graphTokenResponse = await instance.acquireTokenSilent(graphTokenRequest);
+
+              // Load photo in background (non-blocking)
+              getUserPhoto(graphTokenResponse.accessToken).then(photoUrl => {
+                if (photoUrl) {
+                  console.log('✅ [AuthHandler] User photo loaded after session restore');
+                  dispatch(setUserPhoto(photoUrl));
+                }
+              }).catch(photoError => {
+                console.warn('⚠️ Failed to load user photo after session restore:', photoError);
+              });
+            } catch (graphError) {
+              console.warn('⚠️ Could not get Graph token for photo:', graphError);
+            }
+          }
+
+          // Session restored successfully - hide loading screen
+          // Note: We call setLoading(false) here directly instead of waiting for Layout
+          // to avoid race conditions on F5 refresh
+          console.log('✅ [AuthHandler] Session restored, hiding loading screen');
+          dispatch(setLoading(false));
           return; // Stop here if local token worked (don't check Azure)
 
         } catch (error) {
           console.warn('⚠️ Local token invalid, clearing session...');
           authService.removeUser();
+          authService.removeToken();
+          // Clear the invalid session and let the flow continue to check Azure or redirect to login
+          // Don't return here - allow flow to continue to check if Azure is authenticated
         }
       }
 
       // 4. CASE B: Check for Azure Login (New login or SSO)
+      // BUT: Don't auto-login if user just logged out
+      const justLoggedOut = localStorage.getItem('mro_just_logged_out') === 'true';
+
+      if (justLoggedOut) {
+        console.log('🔵 [AuthHandler] User just logged out, skipping auto-login');
+        localStorage.removeItem('mro_just_logged_out');
+        dispatch(setLoading(false));
+        return;
+      }
+
       if (isAuthenticated && accounts.length > 0) {
+        console.log('🔵 [AuthHandler] Starting Azure authentication process...');
+
+        // Create abort controller for timeout
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => {
+          console.error('❌ [AuthHandler] Azure authentication timeout after 10 seconds');
+          abortController.abort();
+        }, 10000); // 10 second timeout
+
         try {
           // A. Get Access Token for Backend
+          console.log('🔵 [AuthHandler] Getting API token...');
           const apiTokenRequest = {
             ...loginRequest,
             account: accounts[0],
           };
           const apiTokenResponse = await instance.acquireTokenSilent(apiTokenRequest);
+          console.log('✅ [AuthHandler] API token acquired');
 
-          // B. (Optional) Get Graph Data (Photo, Job Title)
+          // B. (Optional) Get Graph Data (Profile and Photo)
           let graphProfile = null;
-          let graphPhotoUrl = null;
 
           try {
+            console.log('🔵 [AuthHandler] Fetching Graph API profile...');
             const graphTokenRequest = {
               scopes: ['User.Read'],
               account: accounts[0],
             };
             const graphTokenResponse = await instance.acquireTokenSilent(graphTokenRequest);
-            const { profile, photoUrl } = await getUserProfileWithPhoto(graphTokenResponse.accessToken);
-            graphProfile = profile;
-            graphPhotoUrl = photoUrl;
+
+            // Fetch profile (fast, required)
+            graphProfile = await getUserProfile(graphTokenResponse.accessToken);
+            console.log('✅ [AuthHandler] Graph API profile fetched');
+
+            // Fetch photo (slow, optional) - don't block authentication
+            // Load photo in background after auth completes
+            getUserPhoto(graphTokenResponse.accessToken).then(photoUrl => {
+              if (photoUrl) {
+                console.log('✅ [AuthHandler] User photo loaded in background');
+                dispatch(setUserPhoto(photoUrl));
+              }
+            }).catch(photoError => {
+              console.warn('⚠️ Failed to load user photo in background:', photoError);
+            });
+
           } catch (graphError) {
-            console.warn('⚠️ Could not fetch Graph API data, continuing with basic info...');
+            console.warn('⚠️ Could not fetch Graph API data, continuing with basic info...', graphError);
           }
 
           const account = apiTokenResponse.account;
 
-          // C. Call Backend Login
+          // C. Call Backend Login with timeout
+          console.log('🔵 [AuthHandler] Calling backend login API...');
+
+          // Check if aborted
+          if (abortController.signal.aborted) {
+            throw new Error('Authentication timeout - backend did not respond');
+          }
+
           const backendResponse = await authService.loginWithAzure({
             azureToken: apiTokenResponse.accessToken,
             userInfo: {
@@ -152,11 +233,16 @@ function AuthHandler() {
             },
           });
 
+          // Clear timeout on success
+          clearTimeout(timeoutId);
+          console.log('✅ [AuthHandler] Backend login successful');
+
           // D. Save Persistence
           authService.saveToken(backendResponse.token);
           authService.saveUser(backendResponse.user);
+          console.log('✅ [AuthHandler] Token and user saved to localStorage');
 
-          // E. Update Redux
+          // E. Update Redux (photo will be added later when it loads)
           const userForRedux = {
             id: String(backendResponse.user.id),
             name: backendResponse.user.name,
@@ -173,8 +259,9 @@ function AuthHandler() {
             jobTitle: graphProfile?.jobTitle,
             mobilePhone: graphProfile?.mobilePhone,
             officeLocation: graphProfile?.officeLocation,
-            photoUrl: graphPhotoUrl || undefined,
+            photoUrl: undefined, // Photo will be loaded in background
             warehouseId: backendResponse.user.warehouseId,
+            backendAuthType: backendResponse.user.authType, // 0=Local, 1=Azure, 2=Both
           };
 
           dispatch(
@@ -185,20 +272,47 @@ function AuthHandler() {
             })
           );
 
-          console.log('✅ User authenticated with Azure:', userForRedux.email);
+          console.log('✅ [AuthHandler] User authenticated with Azure and synced to Redux:', userForRedux.email);
+          console.log('✅ [AuthHandler] Redux state updated, now hiding loading screen...');
+
+          // Simplified: Just hide loading immediately after Redux update
+          dispatch(setLoading(false));
+          console.log('✅ [AuthHandler] Loading screen hidden');
 
         } catch (error) {
-          console.error('Error acquiring token or logging in:', error);
+          clearTimeout(timeoutId);
+          console.error('❌ [AuthHandler] Error acquiring token or logging in:', error);
+
+          // Show user-friendly error message
+          if (error instanceof Error) {
+            if (error.message.includes('timeout')) {
+              alert('Authentication timeout. Please check your internet connection and try again.');
+            } else {
+              alert('Authentication failed. Please try logging in again.');
+            }
+          }
+
+          // Clear any partial auth state
+          authService.removeUser();
+          authService.removeToken();
+
+          // Always hide loading screen on error
           dispatch(setLoading(false));
+
+          // Redirect to login if we're not already there
+          if (location.pathname !== '/login') {
+            navigate('/login');
+          }
         }
       } else {
+        console.log('🔵 [AuthHandler] User not authenticated, hiding loading screen');
         // User not authenticated (and no local token)
         dispatch(setLoading(false));
       }
     };
 
     initAuth();
-  }, [isAuthenticated, accounts, inProgress, instance, dispatch, location.pathname]);
+  }, [isAuthenticated, accounts, inProgress, instance, dispatch, location.pathname, navigate]);
 
   return null;
 }
@@ -741,6 +855,16 @@ function EngineerRequestOrdersWrapper() {
 }
 
 function AppRoutes() {
+  const isLoading = useAppSelector((state) => state.auth.isLoading);
+  const location = useLocation();
+
+  // Show loading screen during authentication, but not on login/register pages
+  const shouldShowLoading = isLoading && location.pathname !== '/login' && location.pathname !== '/register';
+
+  if (shouldShowLoading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <Routes>
       {/* 1. PUBLIC ROUTES                                          */}
@@ -808,25 +932,28 @@ export default function App() {
       <BrowserRouter>
         <AuthHandler />
         <AppRoutes />
+        <Toaster
+          position="top-center"
+          reverseOrder={false}
+          containerStyle={{
+            zIndex: 50,
+          }}
+          toastOptions={{
+            error: {
+              style: {
+                color: '#C62828',
+                border: '2px solid #C62828',
+                fontWeight: 'bold',
+              },
+              iconTheme: {
+                primary: '#C62828',
+                secondary: '#FFFAEE',
+              },
+              duration: 5000,
+            },
+          }}
+        />
       </BrowserRouter>
-      <Toaster
-        position="top-center"
-        reverseOrder={false}
-        toastOptions={{
-          error: {
-            style: {
-              color: '#C62828',          // Texto rojo oscuro
-              border: '2px solid #C62828', // Borde rojo fuerte
-              fontWeight: 'bold',
-            },
-            iconTheme: {
-              primary: '#C62828', // Color del ícono de error (la X)
-              secondary: '#FFFAEE',
-            },
-            duration: 5000,
-          },
-        }}
-      />
     </Provider>
   );
 }

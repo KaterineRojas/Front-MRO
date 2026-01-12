@@ -277,3 +277,31 @@ html {
     size: landscape;
   }
 }
+
+/* Prevent white flash and ensure dark background everywhere */
+html {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure all toast containers are always hidden initially */
+/* They will only show when there's an actual toast */
+[data-sonner-toaster],
+[class*="Toaster"],
+[class*="toaster"] {
+  z-index: 50 !important;
+}
+
+/* Hide empty containers completely */
+[data-sonner-toaster]:empty,
+[class*="Toaster"]:empty,
+[class*="toaster"]:empty {
+  display: none !important;
+}

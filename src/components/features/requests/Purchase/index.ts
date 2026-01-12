@@ -19,7 +19,7 @@ export {
   createPurchaseRequest,
   updatePurchaseRequestStatus,
   deletePurchaseRequest,
-  updatePurchaseRequestReason,
+  //updatePurchaseRequestReason,
   confirmPurchaseBought
 } from './purchaseService';
 

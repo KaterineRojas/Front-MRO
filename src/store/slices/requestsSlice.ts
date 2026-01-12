@@ -1,30 +1,40 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { LoanRequest } from '../../components/features/manage-requests/types';
+import type { LoanRequest as BorrowLoanRequest } from '../../components/features/requests/Borrow/borrowService';
 import { 
   getPackingRequests as getPackingRequestsApi, 
   getEngineerReturns as getEngineerReturnsApi 
 } from '../../components/features/manage-requests/services/requestManagementService';
+import { getBorrowRequests as getBorrowRequestsApi } from '../../components/features/requests/Borrow/borrowService';
 
 interface RequestsState {
   packingRequests: LoanRequest[];
   returns: LoanRequest[];
+  borrowRequests: BorrowLoanRequest[];
   loadingPacking: boolean;
   loadingReturns: boolean;
+  loadingBorrow: boolean;
   errorPacking: string | null;
   errorReturns: string | null;
+  errorBorrow: string | null;
   lastFetchPacking: number | null;
   lastFetchReturns: number | null;
+  lastFetchBorrow: number | null;
 }
 
 const initialState: RequestsState = {
   packingRequests: [],
   returns: [],
+  borrowRequests: [],
   loadingPacking: false,
   loadingReturns: false,
+  loadingBorrow: false,
   errorPacking: null,
   errorReturns: null,
+  errorBorrow: null,
   lastFetchPacking: null,
   lastFetchReturns: null,
+  lastFetchBorrow: null,
 };
 
 // Cache duration: 2 minutes
@@ -81,6 +91,36 @@ export const refreshReturns = createAsyncThunk(
   }
 );
 
+// Borrow Requests thunks
+export const fetchBorrowRequests = createAsyncThunk(
+  'requests/fetchBorrowRequests',
+  async (requesterId: string, { getState }) => {
+    const state = getState() as { requests: RequestsState };
+    const now = Date.now();
+    
+    // Check cache validity
+    if (state.requests.lastFetchBorrow && 
+        (now - state.requests.lastFetchBorrow) < CACHE_DURATION &&
+        state.requests.borrowRequests.length > 0) {
+      console.log('✅ Using cached borrow requests');
+      return state.requests.borrowRequests;
+    }
+    
+    console.log('🔄 Fetching fresh borrow requests for requester:', requesterId);
+    const response = await getBorrowRequestsApi(requesterId);
+    return response.items || [];
+  }
+);
+
+export const refreshBorrowRequests = createAsyncThunk(
+  'requests/refreshBorrowRequests',
+  async (requesterId: string) => {
+    console.log('🔄 Force refreshing borrow requests...');
+    const response = await getBorrowRequestsApi(requesterId);
+    return response.items || [];
+  }
+);
+
 const requestsSlice = createSlice({
   name: 'requests',
   initialState,
@@ -94,6 +134,16 @@ const requestsSlice = createSlice({
       state.returns = [];
       state.lastFetchReturns = null;
       state.errorReturns = null;
+    },
+    clearBorrowRequests: (state) => {
+      state.borrowRequests = [];
+      state.lastFetchBorrow = null;
+      state.errorBorrow = null;
+    },
+    removeBorrowRequest: (state, action: PayloadAction<string>) => {
+      state.borrowRequests = state.borrowRequests.filter(
+        req => req.requestNumber !== action.payload
+      );
     },
   },
   extraReducers: (builder) => {
@@ -160,12 +210,46 @@ const requestsSlice = createSlice({
       state.loadingReturns = false;
       state.errorReturns = action.error.message || 'Failed to refresh returns';
     });
+
+    // Fetch Borrow Requests
+    builder.addCase(fetchBorrowRequests.pending, (state) => {
+      state.loadingBorrow = true;
+      state.errorBorrow = null;
+    });
+    builder.addCase(fetchBorrowRequests.fulfilled, (state, action) => {
+      state.loadingBorrow = false;
+      state.borrowRequests = action.payload;
+      state.lastFetchBorrow = Date.now();
+      state.errorBorrow = null;
+    });
+    builder.addCase(fetchBorrowRequests.rejected, (state, action) => {
+      state.loadingBorrow = false;
+      state.errorBorrow = action.error.message || 'Failed to fetch borrow requests';
+    });
+
+    // Refresh Borrow Requests
+    builder.addCase(refreshBorrowRequests.pending, (state) => {
+      state.loadingBorrow = true;
+      state.errorBorrow = null;
+    });
+    builder.addCase(refreshBorrowRequests.fulfilled, (state, action) => {
+      state.loadingBorrow = false;
+      state.borrowRequests = action.payload;
+      state.lastFetchBorrow = Date.now();
+      state.errorBorrow = null;
+    });
+    builder.addCase(refreshBorrowRequests.rejected, (state, action) => {
+      state.loadingBorrow = false;
+      state.errorBorrow = action.error.message || 'Failed to refresh borrow requests';
+    });
   },
 });
 
 export const { 
   clearPackingRequests, 
   clearReturns,
+  clearBorrowRequests,
+  removeBorrowRequest,
 } = requestsSlice.actions;
 
 export default requestsSlice.reducer;

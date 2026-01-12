@@ -1,8 +1,30 @@
+const STATUS_CODE_MAP: Record<number, 'pending' | 'approved' | 'rejected' | 'completed'> = {
+  0: 'pending',
+  1: 'approved',
+  2: 'rejected',
+  3: 'completed'
+};
+
+const REASON_CODE_MAP: Record<number, 'low-stock' | 'urgent' | 'new-project'> = {
+  0: 'low-stock',
+  1: 'urgent',
+  2: 'new-project'
+};
+
 /**
  * Format date to readable string
  */
-export function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
+export function formatDate(dateString?: string | null, fallback: string = '—'): string {
+  if (!dateString) {
+    return fallback;
+  }
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return fallback;
+  }
+
+  return date.toLocaleDateString('es-MX', {
     day: 'numeric',
     month: 'short',
     year: 'numeric'
@@ -12,8 +34,10 @@ export function formatDate(dateString: string): string {
 /**
  * Get color classes for status badge
  */
-export function getStatusColor(status: string): string {
-  switch (status) {
+export function getStatusColor(status: string | number | undefined, statusName?: string): string {
+  const normalized = normalizeStatus(status, statusName);
+
+  switch (normalized) {
     case 'pending':
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
     case 'approved':
@@ -30,7 +54,19 @@ export function getStatusColor(status: string): string {
 /**
  * Get human-readable status text
  */
-export function getStatusText(status: string): string {
+export function getStatusText(status: string | number | undefined, statusName?: string): string {
+  if (statusName) {
+    return statusName;
+  }
+
+  if (typeof status === 'number') {
+    const mapped = STATUS_CODE_MAP[status];
+    if (mapped) {
+      return getStatusText(mapped);
+    }
+    return `Estado ${status}`;
+  }
+
   switch (status) {
     case 'pending':
       return 'Pending';
@@ -48,8 +84,10 @@ export function getStatusText(status: string): string {
 /**
  * Get color classes for reason badge
  */
-export function getReasonColor(reason?: string): string {
-  switch (reason) {
+export function getReasonColor(reason?: string | number, reasonName?: string): string {
+  const normalized = normalizeReason(reason, reasonName);
+
+  switch (normalized) {
     case 'urgent':
       return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
     case 'low-stock':
@@ -64,7 +102,19 @@ export function getReasonColor(reason?: string): string {
 /**
  * Get human-readable reason text
  */
-export function getReasonText(reason: string): string {
+export function getReasonText(reason: string | number, reasonName?: string): string {
+  if (reasonName) {
+    return reasonName;
+  }
+
+  if (typeof reason === 'number') {
+    const mapped = REASON_CODE_MAP[reason];
+    if (mapped) {
+      return getReasonText(mapped);
+    }
+    return `Motivo ${reason}`;
+  }
+
   switch (reason) {
     case 'low-stock':
       return 'Low stock';
@@ -82,4 +132,32 @@ export function getReasonText(reason: string): string {
  */
 export function formatCurrency(amount: number): string {
   return `$${amount.toFixed(2)}`;
+}
+
+function normalizeStatus(status: string | number | undefined, statusName?: string): string {
+  if (statusName) {
+    return statusName.toLowerCase();
+  }
+
+  if (typeof status === 'number') {
+    const mapped = STATUS_CODE_MAP[status];
+    if (mapped) return mapped;
+    return status.toString();
+  }
+
+  return (status ?? '').toLowerCase();
+}
+
+function normalizeReason(reason?: string | number, reasonName?: string): string {
+  if (reasonName) {
+    return reasonName.toLowerCase();
+  }
+
+  if (typeof reason === 'number') {
+    const mapped = REASON_CODE_MAP[reason];
+    if (mapped) return mapped;
+    return reason.toString();
+  }
+
+  return (reason ?? '').toLowerCase();
 }
