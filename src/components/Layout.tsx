@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useMsal, useIsAuthenticated } from '@azure/msal-react';
 import { authService } from '../services/authService';
@@ -9,6 +9,8 @@ import {
   setSidebarOpen,
   toggleDarkMode,
   setNotificationsOpen,
+  setUser,
+  setLoading,
 } from '../store';
 import {
   fetchNotifications,
@@ -38,8 +40,11 @@ import {
   LogOut,
   Search,
   PackageCheck,
-  ScrollText
+  ScrollText,
+  Lock,
+  AlertCircle,
 } from 'lucide-react';
+import { SetPasswordModal } from './features/auth';
 
 export function Layout() {
   const navigate = useNavigate();
@@ -50,11 +55,65 @@ export function Layout() {
   // Get state from Redux
   const currentUser = useAppSelector((state) => state.auth.user);
   const authType = useAppSelector((state) => state.auth.authType);
+  const isLoading = useAppSelector((state) => state.auth.isLoading);
   const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
   const darkMode = useAppSelector((state) => state.ui.darkMode);
   const notificationsOpen = useAppSelector((state) => state.ui.notificationsOpen);
   const notifications = useAppSelector((state) => state.notifications.items);
   const unreadCount = useAppSelector((state) => state.notifications.unreadCount);
+
+  // Local state for SetPassword modal
+  const [setPasswordModalOpen, setSetPasswordModalOpen] = useState(false);
+
+  // Check if user needs to set local password (backendAuthType === 1 means Azure only)
+  const needsLocalPassword = currentUser?.backendAuthType === 1;
+
+  // Track if we've already marked as loaded
+  const hasMarkedLoaded = useRef(false);
+
+  // Notify that Layout is fully mounted and ready
+  useEffect(() => {
+    console.log('🟢 [Layout] Mount check:', {
+      hasCurrentUser: !!currentUser,
+      currentUserEmail: currentUser?.email,
+      isLoading,
+      hasMarkedLoaded: hasMarkedLoaded.current
+    });
+
+    // Only run once when Layout first mounts with a user
+    if (currentUser && isLoading && !hasMarkedLoaded.current) {
+      console.log('🟢 [Layout] User detected, hiding loading screen...');
+      hasMarkedLoaded.current = true;
+      dispatch(setLoading(false));
+      console.log('✅ [Layout] Loading screen hidden');
+    }
+  }, [currentUser, isLoading, dispatch]);
+
+  // Fallback: If loading screen is still showing after 8 seconds, force hide it
+  useEffect(() => {
+    if (!isLoading) {
+      console.log('🟢 [Layout] Loading is already false, no timeout needed');
+      return;
+    }
+
+    console.log('🟢 [Layout] Setting 8 second timeout fallback...');
+    const timeoutId = setTimeout(() => {
+      console.warn('⚠️ [Layout] Loading screen timeout - forcing hide after 8 seconds');
+      dispatch(setLoading(false));
+    }, 8000);
+
+    return () => {
+      console.log('🟢 [Layout] Clearing timeout');
+      clearTimeout(timeoutId);
+    };
+  }, [isLoading, dispatch]);
+
+  // Reset the flag when user logs out
+  useEffect(() => {
+    if (!currentUser) {
+      hasMarkedLoaded.current = false;
+    }
+  }, [currentUser]);
 
   // Apply dark mode to document root
   useEffect(() => {
@@ -96,19 +155,42 @@ export function Layout() {
     dispatch(fetchUnreadCount());
   };
 
+  const handlePasswordSetSuccess = (newAuthType: number) => {
+    // Update user's authType in Redux
+    if (currentUser) {
+      dispatch(setUser({
+        ...currentUser,
+        backendAuthType: newAuthType, // Should be 2 (Both) after setting password
+      }));
+    }
+  };
+
   const handleLogout = async () => {
     try {
-      console.log("Logging out user with authType:", authType);
+      console.log("🔴 [Logout] Starting logout for authType:", authType);
 
+      // FIRST: Set the flag BEFORE clearing anything
+      try {
+        localStorage.setItem('mro_just_logged_out', 'true');
+        console.log("🔴 [Logout] Flag set: mro_just_logged_out = true");
+      } catch (e) {
+        console.error("Failed to set logout flag:", e);
+      }
+
+      // SECOND: Clear Redux state
       dispatch(logout());
       dispatch(clearPackingRequests());
       dispatch(clearReturns());
-      authService.removeToken(); // Esto ya elimina 'mro_token'
+      console.log("🔴 [Logout] Redux state cleared");
 
-      // Only redirect to Azure logout if user authenticated with Azure
+      // THIRD: Clear localStorage (both token and user data)
+      authService.removeToken();
+      authService.removeUser();
+      console.log("🔴 [Logout] localStorage cleared");
+
+      // FOURTH: Handle redirect based on auth type
       if (authType === 'azure') {
-        try { localStorage.setItem('mro_just_logged_out', 'true'); } catch {}
-
+        console.log("🔴 [Logout] Redirecting to Azure logout...");
         // Use MSAL's logoutRedirect to properly clear the cache
         await instance.logoutRedirect({
           postLogoutRedirectUri: `${window.location.origin}/login`,
@@ -117,10 +199,14 @@ export function Layout() {
       }
 
       // For local auth, just navigate to login
+      console.log("🔴 [Logout] Navigating to /login");
       navigate("/login", { replace: true });
     } catch (error) {
-      console.error("Error during logout:", error);
+      console.error("❌ [Logout] Error during logout:", error);
+      // Ensure cleanup even on error
+      try { localStorage.setItem('mro_just_logged_out', 'true'); } catch {}
       authService.removeToken();
+      authService.removeUser();
       dispatch(logout());
       navigate("/login", { replace: true });
     }
@@ -143,11 +229,11 @@ export function Layout() {
   const navigation = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/', disabled: false, roles: ['Engineer', 'Keeper', 'Manager', 'Director'] },
     { id: 'articles', label: 'Inventory Management', icon: Package, path: '/inventory', disabled: false, roles: ['Keeper'] },
-    { id: 'orders', label: 'Purchase Request', icon: ShoppingCart, path: '/orders', disabled: false, roles: ['Keeper'] },
+    // { id: 'orders', label: 'Purchase Request', icon: ShoppingCart, path: '/orders', disabled: false, roles: ['Keeper','Director'] },
     { id: 'cyclecount', label: 'Cycle Count', icon: Calculator, path: '/cycle-count', disabled: false, roles: ['Keeper'] },
     { id: 'quickfind', label: 'Quick Find', icon: Search, path: '/quick-find', disabled: true, roles: ['Keeper'] },
     { id: 'managerequests', label: 'Manage Requests', icon: Package, path: '/manage-requests', disabled: false, roles: ['Keeper'] },
-    { id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests', disabled: false, roles: ['Director', 'Manager'] },
+    { id: 'requests', label: 'Request Approval', icon: ClipboardCheck, path: '/requests', disabled: false, roles: ['Manager','Director'] },
     { id: 'reports', label: 'Reports', icon: FileText, path: '/reports', disabled: false, roles: ['Director', 'Manager'] },
     { id: 'users', label: 'User Management', icon: Users, path: '/users', disabled: false, roles: ['Director', 'Manager'] },
     // Engineer Modules
@@ -180,6 +266,9 @@ export function Layout() {
     // console.log(`Module: ${item.label} - Access: ${access}`);
     return access;
   });
+
+  // console.log(filteredNavigation);
+  
 
   return (
     <div className="fixed inset-0 flex bg-background overflow-hidden">
@@ -262,12 +351,19 @@ export function Layout() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full justify-start p-0 h-auto hover:bg-muted/50">
                   <div className="flex items-center space-x-3 w-full p-2 rounded">
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={currentUser.photoUrl} alt={currentUser.name} />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-base">
-                        {currentUser.name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={currentUser.photoUrl} alt={currentUser.name} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-base">
+                          {currentUser.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      {needsLocalPassword && (
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center border-2 border-background">
+                          <AlertCircle className="h-3 w-3 text-white" />
+                        </div>
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-sm font-medium truncate">{currentUser.name}</p>
                       <p className="text-xs text-muted-foreground truncate">
@@ -303,6 +399,16 @@ export function Layout() {
                 </DropdownMenuLabel>
 
                 <DropdownMenuSeparator />
+
+                {needsLocalPassword && (
+                  <>
+                    <DropdownMenuItem onClick={() => setSetPasswordModalOpen(true)} className="text-amber-600 dark:text-amber-400 focus:text-amber-700 dark:focus:text-amber-300">
+                      <Lock className="mr-2 h-4 w-4" />
+                      <span>Set Local Password</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
 
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
@@ -393,6 +499,13 @@ export function Layout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Set Password Modal */}
+      <SetPasswordModal
+        open={setPasswordModalOpen}
+        onClose={() => setSetPasswordModalOpen(false)}
+        onSuccess={handlePasswordSetSuccess}
+      />
     </div>
   );
 }

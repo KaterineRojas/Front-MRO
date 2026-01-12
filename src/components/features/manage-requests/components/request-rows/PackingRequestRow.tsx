@@ -50,7 +50,12 @@ export const PackingRequestRow: React.FC<Props> = ({
     const isKit = isKitOrder(request);
     const areItemsSelected = selectedPackingItems.size > 0;
 
-    const isValidForPacking = isPrinted && (isKit || areItemsSelected);
+    const isPacking = request.status === 'Packing';
+    const isApproved = request.status === 'Approved';
+    const isSent = request.status === 'Sent';
+
+    // El botón solo está habilitado si el status es "Packing", está impreso y tiene items seleccionados
+    const isValidForPacking = isPacking && isPrinted && (isKit || areItemsSelected);
 
    const showDisabledToast = (e: React.MouseEvent) => {
         // Solo proceder si la acción es inválida
@@ -60,7 +65,9 @@ export const PackingRequestRow: React.FC<Props> = ({
             let disabledMessage = '';
             
             // Lógica para determinar el mensaje exacto
-            if (!isPrinted) {
+            if (!isPacking) {
+                disabledMessage = 'Request must be in Packing status. Please print the packing list first.';
+            } else if (!isPrinted) {
                 disabledMessage = 'To confirm, you must first print the packing list.';
             } else if (!isKit && !areItemsSelected) {
                 disabledMessage = 'Please select the items and specify the quantities to pack.';
@@ -70,10 +77,6 @@ export const PackingRequestRow: React.FC<Props> = ({
             toast.error(disabledMessage);
         }
     };
-
-const isPacking = request.status === 'Packing';
-const isApproved = request.status === 'Approved';
-const isSent = request.status === 'Sent';
 
 // 3. Lógica para el botón de IMPRESORA
     const printerTitle = isApproved 

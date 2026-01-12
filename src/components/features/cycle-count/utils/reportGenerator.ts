@@ -10,6 +10,7 @@ interface CountedArticle {
   observations?: string;
   adjustment?: number;
   adjustmentReason?: string;
+  imageUrl?: string;
 }
 
 interface CycleCountRecord {
@@ -38,8 +39,13 @@ export function generatePrintReport(record: CycleCountRecord) {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Cycle Count Audit Report</title>
+        <title>&nbsp;</title>
         <style>
+                  @media print {
+              @page { 
+                margin: 0; /* Esto elimina los encabezados y pies de página del navegador */
+              }            
+            }
           body { font-family: 'Segoe UI', sans-serif; padding: 20px; }
           h1 { font-size: 24px; margin-bottom: 20px; }
           h2 { font-size: 18px; margin-top: 30px; margin-bottom: 10px; }
@@ -60,7 +66,7 @@ export function generatePrintReport(record: CycleCountRecord) {
         
         <div class="header-info">
           <h2>Audit Header</h2>
-          <div><strong>Date and Time:</strong> ${record.completedDate || record.date}</div>
+          <div><strong>Date:</strong> ${record.date}</div>
           <div><strong>Count Type:</strong> ${record.countType}</div>
           <div><strong>Auditor Responsible:</strong> ${record.auditor}</div>
           <div><strong>Zone:</strong> ${record.zone === 'all' ? 'All Zones' : record.zone}</div>
@@ -139,9 +145,6 @@ export function generatePrintReport(record: CycleCountRecord) {
           </tbody>
         </table>
         
-        <div style="margin-top: 40px;">
-          <p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
-        </div>
       </body>
     </html>
   `);
@@ -179,7 +182,7 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
         
         <div class="header-info">
           <h2>Audit Header</h2>
-          <div><strong>Date and Time:</strong> ${record.completedDate || record.date}</div>
+          <div><strong>Date:</strong> ${record.date}</div>
           <div><strong>Count Type:</strong> ${record.countType}</div>
           <div><strong>Auditor Responsible:</strong> ${record.auditor}</div>
           <div><strong>Zone:</strong> ${record.zone === 'all' ? 'All Zones' : record.zone}</div>
@@ -268,6 +271,13 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
     <head>
       <title>All Cycle Count Reports - ${currentDate}</title>
       <style>
+      @media print {
+  @page {
+    /* Esto elimina los encabezados (título/URL) y pies de página (fecha/página) */
+    margin: 0;
+  }
+    
+}
         body { 
           font-family: 'Segoe UI', sans-serif; 
           padding: 20px;
@@ -384,11 +394,6 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
       </div>
 
       ${reportsHTML}
-
-      <div style="margin-top: 40px; text-align: center; border-top: 2px solid #ddd; padding-top: 20px;">
-        <p><strong>End of Reports</strong></p>
-        <p>Generated on: ${new Date().toLocaleString()}</p>
-      </div>
     </body>
     </html>
   `);
@@ -492,6 +497,7 @@ interface Article {
   physicalCount?: number;
   status?: 'match' | 'discrepancy';
   observations?: string;
+  imageUrl?: string;
 }
 
 interface CountInProgressData {
@@ -513,9 +519,14 @@ export function generatePrintCountInProgress(data: CountInProgressData) {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Physical Inventory Count Report</title>
+        <title>&nbsp;</title>
         <style>
-          body { font-family: 'Segoe UI', sans-serif; padding: 20px; }
+                @media print {
+            @page { 
+              margin: 0; /* Esto elimina los encabezados y pies de página del navegador */
+            }
+          }
+                  body { font-family: 'Segoe UI', sans-serif; padding: 20px; }
           h1 { font-size: 24px; margin-bottom: 20px; }
           h2 { font-size: 18px; margin-top: 30px; margin-bottom: 10px; }
           .header-info { margin-bottom: 20px; }
@@ -540,25 +551,6 @@ export function generatePrintCountInProgress(data: CountInProgressData) {
           <div><strong>Count Type:</strong> ${data.countType}</div>
           <div><strong>Auditor:</strong> ${data.auditor}</div>
           <div><strong>Zone:</strong> ${data.zone === 'all' ? 'All Zones' : data.zone}</div>
-        </div>
-        
-        <div class="summary">
-          <div class="summary-item">
-            <div><strong>Total Items</strong></div>
-            <div style="font-size: 32px;">${data.articles.length}</div>
-          </div>
-          <div class="summary-item">
-            <div><strong>Counted</strong></div>
-            <div style="font-size: 32px; color: #22c55e;">${countedArticles.length}</div>
-          </div>
-          <div class="summary-item">
-            <div><strong>Pending</strong></div>
-            <div style="font-size: 32px; color: #f59e0b;">${data.articles.length - countedArticles.length}</div>
-          </div>
-          <div class="summary-item">
-            <div><strong>Discrepancies</strong></div>
-            <div style="font-size: 32px; color: #ef4444;">${discrepancies.length}</div>
-          </div>
         </div>
         
         <h2>All Items (${data.articles.length})</h2>
@@ -595,10 +587,6 @@ export function generatePrintCountInProgress(data: CountInProgressData) {
             }).join('')}
           </tbody>
         </table>
-        
-        <div style="margin-top: 40px;">
-          <p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
-        </div>
       </body>
     </html>
   `);
@@ -610,3 +598,5 @@ export function generatePrintCountInProgress(data: CountInProgressData) {
     printWindow.close();
   }, 250);
 }
+
+

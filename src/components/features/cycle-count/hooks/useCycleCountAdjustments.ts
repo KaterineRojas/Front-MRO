@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CycleCountDetailData, DiscrepancyAdjustment } from '../types';
+import { recordCycleCountEntry, completeCycleCount } from '../services/cycleCountService';
 
 interface UseCycleCountAdjustmentsReturn {
   adjustments: Record<string, string>;
@@ -11,36 +12,42 @@ interface UseCycleCountAdjustmentsReturn {
     discrepancyArticles: any[],
     countData: CycleCountDetailData,
     onAdjustmentsApplied?: (data: CycleCountDetailData) => void
-  ) => void;
+  ) => Promise<void>;
   setIsAdjustmentsApplied: (value: boolean) => void;
 }
 
 export function useCycleCountAdjustments(
-  countData: CycleCountDetailData
+  countData: CycleCountDetailData | null | undefined
 ): UseCycleCountAdjustmentsReturn {
   // Initialize from existing data if adjustments were already applied
   const [adjustments, setAdjustments] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
-    countData.articles.forEach(article => {
-      if (article.adjustment !== undefined) {
-        initial[article.code] = article.adjustment.toString();
-      }
-    });
+    // Check if countData and articles exist before accessing
+    if (countData?.articles) {
+      countData.articles.forEach(article => {
+        if (article.adjustment !== undefined) {
+          initial[article.code] = article.adjustment.toString();
+        }
+      });
+    }
     return initial;
   });
 
   const [adjustmentReasons, setAdjustmentReasons] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
-    countData.articles.forEach(article => {
-      if (article.adjustmentReason) {
-        initial[article.code] = article.adjustmentReason;
-      }
-    });
+    // Check if countData and articles exist before accessing
+    if (countData?.articles) {
+      countData.articles.forEach(article => {
+        if (article.adjustmentReason) {
+          initial[article.code] = article.adjustmentReason;
+        }
+      });
+    }
     return initial;
   });
 
   const [isAdjustmentsApplied, setIsAdjustmentsApplied] = useState(
-    countData.adjustmentsApplied || false
+    countData?.adjustmentsApplied || false
   );
 
   const handleAdjustmentChange = (code: string, value: string) => {
@@ -63,55 +70,92 @@ export function useCycleCountAdjustments(
     }));
   };
 
-  const handleApplyAdjustments = (
+  const handleApplyAdjustments = async (
     discrepancyArticles: any[],
     countData: CycleCountDetailData,
     onAdjustmentsApplied?: (data: CycleCountDetailData) => void
   ) => {
-    const adjustmentsToApply: DiscrepancyAdjustment[] = [];
+    const recountsToApply: Array<{ article: any; newCount: number; reason: string }> = [];
 
     discrepancyArticles.forEach(article => {
-      const adjustedQty = adjustments[article.code];
+      const newCount = adjustments[article.code];
       const reason = adjustmentReasons[article.code];
 
-      if (adjustedQty && adjustedQty.trim() !== '') {
-        const qty = parseInt(adjustedQty);
+      if (newCount && newCount.trim() !== '') {
+        const qty = parseInt(newCount);
         if (!isNaN(qty) && qty >= 0) {
-          adjustmentsToApply.push({
-            code: article.code,
-            adjustedQuantity: qty,
-            reason: reason || 'Adjusted based on cycle count'
+          recountsToApply.push({
+            article,
+            newCount: qty,
+            reason: reason || 'Recount - verification'
           });
         }
       }
     });
 
-    if (adjustmentsToApply.length === 0) {
-      alert('Please enter at least one adjustment quantity.');
+    if (recountsToApply.length === 0) {
+      alert('Please enter at least one new count to update.');
       return;
     }
 
-    // Here you would typically send this to your backend
-    console.log('Applying adjustments:', adjustmentsToApply);
+    const confirmMessage = `You are about to update the count for ${recountsToApply.length} item(s). This will replace the physical count with the new values. Do you want to proceed?`;
 
-    const confirmMessage = `You are about to adjust ${adjustmentsToApply.length} item(s). This will update the inventory quantities. Do you want to proceed?`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
 
-    if (window.confirm(confirmMessage)) {
-      // Simulate API call
-      alert('Inventory adjustments have been applied successfully!');
+    try {
+      console.log('Updating counts via API:', recountsToApply);
 
-      // Don't clear the adjustments, just mark them as applied
+      // Call the backend to update each count
+      // Note: We need the entryId for each article to call the API
+      // This assumes articles have an entryId or we need to fetch it
+      const updatePromises = recountsToApply.map(async ({ article, newCount, reason }) => {
+        // TODO: Get entryId from article or make API call to get it
+        // For now, we'll need to modify the article type to include entryId
+        if (!article.entryId) {
+          console.warn('Article missing entryId, cannot update:', article.code);
+          return null;
+        }
+
+        return recordCycleCountEntry({
+          entryId: article.entryId,
+          physicalCount: newCount,
+          countedByUserId: countData.countedByUserId || 0, // TODO: Get from auth context
+          notes: reason
+        });
+      });
+
+      await Promise.all(updatePromises);
+
+      console.log('✅ All counts updated successfully. Now completing cycle count...');
+
+      // After updating counts, complete the cycle count
+      try {
+        await completeCycleCount(countData.id);
+        console.log('✅ Cycle count completed and adjustments applied by backend');
+        alert('Counts updated and cycle count completed successfully! Inventory adjustments have been applied.');
+      } catch (completeError) {
+        console.error('❌ Error completing cycle count:', completeError);
+        alert('Counts were updated, but failed to complete the cycle count. Please try completing manually.');
+      }
+
       setIsAdjustmentsApplied(true);
 
-      // Update the countData with adjustments
+      // Update the countData with new counts
       const updatedArticles = countData.articles.map(article => {
-        const adjustment = adjustments[article.code];
+        const newCount = adjustments[article.code];
         const reason = adjustmentReasons[article.code];
-        if (adjustment && !isNaN(parseInt(adjustment))) {
+        if (newCount && !isNaN(parseInt(newCount))) {
+          const newPhysicalCount = parseInt(newCount);
+          const newStatus = (newPhysicalCount === article.totalRegistered 
+      ? 'match' 
+      : 'discrepancy') as 'match' | 'discrepancy';
           return {
             ...article,
-            adjustment: parseInt(adjustment),
-            adjustmentReason: reason || 'Adjusted based on cycle count'
+            physicalCount: newPhysicalCount,
+            status: newStatus,
+            observations: reason || article.observations
           };
         }
         return article;
@@ -126,6 +170,9 @@ export function useCycleCountAdjustments(
       if (onAdjustmentsApplied) {
         onAdjustmentsApplied(updatedData);
       }
+    } catch (error) {
+      console.error('Error updating counts:', error);
+      alert('Failed to update counts. Please try again.');
     }
   };
 

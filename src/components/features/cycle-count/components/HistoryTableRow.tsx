@@ -26,6 +26,7 @@ export function HistoryTableRow({
   return (
     <TableRow>
       <TableCell>{record.date}</TableCell>
+      <TableCell>{record.countName || '-'}</TableCell>
       <TableCell>{record.zone === 'all' ? 'All Zones' : record.zone}</TableCell>
       <TableCell>
         {record.status === 'completed' ? (

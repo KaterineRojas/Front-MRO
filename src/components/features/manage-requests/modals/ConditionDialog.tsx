@@ -14,6 +14,9 @@ interface Props {
 }
 
 export const ConditionDialog: React.FC<Props> = ({ open, onOpenChange, conditionCounts, setConditionCounts, onSave }) => {
+  // Validación defensiva: asegurar que conditionCounts siempre tenga un valor
+  const safeConditionCounts = conditionCounts || { good: 0, revision: 0, lost: 0 };
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -25,51 +28,51 @@ export const ConditionDialog: React.FC<Props> = ({ open, onOpenChange, condition
           <div className="space-y-2">
             <Label htmlFor="good-count">Good Condition</Label>
             <div className="flex items-center space-x-2">
-              <Button variant="outline" className="text-black cursor-pointer" size="sm" onClick={() => setConditionCounts({ ...conditionCounts, good: Math.max(0, conditionCounts.good - 1) })}>-</Button>
+              <Button variant="outline" className="text-black cursor-pointer" size="sm" onClick={() => setConditionCounts({ ...safeConditionCounts, good: Math.max(0, safeConditionCounts.good - 1) })}>-</Button>
               <Input 
                 id="good-count" 
                 type="number" 
                 min="0" 
-                value={conditionCounts.good} 
+                value={safeConditionCounts.good} 
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => setConditionCounts({ ...conditionCounts, good: Math.max(0, parseInt(e.target.value) || 0) })} 
+                onChange={(e) => setConditionCounts({ ...safeConditionCounts, good: Math.max(0, parseInt(e.target.value) || 0) })} 
                 className="w-20 text-center" 
               />
-              <Button variant="outline" className="text-black cursor-pointer" size="sm" onClick={() => setConditionCounts({ ...conditionCounts, good: conditionCounts.good + 1 })}>+</Button>
+              <Button variant="outline" className="text-black cursor-pointer" size="sm" onClick={() => setConditionCounts({ ...safeConditionCounts, good: safeConditionCounts.good + 1 })}>+</Button>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="revision-count">On Revision</Label>
             <div className="flex items-center space-x-2">
-              <Button variant="outline" className="text-black cursor-pointer" size="sm" onClick={() => setConditionCounts({ ...conditionCounts, revision: Math.max(0, conditionCounts.revision - 1) })}>-</Button>
+              <Button variant="outline" className="text-black cursor-pointer" size="sm" onClick={() => setConditionCounts({ ...safeConditionCounts, revision: Math.max(0, safeConditionCounts.revision - 1) })}>-</Button>
               <Input 
                 id="revision-count" 
                 type="number" 
                 min="0" 
-                value={conditionCounts.revision} 
+                value={safeConditionCounts.revision} 
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => setConditionCounts({ ...conditionCounts, revision: Math.max(0, parseInt(e.target.value) || 0) })} 
+                onChange={(e) => setConditionCounts({ ...safeConditionCounts, revision: Math.max(0, parseInt(e.target.value) || 0) })} 
                 className="w-20 text-center" 
               />
-              <Button variant="outline" className="text-black cursor-pointer" size="sm" onClick={() => setConditionCounts({ ...conditionCounts, revision: conditionCounts.revision + 1 })}>+</Button>
+              <Button variant="outline" className="text-black cursor-pointer" size="sm" onClick={() => setConditionCounts({ ...safeConditionCounts, revision: safeConditionCounts.revision + 1 })}>+</Button>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="lost-count">Lost</Label>
             <div className="flex items-center space-x-2">
-              <Button variant="outline" className="text-black cursor-pointer" size="sm" onClick={() => setConditionCounts({ ...conditionCounts, lost: Math.max(0, conditionCounts.lost - 1) })}>-</Button>
+              <Button variant="outline" className="text-black cursor-pointer" size="sm" onClick={() => setConditionCounts({ ...safeConditionCounts, lost: Math.max(0, safeConditionCounts.lost - 1) })}>-</Button>
               <Input 
                 id="lost-count" 
                 type="number" 
                 min="0" 
-                value={conditionCounts.lost} 
+                value={safeConditionCounts.lost} 
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => setConditionCounts({ ...conditionCounts, lost: Math.max(0, parseInt(e.target.value) || 0) })} 
+                onChange={(e) => setConditionCounts({ ...safeConditionCounts, lost: Math.max(0, parseInt(e.target.value) || 0) })} 
                 className="w-20 text-center" 
               />
-              <Button variant="outline" className="text-black cursor-pointer" size="sm" onClick={() => setConditionCounts({ ...conditionCounts, lost: conditionCounts.lost + 1 })}>+</Button>
+              <Button variant="outline" className="text-black cursor-pointer" size="sm" onClick={() => setConditionCounts({ ...safeConditionCounts, lost: safeConditionCounts.lost + 1 })}>+</Button>
             </div>
           </div>
         </div>

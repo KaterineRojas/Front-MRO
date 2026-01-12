@@ -6,18 +6,19 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: number;
+  role: string;
   roleName: string;
   department: string;
   departmentId?: string;
   departmentName?: string;
-  employeeId?: string; 
-  warehouseId?: number; 
+  employeeId?: string;
+  warehouseId?: number;
   photoUrl?: string;
   jobTitle?: string;
   mobilePhone?: string;
   officeLocation?: string;
   warehouse?: number;
+  backendAuthType?: number; // 0=Local, 1=Azure, 2=Both - from backend
 }
 
 export type AuthType = 'local' | 'azure' | null;
@@ -55,7 +56,7 @@ const authSlice = createSlice({
       state.accessToken = action.payload.accessToken;
       state.authType = action.payload.authType;
       state.isAuthenticated = true;
-      state.isLoading = false;
+      // Note: isLoading is NOT set to false here - it will be set manually after UI is ready
     },
     setUserPhoto: (state, action: PayloadAction<string>) => {
       if (state.user) {

@@ -119,7 +119,7 @@ export function KitsTab({
 
           <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3">
 
-            <FilterSelect
+            {/* <FilterSelect
               value={String(categoryFilter || '')}
               onChange={(val) => setCategoryFilter(val)}
               options={categoryOptions}
@@ -127,7 +127,7 @@ export function KitsTab({
               isLoading={loadingCategories}
               icon={<Layers className="h-4 w-4" />}
               allOptionIncluded={true}
-            />
+            /> */}
 
             <FilterSelect
               value={stockFilter}
