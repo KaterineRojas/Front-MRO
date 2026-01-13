@@ -1,132 +1,211 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
+import React, { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../../../ui/dialog';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Label } from '../../../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../ui/select';
 import { Textarea } from '../../../ui/textarea';
+import { Alert, AlertDescription } from '../../../ui/alert';
+import { Info, Loader2 } from 'lucide-react';
+import { getBinTypes } from '../services/inventoryApi';
+//import { getBinTypes } from '../services/binsService';
+import { Switch } from '../../../ui/switch';
 
 interface Bin {
   id: number;
   binCode: string;
-  type: 'good-condition' | 'on-revision' | 'scrap';
+  type: string;
+  isActive: boolean;
   description: string;
+  allowDifferentItems: boolean;
 }
 
 interface CreateBinModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingBin: Bin | null;
-  bins: Bin[];
-  onSubmit: (bin: Omit<Bin, 'id'>, isEdit: boolean, editingBinId?: number) => void;
+  formData: {
+    binCode: string;
+    type: string;
+    description: string;
+    allowDifferentItems: boolean;
+  };
+  onFormDataChange: (data: {
+    binCode: string;
+    type: string;
+    description: string;
+    allowDifferentItems: boolean;
+  }) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  hasStock?: boolean;
 }
 
 export function CreateBinModal({
   open,
   onOpenChange,
   editingBin,
-  bins,
-  onSubmit
+  formData,
+  onFormDataChange,
+  onSubmit,
+  hasStock = false,
 }: CreateBinModalProps) {
-  const [formData, setFormData] = useState<{
-    binCode: string;
-    type: 'good-condition' | 'on-revision' | 'scrap';
-    description: string;
-  }>({
-    binCode: editingBin?.binCode || '',
-    type: editingBin?.type || 'good-condition',
-    description: editingBin?.description || ''
-  });
+  const [binTypes, setBinTypes] = useState<{ value: string; label: string }[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
+  const [errorTypes, setErrorTypes] = useState<string | null>(null);
 
-  // Update formData when editingBin changes
-  React.useEffect(() => {
-    if (editingBin) {
-      setFormData({
-        binCode: editingBin.binCode,
-        type: editingBin.type,
-        description: editingBin.description
-      });
-    } else {
-      setFormData({
-        binCode: '',
-        type: 'good-condition',
-        description: ''
-      });
-    }
-  }, [editingBin, open]);
+  // ✅ Cargar tipos de bins desde el backend cuando se abre el modal
+  useEffect(() => {
+    async function loadBinTypes() {
+      if (!open) return;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Check for duplicate bin code
-    const isDuplicate = bins.some(bin => 
-      bin.binCode.toLowerCase() === formData.binCode.toLowerCase() && 
-      bin.id !== editingBin?.id
-    );
-    
-    if (isDuplicate) {
-      alert(`Error: BIN Code "${formData.binCode}" already exists. Please use a different code.`);
-      return;
+      try {
+        setLoadingTypes(true);
+        setErrorTypes(null);
+        const types = await getBinTypes();
+        setBinTypes(types);
+        console.log('✅ Bin types loaded:', types);
+      } catch (error) {
+        console.error('❌ Error loading bin types:', error);
+        setErrorTypes(error instanceof Error ? error.message : 'Failed to load bin types');
+      } finally {
+        setLoadingTypes(false);
+      }
     }
-    
-    onSubmit(formData, !!editingBin, editingBin?.id);
-    onOpenChange(false);
-  };
+
+    loadBinTypes();
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{editingBin ? 'Edit Bin' : 'Create New Bin'}</DialogTitle>
+          <DialogTitle>{editingBin ? 'Edit Bin' : 'Register New Bin'}</DialogTitle>
           <DialogDescription>
-            {editingBin ? 'Update the bin information below.' : 'Fill in the details to create a new bin.'}
+            {editingBin
+              ? 'Update the bin information below.'
+              : 'Fill in the details to create a new bin.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+
+        <form onSubmit={onSubmit} className="space-y-4">
+          {/* Alerta informativa cuando el bin tiene stock */}
+          {editingBin && hasStock && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                This bin contains items. Only BIN Code and Description can be edited.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* BIN Code */}
           <div>
             <Label htmlFor="binCode">BIN Code *</Label>
             <Input
               id="binCode"
               value={formData.binCode}
-              onChange={(e) => setFormData({...formData, binCode: e.target.value})}
-              placeholder="e.g., BIN-OFF-001"
+              onChange={(e) =>
+                onFormDataChange({ ...formData, binCode: e.target.value })
+              }
+              placeholder="e.g., BIN-A-001"
               required
             />
           </div>
 
+          {/* ✅ Type - Selector dinámico desde el backend */}
           <div>
             <Label htmlFor="type">Type *</Label>
-            <Select 
-              value={formData.type} 
-              onValueChange={(value: 'good-condition' | 'on-revision' | 'scrap') => setFormData({...formData, type: value})}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="good-condition">Good Condition</SelectItem>
-                <SelectItem value="on-revision">On Revision</SelectItem>
-                <SelectItem value="scrap">Scrap</SelectItem>
-              </SelectContent>
-            </Select>
+            {loadingTypes ? (
+              <div className="flex items-center justify-center p-4 border dark:border-border rounded-md">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
+                <span className="text-sm text-muted-foreground">Loading types...</span>
+              </div>
+            ) : errorTypes ? (
+              <div className="p-3 border dark:border-border border-destructive rounded-md bg-destructive/10">
+                <p className="text-destructive text-sm">{errorTypes}</p>
+              </div>
+            ) : (
+              <>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value: string) =>
+                    onFormDataChange({ ...formData, type: value })
+                  }
+                  disabled={(editingBin !== null && hasStock) || binTypes.length === 0}
+                  required
+                >
+                  <SelectTrigger 
+                    id="type"
+                    className={editingBin && hasStock ? 'opacity-60 cursor-not-allowed' : ''}
+                  >
+                    <SelectValue placeholder="Select bin type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {binTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {editingBin && hasStock && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Type cannot be changed while bin contains items
+                  </p>
+                )}
+              </>
+            )}
           </div>
 
+          {/* Description */}
           <div>
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              onChange={(e) =>
+                onFormDataChange({ ...formData, description: e.target.value })
+              }
               placeholder="Description of this bin..."
               rows={3}
             />
           </div>
 
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          {/* Allow Different Items */}
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col">
+              <Label htmlFor="allowDifferentItems" className="font-medium">Allow Different Items</Label>
+              <span className="text-xs text-muted-foreground mt-1">Enable storing multiple item types in this bin</span>
+            </div>
+            <Switch
+              id="allowDifferentItems"
+              checked={formData.allowDifferentItems}
+              onCheckedChange={(checked: any) => onFormDataChange({ ...formData, allowDifferentItems: checked })}
+            />
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={loadingTypes || !!errorTypes}>
               {editingBin ? 'Update Bin' : 'Create Bin'}
             </Button>
           </div>
