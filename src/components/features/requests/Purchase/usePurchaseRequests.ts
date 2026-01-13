@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import {
   getPurchaseRequests,
   deletePurchaseRequest,
-  confirmPurchaseBought,
+  confirmPurchase,
   type PurchaseRequest
 } from './purchaseService';
 import { useConfirmModal } from '../../../ui/confirm-modal';
@@ -191,16 +191,38 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
   // Confirm purchase as bought
   const handleConfirmBought = async (requestId: string, quantities: { [key: string]: number }) => {
     const normalizedId = requestId.toString();
+    
+    // Find the request to get item IDs
+    const request = purchaseRequests.find(req => {
+      const reqKey = (req.requestId ?? req.requestNumber)?.toString();
+      return reqKey === normalizedId;
+    });
+
+    if (!request) {
+      toast.error('Purchase request not found');
+      return;
+    }
+
+    // Convert quantities object to receivedItems array
+    const receivedItems = request.items.map((item, index) => {
+      const indexKey = index.toString();
+      const quantityReceived = quantities[indexKey] ?? item.quantity;
+      return {
+        itemId: item.itemId ?? item.id,
+        quantityReceived: quantityReceived
+      };
+    });
+
     try {
-      const result = await confirmPurchaseBought(normalizedId, quantities);
+      const result = await confirmPurchase(normalizedId, receivedItems);
       if (result.success) {
         setPurchaseRequests(prev => prev.filter(req => {
           const reqKey = (req.requestId ?? req.requestNumber)?.toString();
           return reqKey !== normalizedId;
         }));
-        toast.success(result.message);
+        toast.success('Purchase confirmed successfully');
       } else {
-        toast.error(result.message);
+        toast.error('Failed to confirm purchase');
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to confirm purchase');
@@ -219,8 +241,9 @@ export function usePurchaseRequests(): UsePurchaseRequestsReturn {
     // Cambiar de 'approved' (1) a 'ordered' (3)
     const isOrdered = statusKey === 'ordered' || statusKey === 'completed';
     // selfPurchase puede venir como boolean o string
-    const isSelfPurchase = request.selfPurchase === true || 
-                           request.selfPurchase === 'true' || 
+    const selfPurchaseValue = request.selfPurchase;
+    const isSelfPurchase = selfPurchaseValue === true || 
+                           selfPurchaseValue === 'true' || 
                            (request as any).isSelfPurchase === true ||
                            (request as any).isSelfPurchase === 'true';
     return isOrdered && isSelfPurchase;

@@ -172,6 +172,25 @@ export function CompleteHistory() {
                 <span className="font-medium">Notes:</span> {request.notes}
               </p>
             )}
+            {(() => {
+              const isRejected = request.status.toLowerCase() === 'rejected';
+              const hasReason = !!request.rejectionReason;
+              console.log('Desktop view - rejection check:', {
+                requestNumber: request.requestNumber,
+                status: request.status,
+                statusLower: request.status.toLowerCase(),
+                isRejected,
+                rejectionReason: request.rejectionReason,
+                hasReason
+              });
+              return null;
+            })()}
+            {request.status.toLowerCase() === 'rejected' && request.rejectionReason && (
+              <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
+                <p className="text-sm font-semibold text-red-900 dark:text-red-300">Rejection Reason:</p>
+                <p className="text-sm text-red-800 dark:text-red-400 mt-1 whitespace-pre-wrap">{request.rejectionReason}</p>
+              </div>
+            )}
           </div>
         </TableCell>
       </TableRow>
@@ -366,6 +385,25 @@ export function CompleteHistory() {
                           <p className="text-xs text-muted-foreground mt-2 italic">
                             Notes: {request.notes}
                           </p>
+                        )}
+                        {(() => {
+                          const isRejected = request.status.toLowerCase() === 'rejected';
+                          const hasReason = !!request.rejectionReason;
+                          console.log('Mobile view - rejection check:', {
+                            requestNumber: request.requestNumber,
+                            status: request.status,
+                            statusLower: request.status.toLowerCase(),
+                            isRejected,
+                            rejectionReason: request.rejectionReason,
+                            hasReason
+                          });
+                          return null;
+                        })()}
+                        {request.status.toLowerCase() === 'rejected' && request.rejectionReason && (
+                          <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
+                            <p className="text-xs font-semibold text-red-900 dark:text-red-300">Rejection Reason:</p>
+                            <p className="text-xs text-red-800 dark:text-red-400 mt-1 whitespace-pre-wrap">{request.rejectionReason}</p>
+                          </div>
                         )}
                       </div>
                     )}

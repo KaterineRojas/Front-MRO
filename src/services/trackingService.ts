@@ -9,6 +9,7 @@ export interface ItemLocationDto {
   quantityReserved: number;
   quantityAvailable: number;
   isDefault: boolean;
+  zoneType: string;
 }
 
 export interface EngineerHoldingDto {

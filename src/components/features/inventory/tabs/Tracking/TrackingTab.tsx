@@ -400,47 +400,63 @@ export function TrackingTab() {
                     <h3 className="text-lg font-semibold">Physical Locations (In Bins)</h3>
                   </div>
                   <div className="space-y-2">
-                    {itemTrackingData.locations.map((location, index) => (
-                      <Card key={index} className="border-l-4 border-l-blue-500">
-                        <CardContent className="pt-6">
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            <div className="space-y-1">
-                              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                Bin Location
+                    {itemTrackingData.locations.map((location, index) => {
+                      const isDamageZone = location.zoneType === 'DAMAGE';
+                      const borderColor = isDamageZone ? 'border-l-red-500' : 'border-l-blue-500';
+                      const quantityColor = isDamageZone ? 'text-red-600' : 'text-blue-600';
+
+                      return (
+                        <Card key={index} className={`border-l-4 ${borderColor}`}>
+                          <CardContent className="pt-6">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                              <div className="space-y-1">
+                                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  Bin Location
+                                </div>
+                                <div className="font-semibold">{location.binCode}</div>
+                                <div className="flex gap-1 flex-wrap">
+                                  {location.isDefault && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Default Bin
+                                    </Badge>
+                                  )}
+                                  {isDamageZone && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      DAMAGE Zone
+                                    </Badge>
+                                  )}
+                                  <Badge variant="outline" className="text-xs">
+                                    {location.zoneType}
+                                  </Badge>
+                                </div>
                               </div>
-                              <div className="font-semibold">{location.binCode}</div>
-                              {location.isDefault && (
-                                <Badge variant="secondary" className="text-xs">
-                                  Default Bin
-                                </Badge>
-                              )}
+                              <div className="space-y-1">
+                                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Box className="h-3 w-3" />
+                                  Quantity
+                                </div>
+                                <div className={`font-semibold text-lg ${quantityColor}`}>
+                                  {location.quantity}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Available: {location.quantityAvailable}
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="text-xs text-muted-foreground">On Loan / Reserved</div>
+                                <div className="font-semibold text-purple-600">
+                                  {location.quantityOnLoan} / {location.quantityReserved}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Loaned / Reserved
+                                </div>
+                              </div>
                             </div>
-                            <div className="space-y-1">
-                              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Box className="h-3 w-3" />
-                                Quantity
-                              </div>
-                              <div className="font-semibold text-lg text-blue-600">
-                                {location.quantity}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                Available: {location.quantityAvailable}
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <div className="text-xs text-muted-foreground">On Loan / Reserved</div>
-                              <div className="font-semibold text-purple-600">
-                                {location.quantityOnLoan} / {location.quantityReserved}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                Loaned / Reserved
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </div>
               )}

@@ -111,6 +111,7 @@ export interface LoanRequest {
   totalQuantity: number;
   notes: string;
   items: BorrowItem[];
+  rejectionReason?: string;
 }
 
 export interface PagedResponse<T> {
@@ -158,6 +159,22 @@ export async function getBorrowRequests(
     const apiData = responseData.data || responseData;
 
     console.log('Borrow requests data received:', apiData);
+    
+    // Log para verificar rejectionReason en requests rechazados
+    const rejectedRequests = (Array.isArray(apiData) ? apiData : []).filter((req: any) => 
+      req.status?.toLowerCase() === 'rejected'
+    );
+    if (rejectedRequests.length > 0) {
+      console.log('Rejected borrow requests found:', rejectedRequests.length);
+      rejectedRequests.forEach((req: any, idx: number) => {
+        console.log(`Rejected request ${idx + 1}:`, {
+          requestNumber: req.requestNumber,
+          status: req.status,
+          rejectionReason: req.rejectionReason,
+          allFields: Object.keys(req)
+        });
+      });
+    }
 
     return {
       items: apiData as LoanRequest[],
