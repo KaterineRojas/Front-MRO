@@ -243,7 +243,7 @@ export const PackingRequestRow: React.FC<Props> = ({
                                     handlePackingQuantityChange(request.id, item.id, numValue);
                                   }}
                                   onFocus={(e) => e.target.select()}
-                                  className={`w-20 ${getPackingItemQuantity(request.id, item.id) === 0 ? 'border-2 text-center border rounded px-2 py-1 border-black-400 bg-green-50' : 'border border-gray-300'}`}
+                                  className={`w-20 ${getPackingItemQuantity(request.id, item.id) === 0 ? 'border-2 text-center border rounded px-2 py-1 border-black-400 bg-green-50 dark:bg-green-900/30' : 'border border-gray-300 dark:border-gray-600'}`}
                                 />
                                 <span className="text-sm text-muted-foreground">/ {item.quantityRequested} {item.unit}</span>
                               </div>

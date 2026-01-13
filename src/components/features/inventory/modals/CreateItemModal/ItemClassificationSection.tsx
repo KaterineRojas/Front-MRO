@@ -11,7 +11,7 @@ export function ItemClassificationSection({
 }: ItemClassificationProps) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 pb-2 border-b">
+      <div className="flex items-center gap-2 pb-2 border-b dark:border-gray-700">
         <Layers className="h-4 w-4 text-primary" />
         <h3 className="font-semibold text-sm">Classification</h3>
       </div>

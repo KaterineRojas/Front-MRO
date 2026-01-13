@@ -6,7 +6,7 @@ interface CatalogSkeletonProps {
 
 export function CatalogCardSkeleton() {
   return (
-    <div className="h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div className="h-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
       {/* Image skeleton */}
       <div className="relative aspect-square w-full p-2">
         <Skeleton className="h-full w-full rounded-md" />

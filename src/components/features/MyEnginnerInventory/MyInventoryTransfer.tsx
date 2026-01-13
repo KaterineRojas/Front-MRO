@@ -230,7 +230,7 @@ export function MyInventoryTransfer() {
 
 
   const renderDesktopView = () => (
-    <div className="border rounded-lg">
+    <div className="border dark:border-gray-700 rounded-lg">
       <Table>
         <TableHeader>
           <TableRow>
@@ -374,7 +374,7 @@ export function MyInventoryTransfer() {
               </div>
             </div>
             {item.isKit && expandedKits.has(item.id) && item.kitItems && (
-              <div className="mt-4 pt-4 border-t space-y-2">
+              <div className="mt-4 pt-4 border-t dark:border-gray-700 space-y-2">
                 <div className="text-sm font-semibold">Kit Contents:</div>
                 {item.kitItems.map((kitItem) => (
                   <div key={kitItem.id} className="flex items-start gap-2 text-sm bg-muted/30 p-2 rounded">

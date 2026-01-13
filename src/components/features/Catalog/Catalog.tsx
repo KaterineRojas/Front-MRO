@@ -423,7 +423,7 @@ export function Catalog() {
                   )}
                 >
                   {/* Image Container */}
-                  <div className="relative aspect-square w-full overflow-hidden bg-gray-50 p-2">
+                  <div className="relative aspect-square w-full overflow-hidden bg-gray-50 dark:bg-gray-800 p-2">
                     <ImageWithFallback
                       src={imageSrc}
                       alt={item.itemName}

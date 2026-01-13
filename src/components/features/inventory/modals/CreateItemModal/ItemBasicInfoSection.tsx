@@ -7,7 +7,7 @@ import type { ItemBasicInfoProps } from './types';
 export function ItemBasicInfoSection({ formData, onFormDataChange }: ItemBasicInfoProps) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 pb-2 border-b">
+      <div className="flex items-center gap-2 pb-2 border-b dark:border-gray-700">
         <FileText className="h-4 w-4 text-primary" />
         <h3 className="font-semibold text-sm">Basic Information</h3>
       </div>

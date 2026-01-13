@@ -110,7 +110,7 @@ export function SetPasswordModal({ open, onClose, onSuccess }: SetPasswordModalP
                   disabled={loading}
                   required
                   minLength={6}
-                  className="dark:bg-background dark:text-foreground dark:border-input"
+                  className=""
                 />
               </div>
 
@@ -125,7 +125,7 @@ export function SetPasswordModal({ open, onClose, onSuccess }: SetPasswordModalP
                   disabled={loading}
                   required
                   minLength={6}
-                  className="dark:bg-background dark:text-foreground dark:border-input"
+                  className=""
                 />
               </div>
             </div>
