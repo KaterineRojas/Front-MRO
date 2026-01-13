@@ -1,38 +1,14 @@
-import React, { useState } from 'react';
+
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../../ui/card';
-import { Button } from '../../../../../ui/button';
 import { Input } from '../../../../../ui/input';
 import { Label } from '../../../../../ui/label';
 import { Textarea } from '../../../../../ui/textarea';
-import { Badge } from '../../../../../ui/badge';
+import { Separator } from '../../../../../ui/separator';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../../../../ui/select';
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from '../../../../../ui/hover-card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '../../../../../ui/dialog';
-import {
-  Package,
   Calendar,
-  Building,
-  User as UserIcon,
-  FolderOpen,
-  Hash,
+  FileText,
+  MapPin,
 } from 'lucide-react';
-import type { User } from '../../../../enginner/types';
 import type {
   LoanFormData,
   Company,
@@ -40,30 +16,8 @@ import type {
   Project,
   WorkOrder,
 } from '../types';
-import { formatWorkOrderDate, getMinDate, isValidUrl } from '../utils';
-
-interface DepartmentSectionProps {
-  currentUser: User;
-}
-
-function DepartmentSection({ currentUser }: DepartmentSectionProps) {
-  return (
-    <div>
-      <Label htmlFor="department">
-        <div className="flex items-center gap-2 mb-1.5">
-          <Package className="h-4 w-4" />
-          Department *
-        </div>
-      </Label>
-      <div className="flex items-center gap-2 p-2 border border-input rounded-md bg-muted">
-        <Badge variant="secondary">
-          {currentUser.departmentName || currentUser.department}
-        </Badge>
-        <span className="text-sm text-muted-foreground">(Fixed)</span>
-      </div>
-    </div>
-  );
-}
+import { getMinDate, isValidUrl } from '../utils';
+import { ProjectDetailsSection } from '../../../shared';
 
 interface ReturnDateSectionProps {
   value: string;
@@ -76,7 +30,7 @@ function ReturnDateSection({ value, onChange }: ReturnDateSectionProps) {
       <Label htmlFor="returnDate">
         <div className="flex items-center gap-2 mb-1.5">
           <Calendar className="h-4 w-4" />
-          Return Date
+          Return Date *
         </div>
       </Label>
       <div className="relative">
@@ -88,293 +42,51 @@ function ReturnDateSection({ value, onChange }: ReturnDateSectionProps) {
           onChange={(e) => onChange(e.target.value)}
           required
         />
-        <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
       </div>
     </div>
   );
 }
 
-interface CompanySectionProps {
+interface NotesSectionProps {
   value: string;
-  companies: Company[];
-  loading: boolean;
-  loaded: boolean;
-  offlineMode: boolean;
-  onLoadCompanies: () => void;
   onChange: (value: string) => void;
 }
 
-function CompanySection({
-  value,
-  companies,
-  loading,
-  loaded,
-  offlineMode,
-  onLoadCompanies,
-  onChange,
-}: CompanySectionProps) {
+function NotesSection({ value, onChange }: NotesSectionProps) {
   return (
     <div>
-      <Label htmlFor="company">
+      <Label htmlFor="notes">
         <div className="flex items-center gap-2 mb-1.5">
-          <Building className="h-4 w-4" />
-          Company *
-          {loading && (
-            <span className="text-xs text-muted-foreground">(Loading...)</span>
-          )}
+          <FileText className="h-4 w-4" />
+          Additional Notes (optional)
         </div>
       </Label>
-      <Select
+      <Textarea
+        id="notes"
+        placeholder="Additional information about the borrow request..."
         value={value}
-        onValueChange={onChange}
-        disabled={loading || offlineMode}
-        onOpenChange={(open: boolean) => {
-          if (open && !loaded && !offlineMode) {
-            onLoadCompanies();
-          }
-        }}
-      >
-        <SelectTrigger id="company">
-          <SelectValue
-            placeholder={
-              offlineMode
-                ? 'Offline - Cannot load companies'
-                : loading
-                  ? 'Loading companies...'
-                  : 'Select a company'
-            }
-          />
-        </SelectTrigger>
-        <SelectContent>
-          {!loaded && !loading && (
-            <SelectItem value="_loading" disabled>
-              Click to load companies...
-            </SelectItem>
-          )}
-          {companies.map((company) => (
-            <SelectItem key={company.name} value={company.name}>
-              {company.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        onChange={(e) => onChange(e.target.value)}
+        rows={3}
+      />
     </div>
   );
 }
 
-interface CustomerSectionProps {
-  value: string;
-  customers: Customer[];
-  loading: boolean;
-  hasCompany: boolean;
-  offlineMode: boolean;
-  onChange: (value: string) => void;
-}
-
-function CustomerSection({
-  value,
-  customers,
-  loading,
-  hasCompany,
-  offlineMode,
-  onChange,
-}: CustomerSectionProps) {
-  return (
-    <div>
-      <Label htmlFor="customer">
-        <div className="flex items-center gap-2 mb-1.5">
-          <UserIcon className="h-4 w-4" />
-          Customer *
-          {loading && (
-            <span className="text-xs text-muted-foreground">(Loading...)</span>
-          )}
-        </div>
-      </Label>
-      <Select
-        value={value}
-        onValueChange={onChange}
-        disabled={!hasCompany || loading || offlineMode}
-      >
-        <SelectTrigger id="customer">
-          <SelectValue
-            placeholder={
-              offlineMode
-                ? 'Offline'
-                : hasCompany
-                  ? 'Select a customer'
-                  : 'Select company first'
-            }
-          />
-        </SelectTrigger>
-        <SelectContent>
-          {customers.map((customer) => (
-            <SelectItem key={customer.id} value={customer.name}>
-              {customer.name} {customer.code && `(${customer.code})`}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-interface ProjectSectionProps {
-  value: string;
-  projects: Project[];
-  loading: boolean;
-  hasCustomer: boolean;
-  offlineMode: boolean;
-  onChange: (value: string) => void;
-}
-
-function ProjectSection({
-  value,
-  projects,
-  loading,
-  hasCustomer,
-  offlineMode,
-  onChange,
-}: ProjectSectionProps) {
-  return (
-    <div>
-      <Label htmlFor="project">
-        <div className="flex items-center gap-2 mb-1.5">
-          <FolderOpen className="h-4 w-4" />
-          Project *
-          {loading && (
-            <span className="text-xs text-muted-foreground">(Loading...)</span>
-          )}
-        </div>
-      </Label>
-      <Select
-        value={value}
-        onValueChange={onChange}
-        disabled={!hasCustomer || loading || offlineMode}
-      >
-        <SelectTrigger id="project">
-          <SelectValue
-            placeholder={
-              offlineMode
-                ? 'Offline'
-                : hasCustomer
-                  ? 'Select a project'
-                  : 'Select customer first'
-            }
-          />
-        </SelectTrigger>
-        <SelectContent>
-          {projects.map((project) => (
-            <SelectItem key={project.id} value={project.name}>
-              {project.name} ({project.code})
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-interface WorkOrderSectionProps {
-  value: string;
-  workOrders: WorkOrder[];
-  loading: boolean;
-  hasProject: boolean;
-  offlineMode: boolean;
-  onChange: (value: string, workOrder?: WorkOrder) => void;
-}
-
-function WorkOrderSection({
-  value,
-  workOrders,
-  loading,
-  hasProject,
-  offlineMode,
-  onChange,
-}: WorkOrderSectionProps) {
-  return (
-    <div>
-      <Label htmlFor="workOrder">
-        <div className="flex items-center gap-2 mb-1.5">
-          <Hash className="h-4 w-4" />
-          Work Order # *
-          {loading && (
-            <span className="text-xs text-muted-foreground">(Loading...)</span>
-          )}
-        </div>
-      </Label>
-      <Select
-        value={value}
-        onValueChange={(woValue: string) => {
-          const details = workOrders.find((wo) => wo.wo === woValue);
-          onChange(woValue, details);
-        }}
-        disabled={!hasProject || loading || offlineMode}
-      >
-        <SelectTrigger id="workOrder">
-          <SelectValue
-            placeholder={
-              offlineMode
-                ? 'Offline'
-                : hasProject
-                  ? 'Select work order'
-                  : 'Select project first'
-            }
-          />
-        </SelectTrigger>
-        <SelectContent>
-          {workOrders.map((wo) => (
-            <HoverCard key={wo.id ?? wo.wo} openDelay={150} closeDelay={100}>
-              <HoverCardTrigger asChild>
-                <SelectItem
-                  value={wo.wo}
-                  className="flex flex-col items-start gap-0.5"
-                >
-                  <span className="font-medium">{wo.wo}</span>
-                  {wo.serviceDesc && (
-                    <span className="text-xs text-muted-foreground line-clamp-1">
-                      {wo.serviceDesc}
-                    </span>
-                  )}
-                </SelectItem>
-              </HoverCardTrigger>
-              <HoverCardContent className="space-y-2 text-sm">
-                <div>
-                  <p className="font-semibold">{wo.wo}</p>
-                  {wo.serviceDesc && (
-                    <p className="text-xs text-muted-foreground">
-                      {wo.serviceDesc}
-                    </p>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <p className="text-muted-foreground">Start</p>
-                    <p>{formatWorkOrderDate(wo.startDate)}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">End</p>
-                    <p>{formatWorkOrderDate(wo.endDate)}</p>
-                  </div>
-                </div>
-              </HoverCardContent>
-            </HoverCard>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-interface AddressFieldsProps {
+interface AddressDetailsSectionProps {
   formData: LoanFormData;
   onFormDataChange: (field: keyof LoanFormData, value: string) => void;
 }
 
-function AddressFields({ formData, onFormDataChange }: AddressFieldsProps) {
+function AddressDetailsSection({ formData, onFormDataChange }: AddressDetailsSectionProps) {
   return (
-    <>
+    <div className="space-y-4">
       <div>
-        <Label htmlFor="address">Address (optional)</Label>
+        <Label htmlFor="address">
+          <div className="flex items-center gap-2 mb-1.5">
+            <MapPin className="h-4 w-4" />
+            Address (optional)
+          </div>
+        </Label>
         <Input
           id="address"
           type="text"
@@ -415,95 +127,12 @@ function AddressFields({ formData, onFormDataChange }: AddressFieldsProps) {
           {formData.zipCode.length}/6
         </p>
       </div>
-    </>
-  );
-}
-
-interface NotesSectionProps {
-  value: string;
-  onChange: (value: string) => void;
-}
-
-function NotesSection({ value, onChange }: NotesSectionProps) {
-  return (
-    <div>
-      <Label htmlFor="notes">Additional Notes (optional)</Label>
-      <Textarea
-        id="notes"
-        placeholder="Additional information about the borrow request..."
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={3}
-      />
     </div>
-  );
-}
-
-interface WorkOrderDetailsModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  workOrder: WorkOrder | null;
-}
-
-export function WorkOrderDetailsModal({
-  open,
-  onOpenChange,
-  workOrder,
-}: WorkOrderDetailsModalProps) {
-  return (
-    <Dialog open={open && !!workOrder} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Work Order Details</DialogTitle>
-          <DialogDescription>
-            Review the information for the selected work order.
-          </DialogDescription>
-        </DialogHeader>
-        {workOrder && (
-          <div className="space-y-3 text-sm">
-            <div>
-              <p className="text-muted-foreground text-xs">Work Order</p>
-              <p className="font-semibold">{workOrder.wo}</p>
-            </div>
-            {workOrder.serviceDesc && (
-              <div>
-                <p className="text-muted-foreground text-xs">Description</p>
-                <p>{workOrder.serviceDesc}</p>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-muted-foreground text-xs">Start Date</p>
-                <p>{formatWorkOrderDate(workOrder.startDate)}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs">End Date</p>
-                <p>{formatWorkOrderDate(workOrder.endDate)}</p>
-              </div>
-            </div>
-            {workOrder.status && (
-              <div>
-                <p className="text-muted-foreground text-xs">Status</p>
-                <p className="uppercase tracking-wide text-sm">
-                  {workOrder.status}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
 
 interface DetailsCardProps {
   formData: LoanFormData;
-  currentUser: User;
   companies: Company[];
   customers: Customer[];
   projects: Project[];
@@ -520,11 +149,10 @@ interface DetailsCardProps {
 }
 
 /**
- * Right panel card for borrow details
+ * Right panel card for borrow details - organized in 3 sections
  */
 export function DetailsCard({
   formData,
-  currentUser,
   companies,
   customers,
   projects,
@@ -542,62 +170,68 @@ export function DetailsCard({
   return (
     <Card className="flex flex-col h-[calc(100vh-16rem)]">
       <CardHeader>
-        <CardTitle>Borrow Details</CardTitle>
+        <CardTitle>Borrow Request Details</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-4 overflow-y-auto space-y-4">
-        <DepartmentSection currentUser={currentUser} />
+      <CardContent className="flex-1 overflow-y-auto space-y-6">
+        {/* Section 1: Project Details */}
+        <div>
+          <h3 className="text-sm font-semibold mb-3 text-foreground">
+            Project Details
+          </h3>
+          <ProjectDetailsSection
+            company={formData.company}
+            customer={formData.customer}
+            project={formData.project}
+            workOrder={formData.workOrder}
+            companies={companies}
+            customers={customers}
+            projects={projects}
+            workOrders={workOrders}
+            loadingCompanies={loadingCompanies}
+            loadingCustomers={loadingCustomers}
+            loadingProjects={loadingProjects}
+            loadingWorkOrders={loadingWorkOrders}
+            companiesLoaded={companiesLoaded}
+            offlineMode={offlineMode}
+            onLoadCompanies={onLoadCompanies}
+            onCompanyChange={(value) => onFormDataChange('company', value)}
+            onCustomerChange={(value) => onFormDataChange('customer', value)}
+            onProjectChange={(value) => onFormDataChange('project', value)}
+            onWorkOrderSelect={onWorkOrderSelect}
+          />
+        </div>
 
-        <ReturnDateSection
-          value={formData.returnDate}
-          onChange={(value) => onFormDataChange('returnDate', value)}
-        />
+        <Separator />
 
-        <CompanySection
-          value={formData.company}
-          companies={companies}
-          loading={loadingCompanies}
-          loaded={companiesLoaded}
-          offlineMode={offlineMode}
-          onLoadCompanies={onLoadCompanies}
-          onChange={(value) => onFormDataChange('company', value)}
-        />
+        {/* Section 2: Address Details (Optional) */}
+        <div>
+          <h3 className="text-sm font-semibold mb-3 text-foreground">
+            Address Details <span className="text-muted-foreground font-normal">(Optional)</span>
+          </h3>
+          <AddressDetailsSection
+            formData={formData}
+            onFormDataChange={onFormDataChange}
+          />
+        </div>
 
-        <CustomerSection
-          value={formData.customer}
-          customers={customers}
-          loading={loadingCustomers}
-          hasCompany={!!formData.company}
-          offlineMode={offlineMode}
-          onChange={(value) => onFormDataChange('customer', value)}
-        />
+        <Separator />
 
-        <ProjectSection
-          value={formData.project}
-          projects={projects}
-          loading={loadingProjects}
-          hasCustomer={!!formData.customer}
-          offlineMode={offlineMode}
-          onChange={(value) => onFormDataChange('project', value)}
-        />
-
-        <WorkOrderSection
-          value={formData.workOrder}
-          workOrders={workOrders}
-          loading={loadingWorkOrders}
-          hasProject={!!formData.project}
-          offlineMode={offlineMode}
-          onChange={onWorkOrderSelect}
-        />
-
-        <AddressFields
-          formData={formData}
-          onFormDataChange={onFormDataChange}
-        />
-
-        <NotesSection
-          value={formData.notes}
-          onChange={(value) => onFormDataChange('notes', value)}
-        />
+        {/* Section 3: Borrow Details */}
+        <div>
+          <h3 className="text-sm font-semibold mb-3 text-foreground">
+            Borrow Details
+          </h3>
+          <div className="space-y-4">
+            <ReturnDateSection
+              value={formData.returnDate}
+              onChange={(value) => onFormDataChange('returnDate', value)}
+            />
+            <NotesSection
+              value={formData.notes}
+              onChange={(value) => onFormDataChange('notes', value)}
+            />
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

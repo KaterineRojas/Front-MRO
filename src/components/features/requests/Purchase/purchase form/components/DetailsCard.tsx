@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../../ui/card';
 import { Input } from '../../../../../ui/input';
 import { Label } from '../../../../../ui/label';
@@ -6,10 +5,12 @@ import { Textarea } from '../../../../../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../../ui/select';
 import { Switch } from '../../../../../ui/switch';
 import { Alert, AlertDescription } from '../../../../../ui/alert';
-import { AlertTriangle, Calendar, ClipboardList, Building, User, FolderOpen, Hash, FileText } from 'lucide-react';
+import { Separator } from '../../../../../ui/separator';
+import { AlertTriangle, Calendar, ClipboardList, FileText, MapPin, Hash } from 'lucide-react';
 import type { PurchaseFormData } from '../types';
 import type { Company, Customer, Project, WorkOrder } from '../../../services/sharedServices';
 import { validateUrl } from '../utils';
+import { ProjectDetailsSection } from '../../../shared';
 
 interface DetailsCardProps {
   formData: PurchaseFormData;
@@ -29,8 +30,9 @@ interface DetailsCardProps {
   onCompanyChange: (value: string) => void;
   onCustomerChange: (value: string) => void;
   onProjectChange: (value: string) => void;
-  onWorkOrderChange: (value: string) => void;
+  onWorkOrderChange: (value: string, workOrder?: WorkOrder) => void;
   onFormDataChange: (field: keyof PurchaseFormData, value: any) => void;
+  offlineMode?: boolean;
 }
 
 export function DetailsCard({
@@ -52,138 +54,175 @@ export function DetailsCard({
   onCustomerChange,
   onProjectChange,
   onWorkOrderChange,
-  onFormDataChange
+  onFormDataChange,
+  offlineMode = false,
 }: DetailsCardProps) {
   return (
     <Card className="flex flex-col h-[calc(100vh-16rem)]">
       <CardHeader>
-        <CardTitle>Purchase Details</CardTitle>
+        <CardTitle>Purchase Request Details</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto space-y-6 pr-1">
-        {/* Purchase Responsibility */}
-        <PurchaseResponsibilitySection
-          selfPurchase={formData.selfPurchase}
-          onSelfPurchaseChange={onSelfPurchaseChange}
-        />
-
-        {/* Expected Delivery Date */}
-        <ExpectedDeliverySection
-          expectedDeliveryDate={formData.expectedDeliveryDate}
-          onChange={(value) => onFormDataChange('expectedDeliveryDate', value)}
-        />
-
-        {/* Client Billed */}
-        <ClientBilledSection
-          clientBilled={formData.clientBilled}
-          onToggle={onClientBilledToggle}
-        />
-
-        {/* Purchase Reason */}
-        <PurchaseReasonSection
-          purchaseReason={formData.purchaseReason}
-          selfPurchase={formData.selfPurchase}
-          onChange={onPurchaseReasonChange}
-        />
-
-        {/* Company */}
-        <CompanySection
-          company={formData.company}
-          companies={companies}
-          loading={loadingCompanies}
-          loaded={companiesLoaded}
-          onChange={onCompanyChange}
-          onOpen={onLoadCompanies}
-        />
-
-        {/* Customer */}
-        <CustomerSection
-          customer={formData.customer}
-          company={formData.company}
-          customers={customers}
-          loading={loadingCustomers}
-          onChange={onCustomerChange}
-        />
-
-        {/* Project */}
-        <ProjectSection
-          project={formData.project}
-          customer={formData.customer}
-          projects={projects}
-          loading={loadingProjects}
-          onChange={onProjectChange}
-        />
-
-        {/* Work Order */}
-        <WorkOrderSection
-          workOrder={formData.workOrder}
-          project={formData.project}
-          workOrders={workOrders}
-          loading={loadingWorkOrders}
-          onChange={onWorkOrderChange}
-        />
-
-        {/* Address */}
+        {/* Section 1: Purchase Details */}
         <div>
-          <Label htmlFor="address">Address (optional)</Label>
-          <Input
-            id="address"
-            type="text"
-            placeholder="Enter delivery address"
-            value={formData.address}
-            onChange={(e) => onFormDataChange('address', e.target.value)}
+          <h3 className="text-sm font-semibold mb-3 text-foreground">
+            Purchase Details
+          </h3>
+          <div className="space-y-4">
+            <PurchaseResponsibilitySection
+              selfPurchase={formData.selfPurchase}
+              onSelfPurchaseChange={onSelfPurchaseChange}
+            />
+            <ExpectedDeliverySection
+              expectedDeliveryDate={formData.expectedDeliveryDate}
+              onChange={(value) => onFormDataChange('expectedDeliveryDate', value)}
+            />
+            <ClientBilledSection
+              clientBilled={formData.clientBilled}
+              onToggle={onClientBilledToggle}
+            />
+            <PurchaseReasonSection
+              purchaseReason={formData.purchaseReason}
+              selfPurchase={formData.selfPurchase}
+              onChange={onPurchaseReasonChange}
+            />
+            <JustificationSection
+              justification={formData.justification}
+              onChange={(value) => onFormDataChange('justification', value)}
+            />
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Section 2: Project Details */}
+        <div>
+          <h3 className="text-sm font-semibold mb-3 text-foreground">
+            Project Details
+          </h3>
+          <ProjectDetailsSection
+            company={formData.company}
+            customer={formData.customer}
+            project={formData.project}
+            workOrder={formData.workOrder}
+            companies={companies}
+            customers={customers}
+            projects={projects}
+            workOrders={workOrders}
+            loadingCompanies={loadingCompanies}
+            loadingCustomers={loadingCustomers}
+            loadingProjects={loadingProjects}
+            loadingWorkOrders={loadingWorkOrders}
+            companiesLoaded={companiesLoaded}
+            offlineMode={offlineMode}
+            onLoadCompanies={onLoadCompanies}
+            onCompanyChange={onCompanyChange}
+            onCustomerChange={onCustomerChange}
+            onProjectChange={onProjectChange}
+            onWorkOrderSelect={onWorkOrderChange}
           />
         </div>
 
-        {/* Location URL */}
-        <div>
-          <Label htmlFor="location">Location URL (optional)</Label>
-          <Input
-            id="location"
-            type="text"
-            placeholder="Enter Google Maps link or location URL"
-            value={formData.googleMapsUrl}
-            onChange={(e) => onFormDataChange('googleMapsUrl', e.target.value)}
-          />
-          {formData.googleMapsUrl && !validateUrl(formData.googleMapsUrl) && (
-            <p className="text-xs text-red-500 mt-1">Please enter a valid URL</p>
-          )}
-        </div>
+        <Separator />
 
-        {/* ZIP Code */}
+        {/* Section 3: Address Details (Optional) */}
         <div>
-          <Label htmlFor="zipCode">ZIP Code (optional)</Label>
-          <Input
-            id="zipCode"
-            type="text"
-            placeholder="Enter ZIP code (max 6 characters)"
-            value={formData.zipCode}
-            onChange={(e) => {
-              const value = e.target.value.slice(0, 6);
-              onFormDataChange('zipCode', value);
-            }}
-            maxLength={6}
-          />
-          <p className="text-xs text-muted-foreground mt-1">{formData.zipCode.length}/6</p>
-        </div>
-
-        {/* Justification */}
-        <div>
-          <Label htmlFor="justification">
-            <div className="flex items-center gap-2 mb-1.5">
-              <FileText className="h-4 w-4" />
-              Justification
-            </div>
-          </Label>
-          <Textarea
-            id="justification"
-            placeholder="Explain why this purchase is needed..."
-            value={formData.justification}
-            onChange={(e) => onFormDataChange('justification', e.target.value)}
-            rows={4}
+          <h3 className="text-sm font-semibold mb-3 text-foreground">
+            Address Details <span className="text-muted-foreground font-normal">(Optional)</span>
+          </h3>
+          <AddressDetailsSection
+            address={formData.address}
+            googleMapsUrl={formData.googleMapsUrl}
+            zipCode={formData.zipCode}
+            onFormDataChange={onFormDataChange}
           />
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+interface JustificationSectionProps {
+  justification: string;
+  onChange: (value: string) => void;
+}
+
+function JustificationSection({ justification, onChange }: JustificationSectionProps) {
+  return (
+    <div>
+      <Label htmlFor="justification">
+        <div className="flex items-center gap-2 mb-1.5">
+          <FileText className="h-4 w-4" />
+          Justification
+        </div>
+      </Label>
+      <Textarea
+        id="justification"
+        placeholder="Explain why this purchase is needed..."
+        value={justification}
+        onChange={(e) => onChange(e.target.value)}
+        rows={4}
+      />
+    </div>
+  );
+}
+
+interface AddressDetailsSectionProps {
+  address: string;
+  googleMapsUrl: string;
+  zipCode: string;
+  onFormDataChange: (field: keyof PurchaseFormData, value: any) => void;
+}
+
+function AddressDetailsSection({ address, googleMapsUrl, zipCode, onFormDataChange }: AddressDetailsSectionProps) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="address">
+          <div className="flex items-center gap-2 mb-1.5">
+            <MapPin className="h-4 w-4" />
+            Address
+          </div>
+        </Label>
+        <Input
+          id="address"
+          type="text"
+          placeholder="Enter delivery address"
+          value={address}
+          onChange={(e) => onFormDataChange('address', e.target.value)}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="location">Location URL</Label>
+        <Input
+          id="location"
+          type="text"
+          placeholder="Enter Google Maps link or location URL"
+          value={googleMapsUrl}
+          onChange={(e) => onFormDataChange('googleMapsUrl', e.target.value)}
+        />
+        {googleMapsUrl && !validateUrl(googleMapsUrl) && (
+          <p className="text-xs text-red-500 mt-1">Please enter a valid URL</p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="zipCode">ZIP Code</Label>
+        <Input
+          id="zipCode"
+          type="text"
+          placeholder="Enter ZIP code (max 6 characters)"
+          value={zipCode}
+          onChange={(e) => {
+            const value = e.target.value.slice(0, 6);
+            onFormDataChange('zipCode', value);
+          }}
+          maxLength={6}
+        />
+        <p className="text-xs text-muted-foreground mt-1">{zipCode.length}/6</p>
+      </div>
+    </div>
   );
 }
 
@@ -316,214 +355,6 @@ function PurchaseReasonSection({ purchaseReason, selfPurchase, onChange }: Purch
           <SelectItem value="low-stock">Low stock</SelectItem>
           <SelectItem value="urgent">Urgent</SelectItem>
           <SelectItem value="new-project">New project</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-interface CompanySectionProps {
-  company: string;
-  companies: Company[];
-  loading: boolean;
-  loaded: boolean;
-  onChange: (value: string) => void;
-  onOpen: () => void;
-}
-
-function CompanySection({ company, companies, loading, loaded, onChange, onOpen }: CompanySectionProps) {
-  return (
-    <div>
-      <Label htmlFor="company">
-        <div className="flex items-center gap-2 mb-1.5">
-          <Building className="h-4 w-4" />
-          Company *
-          {loading && <span className="text-xs text-muted-foreground">(Loading...)</span>}
-        </div>
-      </Label>
-      <Select
-        value={company}
-        onValueChange={onChange}
-        onOpenChange={(open: boolean) => {
-          if (open && !loaded) {
-            onOpen();
-          }
-        }}
-      >
-        <SelectTrigger id="company">
-          <SelectValue placeholder={loading ? 'Loading companies...' : 'Select a company'} />
-        </SelectTrigger>
-        <SelectContent>
-          {loading ? (
-            <SelectItem value="_loading" disabled>Loading companies...</SelectItem>
-          ) : (
-            <>
-              {!loaded && (
-                <SelectItem value="_prefetch" disabled>Click to load companies...</SelectItem>
-              )}
-              {companies.map((c) => (
-                <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-              ))}
-              {loaded && companies.length === 0 && (
-                <SelectItem value="_no_companies" disabled>No companies available</SelectItem>
-              )}
-            </>
-          )}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-interface CustomerSectionProps {
-  customer: string;
-  company: string;
-  customers: Customer[];
-  loading: boolean;
-  onChange: (value: string) => void;
-}
-
-function CustomerSection({ customer, company, customers, loading, onChange }: CustomerSectionProps) {
-  return (
-    <div>
-      <Label htmlFor="customer">
-        <div className="flex items-center gap-2 mb-1.5">
-          <User className="h-4 w-4" />
-          Customer *
-          {loading && <span className="text-xs text-muted-foreground">(Loading...)</span>}
-        </div>
-      </Label>
-      <Select value={customer} onValueChange={onChange}>
-        <SelectTrigger id="customer" disabled={!company || loading}>
-          <SelectValue
-            placeholder={
-              !company
-                ? 'Select a company first'
-                : loading
-                  ? 'Loading customers...'
-                  : 'Select a customer'
-            }
-          />
-        </SelectTrigger>
-        <SelectContent>
-          {loading ? (
-            <SelectItem value="_loading" disabled>Loading customers...</SelectItem>
-          ) : customers.length > 0 ? (
-            customers.map((c) => (
-              <SelectItem key={c.id} value={c.name}>
-                {c.name}{c.code ? ` (${c.code})` : ''}
-              </SelectItem>
-            ))
-          ) : (
-            <SelectItem value="_no_customers" disabled>
-              {company ? 'No customers available' : 'Select a company first'}
-            </SelectItem>
-          )}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-interface ProjectSectionProps {
-  project: string;
-  customer: string;
-  projects: Project[];
-  loading: boolean;
-  onChange: (value: string) => void;
-}
-
-function ProjectSection({ project, customer, projects, loading, onChange }: ProjectSectionProps) {
-  return (
-    <div>
-      <Label htmlFor="project">
-        <div className="flex items-center gap-2 mb-1.5">
-          <FolderOpen className="h-4 w-4" />
-          Project *
-          {loading && <span className="text-xs text-muted-foreground">(Loading...)</span>}
-        </div>
-      </Label>
-      <Select value={project} onValueChange={onChange}>
-        <SelectTrigger id="project" disabled={!customer || loading}>
-          <SelectValue
-            placeholder={
-              !customer
-                ? 'Select a customer first'
-                : loading
-                  ? 'Loading projects...'
-                  : 'Select a project'
-            }
-          />
-        </SelectTrigger>
-        <SelectContent>
-          {loading ? (
-            <SelectItem value="_loading" disabled>Loading projects...</SelectItem>
-          ) : projects.length > 0 ? (
-            projects.map((p) => (
-              <SelectItem key={p.id} value={p.name}>
-                {p.name}{p.code ? ` (${p.code})` : ''}
-              </SelectItem>
-            ))
-          ) : (
-            <SelectItem value="_no_projects" disabled>
-              {customer ? 'No projects available' : 'Select a customer first'}
-            </SelectItem>
-          )}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-interface WorkOrderSectionProps {
-  workOrder: string;
-  project: string;
-  workOrders: WorkOrder[];
-  loading: boolean;
-  onChange: (value: string) => void;
-}
-
-function WorkOrderSection({ workOrder, project, workOrders, loading, onChange }: WorkOrderSectionProps) {
-  return (
-    <div>
-      <Label htmlFor="workOrder">
-        <div className="flex items-center gap-2 mb-1.5">
-          <Hash className="h-4 w-4" />
-          Work Order #
-          {loading && <span className="text-xs text-muted-foreground">(Loading...)</span>}
-        </div>
-      </Label>
-      <Select value={workOrder} onValueChange={onChange}>
-        <SelectTrigger id="workOrder" disabled={!project || loading}>
-          <SelectValue
-            placeholder={
-              !project
-                ? 'Select a project first'
-                : loading
-                  ? 'Loading work orders...'
-                  : 'Select a work order'
-            }
-          />
-        </SelectTrigger>
-        <SelectContent>
-          {loading ? (
-            <SelectItem value="_loading" disabled>Loading work orders...</SelectItem>
-          ) : workOrders.length > 0 ? (
-            workOrders.map((wo) => (
-              <SelectItem key={wo.id ?? wo.wo} value={wo.wo}>
-                <span className="flex flex-col gap-0.5">
-                  <span className="font-medium">{wo.wo}</span>
-                  {wo.serviceDesc && (
-                    <span className="text-xs text-muted-foreground">{wo.serviceDesc}</span>
-                  )}
-                </span>
-              </SelectItem>
-            ))
-          ) : (
-            <SelectItem value="_no_workorders" disabled>
-              {project ? 'No work orders available' : 'Select a project first'}
-            </SelectItem>
-          )}
         </SelectContent>
       </Select>
     </div>

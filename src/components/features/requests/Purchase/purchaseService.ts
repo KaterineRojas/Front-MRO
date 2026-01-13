@@ -48,7 +48,7 @@ export interface PurchaseRequest {
   statusName?: string;
   reasonId?: number | string;
   reasonName?: string;
-  selfPurchase: boolean;
+  selfPurchase: boolean | string;
   items: PurchaseItem[];
   totalCost?: number;
   estimatedTotalCost?: number;
@@ -69,6 +69,7 @@ export interface PurchaseRequest {
   address?: string;
   googleMapsUrl?: string;
   zipCode?: string;
+  rejectionReason?: string;
 }
 
 export interface PurchaseRequestItemPayload {
@@ -714,4 +715,38 @@ export async function getExistingItems(): Promise<ExistingItem[]> {
 export async function getDepartments(): Promise<Department[]> {
   await delay(100);
   return [...mockDepartments];
+}
+
+
+export async function confirmPurchase(
+  requestNumber: string,
+  receivedItems: Array<{ itemId: number; quantityReceived: number }>
+): Promise<{ success: boolean }> {
+  try {
+    const token = store.getState().auth.accessToken as string;
+    const url = `${API_URL}/purchase-requests/${requestNumber}/receive`;
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        receivedItems: receivedItems
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Purchase request not found');
+      }
+      throw new Error(`Error confirming purchase: ${response.status}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
 }

@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { ConfirmModal, useConfirmModal, type ModalType } from '../../../../ui/confirm-modal';
 import { ErrorType, type AppError } from '../../../enginner/services/errorHandler';
 import { createBorrowRequest } from '../borrowService';
-import type { WorkOrder } from '../../services/sharedServices';
 
 // Types
 import type { LoanFormProps, LoanFormData } from './types';
@@ -25,7 +24,6 @@ import {
   FormActions,
   ItemsCard,
   DetailsCard,
-  WorkOrderDetailsModal,
 } from './components';
 
 export function LoanForm({
@@ -47,10 +45,6 @@ export function LoanForm({
 
   // Offline mode
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
-
-  // Work order modal
-  const [selectedWorkOrderDetails, setSelectedWorkOrderDetails] = useState<WorkOrder | null>(null);
-  const [workOrderModalOpen, setWorkOrderModalOpen] = useState(false);
 
   // Modal state
   const { modalState, showConfirm, hideModal, setModalOpen } = useConfirmModal();
@@ -282,12 +276,8 @@ export function LoanForm({
   }, []);
 
   // Work order select handler
-  const handleWorkOrderSelect = useCallback((value: string, workOrder?: WorkOrder) => {
+  const handleWorkOrderSelect = useCallback((value: string) => {
     setFormData((prev) => ({ ...prev, workOrder: value }));
-    if (workOrder) {
-      setSelectedWorkOrderDetails(workOrder);
-      setWorkOrderModalOpen(true);
-    }
   }, []);
 
   // Submit handler
@@ -416,7 +406,6 @@ export function LoanForm({
 
             <DetailsCard
               formData={formData}
-              currentUser={currentUser}
               companies={companyData.companies}
               customers={companyData.customers}
               projects={companyData.projects}
@@ -440,12 +429,6 @@ export function LoanForm({
           />
         </form>
       </div>
-
-      <WorkOrderDetailsModal
-        open={workOrderModalOpen}
-        onOpenChange={setWorkOrderModalOpen}
-        workOrder={selectedWorkOrderDetails}
-      />
 
       <ConfirmModal
         open={modalState.open}

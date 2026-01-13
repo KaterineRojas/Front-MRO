@@ -17,6 +17,7 @@ export interface Transfer {
   transferPhoto?: string;
   imageUrl?: string;
   warehouseName?: string;
+  rejectionReason?: string;
 }
 
 export interface TransferItem {
