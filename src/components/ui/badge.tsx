@@ -17,26 +17,6 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-
-        // Verde: Para "In Stock", "Available", "Active"
-        success:
-          "border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-
-        // Ámbar/Amarillo: Para "Low Stock", "Reserved", "On Loan"
-        warning:
-          "border-transparent bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-
-        // Rojo Suave: Para "Out of Stock", "Expired", "Missing" (Menos agresivo que destructive)
-        critical:
-          "border-transparent bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-
-        // Azul: Para Categorías, Ubicaciones o "Items in Kit"
-        info:
-          "border-transparent bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-
-        // Gris: Para cantidades neutras (ej: "x1"), SKUs secundarios o Tags
-        neutral:
-          "border-transparent bg-gray-800 text-white dark:bg-white dark:text-black",
       },
     },
     defaultVariants: {

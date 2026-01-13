@@ -45,15 +45,3 @@ yarn-error.log*
 # Archivos de Sistema Operativo
 .DS_Store
 Thumbs.db
-
-# claude
-CLAUDE.md
-!.claude
-!.claude/settings.local.json
-
-src/Readme.md
-src/components/features/inventory/trash.txt
-
-/tailwind.config.js
-/postcss.config.js
-src/components/features/orders/Notes.md
