@@ -26,8 +26,8 @@ export const PackingConfirmDialog: React.FC<Props> = ({ open, onOpenChange, curr
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+    <Dialog open={open} onOpenChange={(newOpen) => !isLoading && onOpenChange(newOpen)}>
+      <DialogContent className="max-w-md" onInteractOutside={(e) => isLoading && e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="text-xl flex items-center gap-2"><Package className="h-5 w-5 text-[#568FCB]" />Confirm Packing</DialogTitle>
           <DialogDescription>
