@@ -29,11 +29,11 @@ export const PackingRequestsTab: React.FC<Props> = (props) => {
   const { packingRequests, expandedPackingRequests, onToggleExpandPacking } = props;
   return (
     <div>
-      <div className="flex justify-end mb-4">
+      {/*<div className="flex justify-end mb-4">
         <Button className="bg-white hover:bg-white">
           <Plus className="h-4 w-4 mr-2" /> Create New Request Order
         </Button>
-      </div>
+      </div>*/}
 
       <Card>
         <CardHeader>
