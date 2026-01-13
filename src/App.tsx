@@ -915,6 +915,12 @@ function AppRoutes() {
 
         </Route>
 
+        <Route element={<RoleGuard allowedRoles={[ROLES.MANAGER]} />}>
+          <Route path="orders" element={<PurchaseOrdersWrapper />} />
+
+        </Route>
+
+
         {/* 5. MANAGER & DIRECTOR SPECIFIC ROUTES                     */}
         <Route element={<RoleGuard allowedRoles={[ROLES.MANAGER, ROLES.DIRECTOR, ROLES.ADMIN]} />}>
 
