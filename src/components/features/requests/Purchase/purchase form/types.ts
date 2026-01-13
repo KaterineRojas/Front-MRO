@@ -1,4 +1,4 @@
-import type { CartItem, User as UserType } from '../../../enginner/types';
+import type { CartItem, User as UserType } from '../../types';
 import type { PurchaseRequest } from '../purchaseService';
 
 export interface CartSnapshot {

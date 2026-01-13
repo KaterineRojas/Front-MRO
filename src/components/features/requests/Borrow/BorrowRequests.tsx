@@ -12,7 +12,7 @@ import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { LoanForm } from './borrowForm/LoanForm';
 import { ConfirmModal } from '../../../ui/confirm-modal';
 import { ProjectDetails } from '../shared/ProjectDetails';
-import type { User } from '../../enginner/types';
+import type { User } from '../types';
 import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
 import type { LoanRequest } from './borrowService';
 

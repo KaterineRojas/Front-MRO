@@ -18,7 +18,7 @@ import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { selectCartItems } from '../store/selectors';
 import { clearCart } from '../store/actions';
 import type { PurchaseRequest } from './purchaseService';
-import type { User as EngineerUser, CartItem } from '../../enginner/types';
+import type { User as EngineerUser, CartItem } from '../types';
 import { toast } from 'sonner';
 import { ConfirmModal } from '../../../ui/confirm-modal';
 import { ProjectDetails } from '../shared/ProjectDetails';

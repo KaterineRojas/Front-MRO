@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '../../../ui/utils';
 import { 
   LayoutDashboard, 
   Package, 
   FileText, 
   ShoppingCart, 
-  ArrowLeftRight, 
   ScrollText,
-  Bell,
   Moon,
   Sun,
   LogOut,
@@ -16,7 +14,6 @@ import {
   Plus,
   Minus,
   X,
-  Menu,
   PackageCheck
 } from 'lucide-react';
 import { Badge } from '../../../ui/badge';
@@ -24,8 +21,7 @@ import { Avatar, AvatarFallback } from '../../../ui/avatar';
 import { Button } from '../../../ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../../../ui/sheet';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
-import type { Page } from '../../enginner/types';
-import type { CartItem, Notification } from '../../enginner/types';
+import type { Page, CartItem } from '../types/index';
 
 interface SidebarProps {
   currentPage: Page;
@@ -34,9 +30,6 @@ interface SidebarProps {
   updateCartItem: (itemId: string, quantity: number) => void;
   clearCart: () => void;
   onCartProceedToForm: () => void;
-  notifications: Notification[];
-  markNotificationAsRead: (id: string) => void;
-  onNotificationClick: () => void;
   onLogout: () => void;
   isMobile?: boolean;
   isOpen?: boolean;
@@ -58,9 +51,6 @@ export function Sidebar({
   updateCartItem,
   clearCart,
   onCartProceedToForm,
-  notifications,
-  markNotificationAsRead,
-  onNotificationClick,
   onLogout,
   isMobile = false,
   isOpen = false,
@@ -69,9 +59,7 @@ export function Sidebar({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
   const cartItemsCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   useEffect(() => {
@@ -103,40 +91,6 @@ export function Sidebar({
   const handleCartProceed = () => {
     setCartOpen(false);
     onCartProceedToForm();
-  };
-
-  const handleNotificationClick = (notificationId?: string) => {
-    if (notificationId) {
-      markNotificationAsRead(notificationId);
-    } else {
-      // Mark all as read when navigating to dashboard
-      notifications.forEach(notification => {
-        if (!notification.read) {
-          markNotificationAsRead(notification.id);
-        }
-      });
-      setNotificationsOpen(false);
-      onNotificationClick();
-    }
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getNotificationColor = (type: Notification['type']) => {
-    switch (type) {
-      case 'success': return 'text-green-600';
-      case 'warning': return 'text-yellow-600';
-      case 'error': return 'text-red-600';
-      default: return 'text-blue-600';
-    }
   };
 
   const sidebarContent = (
@@ -182,22 +136,6 @@ export function Sidebar({
         {/* Bottom Menu Items (collapsible) */}
         {userMenuOpen && (
           <div className="px-4 py-3 space-y-1 bg-muted/30">
-            {/* Notifications */}
-            <button
-              onClick={() => setNotificationsOpen(true)}
-              className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg transition-colors text-left text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
-            >
-              <div className="flex items-center gap-3">
-                <Bell className="h-4 w-4" />
-                <span className="text-sm">Notifications</span>
-              </div>
-              {unreadCount > 0 && (
-                <Badge className="bg-destructive text-destructive-foreground h-5 w-5 flex items-center justify-center p-0 text-xs">
-                  {unreadCount}
-                </Badge>
-              )}
-            </button>
-
             {/* Cart */}
             <button
               onClick={() => setCartOpen(true)}
@@ -270,7 +208,7 @@ export function Sidebar({
           </SheetContent>
         </Sheet>
 
-        {/* Cart and Notifications sheets are always available */}
+        {/* Cart sheet is always available */}
         {renderSheets()}
       </>
     );
@@ -330,7 +268,7 @@ export function Sidebar({
                             variant="outline"
                             className="h-7 w-7"
                             onClick={() => updateCartItem(cartItem.item.id, cartItem.quantity + 1)}
-                            disabled={cartItem.quantity >= cartItem.item.availableQuantity}
+                            disabled={cartItem.quantity >= (cartItem.item.availableQuantity ?? 0)}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
@@ -364,77 +302,6 @@ export function Sidebar({
                 </div>
               </>
             )}
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Notifications Sheet */}
-      <Sheet open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Notifications</SheetTitle>
-            <SheetDescription>
-              View all your recent notifications
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-6">
-            {unreadCount > 0 && (
-              <p className="text-sm text-muted-foreground mb-4">
-                {unreadCount} unread
-              </p>
-            )}
-            <div className="space-y-2 max-h-[70vh] overflow-y-auto">
-              {notifications.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No notifications</p>
-                </div>
-              ) : (
-                notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={cn(
-                      "p-4 border rounded-lg cursor-pointer hover:bg-muted",
-                      !notification.read && "bg-accent"
-                    )}
-                    onClick={() => handleNotificationClick()}
-                  >
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className={cn("text-sm", getNotificationColor(notification.type))}>
-                          {notification.message}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {formatTimestamp(notification.timestamp)}
-                        </div>
-                      </div>
-                      {!notification.read && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-xs h-7 px-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleNotificationClick(notification.id);
-                          }}
-                        >
-                          Mark as read
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="mt-4 pt-4 border-t">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => handleNotificationClick()}
-              >
-                View All in Dashboard
-              </Button>
-            </div>
           </div>
         </SheetContent>
       </Sheet>

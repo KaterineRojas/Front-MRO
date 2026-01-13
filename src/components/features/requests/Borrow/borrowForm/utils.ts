@@ -1,5 +1,5 @@
-import type { CartItem } from '../../../enginner/types';
-import type { User } from '../../../enginner/types';
+import type { CartItem } from '../../types';
+import type { User } from '../../types';
 import type { LoanFormData, LoanItem, CatalogItem } from './types';
 
 /**

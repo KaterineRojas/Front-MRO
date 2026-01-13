@@ -18,9 +18,6 @@ export * from '../../Catalog/catalogService';
 // Request Service (Borrow & Purchase)
 export * from '../../requests/services/requestService';
 
-// Inventory Service (Items & Kits)
-export * from './inventoryService';
-
 // History Service
 export * from './historyService';
 
