@@ -17,10 +17,7 @@ import { format } from 'date-fns';
 import { mockPurchaseOrders, PurchaseOrder, PurchaseItem } from './data/mockPurchaseOrders'
 
 
-import { useSelector } from 'react-redux';
 import { Button as ActionButton } from '../inventory/components/Button'
-import {getUrgencyBadge, getStatusBadge, getTypeBadge} from '../inventory/components/RequestBadges'
-import TabsGroup from '../requests/components/Tabs'
 
 
 const mockArticles = [
@@ -51,10 +48,6 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
   const [cancelNotes, setCancelNotes] = useState('');
   const [purchasedQuantities, setPurchasedQuantities] = useState<Record<number, number>>({});
   const [actualCost, setActualCost] = useState<number>(0);
-
-    const darkMode = useSelector((state: any) => state.ui.darkMode);
-    const [activeTab, setActiveTab] = useState('Active Orders');
-
 
   const handleToggleExpandActive = (orderId: number) => {
     setExpandedActiveOrders(prev => {
@@ -354,20 +347,6 @@ export function PurchaseOrders({ onViewDetail }: PurchaseOrdersProps) {
             <span>Inactive Orders ({filteredInactiveOrders.length})</span>
           </TabsTrigger>
         </TabsList>
-
-        <TabsGroup 
-          tabsList={[{
-              name: 'Active Orders',
-              iconType: 'shoppingCart'
-            },{
-              name: 'Orders History',
-              iconType: 'history'
-            }
-          ]}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-        />
-          
 
         <TabsContent value="active" className="space-y-6">
           {/* Active Orders Filter */}

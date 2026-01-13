@@ -109,10 +109,14 @@ export function useReturnsLogic({ engineerId = 'amx0142', warehouseId = 1 }: Use
     }
   }, [dispatch, selectedReturnBorrower, warehouseId, warehouseEngineers]);
   
-  // Lista de ingenieros desde el API del warehouse (en lugar de extraerlos de returns)
+  // Lista de ingenieros que tienen returns (se obtienen del endpoint /engineer-holdings/warehouse)
+  // No necesitamos filtrar por allReturns ya que los ingenieros en warehouseEngineers ya tienen holdings/returns
   const uniqueReturnBorrowers = useMemo(() => {
-    console.log('📝 [uniqueReturnBorrowers] Computing from warehouseEngineers:', warehouseEngineers);
-    const borrowers = warehouseEngineers.map(e => e.name).sort();
+    console.log('📝 [uniqueReturnBorrowers] Computing from warehouseEngineers...');
+    console.log('📝 [uniqueReturnBorrowers] warehouseEngineers.length:', warehouseEngineers.length);
+    
+    // Los ingenieros que vienen en warehouseEngineers ya son aquellos con holdings/returns
+    const borrowers = warehouseEngineers.map(eng => eng.name).sort();
     console.log('📝 [uniqueReturnBorrowers] Result:', borrowers);
     return borrowers;
   }, [warehouseEngineers]);

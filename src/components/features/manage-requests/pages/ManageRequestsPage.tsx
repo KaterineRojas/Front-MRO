@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { Badge } from '../../../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
 import { useAppSelector } from '../../../../store/hooks';
+import { Package, PackageCheck, ShoppingCart, History } from 'lucide-react';
 
 // Importar los Custom Hooks
 import { usePackingRequestsLogic } from '../hooks/usePackingRequestsLogic'; 
@@ -17,6 +18,7 @@ import KitReturnOptionsDialog from '../modals/KitReturnOptionsDialog';
 import ConditionDialog from '../modals/ConditionDialog';
 import PackingRequestsTab from '../tabs/PackingRequestsTab';
 import ReturnsTab from '../tabs/ReturnsTab';
+import { PurchaseOrdersTab } from '../tabs/PurchaseOrdersActiveTab';
 // types imported where needed in child components
 
 // Helper de UI
@@ -66,8 +68,22 @@ export function ManageRequestsPage() {
 
       <Tabs value={activeTab} onValueChange={(v: string) => setActiveTab(v)} className="w-full">
         <TabsList>
-          <TabsTrigger value="packing-requests" className="cursor-pointer">Packing Requests</TabsTrigger>
-          <TabsTrigger value="returns" className="cursor-pointer">Returns</TabsTrigger>
+          <TabsTrigger value="packing-requests" className="cursor-pointer flex items-center space-x-2">
+            <Package className="h-4 w-4" />
+            <span>Packing Requests</span>
+          </TabsTrigger>
+          <TabsTrigger value="returns" className="cursor-pointer flex items-center space-x-2">
+            <PackageCheck className="h-4 w-4" />
+            <span>Returns</span>
+          </TabsTrigger>
+          <TabsTrigger value="active-orders" className="cursor-pointer flex items-center space-x-2">
+            <ShoppingCart className="h-4 w-4" />
+            <span>Purchase Orders</span>
+          </TabsTrigger>
+          <TabsTrigger value="orders-history" className="cursor-pointer flex items-center space-x-2">
+            <History className="h-4 w-4" />
+            <span>Purchase History</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="packing-requests">
@@ -130,6 +146,18 @@ export function ManageRequestsPage() {
               kitPhotos={returnsLogic.kitPhotos}
               capturedPhoto={returnsLogic.capturedPhoto}
             />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="active-orders">
+          <div className="space-y-4">
+            <PurchaseOrdersTab activeTab="active orders" warehouseId={warehouseId} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="orders-history">
+          <div className="space-y-4">
+            <PurchaseOrdersTab activeTab="orders history" warehouseId={warehouseId} />
           </div>
         </TabsContent>
       </Tabs>
