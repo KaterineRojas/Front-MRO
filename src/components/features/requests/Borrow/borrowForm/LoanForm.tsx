@@ -309,7 +309,7 @@ export function LoanForm({
         : 'Not set';
 
       showConfirm({
-        title: '¿Confirmar envío de solicitud de préstamo?',
+        title: '¿Confirm loan application submission?',
         description: `Company: ${companyInfo}\nItems: ${itemsCount}\nReturn Date: ${returnDateFormatted}`,
         type: 'warning',
         confirmText: 'Confirm',
