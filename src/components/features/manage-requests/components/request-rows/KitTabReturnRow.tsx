@@ -141,7 +141,7 @@ export const KitsTabContent: React.FC<Props> = ({
                     </div>
 
                     {kitPhotos[kitKey] && (
-                      <div className="mt-2 mb-2 bg-green-50 border-green-200 p-2 rounded"><CheckCircle className="h-4 w-4 text-green-600 inline mr-2" /> Photo captured: {kitPhotos[kitKey]}</div>
+                      <div className="mt-2 mb-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 p-2 rounded"><CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 inline mr-2" /> <span className="text-green-700 dark:text-green-300">Photo captured: {kitPhotos[kitKey]}</span></div>
                     )}
 
                     <div className="flex justify-end space-x-2">
