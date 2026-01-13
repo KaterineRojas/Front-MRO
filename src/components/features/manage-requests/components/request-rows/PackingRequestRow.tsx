@@ -216,9 +216,9 @@ export const PackingRequestRow: React.FC<Props> = ({
                           <td className="font-mono text-sm text-center">{item.sku}</td>
                           <td className="text-center">{item.name}</td>
                           <td className="text-center">{item.quantityRequested}</td>
-                          <td>
+                          <td className="text-sm text-muted-foreground">
                             {!isKitOrder(request) ? (
-                              <div className="text-center space-x-2">
+                              <div className="">
                                 <input 
                                   type="number" 
                                   min={1} 
