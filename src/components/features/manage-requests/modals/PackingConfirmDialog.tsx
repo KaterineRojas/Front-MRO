@@ -18,7 +18,9 @@ export const PackingConfirmDialog: React.FC<Props> = ({ open, onOpenChange, curr
     setIsLoading(true);
     try {
       await onConfirm();
-    } finally {
+      // Si el modal no se cierra (por error en onConfirm), liberar el loading
+      setIsLoading(false);
+    } catch (err) {
       setIsLoading(false);
     }
   };

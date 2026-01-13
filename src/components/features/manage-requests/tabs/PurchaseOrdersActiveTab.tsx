@@ -210,6 +210,9 @@ const OrderRow: React.FC<OrderRowProps> = ({ order, onOrderClick, onBoughtClick,
                                                 <th className="p-3 text-left text-[12px] font-bold uppercase tracking-wider text-gray-900 dark:text-gray-300">Name</th>
                                                 <th className="p-3 text-left text-[12px] font-bold uppercase tracking-wider text-gray-900 dark:text-gray-300">Description</th>
                                                 <th className="p-3 text-left text-[12px] font-bold uppercase tracking-wider text-gray-900 dark:text-gray-300">Quantity</th>
+                                                {activeTab === 'orders history' && (
+                                                    <th className="p-3 text-left text-[12px] font-bold uppercase tracking-wider text-gray-900 dark:text-gray-300">Quantity Received</th>
+                                                )}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -260,6 +263,15 @@ const OrderRow: React.FC<OrderRowProps> = ({ order, onOrderClick, onBoughtClick,
                                                             {item.quantity} {item.unit || 'units'}
                                                         </span>
                                                     </td>
+
+                                                    {/* Quantity Received - Only for history */}
+                                                    {activeTab === 'orders history' && (
+                                                        <td className="p-3 ">
+                                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                                                                {item.quantityReceived || 0} {item.unit || 'units'}
+                                                            </span>
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             ))}
                                         </tbody>

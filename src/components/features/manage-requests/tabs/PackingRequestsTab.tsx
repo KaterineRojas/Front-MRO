@@ -14,7 +14,7 @@ interface Props {
   getPriorityBadge: (p: string) => React.ReactNode;
   selectedPackingItems: Set<string>;
   packingItemQuantities: Record<string, number>;
-  handleSelectPackingItem: (requestId: number, itemId: number) => void;
+  handleSelectPackingItem: (requestId: number, itemId: number, defaultQuantity?: number) => void;
   handlePackingQuantityChange: (requestId: number, itemId: number, quantity: number) => void;
   getPackingItemQuantity: (requestId: number, itemId: number) => number;
   areAllItemsSelected: (requestId: number, items: any[]) => boolean;
