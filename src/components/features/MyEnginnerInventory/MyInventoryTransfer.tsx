@@ -10,7 +10,7 @@ import { Package, Search, ChevronDown, ChevronRight, Box, History } from 'lucide
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import { toast } from 'sonner';
 import { getInventoryEngineer, type InventoryItem } from './myInventoryService';
-import { useAppSelector } from '../enginner/store/hooks';
+import { useAppSelector } from '../requests/store/hooks';
 import { store } from '../../../store/store';
 
 interface GroupedInventoryItem {

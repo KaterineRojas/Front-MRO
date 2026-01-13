@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { User } from '../../types/index';
-import { USE_AUTH_TOKENS } from '../../constants';
-import { getUserData, isAuthenticated } from '../../services/authService';
+import type { User } from '../../../enginner/types/index';
+import { USE_AUTH_TOKENS } from '../../../enginner/constants';
+import { getUserData, isAuthenticated } from '../../../enginner/services/authService';
 
 interface UserState {
   currentUser: User | null;

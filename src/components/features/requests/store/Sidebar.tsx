@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { cn } from '../../ui/utils';
+import { cn } from '../../../ui/utils';
 import { 
   LayoutDashboard, 
   Package, 
@@ -19,13 +19,13 @@ import {
   Menu,
   PackageCheck
 } from 'lucide-react';
-import { Badge } from '../../ui/badge';
-import { Avatar, AvatarFallback } from '../../ui/avatar';
-import { Button } from '../../ui/button';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../../ui/sheet';
-import { ImageWithFallback } from '../../figma/ImageWithFallback';
-import type { Page } from './types';
-import type { CartItem, Notification } from './types';
+import { Badge } from '../../../ui/badge';
+import { Avatar, AvatarFallback } from '../../../ui/avatar';
+import { Button } from '../../../ui/button';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../../../ui/sheet';
+import { ImageWithFallback } from '../../../figma/ImageWithFallback';
+import type { Page } from '../../enginner/types';
+import type { CartItem, Notification } from '../../enginner/types';
 
 interface SidebarProps {
   currentPage: Page;

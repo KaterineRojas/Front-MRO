@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
-import { useAppSelector, useAppDispatch } from '../../enginner/store/hooks';
-import { clearCart } from '../../enginner/store/slices/cartSlice';
-import { selectCartItems } from '../../enginner/store/selectors';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
+import { clearCart } from '../store/slices/cartSlice';
+import { selectCartItems } from '../store/selectors';
 import { useConfirmModal } from '../../../ui/confirm-modal';
 import { handleError, setupConnectionListener } from '../../enginner/services/errorHandler';
 import { selectCurrentUser } from '../../../../store/selectors';
