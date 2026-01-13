@@ -544,7 +544,7 @@ export function PurchaseRequests() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <Button
+                    {/* <Button
                       variant="outline"
                       className="gap-2 h-auto py-2 px-4"
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
@@ -553,8 +553,7 @@ export function PurchaseRequests() {
                       }}
                     >
                       <Pencil className="h-4 w-4" />
-                     {/* Edit */}
-                    </Button>
+                    </Button> */}
                     <Button
                       className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
                       disabled={!canConfirmBought(request)}
@@ -712,7 +711,7 @@ export function PurchaseRequests() {
                           </TableCell>
                           <TableCell className="align-top">
                             <div className="flex items-start justify-end gap-2">
-                              <Button
+                              {/* <Button
                                 variant="outline"
                                 className="gap-2 h-auto py-2 px-4"
                                 onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
@@ -721,8 +720,7 @@ export function PurchaseRequests() {
                                 }}
                               >
                                 <Pencil className="h-4 w-4" />
-                               {/* Edit */}
-                              </Button>
+                              </Button> */}
                               <Button
                                 className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
                                 disabled={!canConfirmBought(request)}

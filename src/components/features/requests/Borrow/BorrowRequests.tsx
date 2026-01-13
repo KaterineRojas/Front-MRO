@@ -301,14 +301,13 @@ export function BorrowRequests() {
                         Return
                       </Button>
                     )}
-                    {canCancelBorrowRequest(request) && (
-                      <Button
-                        className="action-btn-enhance btn-cancel p-2 h-auto"
-                        onClick={() => handleCancelBorrowRequest(meta.rowKey)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+                    <Button
+                      className="action-btn-enhance btn-cancel p-2 h-auto"
+                      onClick={() => handleCancelBorrowRequest(meta.rowKey)}
+                      disabled={!canCancelBorrowRequest(request)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
 
                   {isExpanded && (
@@ -482,24 +481,25 @@ export function BorrowRequests() {
                                   </Tooltip>
                                 </TooltipProvider>
                               )}
-                              {canCancelBorrowRequest(request) && (
-                                <TooltipProvider delayDuration={200}>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        className="action-btn-enhance btn-cancel p-2 h-auto"
-                                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                          e.stopPropagation();
-                                          handleCancelBorrowRequest(meta.rowKey);
-                                        }}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent sideOffset={8}>Cancel request</TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      className="action-btn-enhance btn-cancel p-2 h-auto"
+                                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                        e.stopPropagation();
+                                        handleCancelBorrowRequest(meta.rowKey);
+                                      }}
+                                      disabled={!canCancelBorrowRequest(request)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={8}>
+                                    {canCancelBorrowRequest(request) ? 'Cancel request' : 'Only pending requests can be cancelled'}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
                           </TableCell>
                         </TableRow>
