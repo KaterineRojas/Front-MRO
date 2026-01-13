@@ -15,21 +15,19 @@ import { ImageWithFallback } from '../../../figma/ImageWithFallback';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { toast } from 'sonner';
 import { useAppSelector } from '../../../../store/hooks';
-import { getProjects, type Project } from '../../enginner/services';
 import { useTransfers } from './useTransfers';
 import { TransferForm } from './TransferForm';
 import { formatDate, getStatusColor, getStatusText } from './transferUtils';
 import { getTransferId, type Transfer } from './transferService';
 import {
   getCompanies,
-  getCustomersByCompany,
-  getProjectsByCustomer,
-  getWorkOrdersByProject,
   type Company,
   type Customer,
   type WorkOrder,
-  type Project as SharedProject
+  type Project as SharedProject,
 } from '../services/sharedServices';
+import { getCustomersByCompany, getProjectsByCustomer, getWorkOrdersByProject } from '../services/sharedServices';
+import { ProjectDetailsSection } from '../shared';
 import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
 
 const typeBadgeClassNames: Record<Transfer['type'], string> = {
@@ -37,21 +35,10 @@ const typeBadgeClassNames: Record<Transfer['type'], string> = {
   incoming: 'bg-sky-200 text-sky-950 border-sky-300 dark:bg-sky-900/50 dark:text-sky-50 dark:border-sky-800'
 };
 
-const formatWorkOrderDate = (value?: string) => {
-  if (!value) return 'No date provided';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Invalid date';
-  return date.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-};
 
 export function TransferRequests() {
   const [showTransferMode, setShowTransferMode] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [sharedProjectsList, setSharedProjectsList] = useState<SharedProject[]>([]);
 
   const [selectedProject, setSelectedProject] = useState<string>('');
@@ -60,6 +47,7 @@ export function TransferRequests() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [transferToRejectId, setTransferToRejectId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>('');
   const [transferToCancelId, setTransferToCancelId] = useState<string | null>(null);
   const [expandedTransferDetails, setExpandedTransferDetails] = useState<Record<string, Transfer>>({});
   const [loadingTransferIds, setLoadingTransferIds] = useState<Set<string>>(new Set());
@@ -71,8 +59,6 @@ export function TransferRequests() {
   const [selectedCustomer, setSelectedCustomer] = useState<string>('');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string>('');
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
-  const [selectedWorkOrderDetails, setSelectedWorkOrderDetails] = useState<WorkOrder | null>(null);
-  const [workOrderDetailModalOpen, setWorkOrderDetailModalOpen] = useState(false);
 
   // Loading states for cascading selects
   const [loadingCompanies, setLoadingCompanies] = useState(false);
@@ -80,6 +66,9 @@ export function TransferRequests() {
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [loadingWorkOrders, setLoadingWorkOrders] = useState(false);
   const [companiesLoaded, setCompaniesLoaded] = useState(false);
+  
+  // Transfer requests don't have offline mode
+  const offlineMode = false;
 
   const currentUser = useAppSelector((state) => state.auth.user);
 
@@ -100,19 +89,6 @@ export function TransferRequests() {
     refreshTransfers
   } = useTransfers();
 
-  // Load projects
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const projectsData = await getProjects();
-        setProjects(projectsData);
-      } catch (error) {
-        toast.error('Failed to load data');
-      }
-    };
-    loadData();
-  }, []);
-
   // Check mobile
   useEffect(() => {
     const checkMobile = () => {
@@ -129,8 +105,6 @@ export function TransferRequests() {
     setSelectedCompany('');
     setSelectedCustomer('');
     setSelectedWorkOrder('');
-    setSelectedWorkOrderDetails(null);
-    setWorkOrderDetailModalOpen(false);
     setConfirmTransferOpen(true);
     
     // Load companies when opening modal
@@ -298,11 +272,16 @@ export function TransferRequests() {
   const closeRejectDialog = () => {
     setRejectDialogOpen(false);
     setTransferToRejectId(null);
+    setRejectReason('');
   };
 
   const confirmRejectTransfer = async () => {
     if (!transferToRejectId) return;
-    await handleReject(transferToRejectId);
+    if (!rejectReason.trim()) {
+      toast.error('Please provide a reason for rejection');
+      return;
+    }
+    await handleReject(transferToRejectId, rejectReason.trim());
     closeRejectDialog();
   };
 
@@ -521,27 +500,34 @@ export function TransferRequests() {
                         <p className="text-sm text-muted-foreground">Loading items...</p>
                       ) : (
                         <>
-                          <h4 className="text-sm mb-2">Items:</h4>
-                          <div className="space-y-2">
+                          <h4 className="text-sm font-semibold mb-3">Items ({(expandedTransferDetails[transfer.id]?.items || transfer.items).length})</h4>
+                          <div className="grid gap-3 sm:grid-cols-2">
                             {(expandedTransferDetails[transfer.id]?.items || transfer.items).map((item, index) => (
-                              <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
-                                {item.image && (
+                              <div key={index} className="flex gap-3 rounded-lg border bg-background p-3">
+                                {item.image ? (
                                   <ImageWithFallback
                                     src={item.image}
                                     alt={item.itemName}
-                                    className="w-10 h-10 object-cover rounded"
+                                    className="w-16 h-16 object-cover rounded"
                                   />
+                                ) : (
+                                  <div className="w-16 h-16 flex items-center justify-center rounded bg-muted">
+                                    <Package className="h-6 w-6 text-muted-foreground" />
+                                  </div>
                                 )}
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm truncate">{item.itemName}</p>
+                                <div className="flex-1 min-w-0 space-y-1">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <p className="text-sm font-medium truncate">{item.itemName}</p>
+                                    <Badge variant="secondary">x{item.quantity}</Badge>
+                                  </div>
+                                  {item.code && <p className="text-xs text-muted-foreground">SKU: {item.code}</p>}
                                   {item.description && (
                                     <p className="text-xs text-muted-foreground truncate">{item.description}</p>
                                   )}
                                   {item.warehouseCode && (
-                                    <Badge className="text-xs mt-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">{item.warehouseCode}</Badge>
+                                    <Badge className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">{item.warehouseCode}</Badge>
                                   )}
                                 </div>
-                                <Badge variant="secondary">x{item.quantity}</Badge>
                               </div>
                             ))}
                           </div>
@@ -668,31 +654,33 @@ export function TransferRequests() {
                             ) : (
                               <div className="space-y-3">
                                 <div>
-                                  <h4 className="text-sm mb-2">Items:</h4>
-                                  <div className="space-y-2">
+                                  <h4 className="text-sm font-semibold mb-3">Items ({(expandedTransferDetails[transfer.id]?.items || transfer.items).length})</h4>
+                                  <div className="grid gap-3 sm:grid-cols-2">
                                     {(expandedTransferDetails[transfer.id]?.items || transfer.items).map((item, index) => (
-                                      <div key={index} className="flex items-center gap-3 p-2 bg-background rounded border">
-                                        {item.image && (
+                                      <div key={index} className="flex gap-3 rounded-lg border bg-background p-3">
+                                        {item.image ? (
                                           <ImageWithFallback
                                             src={item.image}
                                             alt={item.itemName}
-                                            className="w-12 h-12 object-cover rounded"
+                                            className="w-16 h-16 object-cover rounded"
                                           />
+                                        ) : (
+                                          <div className="w-16 h-16 flex items-center justify-center rounded bg-muted">
+                                            <Package className="h-6 w-6 text-muted-foreground" />
+                                          </div>
                                         )}
-                                        <div className="flex-1">
-                                          <p>{item.itemName}</p>
-                                          {item.code && (
-                                            <p className="text-sm text-muted-foreground">{item.code}</p>
-                                          )}
+                                        <div className="flex-1 space-y-1">
+                                          <div className="flex items-start justify-between gap-2">
+                                            <p className="text-sm font-medium">{item.itemName}</p>
+                                            <Badge variant="secondary">x{item.quantity}</Badge>
+                                          </div>
+                                          {item.code && <p className="text-xs text-muted-foreground">SKU: {item.code}</p>}
                                           {item.description && (
                                             <p className="text-xs text-muted-foreground">{item.description}</p>
                                           )}
-                                        </div>
-                                        <div className="flex items-center gap-2">
                                           {item.warehouseCode && (
                                             <Badge variant="outline" className="text-xs">{item.warehouseCode}</Badge>
                                           )}
-                                          <Badge variant="secondary">Qty: {item.quantity}</Badge>
                                         </div>
                                       </div>
                                     ))}
@@ -758,132 +746,57 @@ export function TransferRequests() {
                   )}
 
                   <div>
-                    <h4 className="text-sm mb-2">Items:</h4>
-                    <div className="space-y-2">
+                    <h4 className="text-sm font-semibold mb-3">Items ({transferToAccept.items.length})</h4>
+                    <div className="grid gap-3 sm:grid-cols-2">
                       {transferToAccept.items.map((item, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
-                          {item.image && (
+                        <div key={index} className="flex gap-3 rounded-lg border bg-background p-3">
+                          {item.image ? (
                             <ImageWithFallback
                               src={item.image}
                               alt={item.itemName}
-                              className="w-10 h-10 object-cover rounded"
+                              className="w-16 h-16 object-cover rounded"
                             />
-                          )}
-                          <div className="flex-1">
-                            <p className="text-sm">{item.itemName}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <p className="text-xs text-muted-foreground">{item.code}</p>
-                              {item.warehouseCode && (
-                                <Badge className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">{item.warehouseCode}</Badge>
-                              )}
+                          ) : (
+                            <div className="w-16 h-16 flex items-center justify-center rounded bg-muted">
+                              <Package className="h-6 w-6 text-muted-foreground" />
                             </div>
+                          )}
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-sm font-medium">{item.itemName}</p>
+                              <Badge variant="secondary">x{item.quantity}</Badge>
+                            </div>
+                            {item.code && <p className="text-xs text-muted-foreground">SKU: {item.code}</p>}
+                            {item.warehouseCode && (
+                              <Badge className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">{item.warehouseCode}</Badge>
+                            )}
                           </div>
-                          <Badge variant="secondary">x{item.quantity}</Badge>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="company-select">Company *</Label>
-                    <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-                      <SelectTrigger id="company-select" className="mt-2">
-                        <SelectValue placeholder={
-                          loadingCompanies ? "Loading companies..." : "Select a company"
-                        } />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {companies.map((company) => (
-                          <SelectItem key={company.name} value={company.name}>
-                            {company.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="customer-select">Customer *</Label>
-                    <Select 
-                      value={selectedCustomer} 
-                      onValueChange={setSelectedCustomer}
-                      disabled={!selectedCompany || loadingCustomers}
-                    >
-                      <SelectTrigger id="customer-select" className="mt-2">
-                        <SelectValue placeholder={
-                          !selectedCompany ? "Select company first" :
-                          loadingCustomers ? "Loading customers..." :
-                          "Select a customer"
-                        } />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {customers.map((customer) => (
-                          <SelectItem key={customer.id} value={customer.name}>
-                            {customer.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="project-select">Project *</Label>
-                    <Select 
-                      value={selectedProject} 
-                      onValueChange={setSelectedProject}
-                      disabled={!selectedCustomer || loadingProjects}
-                    >
-                      <SelectTrigger id="project-select" className="mt-2">
-                        <SelectValue placeholder={
-                          !selectedCustomer ? "Select customer first" :
-                          loadingProjects ? "Loading projects..." :
-                          "Select a project"
-                        } />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sharedProjectsList.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.name} ({project.code})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="workorder-select">Work Order</Label>
-                    <Select 
-                      value={selectedWorkOrder} 
-                      onValueChange={(value: string) => {
-                        setSelectedWorkOrder(value);
-                        if (!value) {
-                          setSelectedWorkOrderDetails(null);
-                          return;
-                        }
-                        const details = workOrders.find((wo) => String(wo.id) === value);
-                        if (details) {
-                          setSelectedWorkOrderDetails(details);
-                          setWorkOrderDetailModalOpen(true);
-                        }
-                      }}
-                      disabled={!selectedProject || loadingWorkOrders}
-                    >
-                      <SelectTrigger id="workorder-select" className="mt-2">
-                        <SelectValue placeholder={
-                          !selectedProject ? "Select project first" :
-                          loadingWorkOrders ? "Loading work orders..." :
-                          "Select a work order (optional)"
-                        } />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {workOrders.map((wo) => (
-                          <SelectItem key={wo.id} value={String(wo.id)}>
-                            {wo.orderNumber} - {wo.description}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <ProjectDetailsSection
+                    company={selectedCompany}
+                    customer={selectedCustomer}
+                    project={selectedProject}
+                    workOrder={selectedWorkOrder}
+                    companies={companies}
+                    customers={customers}
+                    projects={sharedProjectsList}
+                    workOrders={workOrders}
+                    loadingCompanies={loadingCompanies}
+                    loadingCustomers={loadingCustomers}
+                    loadingProjects={loadingProjects}
+                    loadingWorkOrders={loadingWorkOrders}
+                    companiesLoaded={companiesLoaded}
+                    offlineMode={offlineMode}
+                    onLoadCompanies={loadCompanies}
+                    onCompanyChange={setSelectedCompany}
+                    onCustomerChange={setSelectedCustomer}
+                    onProjectChange={setSelectedProject}
+                    onWorkOrderSelect={(value) => setSelectedWorkOrder(value)}
+                  />
                 </>
               )}
             </div>
@@ -894,65 +807,6 @@ export function TransferRequests() {
             </Button>
             <Button onClick={confirmTransferAccept} disabled={!selectedProject}>
               Accept Transfer
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={workOrderDetailModalOpen && !!selectedWorkOrderDetails}
-        onOpenChange={setWorkOrderDetailModalOpen}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Work Order Details</DialogTitle>
-            <DialogDescription>
-              Review the selected work order before assigning the transfer.
-            </DialogDescription>
-          </DialogHeader>
-          {selectedWorkOrderDetails && (
-            <div className="space-y-3 text-sm">
-              <div>
-                <p className="text-muted-foreground text-xs">Order Number</p>
-                <p className="font-semibold">
-                  {selectedWorkOrderDetails.orderNumber || selectedWorkOrderDetails.wo}
-                </p>
-              </div>
-              {selectedWorkOrderDetails.description && (
-                <div>
-                  <p className="text-muted-foreground text-xs">Description</p>
-                  <p>{selectedWorkOrderDetails.description}</p>
-                </div>
-              )}
-              {selectedWorkOrderDetails.serviceDesc && (
-                <div>
-                  <p className="text-muted-foreground text-xs">Service Description</p>
-                  <p>{selectedWorkOrderDetails.serviceDesc}</p>
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-muted-foreground text-xs">Start Date</p>
-                  <p>{formatWorkOrderDate(selectedWorkOrderDetails.startDate)}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">End Date</p>
-                  <p>{formatWorkOrderDate(selectedWorkOrderDetails.endDate)}</p>
-                </div>
-              </div>
-              {selectedWorkOrderDetails.status && (
-                <div>
-                  <p className="text-muted-foreground text-xs">Status</p>
-                  <p className="uppercase tracking-wide text-sm">
-                    {selectedWorkOrderDetails.status}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setWorkOrderDetailModalOpen(false)}>
-              Close
             </Button>
           </div>
         </DialogContent>
@@ -970,6 +824,18 @@ export function TransferRequests() {
               Are you sure you want to reject this transfer request?
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label htmlFor="reject-reason">Reason for rejection *</Label>
+              <textarea
+                id="reject-reason"
+                className="mt-2 w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Please explain why you are rejecting this transfer..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+              />
+            </div>
+          </div>
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={closeRejectDialog}>
               Cancel
@@ -977,6 +843,7 @@ export function TransferRequests() {
             <Button
               className="action-btn-enhance btn-reject gap-2 h-auto py-2 px-4"
               onClick={confirmRejectTransfer}
+              disabled={!rejectReason.trim()}
             >
               Confirm Reject
             </Button>

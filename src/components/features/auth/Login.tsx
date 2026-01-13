@@ -3,46 +3,88 @@ import { useMsal, useIsAuthenticated } from '@azure/msal-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginRequest } from '../../../authConfig';
 import { authService } from '../../../services/authService';
-import { useAppDispatch } from '../../../store';
-import { setAuth } from '../../../store/slices/authSlice';
+import { useAppDispatch, useAppSelector } from '../../../store';
+import { setAuth, setLoading } from '../../../store/slices/authSlice';
 
 export function Login() {
   const { instance, accounts, inProgress } = useMsal();
   const isAuthenticated = useIsAuthenticated();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const reduxUser = useAppSelector((state) => state.auth.user);
+  const isAppLoading = useAppSelector((state) => state.auth.isLoading);
 
   // Estado para login local
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false);
   const [azureLoading, setAzureLoading] = useState(false);
+  const [waitingForSync, setWaitingForSync] = useState(false);
 
   // Redirect to dashboard if already authenticated with Azure
   useEffect(() => {
+    console.log('🟡 [Login] useEffect triggered:', {
+      isAuthenticated,
+      inProgress,
+      accountsLength: accounts?.length,
+      hasReduxUser: !!reduxUser,
+      reduxUserEmail: reduxUser?.email
+    });
+
     // Solo redirigir si está autenticado Y no está en proceso de login Y tiene cuentas
     const justLoggedOut = (() => { try { return localStorage.getItem('mro_just_logged_out') === 'true'; } catch { return false; } })();
+
+    if (justLoggedOut) {
+      console.log('🟡 [Login] User just logged out, clearing flag');
+      try { localStorage.removeItem('mro_just_logged_out'); } catch {}
+      setWaitingForSync(false);
+      return;
+    }
+
     if (isAuthenticated && inProgress === 'none' && accounts && accounts.length > 0 && !justLoggedOut) {
+      console.log('🟡 [Login] User authenticated with Azure');
+
       // Establecer la cuenta activa para que el logout no pida selección
       try {
         if (!instance.getActiveAccount()) {
           instance.setActiveAccount(accounts[0]);
+          console.log('🟡 [Login] Active account set');
         }
       } catch (err) {
-        console.warn('Error setting active account:', err);
+        console.warn('⚠️ [Login] Error setting active account:', err);
       }
-      console.log('✅ User is authenticated with Azure, redirecting to dashboard...');
-      navigate('/', { replace: true });
+
+      // WAIT for AuthHandler to finish processing and populate Redux user
+      // Only redirect when we have a user in Redux
+      if (reduxUser) {
+        console.log('✅ [Login] User is in Redux, redirecting to dashboard...');
+        console.log('✅ [Login] Redux user:', reduxUser);
+        navigate('/', { replace: true });
+      } else {
+        console.log('⏳ [Login] User authenticated with Azure, waiting for Redux to sync...');
+        setWaitingForSync(true);
+
+        // Timeout: If Redux doesn't sync within 10 seconds, force navigation
+        const syncTimeout = setTimeout(() => {
+          console.warn('⚠️ [Login] Redux sync timeout after 10 seconds, forcing navigation...');
+          navigate('/', { replace: true });
+        }, 10000);
+
+        return () => clearTimeout(syncTimeout);
+      }
+    } else {
+      console.log('🟡 [Login] Not authenticated or in progress, hiding waiting screen');
+      setWaitingForSync(false);
     }
-    // Limpiar bandera si existe
-    if (justLoggedOut) {
-      try { localStorage.removeItem('mro_just_logged_out'); } catch {}
-    }
-  }, [isAuthenticated, inProgress, accounts, navigate, instance]);
+  }, [isAuthenticated, inProgress, accounts, navigate, instance, reduxUser]);
 
   const handleAzureLogin = () => {
     setAzureLoading(true);
+    // Note: We don't need to dispatch(setLoading(true)) here because
+    // loginRedirect will reload the page completely. When the user comes back
+    // from Microsoft, Redux will initialize with isLoading: true by default
+    // and AuthHandler will manage the loading state
     instance.loginRedirect(loginRequest).catch((e) => {
       console.error('Login error:', e);
       setAzureLoading(false);
@@ -52,9 +94,12 @@ export function Login() {
   const handleLocalLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    setLocalLoading(true);
 
     try {
+      // Set global loading state for the app
+      dispatch(setLoading(true));
+
       const response = await authService.loginLocal({ email, password });
       authService.saveToken(response.token);
 
@@ -90,6 +135,7 @@ export function Login() {
             warehouse: response.user.warehouseId ?? undefined,
             warehouseId: response.user.warehouseId, // ej: 1
             roleName: response.user.roleName, // ej: "Keeper"
+            backendAuthType: response.user.authType, // 0=Local, 1=Azure, 2=Both
           },
           accessToken: response.token,
           authType: 'local',
@@ -97,14 +143,101 @@ export function Login() {
       );
       console.log('✅ Login local exitoso:', response.user);
       console.log('🎫 Token guardado en localStorage');
+
+      // Navigate to dashboard - Layout will handle setLoading(false) when mounted
       navigate('/', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
       console.error('❌ Login error:', err);
+      dispatch(setLoading(false));
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
+
+  // Show loading screen while waiting for Azure auth to sync with Redux
+  if (waitingForSync) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100vh',
+          margin: 0,
+          padding: 0,
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999999,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Logo */}
+        <img
+          src="https://images.squarespace-cdn.com/content/v1/6449f0be1aea3b0d974f5af0/d6e90988-9b25-45db-967a-f110ffa9cfd3/amaxst+logo+side-07.png?format=750w"
+          alt="AMAXST Logo"
+          style={{
+            height: '80px',
+            width: 'auto',
+            objectFit: 'contain',
+            marginBottom: '40px',
+          }}
+        />
+
+        {/* Spinner */}
+        <div
+          style={{
+            width: '60px',
+            height: '60px',
+            border: '4px solid rgba(96, 165, 250, 0.2)',
+            borderTop: '4px solid rgb(96, 165, 250)',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+          }}
+        />
+
+        {/* Text */}
+        <h2
+          style={{
+            color: 'white',
+            fontSize: '24px',
+            fontWeight: '600',
+            marginTop: '30px',
+            marginBottom: '10px',
+          }}
+        >
+          Completing Microsoft Login
+        </h2>
+
+        <p
+          style={{
+            color: 'rgba(255, 255, 255, 0.7)',
+            fontSize: '14px',
+          }}
+        >
+          Syncing your account information...
+        </p>
+
+        {/* Animation styles */}
+        <style>{`
+          @keyframes spin {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -232,10 +365,10 @@ export function Login() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={localLoading}
                 className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? (
+                {localLoading ? (
                   <>
                     <svg
                       className="animate-spin h-5 w-5"
@@ -278,7 +411,7 @@ export function Login() {
               <button
                 type="button"
                 onClick={handleAzureLogin}
-                disabled={azureLoading || loading}
+                disabled={azureLoading || localLoading}
                 className="w-full flex items-center justify-center gap-3 px-6 py-3.5 border-2 border-gray-300 dark:border-input rounded-xl font-medium text-gray-700 dark:text-foreground bg-white dark:bg-background hover:bg-gray-50 dark:hover:bg-accent hover:border-gray-400 dark:hover:border-border focus:outline-none focus:ring-4 focus:ring-gray-500/10 dark:focus:ring-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {azureLoading ? (

@@ -212,7 +212,22 @@ export const PackingRequestRow: React.FC<Props> = ({
                                   min={0} 
                                   max={item.quantityRequested} 
                                   value={getPackingItemQuantity(request.id, item.id)} 
-                                  onChange={(e) => handlePackingQuantityChange(request.id, item.id, parseInt(e.target.value) || 0)}
+                                  onChange={(e) => {
+                                    const inputValue = e.target.value;
+                                    const numValue = parseInt(inputValue);
+                                    // Only allow valid numbers: 0 or positive integers up to quantityRequested
+                                    if (inputValue === '' || (numValue >= 0 && numValue <= item.quantityRequested)) {
+                                      handlePackingQuantityChange(request.id, item.id, numValue || 0);
+                                    } else if (numValue < 0) {
+                                      // Prevent negative numbers
+                                      handlePackingQuantityChange(request.id, item.id, 0);
+                                      toast.error('Packaged quantity cannot be negative');
+                                    } else if (numValue > item.quantityRequested) {
+                                      // Prevent exceeding requested quantity
+                                      handlePackingQuantityChange(request.id, item.id, item.quantityRequested);
+                                      toast.error(`Cannot exceed requested quantity of ${item.quantityRequested}`);
+                                    }
+                                  }}
                                   onFocus={(e) => e.target.select()}
                                   className={`w-20 ${getPackingItemQuantity(request.id, item.id) === 0 ? 'border-2 text-center border rounded px-2 py-1 border-black-400 bg-green-50' : 'border border-gray-300'}`}
                                 />

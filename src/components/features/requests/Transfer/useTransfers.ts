@@ -31,7 +31,7 @@ interface UseTransfersReturn {
     workOrderId: string,
     notes?: string
   ) => Promise<void>;
-  handleReject: (id: string) => Promise<void>;
+  handleReject: (id: string, reason?: string) => Promise<void>;
   getTypeCount: (type: string) => number;
   canCancelTransfer: (transfer: Transfer) => boolean;
   refreshTransfers: () => Promise<void>;
@@ -154,9 +154,9 @@ export function useTransfers(): UseTransfersReturn {
   };
 
   // Reject transfer
-  const handleReject = async (transferId: string) => {
+  const handleReject = async (transferId: string, reason?: string) => {
     try {
-      await rejectTransfer(transferId);
+      await rejectTransfer(transferId, reason);
       toast.success('Transfer rejected successfully');
       // Reload transfers after successful reject
       await loadTransfers();

@@ -8,6 +8,8 @@ import { Input } from '../../ui/input';
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
 import type { CartItem } from '../enginner/types';
 
+type RequestType = 'borrow' | 'purchase';
+
 interface CartSidebarProps {
   open: boolean;
   onClose: () => void;
@@ -15,6 +17,7 @@ interface CartSidebarProps {
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onClearCart: () => void;
   onProceed: () => void;
+  requestType: RequestType;
 }
 
 export function CartSidebar({
@@ -23,7 +26,8 @@ export function CartSidebar({
   cartItems,
   onUpdateQuantity,
   onClearCart,
-  onProceed
+  onProceed,
+  requestType
 }: CartSidebarProps) {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
@@ -73,6 +77,7 @@ export function CartSidebar({
   };
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const proceedLabel = requestType === 'purchase' ? 'Proceed to Purchase' : 'Proceed to Borrow';
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
@@ -191,7 +196,7 @@ export function CartSidebar({
                 <span className="font-medium">{totalItems}</span>
               </div>
               <Button onClick={onProceed} className="w-full">
-                Proceed to Request
+                {proceedLabel}
               </Button>
             </div>
           </>
