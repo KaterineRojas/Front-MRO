@@ -67,8 +67,8 @@ export function handlePrintSinglePacking(request: LoanRequest, packingItemQuanti
                       <td>${item.sku}</td>
                       <td>${item.articleDescription}</td>
                       <td>${qty}${qty !== item.quantityRequested ? ` (Original: ${item.quantityRequested})` : ''}</td>
-                      <td>${item.unit}</td>
-                      <td>________________</td>
+                      <td> </td>
+                      <td> </td>
                     </tr>
                   `;
                 }).join('')}

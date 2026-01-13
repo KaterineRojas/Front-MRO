@@ -188,8 +188,8 @@ function generatePackingHtml(request: LoanRequest, quantities: Record<string, nu
                   <td>${item.sku}</td>
                   <td>${item.articleDescription}</td>
                   <td>${qty}${qty !== item.quantityRequested ? ` (Original: ${item.quantityRequested})` : ''}</td>
-                  <td>${item.unit}</td>
-                  <td>________________</td>
+                  <td></td>
+                  <td></td>
                 </tr>
               `;
             }).join('')}
