@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../ui/dialog';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Textarea } from '../../ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../ui/dialog';
+import { Button } from '../../../ui/button';
+import { Input } from '../../../ui/input';
+import { Label } from '../../../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Textarea } from '../../../ui/textarea';
 import { BinSelector } from '../components/BinSelector';
 
 interface Article {
@@ -174,7 +174,7 @@ export function AddItemModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="category">Category *</Label>
-              <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+              <Select value={formData.category} onValueChange={(value: string) => setFormData({...formData, category: value})}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

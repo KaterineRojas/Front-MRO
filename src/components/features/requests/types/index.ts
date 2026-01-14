@@ -5,7 +5,10 @@ export interface User {
   name: string;
   email: string;
   department: string;
+  departmentId?: string;
+  departmentName?: string;
   employeeId?: string;
+  role?: string;
 }
 
 export interface InventoryItem {
@@ -49,12 +52,4 @@ export interface PurchaseRequest {
   requestDate: string;
   type: 'purchase';
   selfPurchase: boolean;
-}
-
-export interface Notification {
-  id: string;
-  message: string;
-  type: 'info' | 'warning' | 'success' | 'error';
-  timestamp: string;
-  read: boolean;
 }

@@ -27,6 +27,7 @@ import { ThemeProvider } from "next-themes";
 import { ReturnItemsPage } from './components/features/loans/ReturnItemsPage';
 import { ManageRequestsPage } from './components/features/manage-requests/pages/ManageRequestsPage';
 import { Toaster } from 'react-hot-toast';
+import { Toaster as SonnerToaster } from 'sonner';
 import { Login, Register, ProtectedRoute, LoadingScreen } from './components/features/auth';
 import { RoleGuard } from './auth/RoleGuard'
 import { Unauthorized } from './pages/Unauthorized'
@@ -99,7 +100,9 @@ function AuthHandler() {
                 // ✅ PASS THE NAME DIRECTLY
                 roleName: backendUser.roleName,
 
-                department: backendUser.departmentId ? String(backendUser.departmentId) : 'Engineering',
+                department: backendUser.departmentName || backendUser.departmentId || 'Engineering',
+                departmentId: backendUser.departmentId,
+                departmentName: backendUser.departmentName,
                 employeeId: backendUser.employeeId,
                 warehouseId: backendUser.warehouseId,
                 backendAuthType: backendUser.authType, // 0=Local, 1=Azure, 2=Both
@@ -251,9 +254,11 @@ function AuthHandler() {
             role: backendResponse.user.role,
             roleName: backendResponse.user.roleName,
 
-            department: backendResponse.user.departmentId
+            department: backendResponse.user.departmentName || backendResponse.user.departmentId
               ? String(backendResponse.user.departmentId)
               : graphProfile?.department || 'Engineering',
+            departmentId: backendResponse.user.departmentId,
+            departmentName: backendResponse.user.departmentName,
 
             jobTitle: graphProfile?.jobTitle,
             mobilePhone: graphProfile?.mobilePhone,
@@ -957,6 +962,7 @@ export default function App() {
             },
           }}
         />
+        <SonnerToaster position="top-center" />
       </BrowserRouter>
     </Provider>
   );

@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from '../../../../../store/hooks';
 import { submitPurchaseRequest } from '../../../../../store/slices/purchaseSlice';
 import { ConfirmModal, useConfirmModal } from '../../../../ui/confirm-modal';
 import { CreateItemModal, type ApiPayload } from '../../../inventory/modals/CreateItemModal/CreateItemModal';
-import { updateCartItem, removeFromCart } from '../../../enginner/store/slices/cartSlice';
+import { updateCartItem, removeFromCart } from '../../store/slices/cartSlice';
 import { getCatalogItemsByWarehouse, type CatalogItem } from '../../services/sharedServices';
 import { type CreatePurchaseRequestPayload } from '../purchaseService';
 

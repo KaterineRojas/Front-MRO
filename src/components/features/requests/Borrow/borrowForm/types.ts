@@ -1,4 +1,4 @@
-import type { CartItem, User } from '../../../enginner/types';
+import type { CartItem, User } from '../../types';
 import type {
   Warehouse,
   CatalogItem,

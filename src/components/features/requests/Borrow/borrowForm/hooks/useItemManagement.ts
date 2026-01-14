@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
-import { updateCartItem, removeFromCart } from '../../../../enginner/store/slices/cartSlice';
-import type { CartItem } from '../../../../enginner/types';
+import { updateCartItem, removeFromCart } from '../../../store/slices/cartSlice';
+import type { CartItem } from '../../../types';
 import type { LoanFormData, LoanItem, CatalogItem, ItemSearches, FilteredItems, DropdownState } from '../types';
 import { createDefaultLoanItem, recomputeFilteredItems } from '../utils';
 

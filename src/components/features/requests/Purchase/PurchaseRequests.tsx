@@ -15,10 +15,10 @@ import { actionButtonAnimationStyles } from '../styles/actionButtonStyles';
 import { formatCurrency, formatDate, getReasonColor, getReasonText, getStatusColor, getStatusText } from './purchaseUtils';
 import { getWarehouses } from '../services/sharedServices';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
-import { selectCartItems } from '../../enginner/store/selectors';
-import { clearCart } from '../../enginner/store/actions';
+import { selectCartItems } from '../store/selectors';
+import { clearCart } from '../store/actions';
 import type { PurchaseRequest } from './purchaseService';
-import type { User as EngineerUser, CartItem } from '../../enginner/types';
+import type { User as EngineerUser, CartItem } from '../types';
 import { toast } from 'sonner';
 import { ConfirmModal } from '../../../ui/confirm-modal';
 import { ProjectDetails } from '../shared/ProjectDetails';
@@ -544,7 +544,7 @@ export function PurchaseRequests() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <Button
+                    {/* <Button
                       variant="outline"
                       className="gap-2 h-auto py-2 px-4"
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
@@ -553,8 +553,7 @@ export function PurchaseRequests() {
                       }}
                     >
                       <Pencil className="h-4 w-4" />
-                     {/* Edit */}
-                    </Button>
+                    </Button> */}
                     <Button
                       className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
                       disabled={!canConfirmBought(request)}
@@ -712,7 +711,7 @@ export function PurchaseRequests() {
                           </TableCell>
                           <TableCell className="align-top">
                             <div className="flex items-start justify-end gap-2">
-                              <Button
+                              {/* <Button
                                 variant="outline"
                                 className="gap-2 h-auto py-2 px-4"
                                 onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
@@ -721,8 +720,7 @@ export function PurchaseRequests() {
                                 }}
                               >
                                 <Pencil className="h-4 w-4" />
-                               {/* Edit */}
-                              </Button>
+                              </Button> */}
                               <Button
                                 className="action-btn-enhance btn-approve gap-2 h-auto py-2 px-4"
                                 disabled={!canConfirmBought(request)}

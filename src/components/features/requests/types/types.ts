@@ -16,6 +16,7 @@ export interface InventoryItem {
   id: string;
   name: string;
   description: string;
+  code?: string;
   image?: string;
   availableQuantity?: number;
   quantity?: number;
@@ -42,10 +43,4 @@ export interface CartItem {
   warehouseName?: string;
 }
 
-export interface Notification {
-  id: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  timestamp: Date;
-  read: boolean;
-}
+

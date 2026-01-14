@@ -6,8 +6,8 @@ import inventoryReducer from './slices/inventorySlice';
 import requestsReducer from './slices/requestsSlice';
 import purchaseReducer from './slices/purchaseSlice';
 // Engineer Module Slices
-import engineerCartReducer from '../components/features/enginner/store/slices/cartSlice';
-import engineerUserReducer from '../components/features/enginner/store/slices/userSlice';
+import engineerCartReducer from '../components/features/requests/store/slices/cartSlice';
+import engineerUserReducer from '../components/features/requests/store/slices/userSlice';
 // History Module
 import historyReducer from '../components/features/requests/HistoryRequest/historySlice';
 

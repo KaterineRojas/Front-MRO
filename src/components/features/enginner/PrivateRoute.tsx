@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAppSelector } from './store/hooks';
+import { useAppSelector } from '../requests/store/hooks';
 import { USE_AUTH_TOKENS } from './constants';
 
 /**

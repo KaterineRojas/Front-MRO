@@ -309,7 +309,7 @@ export function LoanForm({
         : 'Not set';
 
       showConfirm({
-        title: 'Requires Loan Request Confirmation',
+        title: '¿Confirm loan application submission?',
         description: `Company: ${companyInfo}\nItems: ${itemsCount}\nReturn Date: ${returnDateFormatted}`,
         type: 'warning',
         confirmText: 'Confirm',
@@ -317,6 +317,12 @@ export function LoanForm({
         showCancel: true,
         onConfirm: async () => {
           hideModal();
+          
+          // Cerrar el formulario inmediatamente después de confirmar
+          if (onBack) onBack();
+          
+          // Mostrar notificación de que la solicitud está siendo procesada
+          toast.success('Loan request submitted. It will appear on screen shortly.');
 
           // Get employeeId from currentUser prop (already from Redux)
           const requesterId = currentUser?.employeeId || '';
@@ -351,8 +357,6 @@ export function LoanForm({
             if (onBorrowCreated) {
               await onBorrowCreated();
             }
-
-            if (onBack) onBack();
           } else {
             toast.error(result.message || 'Failed to create borrow request');
           }
