@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import { BinV2, ZoneV2, RackV2, LevelV2 } from '../../../types/warehouse-v2';
-import { Button } from '../../../../ui2/button';
-import { Input } from '../../../../ui2/input';
-import { Label } from '../../../../ui2/label';
+import { Input } from '../../../../../ui/input';
+import { Label } from '../../../../../ui/label';
+import { Button } from '../../../../../ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../../ui2/select';
+} from '../../../../../ui/select';
 import {
   Dialog,
   DialogContent,
@@ -17,8 +17,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '../../../../ui2/dialog';
-import { Switch } from '../../../../ui2/switch';
+} from '../../../../../ui/dialog';
+import { Switch } from '../../../../../ui/switch';
 
 interface BinModalProps {
   isOpen: boolean;

@@ -9,7 +9,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../../ui2/select';
+} from '../../../../../ui/select';
 
 interface BinTableViewProps {
   warehouses: WarehouseV2[];

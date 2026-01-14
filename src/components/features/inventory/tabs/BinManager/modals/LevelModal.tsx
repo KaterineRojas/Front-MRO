@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { LevelV2, ZoneV2, RackV2 } from '../../../types/warehouse-v2';
-import { Button } from '../../../../ui2/button';
-import { Input } from '../../../../ui2/input';
-import { Label } from '../../../../ui2/label';
+import { Button } from '../../../../../ui/button';
+import { Input } from '../../../../../ui/input';
+import { Label } from '../../../../../ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../../ui2/select';
+} from '../../../../../ui/select';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '../../../../ui2/dialog';
+} from '../../../../../ui/dialog';
 
 interface LevelModalProps {
   isOpen: boolean;

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ZoneV2 } from '../../../types/warehouse-v2';
-import { Button } from '../../../../ui2/button';
-import { Input } from '../../../../ui2/input';
-import { Label } from '../../../../ui2/label';
+import { Button } from '../../../../../ui/button';
+import { Input } from '../../../../../ui/input';
+import { Label } from '../../../../../ui/label';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '../../../../ui2/dialog';
+} from '../../../../../ui/dialog';
 
 interface ZoneModalProps {
   isOpen: boolean;
