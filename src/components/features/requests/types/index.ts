@@ -5,7 +5,10 @@ export interface User {
   name: string;
   email: string;
   department: string;
+  departmentId?: string;
+  departmentName?: string;
   employeeId?: string;
+  role?: string;
 }
 
 export interface InventoryItem {

@@ -1,8 +1,5 @@
 // Exportaciones centralizadas de todos los servicios
 
-// Auth Service
-export * from './authService';
-
 // Warehouse Service
 export * from './warehouseService';
 
@@ -21,9 +18,3 @@ export * from '../../requests/services/requestService';
 // History Service
 export * from './historyService';
 
-// Project Service
-export * from './projectService';
-
-
-// Project Service
-export * from './projectService';

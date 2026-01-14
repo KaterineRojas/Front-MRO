@@ -1,7 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { User } from '../../types/index';
-import { USE_AUTH_TOKENS } from '../../../enginner/constants';
-import { getUserData, isAuthenticated } from '../../../enginner/services/authService';
 
 interface UserState {
   currentUser: User | null;
@@ -9,35 +7,17 @@ interface UserState {
   token: string | null;
 }
 
-// Estado inicial condicional basado en USE_AUTH_TOKENS
-const getInitialState = (): UserState => {
-  if (USE_AUTH_TOKENS) {
-    // Si usa tokens, verificar si hay sesión guardada
-    const savedUser = getUserData();
-    const isAuth = isAuthenticated();
-    
-    return {
-      currentUser: savedUser || null,
-      isLoggedIn: isAuth,
-      token: null // El token se maneja en authService
-    };
-  } else {
-    // Si no usa tokens, usuario siempre autenticado
-    //borrow
-    return {
-      currentUser: {
-        id: 'amx0142',
-        name: 'John Smith',
-        email: 'john@company.com',
-        department: 'IT-Bolivia'
-      },
-      isLoggedIn: true,
-      token: null
-    };
-  }
+// Estado inicial sin lógica de tokens
+const initialState: UserState = {
+  currentUser: {
+    id: 'amx0142',
+    name: 'John Smith',
+    email: 'john@company.com',
+    department: 'IT-Bolivia'
+  },
+  isLoggedIn: true,
+  token: null
 };
-
-const initialState: UserState = getInitialState();
 
 const userSlice = createSlice({
   name: 'engineerUser',
