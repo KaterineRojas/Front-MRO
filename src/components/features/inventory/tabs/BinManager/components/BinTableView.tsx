@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { Edit, Trash2 } from 'lucide-react';
 import { WarehouseV2, ZoneV2, RackV2, LevelV2, BinV2 } from '../../../types/warehouse-v2';
-import { Button } from '../../../../ui2/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../ui2/table';
+import { Button } from '../../../../../ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../../ui/table';
 import {
   Select,
   SelectContent,
