@@ -421,7 +421,7 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) =
                 </p>
                 <button
                     onClick={() => fetchOrders()}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 dark:text-red-300 bg-white dark:bg-gray-900 border border-red-200 dark:border-red-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors shadow-sm"
                 >
                     Try Again
                 </button>

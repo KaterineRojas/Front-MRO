@@ -144,7 +144,7 @@ export function TrackingTab() {
                 className={`w-full justify-start ${
                   trackingMode === 'item'
                     ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                    : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
+                    : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
                 }`}
                 onClick={() => {
                   setTrackingMode('item');
@@ -159,7 +159,7 @@ export function TrackingTab() {
                 className={`w-full justify-start ${
                   trackingMode === 'engineer'
                     ? 'bg-purple-500 hover:bg-purple-600 text-white'
-                    : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
+                    : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
                 }`}
                 onClick={() => {
                   setTrackingMode('engineer');

@@ -205,7 +205,7 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                               const firstRequest = filteredReturns[0];
                               if (firstRequest) props.handleTakePhotoItems(firstRequest);
                             }}
-                            className="px-3 py-2 bg-blue-50 text-blue-700 border border-blue-300 rounded text-sm hover:bg-blue-100"
+                            className="px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700 rounded text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50"
                           >
                             📷 Take Photo
                           </button>
@@ -229,7 +229,7 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                                 }
                               }
                             }}
-                            className="px-3 py-2 bg-green-50 text-green-700 border border-green-300 rounded text-sm hover:bg-green-100"
+                            className="px-3 py-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700 rounded text-sm hover:bg-green-100 dark:hover:bg-green-900/50"
                           >
                             ✓ Return
                           </button>
@@ -346,7 +346,7 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                                           }
                                           occs.forEach((o, i) => props.handleReturnQuantityChange(o.requestId, o.itemId, distributed[i]));
                                         }}
-                                        className="w-20 text-center border rounded px-2 py-1  bg-green-50 border border-grey-300"
+                                        className="w-20 text-center border rounded px-2 py-1 bg-green-50 dark:bg-green-900/30 border border-gray-300 dark:border-gray-600"
                                       />
                                     </td>
                                     <td className="text-center px-4 py-2">
@@ -361,7 +361,7 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                                       </button>
                                     </td>
                                     <td className="text-center px-4 py-2">
-                                      <div className="inline-block px-2 py-1 bg-gray-100 rounded text-sm">
+                                      <div className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm">
                                         {item.articleType === 'consumable' ? 'Consumable' : 'Non-Consumable'}
                                       </div>
                                     </td>

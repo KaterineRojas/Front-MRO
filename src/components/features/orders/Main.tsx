@@ -1,18 +1,19 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react'
-import { PurchaseOrdersProps } from './types/purchaseType'
-import TabsGroup from '../requests/components/Tabs'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { OrderTable } from './components/OrderTable'
 import { PurchaseRequest } from './types/purchaseType'
-import { Plus, Loader2 } from 'lucide-react'
-import { CreatePurchaseRequestPage } from './CreatePurchaseRequestPage'
-import { authService } from '../../../services/authService'
+import { Loader2 } from 'lucide-react'
 import { getAllPurchaseRequests } from './services/purchaseService'
 import { ReviewRequestModal } from './modals/ApproveRequestModal'
 import { TableErrorBoundary } from './components/TableErrorBoundary'
 import { TableErrorState } from './components/TableErrorState'
 import { approvePurchaseRequest, rejectPurchaseRequest } from './services/purchaseService'
+import {LoanRequest} from '../requests/types/loanTypes'
 
-export function Main({ onViewDetail }: PurchaseOrdersProps) {
+interface PurchaseRequestProp {
+    loanRequests: LoanRequest[],
+}
+
+export function Main({loanRequests} : PurchaseRequestProp) {
     // Make sure your Tab names here match exactly what is in TabsGroup below
     const [activeTab, setActiveTab] = useState('active orders'); 
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -20,7 +21,6 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const [creatingRequest, setCreatingRequest] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isReviewProcessing, setIsReviewProcessing] = useState(false);
 
@@ -116,59 +116,8 @@ export function Main({ onViewDetail }: PurchaseOrdersProps) {
         };
     }, [fetchOrders]);
 
-    const handleCreateNewRequest = () => {
-        setCreatingRequest(true);
-    };
-
-    const handleBackFromCreate = () => {
-        setCreatingRequest(false);
-    };
-
-    const handleRequestSaved = () => {
-        setCreatingRequest(false);
-        fetchOrders();
-    };
-
-    if (creatingRequest) {
-        return (
-            <CreatePurchaseRequestPage
-                onBack={handleBackFromCreate}
-                onSave={handleRequestSaved}
-            />
-        );
-    }
-
     return (
-        <div className="p-6 max-w-[1600px] mx-auto space-y-6">
-
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        Purchase Requests
-                    </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Manage purchase requests and orders
-                    </p>
-                </div>
-
-                {/* <button
-                    onClick={handleCreateNewRequest}
-                    className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-indigo-700 hover:bg-indigo-800 rounded-lg shadow-sm transition-colors"
-                >
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Request
-                </button> */}
-            </div>
-
-            <TabsGroup
-                tabsList={[
-                    { name: 'Active Orders', iconType: 'shoppingCart' },
-                    { name: 'Orders History', iconType: 'history' }
-                ]}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-            />
-
+        <div className="p-2 w-full mx-auto space-y-6">
             {isLoading ? (
                 <div className="flex justify-center items-center h-64 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                     <div className="flex flex-col items-center text-gray-400">

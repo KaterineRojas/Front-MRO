@@ -342,7 +342,7 @@ export function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-input bg-white dark:bg-background text-gray-900 dark:text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-primary focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-muted-foreground"
+                  className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-primary transition-all !bg-white dark:!bg-gray-900 !text-gray-900 dark:!text-white !border-gray-300 dark:!border-gray-600 placeholder:!text-gray-400 dark:placeholder:!text-gray-500 border [&:-webkit-autofill]:!shadow-[0_0_0_30px_white_inset] dark:[&:-webkit-autofill]:!shadow-[0_0_0_30px_rgb(17,24,39)_inset] [&:-webkit-autofill]:!text-gray-900 dark:[&:-webkit-autofill]:!text-white [&:-webkit-autofill]:[-webkit-text-fill-color:rgb(17,24,39)] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:rgb(255,255,255)]"
                   placeholder="your_email@amaxst.com"
                 />
               </div>
@@ -358,7 +358,7 @@ export function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-input bg-white dark:bg-background text-gray-900 dark:text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-primary focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-muted-foreground"
+                  className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-primary transition-all !bg-white dark:!bg-gray-900 !text-gray-900 dark:!text-white !border-gray-300 dark:!border-gray-600 placeholder:!text-gray-400 dark:placeholder:!text-gray-500 border [&:-webkit-autofill]:!shadow-[0_0_0_30px_white_inset] dark:[&:-webkit-autofill]:!shadow-[0_0_0_30px_rgb(17,24,39)_inset] [&:-webkit-autofill]:!text-gray-900 dark:[&:-webkit-autofill]:!text-white [&:-webkit-autofill]:[-webkit-text-fill-color:rgb(17,24,39)] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:rgb(255,255,255)]"
                   placeholder="••••••••"
                 />
               </div>

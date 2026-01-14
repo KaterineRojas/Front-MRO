@@ -36,7 +36,7 @@ export const KitReturnOptionsDialog: React.FC<Props> = ({ open, onOpenChange, pe
           <RadioGroup value={kitReturnOption} onValueChange={setKitReturnOption}>
             <div className="space-y-3">
               <div onClick={() => setKitReturnOption('restock')} className={`border-2 rounded-lg p-4 cursor-pointer transition-all
-                 ${ kitReturnOption === 'restock' ? 'border-[#568FCB] bg-[#568FCB]/10' : 'border-gray-200 hover:border-gray-300' }`}>
+                 ${ kitReturnOption === 'restock' ? 'border-[#568FCB] bg-[#568FCB]/10' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600' }`}>
                 <div className="flex items-center space-x-3 border px-2 py-3 rounded cursor-pointer">
                   <RadioGroupItem value="restock" id="restock" />
                   <div>
@@ -47,8 +47,8 @@ export const KitReturnOptionsDialog: React.FC<Props> = ({ open, onOpenChange, pe
                   </div>
                 </div>
               </div>
-              <div onClick={() => setKitReturnOption('disassemble')} className={`p-4 cursor-pointer transition-all 
-                ${ kitReturnOption === 'disassemble' ? 'border-[#568FCB] bg-[#568FCB]/10' : 'border-gray-200 hover:border-gray-300' }`}>
+              <div onClick={() => setKitReturnOption('disassemble')} className={`p-4 cursor-pointer transition-all
+                ${ kitReturnOption === 'disassemble' ? 'border-[#568FCB] bg-[#568FCB]/10' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600' }`}>
                 <div className="flex items-center space-x-3 border px-3 py-3 rounded cursor-pointer">
                   <RadioGroupItem value="disassemble" id="disassemble" />
                   <div>
@@ -69,7 +69,7 @@ export const KitReturnOptionsDialog: React.FC<Props> = ({ open, onOpenChange, pe
                   <Package className="h-4 w-4 mr-2 text-[#568FCB]" />Items to Restock ({missingKitItems.length})</h4>
                 <Button onClick={handlePrintMissingItems} variant="outline" size="sm" className="cursor-pointer">🖨️ Print List</Button>
               </div>
-              <div className="rounded-md border bg-white p-4">
+              <div className="rounded-md border dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
                 <table className="w-full">
                   <thead>
                     <tr className="text-center"><th>Item</th><th>Category</th><th className="text-right">Missing Qty</th><th className="text-right">Total Required</th></tr>
@@ -83,7 +83,7 @@ export const KitReturnOptionsDialog: React.FC<Props> = ({ open, onOpenChange, pe
           )}
 
           {kitReturnOption === 'restock' && missingKitItems.length === 0 && (
-            <div className="mt-6 bg-green-50 border-green-200 p-4 rounded">All kit items have been returned. No items need to be restocked.</div>
+            <div className="mt-6 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 p-4 rounded text-green-700 dark:text-green-300">All kit items have been returned. No items need to be restocked.</div>
           )}
         </div>
         <DialogFooter>
