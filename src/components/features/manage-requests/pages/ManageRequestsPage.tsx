@@ -19,6 +19,7 @@ import ConditionDialog from '../modals/ConditionDialog';
 import PackingRequestsTab from '../tabs/PackingRequestsTab';
 import ReturnsTab from '../tabs/ReturnsTab';
 import { PurchaseOrdersTab } from '../tabs/PurchaseOrdersActiveTab';
+import { PurchaseOnSiteTab } from '../tabs/PurchaseOnSiteTab';
 // types imported where needed in child components
 
 // Helper de UI
@@ -83,6 +84,10 @@ export function ManageRequestsPage() {
           <TabsTrigger value="orders-history" className="cursor-pointer flex items-center space-x-2">
             <History className="h-4 w-4" />
             <span>Purchase History</span>
+          </TabsTrigger>
+          <TabsTrigger value="purchase-on-site" className="cursor-pointer flex items-center space-x-2">
+            <Package className="h-4 w-4" />
+            <span>Purchase On Site</span>
           </TabsTrigger>
         </TabsList>
 
@@ -158,6 +163,12 @@ export function ManageRequestsPage() {
         <TabsContent value="orders-history">
           <div className="space-y-4">
             <PurchaseOrdersTab activeTab="orders history" warehouseId={warehouseId} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="purchase-on-site">
+          <div className="space-y-4">
+            <PurchaseOnSiteTab warehouseId={warehouseId} />
           </div>
         </TabsContent>
       </Tabs>

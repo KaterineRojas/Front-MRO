@@ -1,11 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { ShoppingCart, SearchX, Inbox, History, ChevronRight, Package, Building2, Layers, FolderKanban, UserCheck, Loader2 } from 'lucide-react';
+import { SearchX, Inbox, ChevronRight, Package, Building2, Layers, FolderKanban, UserCheck, Loader2 } from 'lucide-react';
 import { getStatusBadge, getReasonBadge } from '../../inventory/components/RequestBadges';
 import { useSelector } from 'react-redux';
-import { getPurchaseRequestsByStatus, markAsOrdered, markAsBought } from '../services/purchaseRequestsService';
-import toast from 'react-hot-toast';
-import { ConfirmModal } from '../modals/ConfirmModal';
-import { ReceivedItemsModal } from '../modals/ReceivedItemsModal';
+import { getPurchaseOnSiteRequests } from '../services/purchaseRequestsService';
 
 // Status mapping for display - handles both string and numeric status
 const STATUS_MAP: Record<string | number, string> = {
@@ -45,23 +42,15 @@ const formatCurrency = (amount: number) => {
 
 interface OrderRowProps {
     order: any;
-    onOrderClick: (orderId: number) => void;
-    onBoughtClick: (orderId: number) => void;
-    showActions: boolean;
-    activeTab: 'active orders' | 'orders history';
 }
 
-const OrderRow: React.FC<OrderRowProps> = ({ order, onOrderClick, onBoughtClick, showActions, activeTab }) => {
+const OrderRow: React.FC<OrderRowProps> = ({ order }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     
     // Handle both numeric and string status values
     const statusString = STATUS_MAP[order.status] || (typeof order.status === 'string' ? order.status.toLowerCase() : 'unknown');
     const reasonString = REASON_MAP[order.reason] || 'Standard';
     const darkMode = useSelector((state: any) => state.ui.darkMode);
-    
-    // Determine buttons based on status (handle both string and number)
-    const isApproved = order.status === 'Approved' || order.status === 1;
-    const isOrdered = order.status === 'Ordered' || order.status === 3;
 
     return (
         <>
@@ -95,36 +84,11 @@ const OrderRow: React.FC<OrderRowProps> = ({ order, onOrderClick, onBoughtClick,
                 <td className="p-4 text-sm text-gray-500 text-left">
                     {formatDate(order.createdAt)}
                 </td>
-                {showActions && (
-                    <td className="p-4 text-left">
-                        <div className="">
-                            {isApproved && (
-                                <button
-                                    className="inline-flex items-center gap-1 px-3 h-8 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title="Mark as Ordered"
-                                    onClick={() => onOrderClick(order.id)}
-                                >
-                                    Order
-                                </button>
-                            )}
-                            {isOrdered && (
-                                <button
-                                    className="inline-flex items-center gap-1 px-3 h-8 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title="Mark as Bought"
-                                    onClick={() => onBoughtClick(order.id)}
-                                >
-                                    
-                                    Received
-                                </button>
-                            )}
-                        </div>
-                    </td>
-                )}
             </tr>
 
             {isExpanded && (
                 <tr className="bg-[#F2F2F4] dark:bg-black/20 shadow-inner">
-                    <td colSpan={8} className="p-0 border-b border-gray-100 dark:border-gray-800">
+                    <td colSpan={7} className="p-0 border-b border-gray-100 dark:border-gray-800">
                         <div className="p-6 animate-in fade-in slide-in-from-top-1 duration-200">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                                 <div className="p-4 rounded-xl border border-blue-500 shadow-sm bg-blue-500/5 dark:border-blue-500/20 dark:shadow-none">
@@ -188,13 +152,10 @@ const OrderRow: React.FC<OrderRowProps> = ({ order, onOrderClick, onBoughtClick,
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs text-[14px] font-semibold text-gray-900 dark:text-gray-400">
-                                        {activeTab === 'active orders' ? 'Ordered At:' : 'Received At:'}
+                                        Created At:
                                     </span>
                                     <span className="text-xs text-[14px] font-semibold text-blue-900 dark:text-blue-400">
-                                        {activeTab === 'active orders' 
-                                            ? (order.orderedAt ? formatDate(order.orderedAt) : 'Not yet')
-                                            : (order.receivedAt ? formatDate(order.receivedAt) : '---')
-                                        }
+                                        {order.createdAt ? formatDate(order.createdAt) : '---'}
                                     </span>
                                 </div>
                             </div>
@@ -210,9 +171,6 @@ const OrderRow: React.FC<OrderRowProps> = ({ order, onOrderClick, onBoughtClick,
                                                 <th className="p-3 text-left text-[12px] font-bold uppercase tracking-wider text-gray-900 dark:text-gray-300">Name</th>
                                                 <th className="p-3 text-left text-[12px] font-bold uppercase tracking-wider text-gray-900 dark:text-gray-300">Description</th>
                                                 <th className="p-3 text-left text-[12px] font-bold uppercase tracking-wider text-gray-900 dark:text-gray-300">Quantity</th>
-                                                {activeTab === 'orders history' && (
-                                                    <th className="p-3 text-left text-[12px] font-bold uppercase tracking-wider text-gray-900 dark:text-gray-300">Quantity Received</th>
-                                                )}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -263,15 +221,6 @@ const OrderRow: React.FC<OrderRowProps> = ({ order, onOrderClick, onBoughtClick,
                                                             {item.quantity} {item.unit || 'units'}
                                                         </span>
                                                     </td>
-
-                                                    {/* Quantity Received - Only for history */}
-                                                    {activeTab === 'orders history' && (
-                                                        <td className="p-3 ">
-                                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
-                                                                {item.quantityReceived || 0} {item.unit || 'units'}
-                                                            </span>
-                                                        </td>
-                                                    )}
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -292,95 +241,37 @@ const OrderRow: React.FC<OrderRowProps> = ({ order, onOrderClick, onBoughtClick,
 };
 
 interface Props {
-    activeTab: 'active orders' | 'orders history';
     warehouseId: number;
 }
 
-export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) => {
+export const PurchaseOnSiteTab: React.FC<Props> = ({ warehouseId }) => {
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [orders, setOrders] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
-    const [isBoughtModalOpen, setIsBoughtModalOpen] = useState(false);
-    const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-    const [receivedQuantities, setReceivedQuantities] = useState<Record<number, number>>({});
 
-    const fetchOrders = useCallback(async (signal?: AbortSignal) => {
+    const fetchOnSiteRequests = useCallback(async (signal?: AbortSignal) => {
         try {
             setIsLoading(true);
             setError(null);
             
-            // For Active Orders tab, fetch Approved and Ordered
-            // For Orders History tab, fetch Received
-            const statuses = activeTab === 'active orders' 
-                ? ['Approved', 'Ordered']
-                : ['Received'];
-            
-            const data = await getPurchaseRequestsByStatus(warehouseId, statuses, signal);
-            console.log('📦 Fetched purchase requests:', data);
+            const data = await getPurchaseOnSiteRequests(warehouseId, signal);
+            console.log('📦 Fetched on-site purchase requests:', data);
             setOrders(data);
         } catch (err: any) {
             if (err.name === 'AbortError') return;
-            console.error("Failed to load purchase requests:", err);
+            console.error("Failed to load on-site purchase requests:", err);
             setError(err.message || "An unexpected error occurred.");
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, warehouseId]);
-
-    const handleOrderClick = (orderId: number) => {
-        setSelectedOrderId(orderId);
-        setIsOrderModalOpen(true);
-    };
-
-    const handleBoughtClick = (orderId: number) => {
-        setSelectedOrderId(orderId);
-        setIsBoughtModalOpen(true);
-    };
-
-    const handleConfirmOrder = async () => {
-        if (!selectedOrderId) return;
-        
-        try {
-            await markAsOrdered(selectedOrderId);
-            toast.success('Order marked successfully!');
-            setIsOrderModalOpen(false);
-            setSelectedOrderId(null);
-            // Refresh the table to show the updated status (Approved -> Ordered)
-            await fetchOrders();
-            console.log('✅ Table refreshed, order status updated to Ordered');
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to mark as ordered');
-        }
-    };
-
-    const handleConfirmBought = async (quantities: Record<number, number>) => {
-        if (!selectedOrderId) return;
-        
-        console.log('🛒 Confirming bought/received for order:', selectedOrderId, 'with quantities:', quantities);
-        
-        try {
-            await markAsBought(selectedOrderId, quantities);
-            toast.success('Order marked as bought/received!');
-            setIsBoughtModalOpen(false);
-            setSelectedOrderId(null);
-            setReceivedQuantities({});
-            
-            // Refresh the table to remove the item since it's now "Received"
-            await fetchOrders();
-            console.log('✅ Table refreshed, order should be removed');
-        } catch (error: any) {
-            console.error('❌ Error in handleConfirmBought:', error);
-            toast.error(error.message || 'Failed to mark as bought');
-        }
-    };
+    }, [warehouseId]);
 
     useEffect(() => {
         const controller = new AbortController();
-        fetchOrders(controller.signal);
+        fetchOnSiteRequests(controller.signal);
         return () => controller.abort();
-    }, [fetchOrders]);
+    }, [fetchOnSiteRequests]);
 
     const filteredOrders = useMemo(() => {
         let data = orders;
@@ -407,8 +298,6 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) =
         return data;
     }, [orders, searchTerm]);
 
-    // No client-side status selector; server query determines active vs history.
-
     if (isLoading) {
         return (
             <div className="flex justify-center items-center h-64 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -433,8 +322,8 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) =
                     {error}
                 </p>
                 <button
-                    onClick={() => fetchOrders()}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 dark:text-red-300 bg-white dark:bg-gray-900 border border-red-200 dark:border-red-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors shadow-sm"
+                    onClick={() => fetchOnSiteRequests()}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors shadow-sm"
                 >
                     Try Again
                 </button>
@@ -446,15 +335,11 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) =
         <div className="w-full bg-white dark:bg-[#0A1016] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between p-4 gap-4 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500/10 rounded-lg">
-                        {activeTab === 'active orders' ? (
-                            <ShoppingCart className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        ) : (
-                            <History className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                        )}
+                    <div className="p-2 bg-amber-500/10 rounded-lg">
+                        <Package className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                     </div>
                     <h2 className="text-base font-bold text-gray-900 dark:text-white capitalize">
-                        {activeTab}
+                        Purchase On Site
                         <span className="ml-2 text-sm font-medium text-gray-400">({filteredOrders.length})</span>
                     </h2>
                     <div className="w-full md:w-auto">
@@ -486,9 +371,6 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) =
                             <th className="p-4 text-[12px] font-bold uppercase tracking-wider text-gray-900 dark:text-gray-400">Total Value</th>
                             <th className="p-4 text-[12px] font-bold uppercase tracking-wider text-gray-900 dark:text-gray-400">Reason</th>
                             <th className="p-4 text-[12px] font-bold uppercase tracking-wider text-gray-900 dark:text-gray-400">Created At</th>
-                            {activeTab === 'active orders' && (
-                                <th className="p-4 text-[12px] font-bold uppercase tracking-wider text-gray-900 dark:text-gray-400 ">Actions</th>
-                            )}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -497,15 +379,11 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) =
                                 <OrderRow 
                                     key={order.id} 
                                     order={order}
-                                    onOrderClick={handleOrderClick}
-                                    onBoughtClick={handleBoughtClick}
-                                    showActions={activeTab === 'active orders'}
-                                    activeTab={activeTab}
                                 />
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={8} className="py-16 text-center">
+                                <td colSpan={7} className="py-16 text-center">
                                     <div className="flex flex-col items-center justify-left">
                                         <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-full mb-3">
                                             {(searchTerm || '').trim().length > 0 ? (
@@ -518,7 +396,7 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) =
                                         <p className="text-xs text-gray-500 mt-1 max-w-[200px]">
                                             {(searchTerm || '').trim().length > 0
                                                 ? "No orders match your search." 
-                                                : "There are no orders in this category right now."}
+                                                : "There are no on-site purchase orders right now."}
                                         </p>
                                     </div>
                                 </td>
@@ -527,30 +405,6 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ activeTab, warehouseId }) =
                     </tbody>
                 </table>
             </div>
-
-            <ConfirmModal
-                isOpen={isOrderModalOpen}
-                title="Confirm Order"
-                message="Are you sure you want to mark this request as Ordered?"
-                onConfirm={handleConfirmOrder}
-                onCancel={() => {
-                    setIsOrderModalOpen(false);
-                    setSelectedOrderId(null);
-                }}
-            />
-
-            <ReceivedItemsModal
-                open={isBoughtModalOpen}
-                onOpenChange={(open) => {
-                    setIsBoughtModalOpen(open);
-                    if (!open) {
-                        setSelectedOrderId(null);
-                        setReceivedQuantities({});
-                    }
-                }}
-                order={selectedOrderId ? orders.find(o => o.id === selectedOrderId) : null}
-                onConfirm={handleConfirmBought}
-            />
         </div>
     );
 };

@@ -21,6 +21,7 @@ interface CycleCountRecord {
   status: 'in-progress' | 'completed';
   countType: 'Annual' | 'Biannual' | 'Spot Check';
   auditor: string;
+  periodo?: string;
   totalItems: number;
   counted: number;
   discrepancies: number;
@@ -68,6 +69,7 @@ export function generatePrintReport(record: CycleCountRecord) {
           <h2>Audit Header</h2>
           <div><strong>Date:</strong> ${record.date}</div>
           <div><strong>Count Type:</strong> ${record.countType}</div>
+          ${record.periodo ? `<div><strong>Period:</strong> ${record.periodo}</div>` : ''}
           <div><strong>Auditor Responsible:</strong> ${record.auditor}</div>
           <div><strong>Zone:</strong> ${record.zone === 'all' ? 'All Zones' : record.zone}</div>
         </div>
@@ -184,6 +186,7 @@ export function generatePrintAllHistory(records: CycleCountRecord[]) {
           <h2>Audit Header</h2>
           <div><strong>Date:</strong> ${record.date}</div>
           <div><strong>Count Type:</strong> ${record.countType}</div>
+          ${record.periodo ? `<div><strong>Period:</strong> ${record.periodo}</div>` : ''}
           <div><strong>Auditor Responsible:</strong> ${record.auditor}</div>
           <div><strong>Zone:</strong> ${record.zone === 'all' ? 'All Zones' : record.zone}</div>
           <div><strong>Status:</strong> <span class="status-badge status-${record.status}">${record.status === 'completed' ? 'Completed' : 'In Progress'}</span></div>
@@ -419,6 +422,7 @@ export function generateExcelReport(record: CycleCountRecord) {
     ['AUDIT HEADER'],
     ['Date and Time:', record.completedDate || record.date],
     ['Count Type:', record.countType],
+    ...(record.periodo ? [['Period:', record.periodo]] : []),
     ['Auditor Responsible:', record.auditor],
     ['Zone:', record.zone === 'all' ? 'All Zones' : record.zone],
     [''],

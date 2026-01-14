@@ -1,5 +1,6 @@
 import { API_URL } from '../../../../url';
 import { fetchWithAuth } from '../../../../utils/fetchWithAuth';
+import { calculatePeriod } from '../utils/periodUtils';
 
 // Types for API Response
 export interface CycleCountApiResponse {
@@ -70,8 +71,9 @@ export interface CycleCountEntry {
  * Loads a cycle count with full article details for display/printing
  * @param cycleCountId - The ID of the cycle count to load
  * @param auditorName - Optional: The name of the logged-in user to use as auditor (overrides backend data)
+ * @param countType - Optional: The count type ('Annual', 'Biannual', 'Spot Check') - if not provided, will try to determine from countName
  */
-export async function getCycleCountWithArticles(cycleCountId: number, auditorName?: string) {
+export async function getCycleCountWithArticles(cycleCountId: number, auditorName?: string, countType?: 'Annual' | 'Biannual' | 'Spot Check') {
   try {
     // Fetch cycle count detail
     const cycleCountDetail = await getCycleCountDetail(cycleCountId);
@@ -79,14 +81,16 @@ export async function getCycleCountWithArticles(cycleCountId: number, auditorNam
     // Fetch statistics
     const stats = await getCycleCountStatistics(cycleCountId);
     
-    // Determine countType from countName
-    let countType: 'Annual' | 'Biannual' | 'Spot Check' = 'Annual';
-    if (cycleCountDetail.countName) {
+    // Determine countType from parameter or countName
+    let determinedCountType: 'Annual' | 'Biannual' | 'Spot Check' = countType || 'Annual';
+    
+    // If countType was not provided, try to determine from countName
+    if (!countType && cycleCountDetail.countName) {
       const countNameLower = cycleCountDetail.countName.toLowerCase();
       if (countNameLower.includes('biannual') || countNameLower.includes('semiannual')) {
-        countType = 'Biannual';
+        determinedCountType = 'Biannual';
       } else if (countNameLower.includes('spot') || countNameLower.includes('spot check')) {
-        countType = 'Spot Check';
+        determinedCountType = 'Spot Check';
       }
     }
     
@@ -113,8 +117,9 @@ export async function getCycleCountWithArticles(cycleCountId: number, auditorNam
         : undefined,
       zone: cycleCountDetail.zoneName || 'All Zones',
       status: mapStatusNameToUIStatus(cycleCountDetail.statusName),
-      countType,
+      countType: determinedCountType,
       auditor: auditorName || cycleCountDetail.completedByName || cycleCountDetail.createdByName,
+      periodo: calculatePeriod(determinedCountType, new Date(cycleCountDetail.createdAt).toISOString().split('T')[0]),
       totalItems: stats.totalEntries,
       counted: stats.countedEntries,
       discrepancies: stats.entriesWithVariance,
@@ -258,6 +263,7 @@ export interface MappedCycleCountRecord {
   status: 'in-progress' | 'completed';
   countType: 'Annual' | 'Biannual' | 'Spot Check';
   auditor: string;
+  periodo?: string;
   totalItems: number;
   counted: number;
   discrepancies: number;
@@ -343,6 +349,7 @@ function mapApiResponseToRecord(apiResponse: CycleCountApiResponse): MappedCycle
     status,
     countType,
     auditor,
+    periodo: calculatePeriod(countType, date),
     totalItems: apiResponse.totalEntries,
     counted: apiResponse.countedEntries,
     discrepancies: apiResponse.entriesWithVariance,

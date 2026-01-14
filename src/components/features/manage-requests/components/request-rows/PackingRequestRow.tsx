@@ -15,7 +15,7 @@ interface Props {
   getPriorityBadge: (priority: string) => React.ReactNode;
   selectedPackingItems: Set<string>;
   packingItemQuantities: Record<string, number>;
-  handleSelectPackingItem: (requestId: number, itemId: number) => void;
+  handleSelectPackingItem: (requestId: number, itemId: number, defaultQuantity?: number) => void;
   handlePackingQuantityChange: (requestId: number, itemId: number, quantity: number) => void;
   getPackingItemQuantity: (requestId: number, itemId: number) => number;
   areAllItemsSelected: (requestId: number, items: LoanItem[]) => boolean;
@@ -48,14 +48,19 @@ export const PackingRequestRow: React.FC<Props> = ({
 // 1. Lógica para determinar si el botón debe estar deshabilitado
     const isPrinted = printedRequests.has(request.requestNumber);
     const isKit = isKitOrder(request);
-    const areItemsSelected = selectedPackingItems.size > 0;
+    const areItemsSelected = request.items.some(item => selectedPackingItems.has(`${request.id}-${item.id}`));
 
     const isPacking = request.status === 'Packing';
     const isApproved = request.status === 'Approved';
     const isSent = request.status === 'Sent';
 
-    // El botón solo está habilitado si el status es "Packing", está impreso y tiene items seleccionados
-    const isValidForPacking = isPacking && isPrinted && (isKit || areItemsSelected);
+    const hasZeroQuantities = !isKit && request.items.some(item => {
+      const itemKey = `${request.id}-${item.id}`;
+      return selectedPackingItems.has(itemKey) && ((packingItemQuantities[itemKey] ?? 0) <= 0);
+    });
+
+    // El botón solo está habilitado si el status es "Packing", está impreso, tiene items seleccionados y ninguna cantidad es 0
+    const isValidForPacking = isPacking && isPrinted && (isKit || areItemsSelected) && !hasZeroQuantities;
 
    const showDisabledToast = (e: React.MouseEvent) => {
         // Solo proceder si la acción es inválida
@@ -70,7 +75,9 @@ export const PackingRequestRow: React.FC<Props> = ({
             } else if (!isPrinted) {
                 disabledMessage = 'To confirm, you must first print the packing list.';
             } else if (!isKit && !areItemsSelected) {
-                disabledMessage = 'Please select the items and specify the quantities to pack.';
+              disabledMessage = 'Please select the items and specify the quantities to pack.';
+            } else if (hasZeroQuantities) {
+              disabledMessage = 'Packaged quantity must be greater than 0 for all selected items.';
             } else {
                 disabledMessage = 'Action blocked due to pending validations.';
             }           
@@ -195,7 +202,12 @@ export const PackingRequestRow: React.FC<Props> = ({
                         <tr key={item.id}>
                           <td className="text-center">
                             {!isKitOrder(request) ? (
-                              <input type="checkbox" checked={selectedPackingItems.has(itemKey)} onChange={() => handleSelectPackingItem(request.id, item.id)} className="h-4 w-4" />
+                              <input
+                                type="checkbox"
+                                checked={selectedPackingItems.has(itemKey)}
+                                onChange={() => handleSelectPackingItem(request.id, item.id, item.quantityRequested)}
+                                className="h-4 w-4"
+                              />
                             ) : null}
                           </td>
                           <td className="flex justify-center">
@@ -204,29 +216,31 @@ export const PackingRequestRow: React.FC<Props> = ({
                           <td className="font-mono text-sm text-center">{item.sku}</td>
                           <td className="text-center">{item.name}</td>
                           <td className="text-center">{item.quantityRequested}</td>
-                          <td>
+                          <td className="text-sm text-muted-foreground">
                             {!isKitOrder(request) ? (
-                              <div className="text-center space-x-2">
+                              <div className="">
                                 <input 
                                   type="number" 
-                                  min={0} 
+                                  min={1} 
                                   max={item.quantityRequested} 
                                   value={getPackingItemQuantity(request.id, item.id)} 
                                   onChange={(e) => {
                                     const inputValue = e.target.value;
-                                    const numValue = parseInt(inputValue);
-                                    // Only allow valid numbers: 0 or positive integers up to quantityRequested
-                                    if (inputValue === '' || (numValue >= 0 && numValue <= item.quantityRequested)) {
-                                      handlePackingQuantityChange(request.id, item.id, numValue || 0);
-                                    } else if (numValue < 0) {
-                                      // Prevent negative numbers
-                                      handlePackingQuantityChange(request.id, item.id, 0);
-                                      toast.error('Packaged quantity cannot be negative');
-                                    } else if (numValue > item.quantityRequested) {
-                                      // Prevent exceeding requested quantity
+                                    const numValue = parseInt(inputValue, 10);
+                                    if (Number.isNaN(numValue)) {
+                                      return;
+                                    }
+                                    if (numValue < 1) {
+                                      handlePackingQuantityChange(request.id, item.id, 1);
+                                      toast.error('Packaged quantity must be at least 1');
+                                      return;
+                                    }
+                                    if (numValue > item.quantityRequested) {
                                       handlePackingQuantityChange(request.id, item.id, item.quantityRequested);
                                       toast.error(`Cannot exceed requested quantity of ${item.quantityRequested}`);
+                                      return;
                                     }
+                                    handlePackingQuantityChange(request.id, item.id, numValue);
                                   }}
                                   onFocus={(e) => e.target.select()}
                                   className={`w-20 ${getPackingItemQuantity(request.id, item.id) === 0 ? 'border-2 text-center border rounded px-2 py-1 border-black-400 bg-green-50 dark:bg-green-900/30' : 'border border-gray-300 dark:border-gray-600'}`}

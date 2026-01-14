@@ -355,7 +355,7 @@ export const ReturnsTab: React.FC<Props> = (props) => {
                                           const first = occs[0];
                                           if (first) props.handleOpenConditionDialog(first.requestId, first.itemId, false, undefined, occs);
                                         }}
-                                        className="px-3 py-1 bg-green-100 border border-green-300 rounded text-sm hover:bg-green-200"
+                                        className="px-3 py-1 bg-green-400 border border-green-300 rounded text-sm hover:bg-green-200"
                                       >
                                         Select Condition
                                       </button>

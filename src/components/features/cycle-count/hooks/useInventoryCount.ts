@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Article, CycleCountViewProps } from '../types';
 import { mockArticles } from '../constants/mockData';
+import { calculatePeriod } from '../utils/periodUtils';
 import { 
   getCycleCountDetail, 
   recordBatchCount as recordBatchCountAPI,
@@ -552,6 +553,7 @@ export function useInventoryCount(
           status: actualStatus,
           countType,
           auditor,
+          periodo: calculatePeriod(countType, new Date(completedCycleCount.createdAt).toISOString().split('T')[0]),
           totalItems: completedCycleCount.totalEntries,
           counted: completedCycleCount.countedEntries,
           discrepancies: completedCycleCount.entries.filter(e => e.variance !== 0).length,
@@ -602,14 +604,16 @@ export function useInventoryCount(
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
     
     const completedData = {
-      date: `${year}-${month}-${day}`,
-      completedDate: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,
+      date: dateString,
+      completedDate: `${dateString} ${hours}:${minutes}:${seconds}`,
       zone: selectedZone,
       status: 'completed' as const,
       countType,
       auditor,
+      periodo: calculatePeriod(countType, dateString),
       totalItems: articlesToCount.length,
       counted: countedArticles.length,
       discrepancies: discrepancies.length,

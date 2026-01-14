@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 // 🚨 CORRECCIÓN: Definición local de la interfaz del DTO de Envío para evitar errores de importación.
-import { LoanRequest, LoanItem, CreateLoanRequestDto } from '../types'; 
-import { getPackingRequests, updateLoanRequestStatus, startPacking, sendLoanRequest, getEngineerReturns } from '../services/requestManagementService';
+import { LoanRequest, LoanItem } from '../types'; 
+import { startPacking, sendLoanRequest, getEngineerReturns } from '../services/requestManagementService';
+import { getEngineerHoldings } from '../services/purchaseRequestsService';
 import { handlePrintSinglePacking as utilPrintSingle } from '../utils/requestManagementUtils';
 import { toast } from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
@@ -47,10 +48,6 @@ export function usePackingRequestsLogic({ keeperEmployeeId, warehouseId }: UsePa
   
   const [packingConfirmDialogOpen, setPackingConfirmDialogOpen] = useState(false);
   const [currentPackingRequest, setCurrentPackingRequest] = useState<LoanRequest | null>(null);
-  
-  const MOCK_WAREHOUSE_ID = 1; 
-  const MOCK_DEPARTMENT_ID = 1;
-  const MOCK_REQUESTER_ID = 1;
 
 
   // Fetch packing requests from Redux on mount
@@ -94,39 +91,41 @@ export function usePackingRequestsLogic({ keeperEmployeeId, warehouseId }: UsePa
     }
   }, [printedRequests]);
   
-  const isKitOrder = useCallback((request: LoanRequest) => request.requestNumber.startsWith('KIT-'), []);  const handleToggleExpandPacking = useCallback((requestNumber: string) => {
+  const isKitOrder = useCallback((request: LoanRequest) => request.requestNumber.startsWith('KIT-'), []);
+
+  const handleToggleExpandPacking = useCallback((requestNumber: string) => {
     console.log('Toggle expand for requestNumber:', requestNumber);
     setExpandedPackingRequests(prev => {
       const newExpanded = new Set(prev);
-      console.log('Before toggle, expanded requestNumbers:', Array.from(prev));
       if (newExpanded.has(requestNumber)) {
         newExpanded.delete(requestNumber);
-        console.log('Removed requestNumber:', requestNumber);
       } else {
         newExpanded.add(requestNumber);
-        console.log('Added requestNumber:', requestNumber);
       }
-      console.log('After toggle, expanded requestNumbers:', Array.from(newExpanded));
       return newExpanded;
     });
-  }, []);  const handleSelectPackingItem = useCallback((requestId: number, itemId: number) => {
-    const itemKey = `${requestId}-${itemId}`;
-    setSelectedPackingItems(prev => {
-      const newSelected = new Set(prev);
-      if (newSelected.has(itemKey)) {
-        newSelected.delete(itemKey);
-        setPackingItemQuantities(q => { const { [itemKey]: _, ...rest } = q; return rest; });
-      } else {
-        newSelected.add(itemKey);
-      }
-      return newSelected;
-    });
-  }, []);
+  }, []);
 
-  const handlePackingQuantityChange = useCallback((requestId: number, itemId: number, quantity: number) => {
-    const itemKey = `${requestId}-${itemId}`;
-    setPackingItemQuantities(prev => ({ ...prev, [itemKey]: quantity }));
-  }, []);
+  const handleSelectPackingItem = useCallback((requestId: number, itemId: number, defaultQuantity: number = 1) => {
+    const itemKey = `${requestId}-${itemId}`;
+    setSelectedPackingItems(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(itemKey)) {
+        newSelected.delete(itemKey);
+        setPackingItemQuantities(q => { const { [itemKey]: _, ...rest } = q; return rest; });
+      } else {
+        newSelected.add(itemKey);
+        setPackingItemQuantities(q => ({ ...q, [itemKey]: Math.max(1, defaultQuantity) }));
+      }
+      return newSelected;
+    });
+  }, []);
+
+  const handlePackingQuantityChange = useCallback((requestId: number, itemId: number, quantity: number) => {
+    const itemKey = `${requestId}-${itemId}`;
+    const safeQuantity = Number.isFinite(quantity) ? Math.max(1, quantity) : 1;
+    setPackingItemQuantities(prev => ({ ...prev, [itemKey]: safeQuantity }));
+  }, []);
 
   const getPackingItemQuantity = useCallback((requestId: number, itemId: number) => {
     const itemKey = `${requestId}-${itemId}`;
@@ -187,8 +186,8 @@ function generatePackingHtml(request: LoanRequest, quantities: Record<string, nu
                   <td>${item.sku}</td>
                   <td>${item.articleDescription}</td>
                   <td>${qty}${qty !== item.quantityRequested ? ` (Original: ${item.quantityRequested})` : ''}</td>
-                  <td>${item.unit}</td>
-                  <td>________________</td>
+                  <td></td>
+                  <td></td>
                 </tr>
               `;
             }).join('')}
@@ -321,17 +320,21 @@ const handlePrintAllPacking = useCallback(async () => { // Ya no necesita setAll
 
   const handleSelectAllPackingItems = useCallback((request: LoanRequest, checked: boolean) => {
     const newSelected = new Set(selectedPackingItems);
+    const newQuantities = { ...packingItemQuantities } as Record<string, number>;
     // Iterate over all main LoanItems (both regular and Kits) using their id as the selection key
     request.items.forEach(item => {
       const itemKey = `${request.id}-${item.id}`;
       if (checked) {
         newSelected.add(itemKey);
+        newQuantities[itemKey] = Math.max(1, item.quantityRequested ?? 1);
       } else {
         newSelected.delete(itemKey);
+        delete newQuantities[itemKey];
       }
     });
     setSelectedPackingItems(newSelected);
-  }, [selectedPackingItems]);
+    setPackingItemQuantities(newQuantities);
+  }, [selectedPackingItems, packingItemQuantities]);
   
 
   
@@ -348,7 +351,9 @@ const handleConfirmPackingDialog = useCallback((
       // 1. Preparar los ítems para el DTO de envío
       const mappedItems = currentPackingRequest.items.map(item => {
         const itemKey = `${currentPackingRequest.id}-${item.id}`;
-        const qty = packingItemQuantities[itemKey] !== undefined ? packingItemQuantities[itemKey] : 0;
+        const qty = packingItemQuantities[itemKey] !== undefined
+          ? packingItemQuantities[itemKey]
+          : Math.max(1, item.quantityRequested ?? 1);
         console.log(`🔍 DEBUG mappedItems - itemKey=${itemKey}, packingItemQuantities[itemKey]=${packingItemQuantities[itemKey]}, qty=${qty}`);
         return { original: item, itemKey, qty, mapped: { ...item, quantity: qty, status: 'active' as const } };
       });
@@ -357,7 +362,7 @@ const handleConfirmPackingDialog = useCallback((
       // - Excluir items con ID inválido
       // - Excluir items no seleccionados (en requests no-kit)
       // - Incluir TODOS los items (incluso con cantidad 0)
-      const itemsToMove = mappedItems.filter(({ original, itemKey, qty }) => {
+      const itemsToMove = mappedItems.filter(({ original, itemKey }) => {
         if (original.id <= 0) {
           console.warn(`Skipping item with invalid ID: ${original.id}`);
           return false;
@@ -369,6 +374,12 @@ const handleConfirmPackingDialog = useCallback((
         // Incluir items con cualquier cantidad (incluyendo 0)
         return true;
       }).map(({ mapped }) => mapped as any);
+
+      const hasZeroOrMissing = itemsToMove.some((item: any) => !item.quantity || item.quantity <= 0);
+      if (hasZeroOrMissing) {
+        toast.error('Packaged quantity must be greater than 0 for all selected items.');
+        return;
+      }
 
       // Construir el DTO final para enviar al API
       // Solo incluir items que pasaron el filtro (cantidad > 0, seleccionados, etc)
@@ -425,7 +436,7 @@ const handleConfirmPackingDialog = useCallback((
         // 4. Recargar Returns desde el API y Redux
         // Usar el requesterId del request enviado (el ingeniero que recibirá los items)
         // Si no se especificó engineerId en parámetros, usar el del request enviado
-        const targetEngineerId = engineerId || currentPackingRequest.requesterId || 'amx0142';
+        const targetEngineerId = currentPackingRequest.requesterId || engineerId || 'amx0142';
         console.log(`🔄 Reloading engineer holdings for: ${targetEngineerId}`);
         
         try {
@@ -433,6 +444,10 @@ const handleConfirmPackingDialog = useCallback((
             const freshData = await getEngineerReturns(targetEngineerId, warehouseId || 1);
             setAllReturns(freshData || []);
             console.log(`✅ Reloaded ${freshData?.length || 0} returns for engineer ${targetEngineerId}`);
+            
+            // Recargar engineer holdings desde el endpoint
+            const engineerHoldingsData = await getEngineerHoldings(warehouseId || 1);
+            console.log(`✅ Reloaded engineer holdings for warehouse ${warehouseId || 1}:`, engineerHoldingsData);
             
             // Actualizar Redux para que la UI de Returns se actualice automáticamente
             console.log(`🔄 Refreshing Redux returns for engineerId: ${targetEngineerId}, warehouseId: ${warehouseId || 1}`);
