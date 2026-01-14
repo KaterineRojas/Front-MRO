@@ -113,29 +113,33 @@ export async function fetchArticlesFromApi({
   try {
     const state = store.getState();
     const token = state.auth.accessToken as string;
-    const userWarehouseId = state.auth.user?.warehouseId ?? state.auth.user?.warehouse;
+    const userWarehouseId =
+      state.auth.user?.warehouseId ?? state.auth.user?.warehouse;
 
     const searchParams = new URLSearchParams();
     searchParams.append('isActive', String(isActive));
 
-    const resolvedWarehouseId = warehouseId ?? userWarehouseId;
-    if (resolvedWarehouseId !== undefined && resolvedWarehouseId !== null) {
-      searchParams.append('warehouseId', String(resolvedWarehouseId));
-    }
+    // ✅ Lógica conservada + fallback a 1
+    const resolvedWarehouseId =
+      warehouseId ?? userWarehouseId ?? 1;
 
-    const url = `${API_URL}/inventory/items-with-bins${searchParams.size ? `?${searchParams.toString()}` : ''}`;
+    searchParams.append('warehouseId', String(resolvedWarehouseId));
+
+    const url = `${API_URL}/inventory/items-with-bins?${searchParams.toString()}`;
     console.log('[fetchArticlesFromApi] GET', url);
 
     const response = await fetch(url, {
       method: 'GET',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch items: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch items: ${response.status} ${response.statusText}`
+      );
     }
 
     const data: InventoryItemResponse[] = await response.json();
@@ -143,13 +147,19 @@ export async function fetchArticlesFromApi({
     if (!Array.isArray(data)) {
       throw new Error('Invalid response format: expected an array');
     }
-    console.log(`📦 Fetched ${data.length} items from API`,  data.map(transformInventoryItem)) ;
+
+    console.log(
+      `📦 Fetched ${data.length} items from API`,
+      data.map(transformInventoryItem)
+    );
+
     return data.map(transformInventoryItem);
   } catch (error) {
     console.error('Error fetching all items with bins:', error);
     throw error;
   }
 }
+
 
 /**
  * Obtiene un item por ID
