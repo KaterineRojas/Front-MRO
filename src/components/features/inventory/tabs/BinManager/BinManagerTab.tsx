@@ -9,8 +9,8 @@ import { LevelModal } from './modals/LevelModal';
 import { QuickBinModal } from './modals/QuickBinModal';
 import { BinHierarchyView } from './components/BinHierarchyView';
 import { BinTableView } from './components/BinTableView';
-import { Button } from '../../../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
+import { Button } from '../../../../ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../../ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +20,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../../../ui/alert-dialog';
+} from '../../../../ui/alert-dialog';
 import { toast } from 'sonner';
 import { fetchWarehousesFromApi, createZoneApi, createRackApi, createLevelApi, createBinApi, createBinByHierarchyApi } from '../../services/inventoryApi';
 import { useAppDispatch } from '../../../../../store/hooks';

@@ -12,7 +12,7 @@ import {
   Package, ArrowLeftRight, ChevronDown, ChevronRight, Trash2, CheckCircle, X
 } from 'lucide-react';
 import { ImageWithFallback } from '../../../figma/ImageWithFallback';
-import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../../../ui/avatar';
 import { toast } from 'sonner';
 import { useAppSelector } from '../../../../store/hooks';
 import { useTransfers } from './useTransfers';

@@ -21,7 +21,7 @@ import type {
   FilteredItems,
   DropdownState,
 } from '../types';
-import type { CartItem } from '../../../../enginner/types';
+import type { CartItem } from '../../../types';
 
 interface ItemRowProps {
   item: { itemId: string; itemName: string; quantity: number };

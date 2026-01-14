@@ -237,7 +237,7 @@ export function Layout() {
     { id: 'reports', label: 'Reports', icon: FileText, path: '/reports', disabled: false, roles: ['Director', 'Manager'] },
     { id: 'users', label: 'User Management', icon: Users, path: '/users', disabled: false, roles: ['Director', 'Manager'] },
     // Engineer Modules
-    { id: 'engineer-catalog', label: 'Engineer Catalog', icon: Package, path: '/engineer/catalog', disabled: false, roles: ['Engineer'] },
+    { id: 'engineer-catalog', label: 'Digital Catalog', icon: Package, path: '/engineer/catalog', disabled: false, roles: ['Engineer'] },
     { id: 'engineer-requests', label: 'Request Orders', icon: FileText, path: '/engineer/requests', disabled: false, roles: ['Engineer'] },
     { id: 'engineer-inventory', label: 'My Inventory', icon: PackageCheck, path: '/engineer/my-inventory', disabled: false, roles: ['Engineer'] },
   ] as const;

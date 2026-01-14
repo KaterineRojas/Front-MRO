@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { ScrollArea } from '../../ui/scroll-area';
 import { Input } from '../../ui/input';
 import { ImageWithFallback } from '../../figma/ImageWithFallback';
-import type { CartItem } from '../enginner/types';
+import type { CartItem } from '../requests/types';
 
 type RequestType = 'borrow' | 'purchase';
 
