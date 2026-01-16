@@ -27,11 +27,9 @@ interface UseCompleteHistoryReturn {
 // 1. Mantenemos la lógica de visibilidad fuera
 const getVisibleRequests = (data: UnifiedRequest[]) => {
   return data.filter(req => {
-    const status = req.status.toLowerCase();
-    if (req.type === 'borrow') return status === 'sent' || status === 'rejected';
-    if (req.type === 'purchase') return status === 'rejected' || status === 'received' || status === 'archived';
-    if (req.type === 'transfer') return status === 'completed' || status === 'rejected';
-    return true;
+    const status = req.status?.toLowerCase?.() || '';
+    // Solo mostrar los estados rejected y completed para cualquier tipo
+    return status === 'completed' || status === 'rejected';
   });
 };
 

@@ -21,6 +21,11 @@ const TYPE_CONFIG: Record<RequestType, { label: string; icon: React.ReactNode; c
     icon: <ShoppingCart className="h-3 w-3" />,
     className: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
   },
+  'purchase on site': {
+    label: 'Purchase On Site',
+    icon: <ShoppingCart className="h-3 w-3" />,
+    className: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300',
+  },
   transfer: {
     label: 'Transfer',
     icon: <ArrowLeftRight className="h-3 w-3" />,
@@ -261,12 +266,10 @@ export function CompleteHistory() {
             {/* Status filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger>
-                <SelectValue placeholder="All Statuses" />
+                <SelectValue placeholder="All Statuses " />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
               </SelectContent>
