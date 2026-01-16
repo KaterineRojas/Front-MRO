@@ -3,7 +3,7 @@ import { getBorrowRequests, type LoanRequest } from '../Borrow/borrowService';
 import { getPurchaseRequests, type PurchaseRequest } from '../Purchase/purchaseService';
 import { getTransfersIncoming, getTransfersOutgoing, getTransferId, type Transfer } from '../Transfer/transferService';
 
-export type RequestType = 'borrow' | 'purchase' | 'transfer';
+export type RequestType = 'borrow' | 'purchase' | 'purchase on site' | 'transfer';
 
 export interface UnifiedItem {
   id: string | number;
@@ -123,9 +123,17 @@ function normalizePurchaseRequest(req: PurchaseRequest): UnifiedRequest {
     productUrl: item.productUrl,
   }));
 
+  // Si es tipo 3, poner 'purchase on site' en type
+  let typeValue = 'purchase';
+  const typeRequest = (req as any)?.typeRequest;
+  const typeRequestName = (req as any)?.typeRequestName;
+  if (typeRequest === 3 || typeRequestName === 'PurchaseOnSiteRequest') {
+    typeValue = 'purchase on site';
+  }
+
   return {
     id: `purchase-${req.requestNumber || req.requestId}`,
-    type: 'purchase',
+    type: typeValue as RequestType,
     requestNumber: req.requestNumber || req.requestId || '',
     requesterName: req.requesterName || '',
     department: req.departmentName || req.departmentId || '',

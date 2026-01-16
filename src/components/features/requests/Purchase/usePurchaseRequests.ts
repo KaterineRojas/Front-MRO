@@ -30,16 +30,17 @@ interface UsePurchaseRequestsReturn {
   setModalOpen: ReturnType<typeof useConfirmModal>['setModalOpen'];
 }
 
+
 const STATUS_CODE_MAP: Record<number, 'pending' | 'approved' | 'rejected' | 'ordered' | 'completed'> = {
   0: 'pending',
   1: 'approved',
   2: 'rejected',
-  3: 'ordered'
+  6: 'ordered',
 };
 
-// Estados visibles en la vista (excluye rejected = 2)
-const VISIBLE_STATUS_CODES = new Set([0, 1, 3]);
-const VISIBLE_STATUS_KEYS = new Set(['pending', 'approved', 'ordered', 'completed']);
+// Solo mostrar status code 0, 1 y 6
+const VISIBLE_STATUS_CODES = new Set([0, 1, 6]);
+const VISIBLE_STATUS_KEYS = new Set(['pending', 'approved', 'ordered']);
 
 function resolveStatusKey(request: PurchaseRequest): string {
   if (request.statusName) {

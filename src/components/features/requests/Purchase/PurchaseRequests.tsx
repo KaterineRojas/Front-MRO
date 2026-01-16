@@ -23,12 +23,12 @@ import { toast } from 'sonner';
 import { ConfirmModal } from '../../../ui/confirm-modal';
 import { ProjectDetails } from '../shared/ProjectDetails';
 
-// Configuración de estados visibles (0=pending, 1=approved, 3=ordered)
-// Excluimos 2=rejected de la vista
+// Configuración de estados visibles (0=pending, 1=approved, 6=ordered)
+// Solo mostramos 0, 1 y 6
 const STATUS_CONFIG = {
   pending: { value: 'pending', label: 'Pending', statusCode: 0 },
   approved: { value: 'approved', label: 'Approved', statusCode: 1 },
-  completed: { value: 'completed', label: 'Completed', statusCode: 3 },
+  ordered: { value: 'ordered', label: 'Ordered', statusCode: 6 },
 } as const;
 
 const VISIBLE_STATUSES = Object.values(STATUS_CONFIG);
